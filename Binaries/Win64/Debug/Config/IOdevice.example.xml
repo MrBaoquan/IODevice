@@ -1,0 +1,50 @@
+<IORoot>
+  <!-- Default device, posses all keyboard & mouse & joystick event, this node could not be removed . -->
+  <Device Type="Standard">
+    
+    <!-- Action mapping start -->
+    <Action Name="Jump">
+      <Key Name="SpaceBar"></Key>
+      <Key Name="Up"></Key>
+    </Action>
+    <Action Name="Fire">
+      <Key Name="LeftMouseButton"></Key>
+    </Action>
+    <!-- Action mapping end -->
+    
+    
+    <!-- Axis mapping start -->
+    <Axis Name="MoveLR">
+      <Key Name="Left" Scale="-1"></Key>
+      <Key Name="Right" Scale="1"></Key>
+    </Axis>
+    <Axis Name="MoveUD">
+      <Key Name="Up" Scale="1"></Key>
+      <Key Name="Down" Scale="-1"></Key>
+    </Axis>
+    <!-- Axis mapping end -->
+ 
+  </Device>
+  
+  <!-- Modify your device list. -->
+  
+  <!-- Type list -->
+  <!-- PCI2312
+       PCI8735
+       PCI2312A -->
+  
+  <Device Type="PCI2312">
+    <Action Name="MoveForward">
+      <Key Name="Channel_01" ValidBit="1"></Key>
+      <Key Name="Channel_02" ValidBit="0"></Key>
+    </Action>
+  </Device>
+
+  <Device Type="PCI8735">
+    <Action Name="MoveRight">
+      <Key Name="Channel_03" ValidBit="1"></Key>
+      <Key Name="Channel_04" ValidBit="1"></Key>
+    </Action>
+  </Device>
+  
+</IORoot>

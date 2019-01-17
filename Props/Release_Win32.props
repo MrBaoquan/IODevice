@@ -1,0 +1,23 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ImportGroup Label="PropertySheets" />
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup>
+    <IncludePath>$(SolutionDir)IODevice\Source\Vendor\spdlog-1.x\include;$(SolutionDir)IODevice\Source\Vendor\rapidxml;$(SolutionDir)IODevice\Source\Vendor\JoyStick;$(SolutionDir)IODevice\Source\Vendor\DevelopHelper;$(SolutionDir)IODevice\Source\Public;$(IncludePath)</IncludePath>
+    <OutDir>$(SolutionDir)Binaries\Win32\Release\</OutDir>
+    <IntDir>$(SolutionDir)Binaries\Win32\Release\Temp\</IntDir>
+  </PropertyGroup>
+  <ItemDefinitionGroup>
+    <ClCompile>
+      <PreprocessorDefinitions>IODEVICEEXPORTS;_WINDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <PreBuildEvent>
+      <Command>
+      </Command>
+    </PreBuildEvent>
+    <PostBuildEvent>
+      <Command>call $(SolutionDir)release.cmd Win32</Command>
+    </PostBuildEvent>
+  </ItemDefinitionGroup>
+  <ItemGroup />
+</Project>

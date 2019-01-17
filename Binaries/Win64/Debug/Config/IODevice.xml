@@ -1,0 +1,76 @@
+<!--
+  Copyright (c) 2018 Hefei And Technology Co.,Ltd All rights reserved
+  Author: MrBaoquan
+  CreateTime: 2018-5-16 9:10
+  Email: mrma617@gmail.com
+-->
+
+<IORoot>
+  
+<!-- Default device, posses all keyboard & mouse event, this node could not be removed . Must put this node at the top position . -->
+<!-- Strandar Device -->
+  <Device Name="Standard" Type="Standard">
+      <Properties>
+          <Key Name="Left" DeadZone="0.0" Sensitivity="1.0" Exponent="1.0" Invert="False" InvertEvent="False"></Key>
+      </Properties>
+    
+      <!-- Action mapping start -->
+      <Action Name="Jump">
+          <Key Name="AnyKey"></Key>
+      </Action>
+    
+      <Action Name="Fire">
+          <Key Name="LeftMouseButton"></Key>
+      </Action>
+      <!-- Action mapping end -->
+    
+      <!-- Axis mapping start -->
+      <Axis Name="MoveLR">
+          <Key Name="Left" Scale="-1"></Key>
+          <Key Name="Right" Scale="1"></Key>
+      </Axis>
+      <!-- Axis mapping end -->
+ 
+  </Device>
+  
+  
+  <!-- Joystick Devcie -->
+  <Device Name="Joystick" Type="Joystick">
+    <Action Name ="Action1">
+      <Key Name ="Button_00"></Key>
+      <Key Name ="S"></Key>
+    </Action>
+
+    <Action Name ="Action2">
+      <Key Name ="Button_00"></Key>
+      <Key Name ="S"></Key>
+    </Action>
+
+    <Action Name ="Action3">
+      <Key Name ="Button_00"></Key>
+      <Key Name ="S"></Key>
+    </Action>
+
+    <Axis Name="MoveLR">
+      <Key Name="JS_Y"></Key>
+    </Axis>
+  </Device>
+  
+  
+  <!-- External Device & PCI2312A -->
+  <Device Name="PCI2312A" Type="External" DllName="PCI2312A" Index="0">
+      <Properties>
+          <Key Name="Button_00" InvertEvent="True"></Key>
+      </Properties>
+    
+      <Action Name="Jump">
+          <Key Name="Button_00"></Key>
+          <Key Name="SpaceBar"></Key>
+      </Action>
+    
+      <Axis Name="MoveLR">
+          <Key Name="Axis_00" Scale="1"></Key>
+      </Axis>
+  </Device>
+
+</IORoot>

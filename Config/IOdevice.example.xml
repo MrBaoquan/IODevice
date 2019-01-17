@@ -1,0 +1,60 @@
+<!--
+  Copyright (c) 2018 Hefei And Technology Co.,Ltd All rights reserved
+  Author: MrBaoquan
+  CreateTime: 2018-5-16 9:10
+  Email: mrma617@gmail.com
+-->
+
+<IORoot>
+
+  <!-- Default device, posses all keyboard & mouse event, this node could not be removed . Must put this node at the top position . -->
+  <!-- Strandar Device -->
+  <Device Name="Standard" Type="Standard">
+    <Properties>
+      <Key Name="Left" DeadZone="0.0" Sensitivity="1.0" Exponent="1.0" Invert="False" InvertEvent="False"></Key>
+    </Properties>
+
+    <!-- Action mapping start -->
+    <Action Name="Jump">
+      <Key Name="SpaceBar"></Key>
+    </Action>
+
+    <Action Name="Fire">
+      <Key Name="LeftMouseButton"></Key>
+    </Action>
+    <!-- Action mapping end -->
+
+    <!-- Axis mapping start -->
+    <Axis Name="MoveLR">
+      <Key Name="Left" Scale="-1"></Key>
+      <Key Name="Right" Scale="1"></Key>
+    </Axis>
+    <!-- Axis mapping end -->
+
+  </Device>
+
+  <Device Name="ExternalDev" Type="External" DllName="PCI2312A" Index="0">
+    <Properties>
+      <Key Name="Left" DeadZone="0.0" Sensitivity="1.0" Exponent="1.0" Invert="False" InvertEvent="False"></Key>
+    </Properties>
+
+    <!-- Action mapping start -->
+    <Action Name="Jump">
+      <Key Name="SpaceBar"></Key>
+    </Action>
+
+    <Action Name="Fire">
+      <Key Name="LeftMouseButton"></Key>
+    </Action>
+    <!-- Action mapping end -->
+
+    <!-- Axis mapping start -->
+    <Axis Name="MoveLR">
+      <Key Name="Left" Scale="-1"></Key>
+      <Key Name="Right" Scale="1"></Key>
+    </Axis>
+    <!-- Axis mapping end -->
+
+  </Device>
+
+</IORoot>

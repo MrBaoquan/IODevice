@@ -1,0 +1,37 @@
+<!--
+  Copyright (c) 2018 Hefei And Technology Co.,Ltd All rights reserved
+  Author: MrBaoquan
+  CreateTime: 2018-5-16 9:10
+  Email: mrma617@gmail.com
+-->
+
+<IORoot>
+  <Device Name="Standard2" Type="Standard"></Device>
+  
+  <Device Name="Standard" Type="External" DllName="ExternalTest" Index="0" >
+    <Properties>
+      <Key Name="Left" DeadZone="0.0" Sensitivity="1.0" Exponent="1.0" Invert="False" InvertEvent="False"></Key>
+    </Properties>
+
+    <!-- Action mapping start -->
+    <Action Name="Jump">
+      <Key Name="J"></Key>
+      <Key Name="Button_100"></Key>
+    </Action>
+
+    <Action Name="Fire">
+      <Key Name="LeftMouseButton"></Key>
+    </Action>
+    <!-- Action mapping end -->
+
+    <!-- Axis mapping start -->
+    <Axis Name="MoveLR">
+      <Key Name="Left" Scale="-100"></Key>
+      <Key Name="Right" Scale="1"></Key>
+      <Key Name="Axis_50" Scale="-10"></Key>
+    </Axis>
+    <!-- Axis mapping end -->
+
+  </Device>
+
+</IORoot>

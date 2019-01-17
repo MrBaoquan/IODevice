@@ -1,0 +1,40 @@
+#pragma once
+#include "CustomIOBase.h"
+#include "DIJoyStick.hpp"
+
+namespace DevelopHelper
+{
+
+class JoyStickServer
+{
+public:
+    static JoyStickServer& Instance();
+    void Initialize();
+    DIJoyStick::Entry* GetEntry(int entryIndex);
+    short GetMaxVal()const
+    {
+        return djs.getMaxValue();
+    }
+private:
+    JoyStickServer();
+    DIJoyStick djs;
+    LPDIRECTINPUT lpDi = 0;
+};
+
+class Joystick :public CustomIOBase
+{
+public:
+    Joystick(uint8 InID, uint8 InIndex);
+
+    virtual void Tick(float DeltaSeconds) override;
+
+    void Initialize();
+
+    virtual const bool Valid() const { return jsEntry!=nullptr; }
+
+private:
+    DIJoyStick::Entry* jsEntry = nullptr;
+};
+
+
+};

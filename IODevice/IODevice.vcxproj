@@ -1,0 +1,270 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="Source\Private\CoreTypes\IOTypes.cpp" />
+    <ClCompile Include="Source\Private\InputChord.cpp" />
+    <ClCompile Include="Source\Private\InputSettings.cpp" />
+    <ClCompile Include="Source\Private\InputBinding\InputActionBinding.cpp" />
+    <ClCompile Include="Source\Private\InputBinding\InputAxisBinding.cpp" />
+    <ClCompile Include="Source\Private\InputBinding\InputKeyBinding.cpp" />
+    <ClCompile Include="Source\Private\InputCoreTypes.cpp" />
+    <ClCompile Include="Source\Private\InputBinding\InputBinding.cpp" />
+    <ClCompile Include="Source\Private\InputKeyManager.cpp" />
+    <ClCompile Include="Source\Private\IODevice.cpp" />
+    <ClCompile Include="Source\Private\IODeviceDetails.cpp" />
+    <ClCompile Include="Source\Private\IOApplication.cpp" />
+    <ClCompile Include="Source\Private\IOSettings.cpp" />
+    <ClCompile Include="Source\Private\IOStatics.cpp" />
+    <ClCompile Include="Source\Private\IODeviceController.cpp" />
+    <ClCompile Include="Source\Private\KeyDetails.cpp" />
+    <ClCompile Include="Source\Private\KeyState.cpp" />
+    <ClCompile Include="Source\Private\IOLog.cpp" />
+    <ClCompile Include="Source\Private\Math\Vector2D.cpp" />
+    <ClCompile Include="Source\Private\Math\Vector3D.cpp" />
+    <ClCompile Include="Source\Private\PlayerInput.cpp" />
+    <ClCompile Include="Source\Private\RawIO\RawIO.cpp" />
+    <ClCompile Include="Source\Private\RawIOFactory.cpp" />
+    <ClCompile Include="Source\Private\RawIO\CustomIOBase.cpp" />
+    <ClCompile Include="Source\Private\RawIO\ExternalIO.cpp" />
+    <ClCompile Include="Source\Private\RawIO\JoyStick.cpp" />
+    <ClCompile Include="Source\Private\RawIO\StandardIO.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="resource.h" />
+    <ClInclude Include="Source\Public\CoreTypes\IOTypes.h" />
+    <ClInclude Include="Source\Public\InputChord.h" />
+    <ClInclude Include="Source\Public\InputSettings.h" />
+    <ClInclude Include="Source\Public\CoreTypes\InputKeyProperties.h" />
+    <ClInclude Include="Source\Public\IOLog.h" />
+    <ClInclude Include="Source\Public\IOSettings.h" />
+    <ClInclude Include="Source\Public\RawIO\CustomIOBase.h" />
+    <ClInclude Include="Source\Public\RawIO\ExternalIO.h" />
+    <ClInclude Include="Source\Public\RawIO\JoyStick.h" />
+    <ClInclude Include="Source\Public\RawIO\PDLL.h" />
+    <ClInclude Include="Source\Vendor\DevelopHelper\Paths.hpp" />
+    <ClInclude Include="Source\Public\InputKeyManager.h" />
+    <ClInclude Include="Source\Public\IOApplication.h" />
+    <ClInclude Include="Source\Public\KeyDetails.h" />
+    <ClInclude Include="Source\Public\Math\Vector2D.h" />
+    <ClInclude Include="Source\Public\Math\Vector.h" />
+    <ClInclude Include="Source\Public\RawIOFactory.h" />
+    <ClInclude Include="Source\Public\RawIO\StandardIO.h" />
+    <ClInclude Include="Source\Public\ExportCoreTypes.h" />
+    <ClInclude Include="Source\Public\IOExportsAPI.h" />
+    <ClInclude Include="Source\Public\InputBinding\InputActionBinding.h" />
+    <ClInclude Include="Source\Public\InputBinding\InputAxisBinding.h" />
+    <ClInclude Include="Source\Public\InputBinding\InputKeyBinding.h" />
+    <ClInclude Include="Source\Public\InputCoreTypes.h" />
+    <ClInclude Include="Source\Public\IODeviceDetails.h" />
+    <ClInclude Include="Source\Public\IODeviceImpl.hpp" />
+    <ClInclude Include="Source\Public\IOStatics.h" />
+    <ClInclude Include="Source\Public\InputBinding.h" />
+    <ClInclude Include="Source\Public\IODevice.h" />
+    <ClInclude Include="Source\Public\IODeviceController.h" />
+    <ClInclude Include="Source\Public\KeyState.h" />
+    <ClInclude Include="Source\Public\LessKey.h" />
+    <ClInclude Include="Source\Public\PlayerInput.h" />
+    <ClInclude Include="Source\Public\RawIO\RawIO.h" />
+    <ClInclude Include="Source\Vendor\JoyStick\DIJoyStick.hpp" />
+    <ClInclude Include="Source\Vendor\rapidxml\rapidxml.hpp" />
+    <ClInclude Include="Source\Vendor\rapidxml\rapidxml_iterators.hpp" />
+    <ClInclude Include="Source\Vendor\rapidxml\rapidxml_print.hpp" />
+    <ClInclude Include="Source\Vendor\rapidxml\rapidxml_utils.hpp" />
+    <ClInclude Include="Source\Vendor\spdlog-1.x\include\spdlog\async.h" />
+    <ClInclude Include="Source\Vendor\spdlog-1.x\include\spdlog\async_logger.h" />
+    <ClInclude Include="Source\Vendor\spdlog-1.x\include\spdlog\common.h" />
+    <ClInclude Include="Source\Vendor\spdlog-1.x\include\spdlog\details\async_logger_impl.h" />
+    <ClInclude Include="Source\Vendor\spdlog-1.x\include\spdlog\details\file_helper.h" />
+    <ClInclude Include="Source\Vendor\spdlog-1.x\include\spdlog\details\logger_impl.h" />
+    <ClInclude Include="Source\Vendor\spdlog-1.x\include\spdlog\details\log_msg.h" />
+    <ClInclude Include="Source\Vendor\spdlog-1.x\include\spdlog\details\mpmc_blocking_q.h" />
+    <ClInclude Include="Source\Vendor\spdlog-1.x\include\spdlog\details\null_mutex.h" />
+    <ClInclude Include="Source\Vendor\spdlog-1.x\include\spdlog\details\os.h" />
+    <ClInclude Include="Source\Vendor\spdlog-1.x\include\spdlog\details\pattern_formatter_impl.h" />
+    <ClInclude Include="Source\Vendor\spdlog-1.x\include\spdlog\details\registry.h" />
+    <ClInclude Include="Source\Vendor\spdlog-1.x\include\spdlog\details\thread_pool.h" />
+    <ClInclude Include="Source\Vendor\spdlog-1.x\include\spdlog\details\traits.h" />
+    <ClInclude Include="Source\Vendor\spdlog-1.x\include\spdlog\formatter.h" />
+    <ClInclude Include="Source\Vendor\spdlog-1.x\include\spdlog\logger.h" />
+    <ClInclude Include="Source\Vendor\spdlog-1.x\include\spdlog\sinks\android_sink.h" />
+    <ClInclude Include="Source\Vendor\spdlog-1.x\include\spdlog\sinks\ansicolor_sink.h" />
+    <ClInclude Include="Source\Vendor\spdlog-1.x\include\spdlog\sinks\base_sink.h" />
+    <ClInclude Include="Source\Vendor\spdlog-1.x\include\spdlog\sinks\daily_file_sink.h" />
+    <ClInclude Include="Source\Vendor\spdlog-1.x\include\spdlog\sinks\dist_sink.h" />
+    <ClInclude Include="Source\Vendor\spdlog-1.x\include\spdlog\sinks\msvc_sink.h" />
+    <ClInclude Include="Source\Vendor\spdlog-1.x\include\spdlog\sinks\null_sink.h" />
+    <ClInclude Include="Source\Vendor\spdlog-1.x\include\spdlog\sinks\ostream_sink.h" />
+    <ClInclude Include="Source\Vendor\spdlog-1.x\include\spdlog\sinks\rotating_file_sink.h" />
+    <ClInclude Include="Source\Vendor\spdlog-1.x\include\spdlog\sinks\simple_file_sink.h" />
+    <ClInclude Include="Source\Vendor\spdlog-1.x\include\spdlog\sinks\sink.h" />
+    <ClInclude Include="Source\Vendor\spdlog-1.x\include\spdlog\sinks\stdout_color_sinks.h" />
+    <ClInclude Include="Source\Vendor\spdlog-1.x\include\spdlog\sinks\stdout_sinks.h" />
+    <ClInclude Include="Source\Vendor\spdlog-1.x\include\spdlog\sinks\syslog_sink.h" />
+    <ClInclude Include="Source\Vendor\spdlog-1.x\include\spdlog\sinks\wincolor_sink.h" />
+    <ClInclude Include="Source\Vendor\spdlog-1.x\include\spdlog\sinks\windebug_sink.h" />
+    <ClInclude Include="Source\Vendor\spdlog-1.x\include\spdlog\spdlog.h" />
+    <ClInclude Include="Source\Vendor\spdlog-1.x\include\spdlog\tweakme.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="IODevice.licenseheader" />
+    <None Include="Source\Public\CoreTypes.inl" />
+    <None Include="Source\Vendor\rapidxml\manual.html" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="IODevice.rc" />
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{A2CD8B83-0E81-4FDD-8377-4E3ADC0598B8}</ProjectGuid>
+    <Keyword>Win32Proj</Keyword>
+    <RootNamespace>IODevevice</RootNamespace>
+    <WindowsTargetPlatformVersion>8.1</WindowsTargetPlatformVersion>
+    <ProjectName>IODevice</ProjectName>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v140</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+    <CLRSupport>false</CLRSupport>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v140</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v140</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v140</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="Shared">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="..\Props\Debug_Win32.props" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="..\Props\Release_Win32.props" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="..\Props\Debug_Win64.props" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="..\Props\Release_Win64.props" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <LinkIncremental>true</LinkIncremental>
+    <IncludePath>$(SolutionDir)IODevice\Source\Public;$(IncludePath)</IncludePath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <LinkIncremental>true</LinkIncremental>
+    <IncludePath>$(IncludePath)</IncludePath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <LinkIncremental>false</LinkIncremental>
+    <TargetExt>.dll</TargetExt>
+    <IncludePath>E:\VisualStudioProjects\2015\IODevevice\IODevevice\Source;E:\VisualStudioProjects\2015\IODevevice\IODevevice\Source\Core\Public;$(IncludePath)</IncludePath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <LinkIncremental>false</LinkIncremental>
+    <IncludePath>$(IncludePath)</IncludePath>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <PreprocessorDefinitions>IODEVICEEXPORTS;WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ClCompile>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <PreprocessorDefinitions>WIN_64;IODEVICEEXPORTS;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <PreprocessorDefinitions>IODEVICEEXPORTS;WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+    </Link>
+  </ItemDefinitionGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets" />
+</Project>

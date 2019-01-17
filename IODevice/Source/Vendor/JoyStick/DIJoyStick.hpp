@@ -1,3 +1,8 @@
+/** Copyright (c) mrma617@gmail.com
+ *  Author: MrBaoquan
+ *  CreateTime: 2018-6-27 9:00
+ */
+
 #include <windows.h>
 #include <stdio.h>
 #define DIRECTINPUT_VERSION 0x0800

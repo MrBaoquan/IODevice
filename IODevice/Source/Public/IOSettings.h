@@ -1,3 +1,8 @@
+/** Copyright (c) mrma617@gmail.com
+ *  Author: MrBaoquan
+ *  CreateTime: 2018-8-10 17:00
+ */
+
 #pragma once
 #include "IOExportsAPI.h"
 #include "ExportCoreTypes.h"

@@ -1,3 +1,8 @@
+/** Copyright (c) mrma617@gmail.com
+ *  Author: MrBaoquan
+ *  CreateTime: 2018-6-27 9:00
+ */
+
 #pragma once
 //
 // base sink templated over a mutex (either dummy or real)

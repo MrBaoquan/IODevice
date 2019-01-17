@@ -1,3 +1,8 @@
+<!--
+  Copyright (c) mrma617@gmail.com
+  Author: MrBaoquan
+  CreateTime: 2018-5-16 9:10
+ -->
 <IORoot>
   <!-- Default device, posses all keyboard & mouse & joystick event, this node could not be removed . -->
   <Device Type="Standard">

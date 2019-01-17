@@ -1,3 +1,8 @@
+/** Copyright (c) mrma617@gmail.com
+ *  Author: MrBaoquan
+ *  CreateTime: 2018-6-27 9:00
+ */
+
 #pragma once
 
 // Loggers registy of unique name->logger pointer

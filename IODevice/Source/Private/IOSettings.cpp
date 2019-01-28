@@ -1,3 +1,8 @@
+/** Copyright (c) mrma617@gmail.com
+ *  Author: MrBaoquan
+ *  CreateTime: 2018-8-10 17:00
+ */
+
 #include "..\Public\IOSettings.h"
 #include "InputSettings.h"
 /** Copyright (c) 2018 Hefei And Technology Co.,Ltd All rights reserved

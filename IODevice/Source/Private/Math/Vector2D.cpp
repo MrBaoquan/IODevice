@@ -1,3 +1,8 @@
+/** Copyright (c) mrma617@gmail.com
+ *  Author: MrBaoquan
+ *  CreateTime: 2018-6-27 9:00
+ */
+
 #include "Math/Vector2D.h"
 
 void DevelopHelper::Vector2D::operator=(const Vector2D& rhs)

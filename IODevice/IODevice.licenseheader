@@ -1,23 +1,21 @@
 ﻿extensions: designer.cs generated.cs
 extensions: .cs .cpp .h .hpp
-/** Copyright (c) 2018 Hefei And Technology Co.,Ltd All rights reserved
+/** Copyright (c) mrma617@gmail.com
  *  Author: %UserName%
  *  CreateTime: %CreationYear%-%CreationMonth%-%CreationDay% %CreationTime%
- *  Email: mrma617@gmail.com
  */
 
 extensions: .aspx .ascx
 <%-- 
-Copyright (c) 2018 Hefei And Technology Co.,Ltd All rights reserved
+Copyright (c) mrma617@gmail.com
 --%>
 
 extensions: .vb
-Copyright (c) 2018 Hefeif And Technology Co.,Ltd All rights reserved
+Copyright (c) mrma617@gmail.com
 
 extensions:  .xml .config .xsd
 <!--
-Copyright (c) 2018 Hefei And Technology Co.,Ltd All rights reserved
+Copyright (c) mrma617@gmail.com
 Author: %UserName%
 CreateTime: %CreationYear%-%CreationMonth%-%CreationDay% %CreationTime%
-Email: mrma617@gmail.com
 -->

@@ -6,8 +6,8 @@ if "%param1%" neq "Win64" (
 	if "%param1%" neq "Win32" exit
 )
 
-set src_root_path=E:\VisualStudioProjects\2015\IODevice\
-set dst_root_path=E:\VisualStudioProjects\2015\IOUI\IOUIDebug\IOToolkit\
+set src_root_path=%cd%\..\
+set dst_root_path=%cd%\..\IOToolkit\
 
 set src_include_path=%src_root_path%IODevice\Source\Public\
 set src_binaries_path=%src_root_path%Binaries\%param1%\Release\

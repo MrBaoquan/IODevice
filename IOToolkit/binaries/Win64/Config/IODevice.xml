@@ -1,0 +1,12 @@
+<!--
+  Copyright (c) 2018 Hefei And Technology Co.,Ltd All rights reserved
+  Author: MrBaoquan
+  CreateTime: 2018-5-16 9:10
+  Email: mrma617@gmail.com
+-->
+
+<IORoot>
+
+  <Device Name="Standard" Type="Standard"></Device>
+
+</IORoot>

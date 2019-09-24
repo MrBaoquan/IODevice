@@ -31,6 +31,13 @@ void DevelopHelper::IODevice::BindAction(const char* actionName, InputEvent KeyE
     deviceDetails.BindAction(actionName, KeyEvent, actionDelegate);
 }
 
+
+//void DevelopHelper::IODevice::BindAction(const char* actionName, InputEvent KeyEvent, void(*Method)(FKey))
+//{
+//	IODeviceDetails& deviceDetails = IODevices::GetDeviceDetail(deviceID);
+//	deviceDetails.BindAction(actionName, KeyEvent, Method);
+//}
+
 int DevelopHelper::IODevice::SetDeviceDO(BYTE* InDOStatus)
 {
     if (!this->IsValid()) { return -1; }

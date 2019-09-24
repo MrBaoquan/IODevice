@@ -123,6 +123,28 @@ void DevelopHelper::IODeviceDetails::BindAxisKey(const FKey AxisKey, FInputAxisH
     AxisKeyBindings.push_back(AB);
 }
 
+void DevelopHelper::IODeviceDetails::BindAction(std::string ActionName, const InputEvent KeyEvent, InputActionHandlerWithKeySignature delegate)
+{
+	if (!ValidDevcie(std::string(" Action ") + ActionName))
+	{
+		return;
+	}
+	if (UInputSettings::Instance().HasAction(device.GetID(), ActionName))
+	{
+		std::string msg = std::string("Bind delegate for Action ") + ActionName + " succeed. device name: " + getName();
+		IOLog::Instance().Log(msg);
+	}
+	else
+	{
+		std::string msg = std::string("Bind delegate for Action ") + ActionName + " failed, because can not find match action name in config files. device name: " + getName();
+		IOLog::Instance().Warning(msg);
+		return;
+	}
+	FInputActionBinding AB(ActionName, KeyEvent);
+	AB.ActionDelegate.BindDelegate(delegate);
+	AddActionBinding(AB);
+}
+
 void DevelopHelper::IODeviceDetails::BindAction(std::string ActionName, const InputEvent KeyEvent, InputActionHandlerSignature delegate)
 {
     if (!ValidDevcie(std::string(" Action ") + ActionName))
@@ -196,27 +218,6 @@ BYTE DevelopHelper::IODeviceDetails::GetDeviceDO(const FKey& InKey)
     return rawIO ? rawIO->GetDeviceDO(InKey) : -1;
 }
 
-void DevelopHelper::IODeviceDetails::BindAction(std::string ActionName, const InputEvent KeyEvent, InputActionHandleerWithKeySignature delegate)
-{
-    if (!ValidDevcie(std::string(" Action ") + ActionName))
-    {
-        return;
-    }
-    if (UInputSettings::Instance().HasAction(device.GetID(), ActionName))
-    {
-        std::string msg = std::string("Bind delegate for Action ") + ActionName + " succeed. device name: " + getName();
-        IOLog::Instance().Log(msg);
-    }
-    else
-    {
-        std::string msg = std::string("Bind delegate for Action ") + ActionName + " failed, because can not find match action name in config files. device name: " + getName();
-        IOLog::Instance().Warning(msg);
-        return;
-    }
-    FInputActionBinding AB(ActionName, KeyEvent);
-    AB.ActionDelegate.BindDelegate(delegate);
-    AddActionBinding(AB);
-}
 
 DevelopHelper::FInputActionBinding& DevelopHelper::IODeviceDetails::GetActionBinding(const int32 BindingIndex)
 {

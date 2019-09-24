@@ -14,8 +14,8 @@
       </Properties>
     
       <!-- Action mapping start -->
-      <Action Name="Jump">
-          <Key Name="SpaceBar"></Key>
+      <Action Name="TestAction">
+          <Key Name="AnyKey"></Key>
       </Action>
     
       <Action Name="Fire">

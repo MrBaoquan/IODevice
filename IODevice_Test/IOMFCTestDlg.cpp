@@ -119,7 +119,7 @@ BOOL CIOMFCTestDlg::OnInitDialog()
    // int length = sizeof(arr) / sizeof(arr[0]);
 
 
-    IOSettings::Instance().SetIOConfigPath("IODevice.xml");
+    /*IOSettings::Instance().SetIOConfigPath("IODevice.xml");*/
     IODevice& standardDevice = IODeviceController::Instance().GetIODevice("Standard");
     
     //standardDevice.BindKey(EKeys::RightMouseButton, IE_Repeat, this, &CIOMFCTestDlg::OnRMPressed);

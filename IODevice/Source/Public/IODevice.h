@@ -16,14 +16,32 @@ namespace DevelopHelper
 class IOAPI IODevice
 {
 public:
+	/**
+	 * 其他重载函数据此进行衍生
+	 */
+	void BindKey(const FKey& key, InputEvent KeyEvent, std::function<void(void)> keyDelegate);
+
     template<class UserClass>
     void BindKey(const FKey& Key, InputEvent KeyEvent, UserClass* Object, void(UserClass::*Method)());
+
+	/**
+	* 其他重载函数据此进行衍生
+	*/
+	void BindAxis(const char* axisName, std::function<void(float)> axisDelegate);
 
     template<class UserClass>
     void BindAxis(const char* axisName, UserClass* Object, void(UserClass::*Method)(float));
 
     template<class UserClass>
     void BindAxisKey(const FKey AxisKey, UserClass* Object, void(UserClass::*Method)(float));
+
+	/**
+	 * 其他重载函数据此进行衍生
+	 */
+	void BindAction(const char* actionName, InputEvent KeyEvent, std::function<void(FKey)> actionDelegate);
+
+	template<class... VarTypes>
+	void BindAction(const char* actionName, InputEvent KeyEvent, void(* Method)(VarTypes...), VarTypes... args);
 
     template<class UserClass>
     void BindAction(const char* actionName, InputEvent KeyEvent, UserClass* Object, void(UserClass::*Method)());
@@ -116,12 +134,8 @@ private:
     ~IODevice() = default;
     IODevice(uint8 InID) :deviceID(InID) {}
 
-    void BindKey(const FKey& key, InputEvent KeyEvent, std::function<void(void)> keyDelegate);
     void BindAxisKey(const FKey& key, std::function<void(float)> axisDelegate);
-    void BindAxis(const char* axisName, std::function<void(float)> axisDelegate);
-
     void BindAction(const char* actionName, InputEvent KeyEvent, std::function<void(void)> actionDelegate);
-    void BindAction(const char* actionName, InputEvent KeyEvent, std::function<void(FKey)> actionDelegate);
 
     uint8 deviceID;
 

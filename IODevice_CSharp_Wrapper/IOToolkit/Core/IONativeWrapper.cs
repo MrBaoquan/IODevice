@@ -13,7 +13,7 @@ namespace IOToolkit.Core
 
     class IONativeWrapper
     {
-        const string DllName = "IODevice_CWrapper";
+        const string DllName = "IODevice_C_Wrapper";
 
         //[DllImport(DllName, CallingConvention = CallingConvention.StdCall)]
         //[return: MarshalAs(UnmanagedType.BStr)]

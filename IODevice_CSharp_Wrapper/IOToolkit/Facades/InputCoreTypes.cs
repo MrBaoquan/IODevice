@@ -25,6 +25,11 @@ namespace IOToolkit
         // ------------- Properties -----------
         string ID;
 
+        public override string ToString()
+        {
+            return this.ID;
+        }
+
         public static implicit operator Key(string v)
         {
             return new Key(v);

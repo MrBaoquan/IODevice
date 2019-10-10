@@ -17,9 +17,12 @@ public:
     void Warning(std::string msg);
     void Error(std::string msg);
 
+	void ReleaseLogger();
 private:
     IOLog();
     ~IOLog();
+
+	void MakeReference();
     std::shared_ptr<spdlog::logger> IOLogger = nullptr;
 };
 

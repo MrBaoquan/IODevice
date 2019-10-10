@@ -13,6 +13,17 @@ namespace IOToolkit
         {
             public IODeviceNative(string InID) : base(InID){}
         }
+
+        public static int Load()
+        {
+            return IONativeWrapper.Load();
+        }
+
+        public static int UnLoad()
+        {
+            return IONativeWrapper.UnLoad();
+        }
+
         public static IODevice GetIODevice(string InDeviceName)
         {
             IODevice _device;

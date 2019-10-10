@@ -10,6 +10,7 @@ using System.Windows.Forms;
 using System.Runtime.InteropServices;
 using IOToolkit.Core;
 using IOToolkit;
+using System.Diagnostics;
 
 namespace IODevice_C_CSharpTest
 {
@@ -25,6 +26,10 @@ namespace IODevice_C_CSharpTest
         private void Form1_Load(object sender, EventArgs e)
         {
             //_delegate = new NativeDelegate.NativeActionSignature(this.onKeyPressed);
+            IODeviceController.Load();
+            IODeviceController.UnLoad();
+            IODeviceController.Load();
+
             IODevice _device = IODeviceController.GetIODevice("Standard");
             _device.BindAction("TestAction", InputEvent.IE_Pressed, this.onActionPressed);
             _device.BindAction("TestAction", InputEvent.IE_Released, this.onActionReleased);
@@ -40,6 +45,25 @@ namespace IODevice_C_CSharpTest
         private void timer1_Tick(object sender, EventArgs e)
         {
             IODeviceController.Update();
+
+            IODevice _device = IODeviceController.GetIODevice("Standard");
+            byte _test = _device.GetDeviceDO(IOKeyCode.A);
+            byte[] _status = new byte[32];
+            _status[1] = 1;
+            _status[31] = 1;
+            _device.SetDeviceDO(_status);
+            _device.SetDeviceDO(IOKeyCode.A, 1);
+            if (_device.GetKeyDown(IOKeyCode.A))
+            {
+                Debug.WriteLine("A Pressed");
+            }
+            if (_device.GetKeyUp(IOKeyCode.A))
+            {
+                Debug.WriteLine("A Released");
+            }
+            //Debug.WriteLine(_device.GetKeyDownDuration(IOKeyCode.B));
+            //Debug.WriteLine(_device.GetAxisKey(IOKeyCode.MouseX));
+            Debug.WriteLine(_device.GetAxis("MoveLR"));
         }
 
         private void onAnyKeyPressed()

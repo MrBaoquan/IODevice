@@ -17,6 +17,7 @@ public:
 
     static UInputSettings& Instance();
     int Initialize();
+	int Uninitialize();
 
 public:
     /** List of Action Mappings */

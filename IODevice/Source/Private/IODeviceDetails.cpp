@@ -36,6 +36,7 @@ void DevelopHelper::IODeviceDetails::Destroy()
 	{
 		rawIO->Destroy();
 	}
+	this->ClearBinding();
 }
 
 void DevelopHelper::IODeviceDetails::ProcessFrameEnd()

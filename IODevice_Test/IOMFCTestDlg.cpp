@@ -120,15 +120,12 @@ BOOL CIOMFCTestDlg::OnInitDialog()
 
 
     /*IOSettings::Instance().SetIOConfigPath("IODevice.xml");*/
-    IODevice& standardDevice = IODeviceController::Instance().GetIODevice("Standard");
-    
-    //standardDevice.BindKey(EKeys::RightMouseButton, IE_Repeat, this, &CIOMFCTestDlg::OnRMPressed);
-    //standardDevice.BindKey(EKeys::RightMouseButton, IE_Released, this, &CIOMFCTestDlg::OnRMReleased);
-    //standardDevice.BindKey(EKeys::LeftMouseButton, IE_DoubleClick, this, &CIOMFCTestDlg::OnLMDoubleClick);
-    //standardDevice.BindAxis("MoveLR", this, &CIOMFCTestDlg::OnAxis);
-    standardDevice.BindKey(EKeys::A, IE_Pressed, this, &CIOMFCTestDlg::OnRMPressed);
-    standardDevice.BindKey(EKeys::B, IE_Pressed, this, &CIOMFCTestDlg::OnRMReleased);
-    //standardDevice.BindAction("Jump", IE_Pressed, this, &CIOMFCTestDlg::OnActionWithKey3);
+	IODeviceController::Instance().Load();
+	IODevice& standardDevice = IODeviceController::Instance().GetIODevice("Standard");
+   
+	IODeviceController::Instance().GetIODevice("Standard").BindKey(EKeys::A, IE_Pressed, this, &CIOMFCTestDlg::FunctionA);
+    /*standardDevice.BindKey(EKeys::B, IE_Pressed, this, &CIOMFCTestDlg::OnRMReleased);
+    standardDevice.BindAction("TestAction", IE_Pressed, this, &CIOMFCTestDlg::OnActionWithKey3);*/
 
     standardDevice.BindAxisKey("Axis_50", this, &CIOMFCTestDlg::OnAxis);
 
@@ -208,7 +205,7 @@ void CIOMFCTestDlg::OnTimer(UINT_PTR nIDEvent)
     IODeviceController::Instance().Update();
 
     IODevice& standardDevice = IODeviceController::Instance().GetIODevice("Standard");
-    if (standardDevice.GetKeyDown("abc")) 
+    if (standardDevice.GetKeyDown("S")) 
     {
         OutputDebugStringA("S down \n");
     }
@@ -219,14 +216,6 @@ void CIOMFCTestDlg::OnTimer(UINT_PTR nIDEvent)
     }
 
     float val = standardDevice.GetAxisKey("Axis_50");
-   /* OutputDebugStringA(std::to_string(val).data());
-    OutputDebugStringA("\n");
-*/
-   /* float duration = IODeviceController::Instance().GetIODevice("Standard").GetKeyDownDuration(EKeys::F2);
-    int val = IODeviceController::Instance().GetIODevice("Standard").IsKeyPressed(EKeys::F2);
-    OutputDebugStringA((std::to_string(val) +"---"+ std::to_string(duration)).data());
-    OutputDebugStringA("\n");
-*/
     CDialogEx::OnTimer(nIDEvent);
 }
 
@@ -270,7 +259,8 @@ void CIOMFCTestDlg::OnActionWithKeyUp(DevelopHelper::FKey key)
 
 void CIOMFCTestDlg::OnActionWithKey3(DevelopHelper::FKey key)
 {
-   OutputDebugStringA("Jump \n");
+   OutputDebugStringA( key.GetName());
+   OutputDebugStringA("\n");
 }
 
 void CIOMFCTestDlg::OnReleaseWithKey(DevelopHelper::FKey key)
@@ -299,14 +289,22 @@ void CIOMFCTestDlg::Jump()
     OutputDebugStringA("Jump \n");
 }
 
-void CIOMFCTestDlg::OnRMPressed()
+void CIOMFCTestDlg::FunctionA()
 {
-    DevelopHelper::IODeviceController::Instance().GetIODevice("Standard").SetDeviceDO("Button_100", 1);
+	using namespace  DevelopHelper;
+	IODeviceController::Instance().Unload();
+	IODeviceController::Instance().Load();
+	IODeviceController::Instance().GetIODevice("Standard").BindKey(EKeys::A, IE_Pressed, this, &CIOMFCTestDlg::FunctionB);
+	OutputDebugStringA("FunctionA");
 }
 
-void CIOMFCTestDlg::OnRMReleased()
+void CIOMFCTestDlg::FunctionB()
 {
-    DevelopHelper::IODeviceController::Instance().GetIODevice("Standard").SetDeviceDO("Button_100", 0);
+	using namespace  DevelopHelper;
+	IODeviceController::Instance().Unload();
+	IODeviceController::Instance().Load();
+	IODeviceController::Instance().GetIODevice("Standard").BindKey(EKeys::A, IE_Pressed, this, &CIOMFCTestDlg::FunctionA);
+	OutputDebugStringA("FunctionB");
 }
 
 void CIOMFCTestDlg::OnKeyAPressed()

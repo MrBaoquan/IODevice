@@ -29,6 +29,7 @@ public:
     static const uint8 GetDevicesCount(std::string InType);
     /** Initianlize all devices. */
     static int Initialize();
+	static int UnInitialize();
     static bool HasDevice(const std::string deviceName);
     static std::map<std::string, IODeviceDetails>& GetDevcies();
 

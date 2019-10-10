@@ -11,13 +11,19 @@ namespace IOToolkit.Core
     public delegate void NativeActionWithKeySignature([MarshalAs(UnmanagedType.BStr)] string _ptr);
     public delegate void NativeAxisSignature(float _val);
 
-    class IONativeWrapper
+    internal class IONativeWrapper
     {
-        const string DllName = "IODevice_CWrapper";
+        const string DllName = "IODevice_C_Wrapper";
 
         //[DllImport(DllName, CallingConvention = CallingConvention.StdCall)]
         //[return: MarshalAs(UnmanagedType.BStr)]
         //public static extern string GetStr([MarshalAs(UnmanagedType.BStr)] string str);
+
+        [DllImport(DllName, CallingConvention = CallingConvention.StdCall)]
+        public static extern int Load();
+
+        [DllImport(DllName, CallingConvention = CallingConvention.StdCall)]
+        public static extern int UnLoad();
 
         [DllImport(DllName, CallingConvention = CallingConvention.StdCall)]
         public static extern int BindKey([MarshalAs(UnmanagedType.BStr)] string InDeviceName, [MarshalAs(UnmanagedType.BStr)] string InKeyName, int InKeyEvent, NativeActionSignature InHandler);
@@ -28,10 +34,40 @@ namespace IOToolkit.Core
         [DllImport(DllName, CallingConvention = CallingConvention.StdCall)]
         public static extern int BindAxis([MarshalAs(UnmanagedType.BStr)] string InDeviceName, [MarshalAs(UnmanagedType.BStr)] string InAxisName, NativeAxisSignature InHandler);
 
+        [DllImport(DllName,CallingConvention = CallingConvention.StdCall)]
+        public static extern byte GetDOSingle([MarshalAs(UnmanagedType.BStr)] string InDeviceName, [MarshalAs(UnmanagedType.BStr)] string InKeyName);
+
+        [DllImport(DllName, CallingConvention = CallingConvention.StdCall)]
+        public static extern int GetDOAll([MarshalAs(UnmanagedType.BStr)] string InDeviceName, [MarshalAs(UnmanagedType.LPArray)] byte[] DOStatus);
+
+        [DllImport(DllName, CallingConvention = CallingConvention.StdCall)]
+        public static extern int SetDOSingle([MarshalAs(UnmanagedType.BStr)] string InDeviceName, [MarshalAs(UnmanagedType.BStr)] string InKeyName, byte InStatus);
+
+        [DllImport(DllName, CallingConvention = CallingConvention.StdCall)]
+        public static extern int SetDOAll([MarshalAs(UnmanagedType.BStr)] string InDeviceName, [MarshalAs(UnmanagedType.LPArray)] byte[] DOStatus);
+
         [DllImport(DllName, CallingConvention = CallingConvention.StdCall)]
         public static extern void Query();
 
         [DllImport(DllName, CallingConvention = CallingConvention.StdCall)]
         public static extern void ClearAllBindings();
+
+        [DllImport(DllName, CallingConvention = CallingConvention.StdCall)]
+        public static extern bool GetKey([MarshalAs(UnmanagedType.BStr)] string InDeviceName,[MarshalAs(UnmanagedType.BStr)] string InKey);
+
+        [DllImport(DllName, CallingConvention = CallingConvention.StdCall)]
+        public static extern bool GetKeyDown([MarshalAs(UnmanagedType.BStr)] string InDeviceName, [MarshalAs(UnmanagedType.BStr)] string InKey);
+
+        [DllImport(DllName, CallingConvention = CallingConvention.StdCall)]
+        public static extern  bool GetKeyUp([MarshalAs(UnmanagedType.BStr)] string InDeviceName, [MarshalAs(UnmanagedType.BStr)] string InKey);
+
+        [DllImport(DllName, CallingConvention = CallingConvention.StdCall)]
+        public static extern  float GetAxis([MarshalAs(UnmanagedType.BStr)] string InDeviceName, [MarshalAs(UnmanagedType.BStr)] string InAxisName);
+
+        [DllImport(DllName, CallingConvention = CallingConvention.StdCall)]
+        public static extern  float GetAxisKey([MarshalAs(UnmanagedType.BStr)] string InDeviceName, [MarshalAs(UnmanagedType.BStr)] string InKey);
+
+        [DllImport(DllName, CallingConvention = CallingConvention.StdCall)]
+        public static extern  float GetKeyDownDuration([MarshalAs(UnmanagedType.BStr)] string InDeviceName, [MarshalAs(UnmanagedType.BStr)] string InKey);
     }
 }

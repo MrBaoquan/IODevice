@@ -121,6 +121,57 @@ namespace IOToolkit
             IONativeWrapper.BindAxis(this.ID, InAxisName, _proxy);
         }
 
+        public byte GetDeviceDO(Key InKey)
+        {
+            return IONativeWrapper.GetDOSingle(this.ID, InKey);
+        }
+
+        public int GetDeviceDO(byte[] DOStatus)
+        {
+            return IONativeWrapper.GetDOAll(this.ID, DOStatus);
+        }
+
+        public int SetDeviceDO(Key InKey, byte InStatus)
+        {
+            return IONativeWrapper.SetDOSingle(this.ID, InKey, InStatus);
+        }
+
+        public int SetDeviceDO(byte[] InStatus)
+        {
+            return IONativeWrapper.SetDOAll(this.ID, InStatus);
+        }
+
+
+        public bool GetKey(string InKey)
+        {
+            return IONativeWrapper.GetKey(this.ID, InKey);
+        }
+
+        public bool GetKeyDown(Key InKey)
+        {
+            return IONativeWrapper.GetKeyDown(this.ID, InKey);
+        }
+
+        public bool GetKeyUp(Key InKey)
+        {
+            return IONativeWrapper.GetKeyUp(this.ID, InKey);
+        }
+
+        public float GetAxis(string InAxisName)
+        {
+            return IONativeWrapper.GetAxis(this.ID, InAxisName);
+        }
+
+        public float GetAxisKey(Key InKey)
+        {
+            return IONativeWrapper.GetAxisKey(this.ID, InKey);
+        }
+
+        public float GetKeyDownDuration(Key InKey)
+        {
+            return IONativeWrapper.GetKeyDownDuration(this.ID, InKey);
+        }
+
         //  ------------- Properties -------------
         public string ID;
 

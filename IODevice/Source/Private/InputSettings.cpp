@@ -196,6 +196,16 @@ int DevelopHelper::UInputSettings::Initialize()
     return SuccessCode;
 }
 
+
+int DevelopHelper::UInputSettings::Uninitialize()
+{
+	AxisMappings.clear();
+	ActionMappings.clear();
+	KeyProperties.clear();
+
+	return 0;
+}
+
 const bool DevelopHelper::UInputSettings::HasAxis(uint8 deviceID, std::string axisName)
 {
     if (deviceID < IODevices::GetDevicesCount())

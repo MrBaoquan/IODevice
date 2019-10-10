@@ -6,6 +6,9 @@ MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "IODevice", "IODevice\IODevice.vcxproj", "{A2CD8B83-0E81-4FDD-8377-4E3ADC0598B8}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "IODevice_Test", "IODevice_Test\IODevice_Test.vcxproj", "{A80466FA-B189-408A-A7F1-FAE96BAAB76A}"
+	ProjectSection(ProjectDependencies) = postProject
+		{A2CD8B83-0E81-4FDD-8377-4E3ADC0598B8} = {A2CD8B83-0E81-4FDD-8377-4E3ADC0598B8}
+	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "IODevice_C_Wrapper", "IODevice_C_Wrapper\IODevice_C_Wrapper.vcxproj", "{341DDC22-0F9E-4172-A5DE-78B89DAC3E1C}"
 	ProjectSection(ProjectDependencies) = postProject

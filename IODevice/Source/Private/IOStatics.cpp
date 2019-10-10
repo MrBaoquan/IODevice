@@ -94,6 +94,17 @@ int DevelopHelper::IODevices::Initialize()
     return UInputSettings::Instance().Initialize();
 }
 
+
+int DevelopHelper::IODevices::UnInitialize()
+{
+	UInputSettings::Instance().Uninitialize();
+	for (auto& device : devices) {
+		device.second.Destroy();
+	}
+	devices.clear();
+	return 0;
+}
+
 bool DevelopHelper::IODevices::HasDevice(const std::string deviceName)
 {
     if (devices.count(deviceName))

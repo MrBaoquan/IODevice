@@ -60,25 +60,32 @@ struct FInputAxisUnifiedDelegate : public TInputUnifiedDelegate<FInputAxisHandle
 
 
 typedef std::function<void(void)> InputActionHandlerSignature;
-typedef std::function<void(FKey)> InputActionHandleerWithKeySignature;
+typedef std::function<void(void*)> InputActionWithDataSignature;
+typedef std::function<void(FKey)> InputActionHandlerWithKeySignature;
 
 struct InputActionUnifiedDelegate
 {
 public:
     InputActionUnifiedDelegate():boundDelegateType(EBoundDelegate::Unbound){}
     InputActionUnifiedDelegate(InputActionHandlerSignature const& D) :FuncDelegate(D), boundDelegateType(EBoundDelegate::Delegate){}
-    InputActionUnifiedDelegate(InputActionHandleerWithKeySignature const& D):FuncDelegateWithKey(D),boundDelegateType(EBoundDelegate::DelegateWithKey){}
+    InputActionUnifiedDelegate(InputActionHandlerWithKeySignature const& D):FuncDelegateWithKey(D),boundDelegateType(EBoundDelegate::DelegateWithKey){}
 
     inline void BindDelegate(InputActionHandlerSignature& delegate)
     {
         boundDelegateType = EBoundDelegate::Delegate;
         FuncDelegate = delegate;
     }
-    inline void BindDelegate(InputActionHandleerWithKeySignature& delegate)
+    inline void BindDelegate(InputActionHandlerWithKeySignature& delegate)
     {
         boundDelegateType = EBoundDelegate::DelegateWithKey;
         FuncDelegateWithKey = delegate;
     }
+
+	inline void BindDelegate(InputActionWithDataSignature& delegate)
+	{
+		boundDelegateType = EBoundDelegate::DelegateWithData;
+		FuncDelegateWithData = delegate;
+	}
 
     /** Returns if either the native or dynamic delegate is bound */
     inline bool IsBound() const
@@ -132,7 +139,12 @@ private:
     /**
      * Holds the delegate that wants to know the key to call
      */
-    InputActionHandleerWithKeySignature FuncDelegateWithKey;
+    InputActionHandlerWithKeySignature FuncDelegateWithKey;
+
+	/**
+	 * Holds the delegate with custom data
+	 */
+	InputActionWithDataSignature FuncDelegateWithData;
 
 
     enum class EBoundDelegate:unsigned __int8
@@ -140,6 +152,7 @@ private:
         Unbound,
         Delegate,
         DelegateWithKey,
+		DelegateWithData,
         DynamicDelegate
     };
 

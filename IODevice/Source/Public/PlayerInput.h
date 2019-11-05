@@ -117,6 +117,8 @@ public:
     
     void Initialize();
 
+	void UnInitialize();
+
     void Tick(float DeltaSeconds);
 
     void InputKey(FKey& InKey, InputEvent KeyEvent,const uint8 deviceID, float AmountDepressed = 1.0f);

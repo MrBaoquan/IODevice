@@ -30,6 +30,14 @@ void DevelopHelper::PlayerInput::Initialize()
     }
 }
 
+
+void DevelopHelper::PlayerInput::UnInitialize()
+{
+	KeyStateMaps.clear();
+	ActionKeyMaps.clear();
+	AxisKeyMaps.clear();
+}
+
 void DevelopHelper::PlayerInput::Tick(float DeltaSeconds)
 {
     ProcessInputStack();

@@ -15,15 +15,15 @@ using namespace DevelopHelper;
 /** Application main entry. */
 IODeviceController::IODeviceController()
 {
-    if (IOApplication::SuccessResult(IOApplication::Initialize()))
-    {
-        IOLog::Instance().Log("IODevice initialize successful. \n");
-    }else
-    {
-        IOLog::Instance().Log("IODevice initialize failed. \n");
-        PostQuitMessage(0);
-    }
-    IOApplication::InitAfterLoaded();
+	if (IOApplication::SuccessResult(IOApplication::Constructor()))
+	{
+		IOLog::Instance().Log("IODevice initialize successful. \n");
+	}
+	else
+	{
+		IOLog::Instance().Log("IODevice initialize failed. \n");
+		PostQuitMessage(0);
+	}
 }
 
 IODeviceController::~IODeviceController()
@@ -34,6 +34,20 @@ IODeviceController& IODeviceController::Instance()
 {
     static IODeviceController single_instance;
     return single_instance;
+}
+
+
+int DevelopHelper::IODeviceController::Load()
+{
+	IOApplication::DyLoad();
+	return 0;
+}
+
+
+int DevelopHelper::IODeviceController::Unload()
+{
+    IOApplication::DyUnload();
+	return 0;
 }
 
 DevelopHelper::IODevice& DevelopHelper::IODeviceController::GetIODevice(const char* deviceName)

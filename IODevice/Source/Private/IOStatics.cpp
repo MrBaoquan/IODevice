@@ -13,7 +13,7 @@ void DevelopHelper::IODevices::AddDevice(IODeviceDetails& deviceDetails)
 {
     if (HasDevice(deviceDetails.getName())) 
     {
-        std::string msg = std::string("There is already a devcie named <") + deviceDetails.getName() + ">, Create device failed.";
+        std::string msg = std::string("There is already a device named <") + deviceDetails.getName() + ">, Create device failed.";
         IOLog::Instance().Error(msg);
         return; 
     }
@@ -92,6 +92,17 @@ const DevelopHelper::uint8 DevelopHelper::IODevices::GetDevicesCount(std::string
 int DevelopHelper::IODevices::Initialize()
 {
     return UInputSettings::Instance().Initialize();
+}
+
+
+int DevelopHelper::IODevices::UnInitialize()
+{
+	UInputSettings::Instance().Uninitialize();
+	for (auto& device : devices) {
+		device.second.Destroy();
+	}
+	devices.clear();
+	return 0;
 }
 
 bool DevelopHelper::IODevices::HasDevice(const std::string deviceName)
@@ -198,6 +209,49 @@ void DevelopHelper::StaticKeys::Initialize()
     AddKey(FKeyDetails(EKeys::X, "X"));
     AddKey(FKeyDetails(EKeys::Y, "Y"));
     AddKey(FKeyDetails(EKeys::Z, "Z"));
+
+    AddKey(FKeyDetails(EKeys::NumPadZero,"NumPadZero"));
+    AddKey(FKeyDetails(EKeys::NumPadOne,"NumPadOne"));
+    AddKey(FKeyDetails(EKeys::NumPadTwo,"NumPadTwo"));
+    AddKey(FKeyDetails(EKeys::NumPadThree,"NumPadThree"));
+    AddKey(FKeyDetails(EKeys::NumPadFour,"NumPadFour"));
+    AddKey(FKeyDetails(EKeys::NumPadFive,"NumPadFive"));
+    AddKey(FKeyDetails(EKeys::NumPadSix,"NumPadSix"));
+    AddKey(FKeyDetails(EKeys::NumPadSeven,"NumPadSeven"));
+    AddKey(FKeyDetails(EKeys::NumPadEight,"NumPadEight"));
+    AddKey(FKeyDetails(EKeys::NumPadNine,"NumPadNine"));
+
+    AddKey(FKeyDetails(EKeys::Multiply,"Multiply"));
+    AddKey(FKeyDetails(EKeys::Add,"Add"));
+    AddKey(FKeyDetails(EKeys::Subtract,"Subtract"));
+    AddKey(FKeyDetails(EKeys::Decimal,"Decimal"));
+    AddKey(FKeyDetails(EKeys::Divide,"Divide"));
+
+    AddKey(FKeyDetails(EKeys::F1,"F1"));
+    AddKey(FKeyDetails(EKeys::F2,"F2"));
+    AddKey(FKeyDetails(EKeys::F3,"F3"));
+    AddKey(FKeyDetails(EKeys::F4,"F4"));
+    AddKey(FKeyDetails(EKeys::F5,"F5"));
+    AddKey(FKeyDetails(EKeys::F6,"F6"));
+    AddKey(FKeyDetails(EKeys::F7,"F7"));
+    AddKey(FKeyDetails(EKeys::F8,"F8"));
+    AddKey(FKeyDetails(EKeys::F9,"F9"));
+    AddKey(FKeyDetails(EKeys::F10,"F10"));
+    AddKey(FKeyDetails(EKeys::F11,"F11"));
+    AddKey(FKeyDetails(EKeys::F12,"F12"));
+
+    AddKey(FKeyDetails(EKeys::NumLock,"NumLock"));
+
+    AddKey(FKeyDetails(EKeys::ScrollLock,"ScrollLock"));
+
+    AddKey(FKeyDetails(EKeys::LeftShift,"LeftShift"));
+    AddKey(FKeyDetails(EKeys::RightShift,"RightShift"));
+    AddKey(FKeyDetails(EKeys::LeftControl,"LeftControl"));
+    AddKey(FKeyDetails(EKeys::RightControl,"RightControl"));
+    AddKey(FKeyDetails(EKeys::LeftAlt,"LeftAlt"));
+    AddKey(FKeyDetails(EKeys::RightAlt,"RightAlt"));
+    AddKey(FKeyDetails(EKeys::LeftCommand,"LeftCommand"));
+    AddKey(FKeyDetails(EKeys::RightCommand,"RightCommand"));
 
 
     AddKey(FKeyDetails(EKeys::Button_00, "Button_00"));

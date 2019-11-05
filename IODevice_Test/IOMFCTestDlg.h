@@ -51,8 +51,8 @@ public:
     void MoveRight();
     void OnFire();
     void Jump();
-    void OnRMPressed();
-    void OnRMReleased();
+    void FunctionA();
+    void FunctionB();
 
 
     void OnKeyAPressed();
@@ -60,4 +60,5 @@ public:
     void OnClear();
 
     void OnLMDoubleClick();
+	afx_msg void OnStnClickedbtnstatus();
 };

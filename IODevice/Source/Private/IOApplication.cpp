@@ -80,7 +80,7 @@ BOOL WINAPI DllMain(
         break;
     case DLL_PROCESS_DETACH:
         IOApplication::UnHookWindow();
-        IOLog::Instance().Log("Dll has been detached. ");
+		IOLog::Instance().Log(std::string("------------------------------  IOToolkit has been detached, Bye!  ------------------------------"));
         break;
     case DLL_THREAD_ATTACH:
         break;
@@ -98,29 +98,65 @@ HWND DevelopHelper::IOApplication::mainWindow;
 
 HINSTANCE DevelopHelper::IOApplication::dllInstance;
 
-int DevelopHelper::IOApplication::Initialize()
-{
-    int rtCode = IOApplication::SetWindowsHook();
-    if (!SuccessResult(rtCode))
-    {
-        return ErrorCode;
-    }
 
+bool DevelopHelper::IOApplication::bLoaded = false;
+
+int DevelopHelper::IOApplication::Constructor()
+{
+	IOLog::Instance().Log(std::string("\n\n\n------------------------------  (*^_^*) Welcome to use IOToolkit (*^_^*) ------------------------------\n\
+		\n\
+		Copyright(c) 	mrma617@gmail.com\n\
+		Author :		MrBaoquan\n\
+		\n\
+------------------------------------------------------------------------------------------------------------\
+"));
     /** Key mapping */
     StaticKeys::Initialize();
-    
-    /** Device initializtion */
-    rtCode = IODevices::Initialize();
-    if (!SuccessResult(rtCode))
-    {
-        return ErrorCode;
-    }
-    
-    PlayerInput::Instance().Initialize();
+	IOApplication::RegisterRawInput();
     return SuccessCode;
 }
 
-void DevelopHelper::IOApplication::InitAfterLoaded()
+
+int DevelopHelper::IOApplication::Destructor()
+{
+	return 0;
+}
+
+
+int DevelopHelper::IOApplication::DyLoad()
+{
+	if (IOApplication::bLoaded) {
+		IOLog::Instance().Warning(std::string("------------------------------  IOToolkit is alreay loaded  ------------------------------\n"));
+		return -1;
+	}
+
+	IOLog::Instance().Log(std::string("------------------------------  IOToolkit Loading...  ------------------------------"));
+	IOApplication::SetWindowsHook();
+	/** Device initializtion */
+	IODevices::Initialize();
+	PlayerInput::Instance().Initialize();
+	IOApplication::bLoaded = true;
+	IOLog::Instance().Log(std::string("------------------------------  IOToolkit Loaded  ------------------------------"));
+	return 0;
+}
+
+
+int DevelopHelper::IOApplication::DyUnload()
+{
+	if (!IOApplication::bLoaded) {
+		IOLog::Instance().Warning(std::string("------------------------------  IOToolkit is alreay unloaded  ------------------------------\n"));
+		return -1;
+	}
+	IOApplication::UnHookWindow();
+	IODevices::UnInitialize();
+	PlayerInput::Instance().UnInitialize();
+	IOApplication::bLoaded = false;
+	IOLog::Instance().Log(std::string("------------------------------  IOToolkit has been unloaded  ------------------------------\n"));
+	IOLog::Instance().ReleaseLogger();
+	return 0;
+}
+
+void DevelopHelper::IOApplication::RegisterRawInput()
 {
     HWND hwnd = GetMainWindow();
     IOApplication::mainWindow = hwnd;
@@ -157,10 +193,7 @@ bool DevelopHelper::IOApplication::SuccessResult(int code)
 
 void DevelopHelper::IOApplication::PreShutdown()
 {
-	for (auto& device : IODevices::GetDevcies())
-	{
-		device.second.Destroy();
-	}
+	IOApplication::DyUnload();
 }
 
 int DevelopHelper::IOApplication::SetWindowsHook()
@@ -230,6 +263,11 @@ LRESULT CALLBACK DevelopHelper::IOApplication::CallWndProc(_In_ int nCode, _In_ 
 	switch (msg)
 	{
 	case WM_CLOSE:
+		IOLog::Instance().Log("Detected window close event.");
+		IOApplication::PreShutdown();
+		break;
+	case WM_QUERYENDSESSION:
+		IOLog::Instance().Log("Detected system shutdown event.");
 		IOApplication::PreShutdown();
 		break;
 	default:

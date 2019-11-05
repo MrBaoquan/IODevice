@@ -14,8 +14,8 @@
       </Properties>
     
       <!-- Action mapping start -->
-      <Action Name="Jump">
-          <Key Name="SpaceBar"></Key>
+      <Action Name="TestAction">
+          <Key Name="AnyKey"></Key>
       </Action>
     
       <Action Name="Fire">
@@ -32,7 +32,7 @@
  
   </Device>
 
-  <Device Name="Standard1" Type="External" DllName="PCI2312A" >
+  <Device Name="ExtDev" Type="External" DllName="PCI2312A" >
     <Properties>
       <Key Name="Left" DeadZone="0.0" Sensitivity="1.0" Exponent="1.0" Invert="False" InvertEvent="False"></Key>
     </Properties>
@@ -53,6 +53,16 @@
       <Key Name="Right" Scale="1"></Key>
     </Axis>
     <!-- Axis mapping end -->
+
+    <Action Name="TestAction">
+      <Key Name="AnyKey"></Key>
+    </Action>
+
+    <Axis Name="TestAxis">
+      <Key Name="Axis_00" Scale ="1"/>
+      <Key Name="Left" Scale="-1" />
+      <Key Name="Right" Scale="1" />
+    </Axis>
 
   </Device>
 

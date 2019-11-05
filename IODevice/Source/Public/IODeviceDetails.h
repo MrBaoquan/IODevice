@@ -45,7 +45,7 @@ public:
     void BindAxis(const std::string axisName,FInputAxisHandlerSignature delegate);
     void BindAxisKey(const FKey AxisKey, FInputAxisHandlerSignature delegate);
     void BindAction(std::string ActionName, const InputEvent KeyEvent,InputActionHandlerSignature delegate);
-    void BindAction(std::string ActionName, const InputEvent KeyEvent, InputActionHandleerWithKeySignature delegate);
+    void BindAction(std::string ActionName, const InputEvent KeyEvent, InputActionHandlerWithKeySignature delegate);
 
     int SetDeviceDO(BYTE* InDOStatus);
     int SetDeviceDO(const FKey& InKey,BYTE InValue);

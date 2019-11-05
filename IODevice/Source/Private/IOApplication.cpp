@@ -263,6 +263,11 @@ LRESULT CALLBACK DevelopHelper::IOApplication::CallWndProc(_In_ int nCode, _In_ 
 	switch (msg)
 	{
 	case WM_CLOSE:
+		IOLog::Instance().Log("Detected window close event.");
+		IOApplication::PreShutdown();
+		break;
+	case WM_QUERYENDSESSION:
+		IOLog::Instance().Log("Detected system shutdown event.");
 		IOApplication::PreShutdown();
 		break;
 	default:

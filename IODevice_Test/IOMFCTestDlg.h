@@ -60,4 +60,5 @@ public:
     void OnClear();
 
     void OnLMDoubleClick();
+	afx_msg void OnStnClickedbtnstatus();
 };

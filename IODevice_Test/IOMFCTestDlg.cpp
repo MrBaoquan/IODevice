@@ -68,6 +68,7 @@ BEGIN_MESSAGE_MAP(CIOMFCTestDlg, CDialogEx)
 	ON_WM_PAINT()
 	ON_WM_QUERYDRAGICON()
     ON_WM_TIMER()
+	ON_STN_CLICKED(label_btn_status, &CIOMFCTestDlg::OnStnClickedbtnstatus)
 END_MESSAGE_MAP()
 
 
@@ -121,19 +122,20 @@ BOOL CIOMFCTestDlg::OnInitDialog()
 
     /*IOSettings::Instance().SetIOConfigPath("IODevice.xml");*/
 	IODeviceController::Instance().Load();
-	IODevice& standardDevice = IODeviceController::Instance().GetIODevice("Standard");
+	IODevice& extDev = IODeviceController::Instance().GetIODevice("ExtDev");
    
-	IODeviceController::Instance().GetIODevice("Standard").BindKey(EKeys::A, IE_Pressed, this, &CIOMFCTestDlg::FunctionA);
-    /*standardDevice.BindKey(EKeys::B, IE_Pressed, this, &CIOMFCTestDlg::OnRMReleased);
-    standardDevice.BindAction("TestAction", IE_Pressed, this, &CIOMFCTestDlg::OnActionWithKey3);*/
+	//IODeviceController::Instance().GetIODevice("Standard").BindKey(EKeys::A, IE_Pressed, this, &CIOMFCTestDlg::FunctionA);
+    //standardDevice.BindKey(EKeys::B, IE_Pressed, this, &CIOMFCTestDlg::OnRMReleased);
+    extDev.BindAction("TestAction", IE_Pressed, this, &CIOMFCTestDlg::OnActionWithKeyDown);
+	extDev.BindAction("TestAction", IE_Released, this, &CIOMFCTestDlg::OnActionWithKeyUp);
 
-    standardDevice.BindAxisKey("Axis_50", this, &CIOMFCTestDlg::OnAxis);
+    //standardDevice.BindAxisKey("Axis_50", this, &CIOMFCTestDlg::OnAxis);
 
    // standardDevice.BindAction("Action2", IE_Pressed, this, &CIOMFCTestDlg::OnActionWithKey2);
     //standardDevice.BindAction("Action3", IE_Pressed, this, &CIOMFCTestDlg::OnActionWithKey3);
     //standardDevice.BindAction("AnyKey", IE_Released, this, &CIOMFCTestDlg::OnReleaseWithKey);
  
-    /*standardDevice.BindAxis("AxisTest", this, &CIOMFCTestDlg::OnAxis);*/
+    extDev.BindAxis("TestAxis", this, &CIOMFCTestDlg::OnAxis);
 
     static int a = 1;
     static bool b = false;
@@ -143,6 +145,16 @@ BOOL CIOMFCTestDlg::OnInitDialog()
     //PCI2312A.BindAction("Jump", IE_Pressed, this, &CIOMFCTestDlg::DynamicFunc, &a, &b);
     // TODO: 在此添加额外的初始化代码
     SetTimer(1, 0.02, NULL);
+
+
+	unsigned long _min = 0;
+	unsigned long _max = ULONG_MAX-2;
+	short _delta = _max - _min;
+	long _long = _max;
+	unsigned short _xx = _max;
+	unsigned short _shortValueMin = static_cast<unsigned short>((static_cast<float>(_min) / ULONG_MAX) * USHORT_MAX);
+	unsigned short _shortValueMax = static_cast<unsigned short>((static_cast<double>(100000.0) / ULONG_MAX) * USHORT_MAX);
+
 
 	return TRUE;  // 除非将焦点设置到控件，否则返回 TRUE
 }
@@ -204,18 +216,6 @@ void CIOMFCTestDlg::OnTimer(UINT_PTR nIDEvent)
     //OutputDebugStringA("Update...\n");
     IODeviceController::Instance().Update();
 
-    IODevice& standardDevice = IODeviceController::Instance().GetIODevice("Standard");
-    if (standardDevice.GetKeyDown("S")) 
-    {
-        OutputDebugStringA("S down \n");
-    }
-
-    if (standardDevice.GetKeyUp(EKeys::F2))
-    {
-        OutputDebugStringA("S up \n");
-    }
-
-    float val = standardDevice.GetAxisKey("Axis_50");
     CDialogEx::OnTimer(nIDEvent);
 }
 
@@ -247,19 +247,21 @@ void CIOMFCTestDlg::OnAction()
 
 void CIOMFCTestDlg::OnActionWithKeyDown(DevelopHelper::FKey key)
 {
-   
-    OutputDebugStringA(std::string(key.GetName()).append(" pressed sdf \r\n\n").data());
+	std::string _msg = std::string(key.GetName()).append(" pressed");
+    OutputDebugStringA(_msg.data());
+	SetDlgItemTextA(this->m_hWnd, label_btn_status, _msg.data());
 }
 
 void CIOMFCTestDlg::OnActionWithKeyUp(DevelopHelper::FKey key)
 {
-    
-    //OutputDebugStringA(std::string(key.GetName()).append(" released \r\n\n").data());
+	std::string _msg = std::string(key.GetName()).append(" released");
+	OutputDebugStringA(_msg.data());
+	SetDlgItemTextA(this->m_hWnd, label_btn_status, _msg.data());
 }
 
 void CIOMFCTestDlg::OnActionWithKey3(DevelopHelper::FKey key)
 {
-   OutputDebugStringA( key.GetName());
+   OutputDebugStringA( key.GetName());   
    OutputDebugStringA("\n");
 }
 
@@ -270,7 +272,9 @@ void CIOMFCTestDlg::OnReleaseWithKey(DevelopHelper::FKey key)
 
 void CIOMFCTestDlg::OnAxis(float val)
 {
-   //OutputDebugStringA(std::to_string(val).append("\n").data());
+	std::string _msg = std::to_string(val);
+   OutputDebugStringA(_msg.data());
+   SetDlgItemTextA(this->m_hWnd, label_axis_status, _msg.data());
 }
 
 void CIOMFCTestDlg::MoveRight()
@@ -325,4 +329,10 @@ void CIOMFCTestDlg::OnClear()
 void CIOMFCTestDlg::OnLMDoubleClick()
 {
     OutputDebugStringA("Left mouse button Double click\n");
+}
+
+
+void CIOMFCTestDlg::OnStnClickedbtnstatus()
+{
+	// TODO: 在此添加控件通知处理程序代码
 }

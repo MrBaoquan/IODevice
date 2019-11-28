@@ -5,6 +5,7 @@
 
 #include "InputSettings.h"
 #include <string>
+#include <cfloat>
 #include "IOStatics.h"
 #include "Paths.hpp"
 #include "rapidxml.hpp"
@@ -110,11 +111,18 @@ int DevelopHelper::UInputSettings::Initialize()
                     }
                     FInputKeyProperties keyProperty;
 
-                    keyProperty.DeadZone = GetNodeValue(Key->first_attribute("DeadZone") ? Key->first_attribute("DeadZone")->value() : "", 0.f);
-                    keyProperty.bInvert = std::string(Key->first_attribute("Invert") ? Key->first_attribute("Invert")->value() : std::string("")) == "True" ? true : false;
+                    
+					keyProperty.PreOffset = GetNodeValue(Key->first_attribute("PreOffset") ? Key->first_attribute("PreOffset")->value() : "", 0.f);
+					keyProperty.PreScale = GetNodeValue(Key->first_attribute("PreScale") ? Key->first_attribute("PreScale")->value() : "", 1.f);
+					keyProperty.DeadZone = GetNodeValue(Key->first_attribute("DeadZone") ? Key->first_attribute("DeadZone")->value() : "", 0.f);
+					keyProperty.bInvert = std::string(Key->first_attribute("Invert") ? Key->first_attribute("Invert")->value() : std::string("")) == "True" ? true : false;
                     keyProperty.bInvertEvent = std::string(Key->first_attribute("InvertEvent") ? Key->first_attribute("InvertEvent")->value() : std::string("")) == "True" ? true : false;
                     keyProperty.Exponent = GetNodeValue(Key->first_attribute("Exponent") ? Key->first_attribute("Exponent")->value() : "", 1.f);
                     keyProperty.Sensitivity = GetNodeValue(Key->first_attribute("Sensitivity") ? Key->first_attribute("Sensitivity")->value() : "", 1.f);
+
+					keyProperty.Min = GetNodeValue(Key->first_attribute("Min") ? Key->first_attribute("Min")->value() : "", -FLT_MAX);
+					keyProperty.Max = GetNodeValue(Key->first_attribute("Max") ? Key->first_attribute("Max")->value() : "", FLT_MAX);
+
                     KeyProperties[deviceID].insert(std::pair<FKey, FInputKeyProperties>(FKey(keyName.data()), keyProperty));
                 }
             }
@@ -194,6 +202,16 @@ int DevelopHelper::UInputSettings::Initialize()
     }
     
     return SuccessCode;
+}
+
+
+int DevelopHelper::UInputSettings::Uninitialize()
+{
+	AxisMappings.clear();
+	ActionMappings.clear();
+	KeyProperties.clear();
+
+	return 0;
 }
 
 const bool DevelopHelper::UInputSettings::HasAxis(uint8 deviceID, std::string axisName)

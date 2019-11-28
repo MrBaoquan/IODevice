@@ -25,12 +25,15 @@ void DevelopHelper::IOLog::Log(std::string msg)
 {
     try
     {
+		if (!IOLogger) {
+			this->MakeReference();
+		}
         if (IOLogger)
         {
             IOLogger->log(spd::level::info, msg);
         }
     }
-    catch (const spd::spdlog_ex ex)
+    catch (const spd::spdlog_ex&)
     {
         return;
     }
@@ -40,12 +43,15 @@ void DevelopHelper::IOLog::Warning(std::string msg)
 {
     try
     {
+		if (!IOLogger) {
+			this->MakeReference();
+		}
         if (IOLogger)
         {
             IOLogger->warn(msg);
         }
     }
-    catch (const spd::spdlog_ex ex)
+    catch (const spd::spdlog_ex&)
     {
         return;
     }
@@ -55,15 +61,25 @@ void DevelopHelper::IOLog::Error(std::string msg)
 {
     try
     {
+		if (!IOLogger) {
+			this->MakeReference();
+		}
         if (IOLogger)
         {
             IOLogger->error(msg);
         }
     }
-    catch (const spd::spdlog_ex ex)
+    catch (const spd::spdlog_ex&)
     {
         return;
     }
+}
+
+
+void DevelopHelper::IOLog::ReleaseLogger()
+{
+	spdlog::drop("IO_Logger");
+	IOLogger = nullptr;
 }
 
 const std::string GetDateTimeString(std::string filePath)
@@ -139,7 +155,7 @@ DevelopHelper::IOLog::IOLog()
             rename(logFilePath.data(), newName.data());
         }
         IOLogger = spd::basic_logger_mt("IO_Logger", logFilePath);
-        IOLogger->flush_on(spdlog::level::warn);
+		IOLogger->flush_on(spdlog::level::warn);
     }
     catch (const spd::spdlog_ex&)
     {
@@ -150,4 +166,23 @@ DevelopHelper::IOLog::IOLog()
 DevelopHelper::IOLog::~IOLog()
 {
     FilterFiles(Paths::Instance().GetLogDir());
+}
+
+void DevelopHelper::IOLog::MakeReference()
+{
+	if (IOLogger) { return; }
+	try
+	{
+		std::string logDir = Paths::Instance().GetLogDir();
+		if (!fs::exists(logDir))
+		{
+			fs::create_directory(logDir);
+		}
+		std::string logFilePath = logDir + "IODevice.log";
+		IOLogger = spd::basic_logger_mt("IO_Logger", logFilePath);
+		IOLogger->flush_on(spdlog::level::warn); 
+	}
+	catch (const spd::spdlog_ex&)
+	{
+	}
 }

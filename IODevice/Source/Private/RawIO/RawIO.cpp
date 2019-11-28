@@ -30,7 +30,7 @@ int DevelopHelper::RawIO::GetDeviceDO(BYTE* OutDOStatus)
 
 BYTE DevelopHelper::RawIO::GetDeviceDO(const FKey InKey)
 {
-    return -1;
+    return 0;
 }
 
 void DevelopHelper::RawIO::OnFrameEnd()

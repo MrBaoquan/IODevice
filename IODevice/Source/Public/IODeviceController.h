@@ -14,6 +14,8 @@ class IOAPI IODeviceController
 {
 public:
     static IODeviceController& Instance();
+	int Load();
+	int Unload();
     IODevice& GetIODevice(const char* deviceName);
     const float GetDeltaSeconds() const;
     void Update();

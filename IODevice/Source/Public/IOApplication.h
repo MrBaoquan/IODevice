@@ -21,9 +21,35 @@ public:
     static std::vector<HHOOK> hhks;
     static HWND mainWindow;
     static HINSTANCE dllInstance;
-    static int Initialize();
-    static void InitAfterLoaded();
+
+	/**
+	 * Core IOToolkit 工具是否已被加载
+	 */
+	static bool bLoaded;
+	/**
+	 * dll 构造
+	 */
+    static int Constructor();
+	/**
+	 * dll 析构
+	 */
+	static int Destructor();
+
+	/**
+	 * 运行时加载
+	 */
+	static int DyLoad();
+	/**
+	 * 运行时卸载
+	 */
+	static int DyUnload();
+
+    static void RegisterRawInput();
     static bool SuccessResult(int code);
+
+	/**
+	 * 程序退出时执行
+	 */
     static void PreShutdown();
     static int SetWindowsHook();
     static void UnHookWindow();

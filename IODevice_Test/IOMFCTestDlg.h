@@ -44,15 +44,15 @@ public:
     
     void OnActionWithKeyDown(DevelopHelper::FKey key);
     void OnActionWithKeyUp(DevelopHelper::FKey key);
-    void OnActionWithKey3(DevelopHelper::FKey key);
+    void OnActionWithKeyRepeat(DevelopHelper::FKey key);
 
     void OnReleaseWithKey(DevelopHelper::FKey key);
     void OnAxis(float val);
     void MoveRight();
     void OnFire();
     void Jump();
-    void OnRMPressed();
-    void OnRMReleased();
+    void FunctionA();
+    void FunctionB();
 
 
     void OnKeyAPressed();
@@ -60,4 +60,5 @@ public:
     void OnClear();
 
     void OnLMDoubleClick();
+	afx_msg void OnStnClickedbtnstatus();
 };

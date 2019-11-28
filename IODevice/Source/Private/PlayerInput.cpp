@@ -11,6 +11,8 @@
 #include "Math/Vector.h"
 #include "InputSettings.h"
 
+#define CLAMP(x, low, high)  (((x) > (high)) ? (high) : (((x) < (low)) ? (low) : (x)))
+
 DevelopHelper::PlayerInput& DevelopHelper::PlayerInput::Instance()
 {
     static PlayerInput instance;
@@ -28,6 +30,14 @@ void DevelopHelper::PlayerInput::Initialize()
         ActionKeyMaps.push_back(std::map<std::string, FActionKeyDetails>());
         AxisKeyMaps.push_back(std::map<std::string, FAxisKeyDetails>());
     }
+}
+
+
+void DevelopHelper::PlayerInput::UnInitialize()
+{
+	KeyStateMaps.clear();
+	ActionKeyMaps.clear();
+	AxisKeyMaps.clear();
 }
 
 void DevelopHelper::PlayerInput::Tick(float DeltaSeconds)
@@ -82,26 +92,33 @@ void DevelopHelper::PlayerInput::InputAxis(FKey Key, float Delta, float DeltaTim
 {
     if (NumSamples <= 0) { return; }
     std::map<FKey, FKeyState, LessKey>& KeyStateMap = KeyStateMaps[deviceID];
+	
     KeyStateMap.try_emplace(Key);
     FKeyState& keyState = KeyStateMap[Key];
+	float _realDelta = Delta;
+	
+	if (Key != EKeys::MouseX&&Key != EKeys::MouseY) {
+		_realDelta = this->MassageKeyRawInput(Key, Delta, deviceID) - keyState.Value.X;
+	}
+
     // look for event edges
-    if (keyState.Value.X == 0.f && Delta != 0.f)
+    if (keyState.Value.X == 0.f && _realDelta != 0.f)
     {
         keyState.EventAccumulator[IE_Pressed].push_back(++EventCount);
     }
-    else if (keyState.Value.X != 0.f && Delta == 0.f)
+    else if (keyState.Value.X != 0.f && _realDelta != 0.f)
     {
         keyState.EventAccumulator[IE_Released].push_back(++EventCount);
     }
-    else
+    else if(keyState.Value.X !=0)
     {
         keyState.EventAccumulator[IE_Repeat].push_back(++EventCount);
     }
 
     // accumulate deltas until processed next
     keyState.SampleCountAccumulator += NumSamples;
-    keyState.RawValueAccumulator.X += Delta;
 
+	keyState.RawValueAccumulator.X += Delta;
 }
 
 const float DevelopHelper::PlayerInput::GetKeyDownTime(const FKey& InKey, uint8 deviceID)
@@ -175,7 +192,7 @@ void DevelopHelper::PlayerInput::ProcessInputStack()
                 }
             }
 
-            ProcessNonAxesKeys(key, KeyState, deviceID);
+            ProcessAllKeys(key, KeyState, deviceID);
             KeyState->RawValueAccumulator = Vector(0.f, 0.f, 0.f);
             KeyState->SampleCountAccumulator = 0;
         }
@@ -341,10 +358,9 @@ const DevelopHelper::FKeyState DevelopHelper::PlayerInput::GetKeyState(const FKe
     return FKeyState();
 }
 
-void DevelopHelper::PlayerInput::ProcessNonAxesKeys(FKey Inkey, FKeyState* KeyState, uint8 deviceID)
+void DevelopHelper::PlayerInput::ProcessAllKeys(FKey Inkey, FKeyState* KeyState, uint8 deviceID)
 {
-    KeyState->Value.X = MassageAxisInput(Inkey, KeyState->RawValue.X,deviceID);
-    
+    KeyState->Value.X = MassageKeyRawInput(Inkey, KeyState->RawValue.X,deviceID);
     int32 const PressDelta =static_cast<uint32>(KeyState->EventCounts[IE_Pressed].size() - KeyState->EventCounts[IE_Released].size());
     if (PressDelta < 0)
     {
@@ -353,7 +369,7 @@ void DevelopHelper::PlayerInput::ProcessNonAxesKeys(FKey Inkey, FKeyState* KeySt
     }
     else if (PressDelta > 0)
     {
-        // If this is positive, we defini tely pressed
+        // If this is positive, we definitely pressed
         KeyState->bDown = true;
     }
     else
@@ -487,16 +503,16 @@ void DevelopHelper::PlayerInput::FinishProcessingPlayerInput()
     }
 }
 
-float DevelopHelper::PlayerInput::MassageAxisInput(FKey Key, float RawValue, uint8 deviceID)
+float DevelopHelper::PlayerInput::MassageKeyRawInput(FKey Key, float RawValue, uint8 deviceID)
 {
     float NewVal = RawValue;
     std::map<FKey, FKeyState, LessKey>& KeyStateMap = KeyStateMaps[deviceID];
-    
     std::map<FKey, FInputKeyProperties, LessKey>& KeyProperties = KeysProperties[deviceID];
-
     if (KeyProperties.count(Key))
     {
         FInputKeyProperties const* const KeyProps = &KeyProperties.at(Key);
+		NewVal += KeyProps->PreOffset;
+		NewVal *= KeyProps->PreScale;
         if (NewVal > 0)
         {
             NewVal = max(0.f, NewVal - KeyProps->DeadZone) / (1.f - KeyProps->DeadZone);
@@ -509,6 +525,9 @@ float DevelopHelper::PlayerInput::MassageAxisInput(FKey Key, float RawValue, uin
             NewVal = std::sin(NewVal)*std::powf(std::abs(NewVal), KeyProps->Exponent);
         }
         NewVal *= KeyProps->Sensitivity;
+
+		NewVal = CLAMP(NewVal, KeyProps->Min, KeyProps->Max);
+
         if (KeyProps->bInvert)
         {
             NewVal *= -1.f;
@@ -617,8 +636,7 @@ float DevelopHelper::PlayerInput::DetermineAxisValue(const FInputAxisBinding& Ax
             const FInputAxisKeyMapping& KeyMapping = (KeyDetails->KeyMappings)[AxisIndex];
             if (!IsKeyConsumed(KeyMapping.Key,deviceID))
             {
-               
-                AxisValue += GetKeyValue(KeyMapping.Key,deviceID) * KeyMapping.Scale;
+                AxisValue += GetKeyValue(KeyMapping.Key,deviceID) * KeyMapping.Scale;				
                 
                 if (AxisBinding.bConsumeInput)
                 {

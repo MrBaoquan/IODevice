@@ -2,54 +2,46 @@
   Copyright (c) mrma617@gmail.com
   Author: MrBaoquan
   CreateTime: 2018-5-16 9:10
- -->
+-->
+
 <IORoot>
-  <!-- Default device, posses all keyboard & mouse & joystick event, this node could not be removed . -->
-  <Device Type="Standard">
-    
+
+  <!-- Default device, posses all keyboard & mouse event, this node could not be removed . Must put this node at the top position . -->
+  <!-- Strandar Device -->
+  <Device Name="Standard" Type="Standard">
+    <Properties>
+      <Key Name="Left" DeadZone="0.0" Sensitivity="1.0" Exponent="1.0" Invert="False" InvertEvent="False"></Key>
+    </Properties>
+
     <!-- Action mapping start -->
-    <Action Name="Jump">
-      <Key Name="SpaceBar"></Key>
-      <Key Name="Up"></Key>
+    <Action Name="TestAction">
+      <Key Name="AnyKey"></Key>
     </Action>
-    <Action Name="Fire">
-      <Key Name="LeftMouseButton"></Key>
-    </Action>
-    <!-- Action mapping end -->
-    
-    
+
     <!-- Axis mapping start -->
-    <Axis Name="MoveLR">
+    
+    <Axis Name="TestAxis">
       <Key Name="Left" Scale="-1"></Key>
       <Key Name="Right" Scale="1"></Key>
     </Axis>
-    <Axis Name="MoveUD">
-      <Key Name="Up" Scale="1"></Key>
-      <Key Name="Down" Scale="-1"></Key>
-    </Axis>
     <!-- Axis mapping end -->
- 
-  </Device>
-  
-  <!-- Modify your device list. -->
-  
-  <!-- Type list -->
-  <!-- PCI2312
-       PCI8735
-       PCI2312A -->
-  
-  <Device Type="PCI2312">
-    <Action Name="MoveForward">
-      <Key Name="Channel_01" ValidBit="1"></Key>
-      <Key Name="Channel_02" ValidBit="0"></Key>
-    </Action>
+
   </Device>
 
-  <Device Type="PCI8735">
-    <Action Name="MoveRight">
-      <Key Name="Channel_03" ValidBit="1"></Key>
-      <Key Name="Channel_04" ValidBit="1"></Key>
+  <Device Name="ExtDev" Type="External" DllName="IOUI"  Index="0">
+    <Properties>
+      <Key Name="Axis_00" PreOffset="0.0" PreScale="1.0" DeadZone="0.0" Sensitivity="1.0" Exponent="1.0" Invert="False" InvertEvent="False"></Key>
+    </Properties>
+
+    <Action Name="TestAction">
+      <Key Name="Axis_00"></Key>
     </Action>
+
+    <Axis Name="TestAxis">
+      <Key Name="Axis_00" Scale="1.0" />
+      <Key Name="Right" Scale="1" />
+    </Axis>
+
   </Device>
-  
+
 </IORoot>

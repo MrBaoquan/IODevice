@@ -15,6 +15,17 @@ namespace dh = DevelopHelper;
 dh::IODevice& getIODevice(BSTR);
 
 
+IOCAPI int __stdcall Load()
+{
+	return dh::IODeviceController::Instance().Load();
+}
+
+IOCAPI int __stdcall UnLoad()
+{
+	return dh::IODeviceController::Instance().Unload();
+}
+
+
 IOCAPI int __stdcall BindKey(BSTR InDeviceName, BSTR InKeyName, int InKeyEvent, InputActionSignature InHandler)
 {
 	int _result = -1;
@@ -50,6 +61,32 @@ IOCAPI int __stdcall BindAxis(BSTR InDeviceName, BSTR InAxisName, InputAxisSigna
 	return  _result;
 }
 
+
+IOCAPI BYTE __stdcall GetDOSingle(BSTR InDeviceName, BSTR InKeyName)
+{
+	dh::IODevice& _device = getIODevice(InDeviceName);
+	return _device.GetDeviceDO(BSTR2String(InKeyName).c_str());
+}
+
+IOCAPI int __stdcall GetDOAll(BSTR InDeviceName, BYTE* InStatus)
+{
+	dh::IODevice& _device = getIODevice(InDeviceName);
+	return _device.GetDeviceDO(InStatus);
+}
+
+IOCAPI int __stdcall SetDOSingle(BSTR InDeviceName, BSTR InKeyName, BYTE InStatus)
+{
+	dh::IODevice& _device = getIODevice(InDeviceName);
+	return _device.SetDeviceDO(BSTR2String(InKeyName).c_str(),InStatus);
+}
+
+IOCAPI int __stdcall SetDOAll(BSTR InDeviceName, BYTE* InStatus)
+{
+	dh::IODevice& _device = getIODevice(InDeviceName);
+	return _device.SetDeviceDO(InStatus);
+}
+
+
 /**
 * loop ¼ì²â
 */
@@ -69,4 +106,40 @@ dh::IODevice& getIODevice(BSTR InDeviceName)
 IOCAPI void __stdcall ClearAllBindings()
 {
 	dh::IODeviceController::Instance().ClearBindings();
+}
+
+IOCAPI bool __stdcall GetKey(BSTR InDeviceName, BSTR InKey)
+{
+	dh::IODevice& _device = getIODevice(InDeviceName);
+	return _device.GetKey(BSTR2String(InKey).c_str());
+}
+
+IOCAPI bool __stdcall GetKeyDown(BSTR InDeviceName, BSTR InKey)
+{
+	dh::IODevice& _device = getIODevice(InDeviceName);
+	return _device.GetKeyDown(BSTR2String(InKey).c_str());
+}
+
+IOCAPI bool __stdcall GetKeyUp(BSTR InDeviceName, BSTR InKey)
+{
+	dh::IODevice& _device = getIODevice(InDeviceName);
+	return _device.GetKeyUp(BSTR2String(InKey).c_str());
+}
+
+IOCAPI float __stdcall GetAxis(BSTR InDeviceName, BSTR InAxisName)
+{
+	dh::IODevice& _device = getIODevice(InDeviceName);
+	return _device.GetAxis(BSTR2String(InAxisName).c_str());
+}
+
+IOCAPI float __stdcall GetAxisKey(BSTR InDeviceName, BSTR InKey)
+{
+	dh::IODevice& _device = getIODevice(InDeviceName);
+	return _device.GetAxisKey(BSTR2String(InKey).c_str());
+}
+
+IOCAPI float __stdcall GetKeyDownDuration(BSTR InDeviceName, BSTR InKey)
+{
+	dh::IODevice& _device = getIODevice(InDeviceName);
+	return _device.GetKeyDownDuration(BSTR2String(InKey).c_str());
 }

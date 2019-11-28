@@ -117,6 +117,8 @@ BOOL CIOMFCTestDlg::OnInitDialog()
 
     Func(arr);
 
+	unsigned char a111 = 1;
+	short b222  = static_cast<short>(a111);
    // int length = sizeof(arr) / sizeof(arr[0]);
 
 
@@ -128,6 +130,7 @@ BOOL CIOMFCTestDlg::OnInitDialog()
     //standardDevice.BindKey(EKeys::B, IE_Pressed, this, &CIOMFCTestDlg::OnRMReleased);
     extDev.BindAction("TestAction", IE_Pressed, this, &CIOMFCTestDlg::OnActionWithKeyDown);
 	extDev.BindAction("TestAction", IE_Released, this, &CIOMFCTestDlg::OnActionWithKeyUp);
+	extDev.BindAction("TestAction", IE_Repeat, this, &CIOMFCTestDlg::OnActionWithKeyRepeat);
 
     //standardDevice.BindAxisKey("Axis_50", this, &CIOMFCTestDlg::OnAxis);
 
@@ -247,22 +250,21 @@ void CIOMFCTestDlg::OnAction()
 
 void CIOMFCTestDlg::OnActionWithKeyDown(DevelopHelper::FKey key)
 {
-	std::string _msg = std::string(key.GetName()).append(" pressed");
+	std::string _msg = std::string(key.GetName()).append(" pressed\n");
     OutputDebugStringA(_msg.data());
 	SetDlgItemTextA(this->m_hWnd, label_btn_status, _msg.data());
 }
 
 void CIOMFCTestDlg::OnActionWithKeyUp(DevelopHelper::FKey key)
 {
-	std::string _msg = std::string(key.GetName()).append(" released");
+	std::string _msg = std::string(key.GetName()).append(" released\n");
 	OutputDebugStringA(_msg.data());
 	SetDlgItemTextA(this->m_hWnd, label_btn_status, _msg.data());
 }
 
-void CIOMFCTestDlg::OnActionWithKey3(DevelopHelper::FKey key)
+void CIOMFCTestDlg::OnActionWithKeyRepeat(DevelopHelper::FKey key)
 {
-   OutputDebugStringA( key.GetName());   
-   OutputDebugStringA("\n");
+   OutputDebugStringA(std::string(key.GetName()).append(" repeat\n").data());   
 }
 
 void CIOMFCTestDlg::OnReleaseWithKey(DevelopHelper::FKey key)
@@ -273,7 +275,7 @@ void CIOMFCTestDlg::OnReleaseWithKey(DevelopHelper::FKey key)
 void CIOMFCTestDlg::OnAxis(float val)
 {
 	std::string _msg = std::to_string(val);
-   OutputDebugStringA(_msg.data());
+  // OutputDebugStringA(_msg.data());
    SetDlgItemTextA(this->m_hWnd, label_axis_status, _msg.data());
 }
 

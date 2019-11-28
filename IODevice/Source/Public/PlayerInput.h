@@ -266,7 +266,7 @@ private:
     const FKeyState GetKeyState(const FKey& InKey, uint8 deviceID) const;
 
     /** Process non-axes keystates */
-    void ProcessNonAxesKeys(FKey Inkey, FKeyState* KeyState,uint8 deviceID);
+    void ProcessAllKeys(FKey Inkey, FKeyState* KeyState,uint8 deviceID);
 
     /** Add a chord if key event occurred. */
     void GetChordForKey(const FInputKeyBinding& KeyBinding, std::vector<struct FDelegateDispatchDetails>& FoundChords, std::set<FKey,LessKey>& KeysToConsume, uint8 deviceID);
@@ -283,7 +283,7 @@ private:
     * Given raw keystate value, returns the "massaged" value. Override for any custom behavior,
     * such as input changes dependent on a particular game state.
     */
-    virtual float MassageAxisInput(FKey Key, float RawValue, uint8 deviceID);
+    virtual float MassageKeyRawInput(FKey Key, float RawValue, uint8 deviceID);
 
    /** Collects the chords and the delegates they invoke for an action binding
     * @param ActionBinding - the action to determine whether it occurred

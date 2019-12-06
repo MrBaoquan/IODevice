@@ -26,6 +26,11 @@ public:
     /** List of Action Mappings */
     std::vector<std::vector<struct FInputAxisKeyMapping>> AxisMappings;
 
+	/**
+	 * List of OAction Mappings
+	 */
+	std::vector<std::map<std::string,std::vector<struct FOutputActionKey>>> OActionMappings;
+
     /** Internal structure for storing axis config data. */
     std::vector<std::map<FKey, FInputKeyProperties, LessKey>> KeyProperties;
 

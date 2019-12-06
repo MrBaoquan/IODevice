@@ -8,27 +8,46 @@
 #include "PlayerInput.h"
 #include "InputSettings.h"
 
+#define CLAMP(x, low, high)  (((x) > (high)) ? (high) : (((x) < (low)) ? (low) : (x)))
+
 void DevelopHelper::RawIO::Tick(float DeltaSeconds)
 {
     
 }
 
-int DevelopHelper::RawIO::SetDeviceDO(BYTE* InDOStatus)
+int DevelopHelper::RawIO::SetDO(short* InDOStatus)
 {
     return -1;
 }
 
-int DevelopHelper::RawIO::SetDeviceDO(const FKey InKey, BYTE val)
+
+int DevelopHelper::RawIO::SetDOOn(const char* InOAction)
+{
+	return -1;
+}
+
+
+int DevelopHelper::RawIO::SetDOOff(const char* InOAction)
+{
+	return -1;
+}
+
+int DevelopHelper::RawIO::SetDO(const char* InOAction, short val)
+{
+	return -1;
+}
+
+int DevelopHelper::RawIO::SetDO(const FKey InKey, short val)
 {
     return -1;
 }
 
-int DevelopHelper::RawIO::GetDeviceDO(BYTE* OutDOStatus)
+int DevelopHelper::RawIO::GetDO(short* OutDOStatus)
 {
     return -1;
 }
 
-BYTE DevelopHelper::RawIO::GetDeviceDO(const FKey InKey)
+short DevelopHelper::RawIO::GetDO(const FKey InKey)
 {
     return 0;
 }
@@ -160,5 +179,54 @@ DevelopHelper::FKey DevelopHelper::RawIO::GetAxisKey(uint8 axisIndex)
         fullKeyName = channelKeyPrefix + std::to_string(axisIndex);
     }
     return FKey(fullKeyName.data());
+}
+
+
+DevelopHelper::FKey DevelopHelper::RawIO::GetOAxisKey(uint8 oaxisIndex)
+{
+	std::string channelKeyPrefix("OAxis_");
+	std::string fullKeyName = "";
+	if (oaxisIndex < 0) { return EKeys::Invalid; }
+	if (oaxisIndex < 10)
+	{
+		fullKeyName = channelKeyPrefix + "0" + std::to_string(oaxisIndex);
+	}
+	else
+	{
+		fullKeyName = channelKeyPrefix + std::to_string(oaxisIndex);
+	}
+	return FKey(fullKeyName.data());
+}
+
+float DevelopHelper::RawIO::MassageKeyInput(FKey InKey, float InRawValue)
+{
+	float NewVal = InRawValue;
+	if (KeyProperties.count(InKey))
+	{
+		FInputKeyProperties const* const KeyProps = &KeyProperties.at(InKey);
+		NewVal += KeyProps->PreOffset;
+		NewVal *= KeyProps->PreScale;
+		if (NewVal > 0)
+		{
+			NewVal = max(0.f, NewVal - KeyProps->DeadZone) / (1.f - KeyProps->DeadZone);
+		}
+		else
+		{
+			NewVal = -max(0.f, -NewVal - KeyProps->DeadZone) / (1.f - KeyProps->DeadZone);
+		}
+		if (KeyProps->Exponent != 1.f)
+		{
+			NewVal = std::sin(NewVal)*std::powf(std::abs(NewVal), KeyProps->Exponent);
+		}
+		NewVal *= KeyProps->Sensitivity;
+
+		NewVal = CLAMP(NewVal, KeyProps->Min, KeyProps->Max);
+
+		if (KeyProps->bInvert)
+		{
+			NewVal *= -1.f;
+		}
+	}
+	return NewVal;
 }
 

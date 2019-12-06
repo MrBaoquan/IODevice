@@ -6,41 +6,47 @@
 
 <IORoot>
 
-  <!-- Default device, posses all keyboard & mouse event, this node could not be removed . Must put this node at the top position . -->
+  <!-- Must put this node at the top position . -->
   <!-- Strandar Device -->
-  <Device Name="Standard" Type="Standard">
-    <Properties>
-      <Key Name="Left" DeadZone="0.0" Sensitivity="1.0" Exponent="1.0" Invert="False" InvertEvent="False"></Key>
-    </Properties>
-
-    <!-- Action mapping start -->
-    <Action Name="TestAction">
-      <Key Name="AnyKey"></Key>
-    </Action>
-
-    <!-- Axis mapping start -->
-    
-    <Axis Name="TestAxis">
-      <Key Name="Left" Scale="-1"></Key>
-      <Key Name="Right" Scale="1"></Key>
-    </Axis>
-    <!-- Axis mapping end -->
-
-  </Device>
+  <Device Name="Standard" Type="Standard"></Device>
 
   <Device Name="ExtDev" Type="External" DllName="IOUI"  Index="0">
     <Properties>
-      <Key Name="Axis_00" PreOffset="0.0" PreScale="1.0" DeadZone="0.0" Sensitivity="1.0" Exponent="1.0" Invert="False" InvertEvent="False"></Key>
+      <!--
+        PreOffset: 预偏移值
+        PreScale: 预缩放值
+        Min,Max: 限定区间 [Min,Max]
+        DeadZone: 无效值区间
+        Exponent: 指数增长
+        Sensitivity: 敏感度(缩放值)
+        Invert: 反转 等同于 Sensitivity=-1
+        InvertEvent: 在设备 Type=External 时,针对 Acttion 输入有效 反转IE_Pressed&IE_Released事件
+      -->
+      <Key Name="Axis_00" PreOffset="0.0" PreScale="1.0" Min="0"  Max="5" DeadZone="0.0" Sensitivity="1.0" Exponent="1.0" Invert="False" InvertEvent="False"></Key>
     </Properties>
 
+    <!-- 输入动作 -->
     <Action Name="TestAction">
       <Key Name="Axis_00"></Key>
     </Action>
 
+    <!-- 模拟量输入 -->
     <Axis Name="TestAxis">
+      <!--
+        Scale: 模拟量缩放系数
+      -->
       <Key Name="Axis_00" Scale="1.0" />
       <Key Name="Right" Scale="1" />
     </Axis>
+
+    <!-- 输出动作 -->
+    <OAction Name="TurnOnLight">
+      <!--
+        InvertEvent: 反转输出
+      -->
+      <Key Name="OAxis_00" InvertEvent="True" />
+      <Key Name="OAxis_01" />
+    </OAction>
 
   </Device>
 

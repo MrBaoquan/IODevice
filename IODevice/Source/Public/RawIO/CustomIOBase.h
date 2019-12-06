@@ -22,13 +22,14 @@ public:
 
     virtual void OnFrameEnd() override;
 
+	virtual void Initialize() override;
 protected:
     std::vector<ButtonState> channelsState;
     uint8 deviceIndex;
     std::vector<BYTE> DIStatus;
 
 protected:
-    void Initlialize();
+    void Constructor();
 
 };
 

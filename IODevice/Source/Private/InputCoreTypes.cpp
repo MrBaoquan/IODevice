@@ -266,6 +266,39 @@ const DevelopHelper::FKey DevelopHelper::EKeys::Axis_29("Axis_29");
 const DevelopHelper::FKey DevelopHelper::EKeys::Axis_30("Axis_30");
 const DevelopHelper::FKey DevelopHelper::EKeys::Axis_31("Axis_31");
 
+const DevelopHelper::FKey DevelopHelper::EKeys::OAxis_00("OAxis_00");
+const DevelopHelper::FKey DevelopHelper::EKeys::OAxis_01("OAxis_01");
+const DevelopHelper::FKey DevelopHelper::EKeys::OAxis_02("OAxis_02");
+const DevelopHelper::FKey DevelopHelper::EKeys::OAxis_03("OAxis_03");
+const DevelopHelper::FKey DevelopHelper::EKeys::OAxis_04("OAxis_04");
+const DevelopHelper::FKey DevelopHelper::EKeys::OAxis_05("OAxis_05");
+const DevelopHelper::FKey DevelopHelper::EKeys::OAxis_06("OAxis_06");
+const DevelopHelper::FKey DevelopHelper::EKeys::OAxis_07("OAxis_07");
+const DevelopHelper::FKey DevelopHelper::EKeys::OAxis_08("OAxis_08");
+const DevelopHelper::FKey DevelopHelper::EKeys::OAxis_09("OAxis_09");
+const DevelopHelper::FKey DevelopHelper::EKeys::OAxis_10("OAxis_10");
+const DevelopHelper::FKey DevelopHelper::EKeys::OAxis_11("OAxis_11");
+const DevelopHelper::FKey DevelopHelper::EKeys::OAxis_12("OAxis_12");
+const DevelopHelper::FKey DevelopHelper::EKeys::OAxis_13("OAxis_13");
+const DevelopHelper::FKey DevelopHelper::EKeys::OAxis_14("OAxis_14");
+const DevelopHelper::FKey DevelopHelper::EKeys::OAxis_15("OAxis_15");
+const DevelopHelper::FKey DevelopHelper::EKeys::OAxis_16("OAxis_16");
+const DevelopHelper::FKey DevelopHelper::EKeys::OAxis_17("OAxis_17");
+const DevelopHelper::FKey DevelopHelper::EKeys::OAxis_18("OAxis_18");
+const DevelopHelper::FKey DevelopHelper::EKeys::OAxis_19("OAxis_19");
+const DevelopHelper::FKey DevelopHelper::EKeys::OAxis_20("OAxis_20");
+const DevelopHelper::FKey DevelopHelper::EKeys::OAxis_21("OAxis_21");
+const DevelopHelper::FKey DevelopHelper::EKeys::OAxis_22("OAxis_22");
+const DevelopHelper::FKey DevelopHelper::EKeys::OAxis_23("OAxis_23");
+const DevelopHelper::FKey DevelopHelper::EKeys::OAxis_24("OAxis_24");
+const DevelopHelper::FKey DevelopHelper::EKeys::OAxis_25("OAxis_25");
+const DevelopHelper::FKey DevelopHelper::EKeys::OAxis_26("OAxis_26");
+const DevelopHelper::FKey DevelopHelper::EKeys::OAxis_27("OAxis_27");
+const DevelopHelper::FKey DevelopHelper::EKeys::OAxis_28("OAxis_28");
+const DevelopHelper::FKey DevelopHelper::EKeys::OAxis_29("OAxis_29");
+const DevelopHelper::FKey DevelopHelper::EKeys::OAxis_30("OAxis_30");
+const DevelopHelper::FKey DevelopHelper::EKeys::OAxis_31("OAxis_31");
+
 
 /** Joystick axes */
 

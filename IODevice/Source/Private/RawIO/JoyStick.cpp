@@ -14,7 +14,7 @@
 DevelopHelper::Joystick::Joystick(uint8 InID, uint8 InIndex) :CustomIOBase(InID,InIndex,IOType::Joystick)
 {
     JoyStickServer::Instance().Initialize();
-    Initialize();
+	Constructor();
 }
 
 void DevelopHelper::Joystick::Tick(float DeltaSeconds)
@@ -88,7 +88,13 @@ void DevelopHelper::Joystick::Tick(float DeltaSeconds)
     
 }
 
+
 void DevelopHelper::Joystick::Initialize()
+{
+	__super::Initialize();
+}
+
+void DevelopHelper::Joystick::Constructor()
 {
     jsEntry = JoyStickServer::Instance().GetEntry(deviceIndex);
     if (!jsEntry)
@@ -99,7 +105,7 @@ void DevelopHelper::Joystick::Initialize()
     inputCount = static_cast<uint8>(jsEntry->diDevCaps.dwButtons);
     channelsState = std::vector<ButtonState>(inputCount);
     DIStatus = std::vector<BYTE>(inputCount, 0);
-    CustomIOBase::Initlialize();
+	__super::Constructor();
 }
 
 DevelopHelper::JoyStickServer& DevelopHelper::JoyStickServer::Instance()

@@ -110,6 +110,21 @@ struct FInputAxisKeyMapping
     {}
 };
 
+struct FOutputActionKey
+{
+	/** Multiplier to use for the mapping when accumulating the axis value */
+	float Scale;
+	bool InvertEvent;
+	/** Key to bind it to. */
+	FKey Key;
+
+	FOutputActionKey(FKey InKey,const float InScale=1.f,bool InvertEvent=false)
+		:Key(InKey)
+		,Scale(InScale)
+		,InvertEvent(InvertEvent)
+	{}
+};
+
 class PlayerInput
 {
 public:

@@ -38,26 +38,47 @@ void DevelopHelper::IODevice::BindAction(const char* actionName, InputEvent KeyE
 //	deviceDetails.BindAction(actionName, KeyEvent, Method);
 //}
 
-int DevelopHelper::IODevice::SetDeviceDO(BYTE* InDOStatus)
+int DevelopHelper::IODevice::SetDO(short* InDOStatus)
 {
     if (!this->IsValid()) { return -1; }
     IODeviceDetails& deviceDetails = IODevices::GetDeviceDetail(deviceID);
-    return deviceDetails.SetDeviceDO(InDOStatus);
+    return deviceDetails.SetDO(InDOStatus);
+}
+
+int DevelopHelper::IODevice::SetDO(const char* InOAction, short InValue)
+{
+	if (!this->IsValid()) { return -1; }
+	IODeviceDetails& deviceDetails = IODevices::GetDeviceDetail(deviceID);
+	return deviceDetails.SetDO(InOAction, InValue);
+}
+
+int DevelopHelper::IODevice::SetDOOn(const char* InOAction)
+{
+	if (!this->IsValid()) { return -1; }
+	IODeviceDetails& deviceDetails = IODevices::GetDeviceDetail(deviceID);
+	return deviceDetails.SetDOOn(InOAction);
 }
 
 
-int DevelopHelper::IODevice::SetDeviceDO(const FKey& InKey, BYTE InValue)
+int DevelopHelper::IODevice::SetDOOff(const char* InOAction)
 {
-    if (!this->IsValid()) { return -1; }
-    IODeviceDetails& deviceDetails = IODevices::GetDeviceDetail(deviceID);
-    return deviceDetails.SetDeviceDO(InKey, InValue);
+	if (!this->IsValid()) { return -1; }
+	IODeviceDetails& deviceDetails = IODevices::GetDeviceDetail(deviceID);
+	return deviceDetails.SetDOOff(InOAction);
 }
 
-int DevelopHelper::IODevice::GetDeviceDO(BYTE* OutDOStatus)
+int DevelopHelper::IODevice::SetDO(const FKey& InKey, short InValue)
 {
     if (!this->IsValid()) { return -1; }
     IODeviceDetails& deviceDetails = IODevices::GetDeviceDetail(deviceID);
-    return deviceDetails.GetDeviceDO(OutDOStatus);
+    return deviceDetails.SetDO(InKey, InValue);
+}
+
+int DevelopHelper::IODevice::GetDO(short* OutDOStatus)
+{
+    if (!this->IsValid()) { return -1; }
+    IODeviceDetails& deviceDetails = IODevices::GetDeviceDetail(deviceID);
+    return deviceDetails.GetDO(OutDOStatus);
 }
 
 bool DevelopHelper::IODevice::GetKey(const FKey& InKey)
@@ -102,11 +123,11 @@ float DevelopHelper::IODevice::GetKeyDownDuration(const FKey& InKey)
     return deviceDetails.GetKeyDownDuration(InKey);
 }
 
-DevelopHelper::BYTE DevelopHelper::IODevice::GetDeviceDO(const FKey& InKey)
+short DevelopHelper::IODevice::GetDO(const FKey& InKey)
 {
     if (!this->IsValid()) { return -1; }
     IODeviceDetails& deviceDetails = IODevices::GetDeviceDetail(deviceID);
-    return deviceDetails.GetDeviceDO(InKey);
+    return deviceDetails.GetDO(InKey);
 }
 
 void DevelopHelper::IODevice::ClearBindings()

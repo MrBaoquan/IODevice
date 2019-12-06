@@ -250,21 +250,25 @@ void CIOMFCTestDlg::OnAction()
 
 void CIOMFCTestDlg::OnActionWithKeyDown(DevelopHelper::FKey key)
 {
+	using namespace DevelopHelper;
 	std::string _msg = std::string(key.GetName()).append(" pressed\n");
     OutputDebugStringA(_msg.data());
+	IODeviceController::Instance().GetIODevice("ExtDev").SetDOOn("Start");
 	SetDlgItemTextA(this->m_hWnd, label_btn_status, _msg.data());
 }
 
 void CIOMFCTestDlg::OnActionWithKeyUp(DevelopHelper::FKey key)
 {
+	using namespace DevelopHelper;
 	std::string _msg = std::string(key.GetName()).append(" released\n");
+	IODeviceController::Instance().GetIODevice("ExtDev").SetDOOff("Start");
 	OutputDebugStringA(_msg.data());
 	SetDlgItemTextA(this->m_hWnd, label_btn_status, _msg.data());
 }
 
 void CIOMFCTestDlg::OnActionWithKeyRepeat(DevelopHelper::FKey key)
 {
-   OutputDebugStringA(std::string(key.GetName()).append(" repeat\n").data());   
+ //  OutputDebugStringA(std::string(key.GetName()).append(" repeat\n").data());   
 }
 
 void CIOMFCTestDlg::OnReleaseWithKey(DevelopHelper::FKey key)

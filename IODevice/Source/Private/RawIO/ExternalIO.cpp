@@ -5,7 +5,7 @@
 
 #include "RawIO/ExternalIO.h"
 #include <filesystem>
-#include "PlayerInput.h"
+#include "InputSettings.h"
 #include "CoreTypes/IOTypes.h"
 #include "IOLog.h"
 
@@ -14,13 +14,14 @@ DevelopHelper::ExternalIO::ExternalIO(uint8 InID, uint8 InDeviceIndex, std::stri
                                 ,externalDll(InFullDllName.data())
                                 ,bValid(false)
 {
-    Initialize();
+	Constructor();
 }
 
 void DevelopHelper::ExternalIO::Tick(float DeltaSeconds)
 {
     if (!bValid) { return; }
 
+	// 分发按键输入事件
     if (inputCount > 0)
     {
         if(GetDeviceDI(DIStatus))
@@ -29,7 +30,7 @@ void DevelopHelper::ExternalIO::Tick(float DeltaSeconds)
         }
     }
     
- 
+	// 分发轴输入事件
     if (axisCount > 0)
     {
         if (GetDeviceAD(ADStatus)) 
@@ -38,20 +39,20 @@ void DevelopHelper::ExternalIO::Tick(float DeltaSeconds)
         }
     }
 
+	// 获取输入通道值
     if (outputCount > 0)
     {
-        GetDeviceDO(DOStatus);
+        GetDO(DOStatus);
     }
     
-
 }
 
 void DevelopHelper::ExternalIO::OnFrameEnd()
 {
-    if (bExeDoAtFrameEnd)
+    if (bDoDOAtFrameEnd)
     {
-        SetDeviceDO(DOStatus);
-        bExeDoAtFrameEnd = false;
+        SetDO(DOStatus);
+        bDoDOAtFrameEnd = false;
     }
 }
 
@@ -71,7 +72,7 @@ int DevelopHelper::ExternalIO::ConvertFKeyToChannel(const FKey& InKey)
     return std::atoi(num_str.data());
 }
 
-BYTE DevelopHelper::ExternalIO::GetDeviceDO(const FKey InKey)
+short DevelopHelper::ExternalIO::GetDO(const FKey InKey)
 {
     int numChannel = ConvertFKeyToChannel(InKey);
     if (!IsValidChannel(numChannel,outputCount))
@@ -79,6 +80,13 @@ BYTE DevelopHelper::ExternalIO::GetDeviceDO(const FKey InKey)
         return 0;
     }
     return DOStatus[numChannel];
+}
+
+
+void DevelopHelper::ExternalIO::Initialize()
+{
+	__super::Initialize();
+	OActionMappings = UInputSettings::Instance().OActionMappings[deviceID];
 }
 
 int DevelopHelper::ExternalIO::GetDeviceDI(std::vector<BYTE>& OutDIStatus)
@@ -103,37 +111,87 @@ int DevelopHelper::ExternalIO::GetDeviceAD(std::vector<short>& OutADStatus)
     return retCode;
 }
 
-int DevelopHelper::ExternalIO::GetDeviceDO(std::vector<BYTE>& OutDOStatus)
+int DevelopHelper::ExternalIO::GetDO(std::vector<short>& OutDOStatus)
 {
-    static BYTE exDoStatus[MaxIOCount];
+    static short exDoStatus[MaxIOCount];
     int retCode = externalDll.GetDeviceDO(deviceIndex, exDoStatus);
-    for (size_t index = 0;index < OutDOStatus.size();++index)
-    {
-        OutDOStatus[index] = exDoStatus[index];
-    }
+	if (retCode == 1) {
+		for (size_t index = 0; index < OutDOStatus.size(); ++index)
+		{
+			OutDOStatus[index] = exDoStatus[index];
+		}
+	}
     return retCode;
 }
 
-int DevelopHelper::ExternalIO::GetDeviceDO(BYTE* OutDOStatus)
+int DevelopHelper::ExternalIO::GetDO(short* OutDOStatus)
 {
     if (!bValid) { return 0; }
-    for (int index = 0;index < outputCount;index++)
-    {
-        OutDOStatus[index] = DOStatus[index];
-    }
+	memcpy(OutDOStatus, DOStatus.data(), sizeof(short)*outputCount);
     return 1;
 }
 
-// Set Device Output
-int DevelopHelper::ExternalIO::SetDeviceDO(BYTE* InDOStatus)
+// Set All by raw data
+int DevelopHelper::ExternalIO::SetDO(short* InDOStatus)
 {
     if (!bValid) { return 0; }
-    return externalDll.SetDeviceDO(deviceIndex, InDOStatus);
+	memcpy(DOStatus.data(), InDOStatus, sizeof(short)*outputCount);
+	bDoDOAtFrameEnd = true;
+	return 1;
 }
 
-int DevelopHelper::ExternalIO::SetDeviceDO(std::vector<BYTE>& InDOStatus)
+int DevelopHelper::ExternalIO::SetDOOn(const char* InOAction)
 {
-    static BYTE tmpDOStatus[MaxIOCount];
+	return this->SetDO(InOAction, 1);
+}
+
+
+int DevelopHelper::ExternalIO::SetDOOff(const char* InOAction)
+{
+	return this->SetDO(InOAction,0);
+}
+
+// Set do by oaction
+int DevelopHelper::ExternalIO::SetDO(const char* InOAction, short val)
+{
+	if (!bValid) { return 0; }
+	if (!OActionMappings.count(InOAction)) { return 0; }
+	const std::vector<FOutputActionKey>& _keys = OActionMappings.at(InOAction);
+	for (auto& _actionKey : _keys)
+	{
+		int _channel = ConvertFKeyToChannel(_actionKey.Key);
+		if(!IsValidChannel(_channel,outputCount)){continue;}
+		float _rawValue = static_cast<float>(val);
+		if (_actionKey.InvertEvent) {
+			if (_rawValue == 0.f) {
+				_rawValue = 1.f;
+			}
+			else {
+				_rawValue = 0.f;
+			}
+		}
+		DOStatus[_channel] = static_cast<short>(MassageKeyInput(_actionKey.Key, _rawValue) * _actionKey.Scale);
+	}
+	bDoDOAtFrameEnd = true;
+	return 1;
+}
+
+// Set do by singel channel
+int DevelopHelper::ExternalIO::SetDO(const FKey InKey, short val)
+{
+	int numChannel = ConvertFKeyToChannel(InKey);
+	if (!IsValidChannel(numChannel, outputCount))
+	{
+		return 0;
+	}
+	DOStatus[numChannel] = val;
+	bDoDOAtFrameEnd = true;
+	return 1;
+}
+
+int DevelopHelper::ExternalIO::SetDO(std::vector<short>& InDOStatus)
+{
+    static short tmpDOStatus[MaxIOCount];
     for (size_t index = 0;index < InDOStatus.size();index++)
     {
         tmpDOStatus[index] = DOStatus[index];
@@ -141,25 +199,12 @@ int DevelopHelper::ExternalIO::SetDeviceDO(std::vector<BYTE>& InDOStatus)
     return externalDll.SetDeviceDO(deviceIndex, tmpDOStatus);
 }
 
-
-int DevelopHelper::ExternalIO::SetDeviceDO(const FKey InKey, BYTE val)
-{
-    int numChannel = ConvertFKeyToChannel(InKey);
-    if (!IsValidChannel(numChannel, outputCount))
-    {
-        return 0;
-    }
-    DOStatus[numChannel] = val;
-    bExeDoAtFrameEnd = true;
-    return 1;
-}
-
 DevelopHelper::ExternalIO::~ExternalIO()
 {
     
 }
 
-void DevelopHelper::ExternalIO::Initialize()
+void DevelopHelper::ExternalIO::Constructor()
 {
     int loadDllErrCode = externalDll.GetErrCode();
     if (loadDllErrCode != 0)
@@ -174,12 +219,12 @@ void DevelopHelper::ExternalIO::Initialize()
     axisCount = devInfo->AxisCount;
 
     DIStatus = std::vector<BYTE>(inputCount, 0);
-    DOStatus = std::vector<BYTE>(outputCount, 0);
+    DOStatus = std::vector<short>(outputCount, 0);
     ADStatus = std::vector<short>(axisCount, 0);
 
     channelsState = std::vector<ButtonState>(inputCount);
-    CustomIOBase::Initlialize();
-
+	// 基本变量初始化完成后 再初始化父类
+	__super::Constructor();
     bValid = externalDll.OpenDevice(deviceIndex)==1;
 }
 

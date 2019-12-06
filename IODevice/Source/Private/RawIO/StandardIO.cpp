@@ -254,6 +254,12 @@ LRESULT CALLBACK DevelopHelper::StandardIO::CallWndRetProc(_In_ int nCode, _In_ 
     return CallNextHookEx(IOApplication::hhks[1], nCode, wParam, lParam);
 }
 
+
+void DevelopHelper::StandardIO::Initialize()
+{
+
+}
+
 void DevelopHelper::StandardIO::Tick(float DeltaSeconds)
 {
     RawIO::Tick(DeltaSeconds);
@@ -296,7 +302,7 @@ DevelopHelper::FKey DevelopHelper::StandardIO::TranslateMouseButtonToKey(const E
     return Key;
 }
 
-void DevelopHelper::StandardIO::Initialize()
+void DevelopHelper::StandardIO::Build()
 {
     ImmDisableIME(0);
 }

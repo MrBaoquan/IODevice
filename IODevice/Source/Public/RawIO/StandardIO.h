@@ -43,15 +43,17 @@ public:
     StandardIO(int InID) :RawIO(InID,IOType::Standard) 
     {
         StandardDeviceID = deviceID;
-        Initialize(); 
+        Build(); 
     }
     virtual ~StandardIO() override {}
+
+	virtual void Initialize() override;
 
     virtual void Tick(float DeltaSeconds) override;
     virtual void OnFrameEnd() override;
     static FKey TranslateMouseButtonToKey(const EMouseButtons::Type Button);
 
-    static void Initialize();
+    static void Build();
     static void OnKeyDown(uint32 keyCode, uint32 charCode, bool isRepeat=false);
     static void OnKeyUp(uint32 keyCode, uint32 charCode, bool isRepeat = false);
 

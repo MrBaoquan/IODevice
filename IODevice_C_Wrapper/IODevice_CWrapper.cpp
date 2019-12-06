@@ -62,28 +62,28 @@ IOCAPI int __stdcall BindAxis(BSTR InDeviceName, BSTR InAxisName, InputAxisSigna
 }
 
 
-IOCAPI BYTE __stdcall GetDOSingle(BSTR InDeviceName, BSTR InKeyName)
+IOCAPI short __stdcall GetDOSingle(BSTR InDeviceName, BSTR InKeyName)
 {
 	dh::IODevice& _device = getIODevice(InDeviceName);
-	return _device.GetDeviceDO(BSTR2String(InKeyName).c_str());
+	return _device.GetDO(BSTR2String(InKeyName).c_str());
 }
 
-IOCAPI int __stdcall GetDOAll(BSTR InDeviceName, BYTE* InStatus)
+IOCAPI int __stdcall GetDOAll(BSTR InDeviceName, short* InStatus)
 {
 	dh::IODevice& _device = getIODevice(InDeviceName);
-	return _device.GetDeviceDO(InStatus);
+	return _device.GetDO(InStatus);
 }
 
-IOCAPI int __stdcall SetDOSingle(BSTR InDeviceName, BSTR InKeyName, BYTE InStatus)
+IOCAPI int __stdcall SetDOSingle(BSTR InDeviceName, BSTR InKeyName, short InVal)
 {
 	dh::IODevice& _device = getIODevice(InDeviceName);
-	return _device.SetDeviceDO(BSTR2String(InKeyName).c_str(),InStatus);
+	return _device.SetDO(DevelopHelper::FKey(BSTR2String(InKeyName).data()),InVal);
 }
 
-IOCAPI int __stdcall SetDOAll(BSTR InDeviceName, BYTE* InStatus)
+IOCAPI int __stdcall SetDOAll(BSTR InDeviceName, short* InStatus)
 {
 	dh::IODevice& _device = getIODevice(InDeviceName);
-	return _device.SetDeviceDO(InStatus);
+	return _device.SetDO(InStatus);
 }
 
 
@@ -142,4 +142,22 @@ IOCAPI float __stdcall GetKeyDownDuration(BSTR InDeviceName, BSTR InKey)
 {
 	dh::IODevice& _device = getIODevice(InDeviceName);
 	return _device.GetKeyDownDuration(BSTR2String(InKey).c_str());
+}
+
+IOCAPI int __stdcall SetDOAction(BSTR InDeviceName, BSTR InOAction, short InVal)
+{
+	dh::IODevice& _device = getIODevice(InDeviceName);
+	return _device.SetDO(BSTR2String(InOAction).data(), InVal);
+}
+
+IOCAPI int _stdcall SetDOOn(BSTR InDeviceName, BSTR InOAction)
+{
+	dh::IODevice& _device = getIODevice(InDeviceName);
+	return _device.SetDOOn(BSTR2String(InOAction).data());
+}
+
+IOCAPI int _stdcall SetDOOff(BSTR InDeviceName, BSTR InOAction)
+{
+	dh::IODevice& _device = getIODevice(InDeviceName);
+	return _device.SetDOOff(BSTR2String(InOAction).data());
 }

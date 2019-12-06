@@ -18,11 +18,15 @@ extern "C"
 	IOCAPI int __stdcall BindAction(BSTR InDeviceName, BSTR InActionName, int InKeyEvent, InputActionWithKeySignature InHandler);
 	IOCAPI int __stdcall BindAxis(BSTR InDeviceName, BSTR InAxisName, InputAxisSignature InHandler);
 	
-	IOCAPI BYTE __stdcall GetDOSingle(BSTR InDeviceName,BSTR InKeyName);
-	IOCAPI int __stdcall GetDOAll(BSTR InDeviceName, BYTE* InStatus);
+	IOCAPI short __stdcall GetDOSingle(BSTR InDeviceName,BSTR InKeyName);
+	IOCAPI int __stdcall GetDOAll(BSTR InDeviceName, short* InStatus);
 
-	IOCAPI int __stdcall SetDOSingle(BSTR InDeviceName, BSTR InKeyName, BYTE InVal);
-	IOCAPI int __stdcall SetDOAll(BSTR InDeviceName, BYTE* InStatus);
+	IOCAPI int __stdcall SetDOSingle(BSTR InDeviceName, BSTR InKeyName, short InVal);
+	IOCAPI int __stdcall SetDOAll(BSTR InDeviceName, short* InStatus);
+	
+	IOCAPI int __stdcall SetDOAction(BSTR InDeviceName, BSTR InOAction, short InVal);
+	IOCAPI int _stdcall SetDOOn(BSTR InDeviceName, BSTR InOAction);
+	IOCAPI int _stdcall SetDOOff(BSTR InDeviceName, BSTR InOAction);
 
 	/**
 	 * utility functions

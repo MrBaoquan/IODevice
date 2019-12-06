@@ -33,7 +33,8 @@ public:
 
     virtual void Tick(float DeltaSeconds) override;
 
-    void Initialize();
+	virtual void Initialize() override;
+    void Constructor();
 
     virtual const bool Valid() const { return jsEntry!=nullptr; }
 

@@ -57,7 +57,7 @@ public:
      * @param InDOStatus: 设备所有通道的值
      * @return: 成功返回1 失败返回0
      */
-    int SetDeviceDO(BYTE* InDOStatus);
+    int SetDO(short* InDOStatus);
 
     /**
      * 设置设备单个键的输出状态
@@ -65,21 +65,30 @@ public:
      * @param InValue: 要设置的值
      * @return: 成功返回1 失败返回0
      */
-    int SetDeviceDO(const FKey& InKey, BYTE InValue);
+    int SetDO(const FKey& InKey, short InValue);
+
+	/**
+	 * @param InOAction: 输出动作名称
+	 * @param InValue: 设置的值
+	 * @return: 成功返回1 失败返回0
+	 */
+	int SetDO(const char* InOAction, short InValue);
+	int SetDOOn(const char* InOAction);
+	int SetDOOff(const char* InOAction);
 
     /**
      * 获取设备输出状态
      * @param OutDOStatus: 输出参数,设备所有通道的值
      * @return: 成功返回1 失败返回0
      */
-    int GetDeviceDO(BYTE* OutDOStatus);
+    int GetDO(short* OutDOStatus);
 
     /**
      * 获取设备指定按键输出状态
      * @param InKey: 需要获取的按键
      * @return: 高电平返回1 低电平返回0
      */
-    BYTE GetDeviceDO(const FKey& InKey);
+	short GetDO(const FKey& InKey);
   
     /**
      * 获取设备指定按键状态

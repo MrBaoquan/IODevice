@@ -46,24 +46,20 @@ namespace IODevice_C_CSharpTest
         {
             IODeviceController.Update();
 
-            IODevice _device = IODeviceController.GetIODevice("Standard");
-            byte _test = _device.GetDeviceDO(IOKeyCode.A);
-            byte[] _status = new byte[32];
-            _status[1] = 1;
-            _status[31] = 1;
-            _device.SetDeviceDO(_status);
-            _device.SetDeviceDO(IOKeyCode.A, 1);
+            IODevice _device = IODeviceController.GetIODevice("ExtDev");
             if (_device.GetKeyDown(IOKeyCode.A))
             {
-                Debug.WriteLine("A Pressed");
+                _device.SetDO(IOKeyCode.OAxis_04, 1);
+                _device.SetDOOn("Start");
+
             }
             if (_device.GetKeyUp(IOKeyCode.A))
             {
-                Debug.WriteLine("A Released");
+                //Debug.WriteLine("A Released");
             }
             //Debug.WriteLine(_device.GetKeyDownDuration(IOKeyCode.B));
             //Debug.WriteLine(_device.GetAxisKey(IOKeyCode.MouseX));
-            Debug.WriteLine(_device.GetAxis("MoveLR"));
+            //Debug.WriteLine(_device.GetAxis("MoveLR"));
         }
 
         private void onAnyKeyPressed()

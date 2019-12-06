@@ -241,6 +241,40 @@ struct IOAPI EKeys
     static const FKey Axis_30;
     static const FKey Axis_31;
 
+	static const FKey OAxis_00;
+	static const FKey OAxis_01;
+	static const FKey OAxis_02;
+	static const FKey OAxis_03;
+	static const FKey OAxis_04;
+	static const FKey OAxis_05;
+	static const FKey OAxis_06;
+	static const FKey OAxis_07;
+	static const FKey OAxis_08;
+	static const FKey OAxis_09;
+	static const FKey OAxis_10;
+	static const FKey OAxis_11;
+	static const FKey OAxis_12;
+	static const FKey OAxis_13;
+	static const FKey OAxis_14;
+	static const FKey OAxis_15;
+	static const FKey OAxis_16;
+	static const FKey OAxis_17;
+	static const FKey OAxis_18;
+	static const FKey OAxis_19;
+	static const FKey OAxis_20;
+	static const FKey OAxis_21;
+	static const FKey OAxis_22;
+	static const FKey OAxis_23;
+	static const FKey OAxis_24;
+	static const FKey OAxis_25;
+	static const FKey OAxis_26;
+	static const FKey OAxis_27;
+	static const FKey OAxis_28;
+	static const FKey OAxis_29;
+	static const FKey OAxis_30;
+	static const FKey OAxis_31;
+
+
     /** Joystick axes */
     static const FKey JS_X;                     /* x-axis position              */
     static const FKey JS_Y;                     /* y-axis position              */

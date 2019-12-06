@@ -189,7 +189,6 @@ namespace IOToolkit
         public static readonly Key Button_30 = "Button_30";
         public static readonly Key Button_31 = "Button_31";
 
-
         public static readonly Key Axis_00 = "Axis_00";
         public static readonly Key Axis_01 = "Axis_01";
         public static readonly Key Axis_02 = "Axis_02";
@@ -223,8 +222,42 @@ namespace IOToolkit
         public static readonly Key Axis_30 = "Axis_30";
         public static readonly Key Axis_31 = "Axis_31";
 
+
+        public static readonly Key OAxis_00 = "OAxis_00";
+        public static readonly Key OAxis_01 = "OAxis_01";
+        public static readonly Key OAxis_02 = "OAxis_02";
+        public static readonly Key OAxis_03 = "OAxis_03";
+        public static readonly Key OAxis_04 = "OAxis_04";
+        public static readonly Key OAxis_05 = "OAxis_05";
+        public static readonly Key OAxis_06 = "OAxis_06";
+        public static readonly Key OAxis_07 = "OAxis_07";
+        public static readonly Key OAxis_08 = "OAxis_08";
+        public static readonly Key OAxis_09 = "OAxis_09";
+        public static readonly Key OAxis_10 = "OAxis_10";
+        public static readonly Key OAxis_11 = "OAxis_11";
+        public static readonly Key OAxis_12 = "OAxis_12";
+        public static readonly Key OAxis_13 = "OAxis_13";
+        public static readonly Key OAxis_14 = "OAxis_14";
+        public static readonly Key OAxis_15 = "OAxis_15";
+        public static readonly Key OAxis_16 = "OAxis_16";
+        public static readonly Key OAxis_17 = "OAxis_17";
+        public static readonly Key OAxis_18 = "OAxis_18";
+        public static readonly Key OAxis_19 = "OAxis_19";
+        public static readonly Key OAxis_20 = "OAxis_20";
+        public static readonly Key OAxis_21 = "OAxis_21";
+        public static readonly Key OAxis_22 = "OAxis_22";
+        public static readonly Key OAxis_23 = "OAxis_23";
+        public static readonly Key OAxis_24 = "OAxis_24";
+        public static readonly Key OAxis_25 = "OAxis_25";
+        public static readonly Key OAxis_26 = "OAxis_26";
+        public static readonly Key OAxis_27 = "OAxis_27";
+        public static readonly Key OAxis_28 = "OAxis_28";
+        public static readonly Key OAxis_29 = "OAxis_29";
+        public static readonly Key OAxis_30 = "OAxis_30";
+        public static readonly Key OAxis_31 = "OAxis_31";
+
         /** Joystick axes */
-         /** Joystick axes */
+        /** Joystick axes */
         public static readonly Key JS_X = "JS_X";                     /* x-axis position              */
         public static readonly Key JS_Y = "JS_Y";                     /* y-axis position              */
         public static readonly Key JS_Z = "JS_Z";                     /* z-axis position              */

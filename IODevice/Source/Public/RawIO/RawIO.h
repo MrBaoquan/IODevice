@@ -31,15 +31,19 @@ public:
 
     virtual const bool Valid() const { return false; }
 
-    virtual int SetDeviceDO(BYTE* InDOStatus);
+    virtual int SetDO(short* InDOStatus);
 
-    virtual int SetDeviceDO(const FKey InKey, BYTE val);
+    virtual int SetDO(const FKey InKey, short val);
 
-    virtual int GetDeviceDO(BYTE* OutDOStatus);
+	virtual int SetDO(const char* InOAction, short val);
+	virtual int SetDOOn(const char* InOAction);
+	virtual int SetDOOff(const char* InOAction);
 
-    virtual BYTE GetDeviceDO(const FKey InKey);
+    virtual int GetDO(short* OutDOStatus);
 
-    void Initialize();
+    virtual short GetDO(const FKey InKey);
+
+	virtual void Initialize() = 0;
 
     virtual void OnFrameEnd();
 
@@ -79,6 +83,9 @@ protected:
 
     FKey GetButtonKey(uint8 channelIndex);
     FKey GetAxisKey(uint8 axisIndex);
+	FKey GetOAxisKey(uint8 oaxisIndex);
+
+	float MassageKeyInput(FKey InKey, float InRawValue);
 
 protected:
     uint8 deviceID;

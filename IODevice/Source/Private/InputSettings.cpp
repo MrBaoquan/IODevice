@@ -171,6 +171,36 @@ int DevelopHelper::UInputSettings::Initialize()
                     AxisMappings[deviceID].push_back(axisMapping);
                 }
             }
+
+			// All oactions
+			std::map<std::string, std::vector<FOutputActionKey>> _oactions;
+			for (xml_node<>* axis = device->first_node("OAction"); axis; axis = axis->next_sibling("OAction"))
+			{
+				std::string axisName = axis->first_attribute("Name") ? axis->first_attribute("Name")->value() : IOType::Invalid;
+				if (axisName == IOType::Invalid)
+				{
+					IOLog::Instance().Warning(std::string("Please make sure that all of your Axis node in ") + DeviceName + " have a correct Name attribute. ");
+					continue;
+				}
+				
+				std::vector<FOutputActionKey> _oactionKeys;
+				for (xml_node<>* key = axis->first_node("Key"); key; key = key->next_sibling("Key"))
+				{
+					std::string keyName = key->first_attribute("Name") ? key->first_attribute("Name")->value() : IOType::Invalid;
+					if (keyName == IOType::Invalid)
+					{
+						IOLog::Instance().Warning(std::string("Please make sure that all of your Key node in ") + DeviceName + "/" + axisName + " have a correct Name attribute. ");
+						continue;
+					}
+					float scale = GetNodeValue(key->first_attribute("Scale") ? key->first_attribute("Scale")->value() : "", 1.f);
+					bool _invertEvent = std::string(key->first_attribute("InvertEvent") ? key->first_attribute("InvertEvent")->value() : std::string("")) == "True" ? true : false;
+					_oactionKeys.push_back(FOutputActionKey(FKey(keyName.data()), scale,_invertEvent));
+				}
+				_oactions.insert(std::pair<std::string, std::vector<FOutputActionKey>>(axisName, _oactionKeys));
+			}
+			OActionMappings.push_back(_oactions);
+			
+
             deviceID++;
         }
         // Initlize KeyProperties of RawIO

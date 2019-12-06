@@ -6,8 +6,10 @@ if "%param1%" neq "Win64" (
 	if "%param1%" neq "Win32" exit
 )
 
+call %cd%\..\IOToolkitENV.bat
+
 set src_root_path=%cd%\..\
-set dst_root_path=%cd%\..\IOToolkit\
+set dst_root_path=%cd%\..\%version%\IOToolkit\
 
 set src_binaries_path=%src_root_path%Binaries\%param1%\Release\
 

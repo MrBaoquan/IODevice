@@ -1,0 +1,10 @@
+<!--
+  Copyright (c) mrma617@gmail.com
+  Author: MrBaoquan
+  CreateTime: 2018-5-16 9:10
+-->
+
+<IORoot>
+  <Device Name="Standard" Type="Standard"></Device>
+
+</IORoot>

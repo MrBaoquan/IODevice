@@ -73,28 +73,28 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
     <IncludePath>$(ProjectDir)Source\Public;$(SolutionDir)IOToolkit\include;$(IncludePath)</IncludePath>
-    <LibraryPath>$(SolutionDir)IOToolkit\Binaries\Win32;$(LibraryPath)</LibraryPath>
+    <LibraryPath>$(SolutionDir)Binaries\Win32\Debug;$(LibraryPath)</LibraryPath>
     <OutDir>$(SolutionDIr)Binaries\Win32\Debug</OutDir>
     <IntDir>$(SolutionDIr)Binaries\Win32\Debug\Temp\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
     <OutDir>$(SolutionDIr)Binaries\Win64\Debug</OutDir>
-    <LibraryPath>$(SolutionDir)IOToolkit\Binaries\Win64;$(LibraryPath)</LibraryPath>
+    <LibraryPath>$(SolutionDir)Binaries\Win64\Debug;$(LibraryPath)</LibraryPath>
     <IncludePath>$(ProjectDir)Source\Public;$(SolutionDir)IOToolkit\include;$(IncludePath)</IncludePath>
     <IntDir>$(SolutionDIr)Binaries\Win64\Debug\Temp\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
     <IncludePath>$(ProjectDir)Source\Public;$(SolutionDir)IOToolkit\include;$(IncludePath)</IncludePath>
-    <LibraryPath>$(SolutionDir)IOToolkit\Binaries\Win32;$(LibraryPath)</LibraryPath>
+    <LibraryPath>$(SolutionDir)Binaries\Win32\Release;$(LibraryPath)</LibraryPath>
     <OutDir>$(SolutionDIr)Binaries\Win32\Release</OutDir>
     <IntDir>$(SolutionDIr)Binaries\Win32\Release\Temp</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
     <OutDir>$(SolutionDIr)Binaries\Win64\Release</OutDir>
-    <LibraryPath>$(SolutionDir)IOToolkit\Binaries\Win64;$(LibraryPath)</LibraryPath>
+    <LibraryPath>$(SolutionDir)Binaries\Win64\Release;$(LibraryPath)</LibraryPath>
     <IncludePath>$(ProjectDir)Source\Public;$(SolutionDir)IOToolkit\include;$(IncludePath)</IncludePath>
     <IntDir>$(SolutionDIr)Binaries\Win64\Release\Temp</IntDir>
   </PropertyGroup>

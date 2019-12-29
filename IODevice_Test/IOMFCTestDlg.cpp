@@ -7,6 +7,9 @@
 #include "IOMFCTestDlg.h"
 #include "afxdialogex.h"
 
+#include <chrono>
+#include <ctime>
+
 #pragma comment(lib,"IODevice.lib")
 #include "IOSettings.h"
 
@@ -54,6 +57,9 @@ END_MESSAGE_MAP()
 
 CIOMFCTestDlg::CIOMFCTestDlg(CWnd* pParent /*=NULL*/)
 	: CDialogEx(IDD_IOMFCTEST_DIALOG, pParent)
+	, out_radio_group(0)
+	, radio_read_oaction(0)
+	, radio_input_value(0)
 {
 	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
 }
@@ -61,6 +67,32 @@ CIOMFCTestDlg::CIOMFCTestDlg(CWnd* pParent /*=NULL*/)
 void CIOMFCTestDlg::DoDataExchange(CDataExchange* pDX)
 {
 	CDialogEx::DoDataExchange(pDX);
+	DDX_Control(pDX, IDC_SLIDER1, oaction_slider);
+	DDX_Control(pDX, IDC_EDIT1, oaction_input);
+	DDX_Radio(pDX, IDC_RADIO2, out_radio_group);
+	DDX_Control(pDX, IDC_STATIC1, o_set_value);
+	DDX_Control(pDX, IDC_STATIC2, real_output_text);
+	DDX_Control(pDX, IDC_STATIC11, output_title);
+	DDX_Control(pDX, IDC_STATIC12, input_title);
+	DDX_Control(pDX, IDC_EDIT2, read_oaction_input);
+	DDX_Radio(pDX, IDC_RADIO3, radio_read_oaction);
+	DDX_Control(pDX, IDC_STATIC13, write_label);
+	DDX_Radio(pDX, IDC_RADIO5, radio_input_value);
+	DDX_Control(pDX, IDC_EDIT4, action_input);
+	DDX_Control(pDX, IDC_STATIC3, read_axis_value);
+	DDX_Control(pDX, IDC_STATIC14, read_label);
+}
+
+
+void CIOMFCTestDlg::ReBindActions()
+{
+	using namespace DevelopHelper;
+	IODevice& extDev = IODeviceController::Instance().GetIODevice("ExtDev");
+	extDev.BindAction("TestAction", IE_Pressed, this, &CIOMFCTestDlg::OnActionWithKeyDown);
+	extDev.BindAction("TestAction", IE_Released, this, &CIOMFCTestDlg::OnActionWithKeyUp);
+	extDev.BindAction("TestAction", IE_Repeat, this, &CIOMFCTestDlg::OnActionWithKeyRepeat);
+
+	extDev.BindAxis("TestAxis", this, &CIOMFCTestDlg::OnAxis);
 }
 
 BEGIN_MESSAGE_MAP(CIOMFCTestDlg, CDialogEx)
@@ -69,15 +101,16 @@ BEGIN_MESSAGE_MAP(CIOMFCTestDlg, CDialogEx)
 	ON_WM_QUERYDRAGICON()
     ON_WM_TIMER()
 	ON_STN_CLICKED(label_btn_status, &CIOMFCTestDlg::OnStnClickedbtnstatus)
+	ON_WM_HSCROLL()
+	ON_BN_CLICKED(IDC_RADIO2, &CIOMFCTestDlg::OnBnClickedRadio2)
+	ON_BN_CLICKED(IDC_RADIO1, &CIOMFCTestDlg::OnBnClickedRadio2)
+//	ON_EN_CHANGE(IDC_EDIT2, &CIOMFCTestDlg::OnEnChangeEdit2)
+	ON_BN_CLICKED(IDC_RADIO3, &CIOMFCTestDlg::OnBnClickedRadio3)
+	ON_BN_CLICKED(IDC_RADIO4, &CIOMFCTestDlg::OnBnClickedRadio3)
+	ON_BN_CLICKED(IDC_RADIO5, &CIOMFCTestDlg::OnBnClickedRadio5)
+	ON_BN_CLICKED(IDC_RADIO6, &CIOMFCTestDlg::OnBnClickedRadio5)
+	ON_BN_CLICKED(IDC_BUTTON2, &CIOMFCTestDlg::OnBnClickedButton2)
 END_MESSAGE_MAP()
-
-
-void Func(DevelopHelper::BYTE arr[])
-{
-    int size_a = sizeof(arr);
-    int size_b = sizeof(arr[0]);
-    int result = size_a / size_b;
-}
 
 // CIOMFCTestDlg 消息处理程序
 
@@ -111,54 +144,37 @@ BOOL CIOMFCTestDlg::OnInitDialog()
 	SetIcon(m_hIcon, FALSE);		// 设置小图标
 
     using namespace DevelopHelper;
-    
-
-    DevelopHelper::BYTE arr[20];
-
-    Func(arr);
-
-	unsigned char a111 = 1;
-	short b222  = static_cast<short>(a111);
-   // int length = sizeof(arr) / sizeof(arr[0]);
-
 
     /*IOSettings::Instance().SetIOConfigPath("IODevice.xml");*/
 	IODeviceController::Instance().Load();
 	IODevice& extDev = IODeviceController::Instance().GetIODevice("ExtDev");
    
-	//IODeviceController::Instance().GetIODevice("Standard").BindKey(EKeys::A, IE_Pressed, this, &CIOMFCTestDlg::FunctionA);
-    //standardDevice.BindKey(EKeys::B, IE_Pressed, this, &CIOMFCTestDlg::OnRMReleased);
-    extDev.BindAction("TestAction", IE_Pressed, this, &CIOMFCTestDlg::OnActionWithKeyDown);
-	extDev.BindAction("TestAction", IE_Released, this, &CIOMFCTestDlg::OnActionWithKeyUp);
-	extDev.BindAction("TestAction", IE_Repeat, this, &CIOMFCTestDlg::OnActionWithKeyRepeat);
+	this->ReBindActions();
 
-    //standardDevice.BindAxisKey("Axis_50", this, &CIOMFCTestDlg::OnAxis);
-
-   // standardDevice.BindAction("Action2", IE_Pressed, this, &CIOMFCTestDlg::OnActionWithKey2);
-    //standardDevice.BindAction("Action3", IE_Pressed, this, &CIOMFCTestDlg::OnActionWithKey3);
-    //standardDevice.BindAction("AnyKey", IE_Released, this, &CIOMFCTestDlg::OnReleaseWithKey);
- 
-    extDev.BindAxis("TestAxis", this, &CIOMFCTestDlg::OnAxis);
-
-    static int a = 1;
-    static bool b = false;
-
-   /* IODeviceController::Instance().GetIODevice(DeviceID::PCI2312A).
-        BindKey(EKeys::Channel_02, IE_Repeat, this, &CIOMFCTestDlg::OnKeyAPressed);*/
-    //PCI2312A.BindAction("Jump", IE_Pressed, this, &CIOMFCTestDlg::DynamicFunc, &a, &b);
     // TODO: 在此添加额外的初始化代码
     SetTimer(1, 0.02, NULL);
 
+	oaction_slider.SetRange(0, 1000);
+	oaction_slider.SetTicFreq(10);
+	action_input.SetWindowTextW(TEXT("Axis_00"));
+	oaction_input.SetWindowTextW(TEXT("OAxis_00"));
+	read_oaction_input.SetWindowTextW(TEXT("OAxis_00"));
+	
+	CFont _font;
+	_font.CreateFont(24, 0, 0, 0, FW_NORMAL, FALSE, FALSE, 0, ANSI_CHARSET,OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY, DEFAULT_PITCH | FF_SWISS,TEXT("微软雅黑"));
+	oaction_input.SetFont(&_font);
+	
+	read_oaction_input.SetFont(&_font);
+	action_input.SetFont(&_font);
 
-	unsigned long _min = 0;
-	unsigned long _max = ULONG_MAX-2;
-	short _delta = _max - _min;
-	long _long = _max;
-	unsigned short _xx = _max;
-	unsigned short _shortValueMin = static_cast<unsigned short>((static_cast<float>(_min) / ULONG_MAX) * USHORT_MAX);
-	unsigned short _shortValueMax = static_cast<unsigned short>((static_cast<double>(100000.0) / ULONG_MAX) * USHORT_MAX);
-
-
+	CFont _titleFont;
+	_titleFont.CreateFont(20, 0, 0, 0, FW_BOLD, TRUE, FALSE, 0, ANSI_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, ANTIALIASED_QUALITY, DEFAULT_PITCH | FF_SWISS, TEXT("Arial"));
+	output_title.SetFont(&_titleFont);
+	input_title.SetFont(&_titleFont);
+	
+	write_label.SetFont(&_titleFont);
+	read_label.SetFont(&_titleFont);
+	
 	return TRUE;  // 除非将焦点设置到控件，否则返回 TRUE
 }
 
@@ -219,41 +235,32 @@ void CIOMFCTestDlg::OnTimer(UINT_PTR nIDEvent)
     //OutputDebugStringA("Update...\n");
     IODeviceController::Instance().Update();
 
+	std::string _output = GetOInputStr(read_oaction_input);
+	float _outputValue = 0;
+	if (radio_read_oaction == 0) {
+		_outputValue = IODeviceController::Instance().GetIODevice("ExtDev").GetDO(FKey(_output.data()));
+	}
+	else if (radio_read_oaction == 1) {
+		_outputValue = IODeviceController::Instance().GetIODevice("ExtDev").GetDO(_output.data());
+	}
+	real_output_text.SetWindowTextW(std::to_wstring(_outputValue).data());
+
+	std::string _axis = GetOInputStr(action_input);
+	float _axisInputValue = 0;
+	if (radio_input_value == 0) {
+		_axisInputValue = IODeviceController::Instance().GetIODevice("ExtDev").GetAxisKey(FKey(_axis.data()));
+	}
+	else if (radio_input_value == 1) {
+		_axisInputValue = IODeviceController::Instance().GetIODevice("ExtDev").GetAxis(_axis.data());
+	}
+	read_axis_value.SetWindowTextW(std::to_wstring(_axisInputValue).data());
     CDialogEx::OnTimer(nIDEvent);
-}
-
-void CIOMFCTestDlg::DynamicFunc(int* a, bool* b)
-{
-    *a = *a + 1;
-    int c = *a;
-}
-
-void CIOMFCTestDlg::OnMoveLR(float val)
-{
-    //OutputDebugStringA(std::string("Move LR ").append(std::to_string(val).append("\n")).c_str());
-}
-
-void CIOMFCTestDlg::OnMoveUD(float val)
-{
-    //OutputDebugStringA(std::string("Move UD ").append(std::to_string(val).append("\n")).c_str());
-}
-
-void CIOMFCTestDlg::OnMouseMove(float val)
-{
-    //OutputDebugStringA(std::to_string(val).append("\n").data());
-}
-
-void CIOMFCTestDlg::OnAction()
-{
-    OutputDebugStringA("Test action \n");
 }
 
 void CIOMFCTestDlg::OnActionWithKeyDown(DevelopHelper::FKey key)
 {
 	using namespace DevelopHelper;
 	std::string _msg = std::string(key.GetName()).append(" pressed\n");
-    OutputDebugStringA(_msg.data());
-	IODeviceController::Instance().GetIODevice("ExtDev").SetDOOn("Start");
 	SetDlgItemTextA(this->m_hWnd, label_btn_status, _msg.data());
 }
 
@@ -261,20 +268,14 @@ void CIOMFCTestDlg::OnActionWithKeyUp(DevelopHelper::FKey key)
 {
 	using namespace DevelopHelper;
 	std::string _msg = std::string(key.GetName()).append(" released\n");
-	IODeviceController::Instance().GetIODevice("ExtDev").SetDOOff("Start");
-	OutputDebugStringA(_msg.data());
 	SetDlgItemTextA(this->m_hWnd, label_btn_status, _msg.data());
 }
 
 void CIOMFCTestDlg::OnActionWithKeyRepeat(DevelopHelper::FKey key)
 {
- //  OutputDebugStringA(std::string(key.GetName()).append(" repeat\n").data());   
+	//OutputDebugStringA(std::string(key.GetName()).append(" repeat\n").data());   
 }
 
-void CIOMFCTestDlg::OnReleaseWithKey(DevelopHelper::FKey key)
-{
-    OutputDebugStringA(std::string(key.GetName()).append(" released \n").data());
-}
 
 void CIOMFCTestDlg::OnAxis(float val)
 {
@@ -283,53 +284,12 @@ void CIOMFCTestDlg::OnAxis(float val)
    SetDlgItemTextA(this->m_hWnd, label_axis_status, _msg.data());
 }
 
-void CIOMFCTestDlg::MoveRight()
+std::string CIOMFCTestDlg::GetOInputStr(const CEdit& _edit)
 {
-    OutputDebugStringA("Move Right \n");
-}
-
-void CIOMFCTestDlg::OnFire()
-{
-
-    OutputDebugStringA("Fire \n");
-}
-
-void CIOMFCTestDlg::Jump()
-{
-    OutputDebugStringA("Jump \n");
-}
-
-void CIOMFCTestDlg::FunctionA()
-{
-	using namespace  DevelopHelper;
-	IODeviceController::Instance().Unload();
-	IODeviceController::Instance().Load();
-	IODeviceController::Instance().GetIODevice("Standard").BindKey(EKeys::A, IE_Pressed, this, &CIOMFCTestDlg::FunctionB);
-	OutputDebugStringA("FunctionA");
-}
-
-void CIOMFCTestDlg::FunctionB()
-{
-	using namespace  DevelopHelper;
-	IODeviceController::Instance().Unload();
-	IODeviceController::Instance().Load();
-	IODeviceController::Instance().GetIODevice("Standard").BindKey(EKeys::A, IE_Pressed, this, &CIOMFCTestDlg::FunctionA);
-	OutputDebugStringA("FunctionB");
-}
-
-void CIOMFCTestDlg::OnKeyAPressed()
-{
-    OutputDebugStringA("Key Button_100 Pressed. \n");
-}
-
-void CIOMFCTestDlg::OnKeyBPressed()
-{
-    OutputDebugStringA("Key B Pressed. \n");
-}
-
-void CIOMFCTestDlg::OnClear()
-{
-    OutputDebugStringA("\n\n\n\n\r\n");
+	CString _cstringVal;
+	_edit.GetWindowTextW(_cstringVal);
+	std::wstring _wstringVal(_cstringVal);
+	return std::string(_wstringVal.begin(), _wstringVal.end());
 }
 
 void CIOMFCTestDlg::OnLMDoubleClick()
@@ -340,5 +300,81 @@ void CIOMFCTestDlg::OnLMDoubleClick()
 
 void CIOMFCTestDlg::OnStnClickedbtnstatus()
 {
+	// TODO: 在此添加控件通知处理程序代码
+}
+
+
+void CIOMFCTestDlg::OnHScroll(UINT nSBCode, UINT nPos, CScrollBar* pScrollBar)
+{
+	using namespace DevelopHelper;
+	
+	std::string _resultStr = this->GetOInputStr(oaction_input);
+	int _sliderValue = oaction_slider.GetPos();
+	o_set_value.SetWindowTextW(std::to_wstring(_sliderValue).data());
+	switch (out_radio_group)
+	{
+	case 0:
+		IODeviceController::Instance().GetIODevice("ExtDev").SetDO(FKey(_resultStr.data()), _sliderValue);
+		break;
+	case 1:
+		IODeviceController::Instance().GetIODevice("ExtDev").SetDO(_resultStr.data(), _sliderValue);
+		break;
+	default:
+		break;
+	}
+
+	// TODO: 在此添加消息处理程序代码和/或调用默认值
+	CDialogEx::OnHScroll(nSBCode, nPos, pScrollBar);
+}
+
+
+void CIOMFCTestDlg::OnBnClickedRadio2()
+{
+	// TODO: 在此添加控件通知处理程序代码
+	UpdateData(TRUE);
+}
+
+
+void CIOMFCTestDlg::AppendLog(std::wstring InMsg)
+{
+
+	auto now = std::chrono::system_clock::now();
+	std::time_t start_time = std::chrono::system_clock::to_time_t(now);
+	char timedisplay[100];
+	struct tm buf;
+	errno_t err = localtime_s(&buf, &start_time);
+
+	std::strftime(timedisplay, sizeof(timedisplay), "%Y-%m-%d %H:%M:%S", &buf);
+	std::string _time = timedisplay;
+	std::wstring _wTime(_time.begin(), _time.end());
+
+	CString _content;
+	//log_view.GetWindowTextW(_content);
+	std::wstring _contentStr(_content.GetString());
+	std::wstring _log = _wTime + TEXT(":__________") + InMsg + TEXT("\r\n");
+	_contentStr.append(_log);
+	//log_view.SetWindowTextW(_contentStr.data());
+}
+
+void CIOMFCTestDlg::OnBnClickedRadio3()
+{
+	UpdateData(TRUE);
+	// TODO: 在此添加控件通知处理程序代码
+}
+
+
+void CIOMFCTestDlg::OnBnClickedRadio5()
+{
+	UpdateData(TRUE);
+	// TODO: 在此添加控件通知处理程序代码
+}
+
+
+void CIOMFCTestDlg::OnBnClickedButton2()
+{
+	DevelopHelper::IODeviceController::Instance().Unload();
+	DevelopHelper::IODeviceController::Instance().Load();
+	this->ReBindActions();
+	AppendLog(TEXT("Hot reload succeed"));
 	// TODO: 在此添加控件通知处理程序代码
 }

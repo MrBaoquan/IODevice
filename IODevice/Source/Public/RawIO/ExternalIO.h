@@ -50,14 +50,16 @@ public:
 
     virtual const bool Valid() const override { return bValid; }
 
-    virtual int SetDO(short* InDOStatus) override;
-    virtual int SetDO(const FKey InKey, short val) override;
-	virtual int SetDO(const char* InOAction, short val) override;
+    virtual int SetDO(float* InDOStatus) override;
+    virtual int SetDO(const FKey& InKey, float val) override;
+	virtual int SetDO(const char* InOAction, float val, bool bIgnoreMassage=false);
 	virtual int SetDOOn(const char* InOAction) override;
 	virtual int SetDOOff(const char* InOAction) override;
+	virtual int DOImmediate() override;
 
-    virtual int GetDO(short* OutDOStatus) override;
-    virtual short GetDO(const FKey InKey) override;
+    virtual int GetDO(float* OutDOStatus) override;
+    virtual float GetDO(const FKey InKey) override;
+	virtual float GetDO(const char* InOAction) override;
 	virtual void Initialize() override;
     virtual ~ExternalIO() override;
 
@@ -65,8 +67,8 @@ private:
 	void Constructor();
     bool IsValidChannel(int InChannel, int InMaxNumber);
 
-    int SetDO(std::vector<short>& InDOStatus);
-    int GetDO(std::vector<short>& OutDOStatus);
+    int SetDO(std::vector<float>& InDOStatus);
+    int GetDO(std::vector<float>& OutDOStatus);
 
     int GetDeviceDI(std::vector<BYTE>& OutDIStatus);
 
@@ -75,9 +77,13 @@ private:
     int ConvertFKeyToChannel(const FKey& InKey);
 private:
     bool bValid;
-    bool bDoDOAtFrameEnd = false;
+    bool bDOChanged = false;
     IOUIDLL externalDll;
-    std::vector<short> DOStatus;
+    std::vector<float> DOStatus;
+	/**
+	 *	用于保存用户设置的原始输出值
+	 */
+	std::map<std::string, float> rawDOStatus;
     std::vector<short> ADStatus;
 	std::map<std::string, std::vector<FOutputActionKey>> OActionMappings;
 };

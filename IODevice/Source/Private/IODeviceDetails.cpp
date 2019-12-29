@@ -169,7 +169,7 @@ void DevelopHelper::IODeviceDetails::BindAction(std::string ActionName, const In
     AddActionBinding(AB);
 }
 
-int DevelopHelper::IODeviceDetails::SetDO(short* InDOStatus)
+int DevelopHelper::IODeviceDetails::SetDO(float* InDOStatus)
 {
     return rawIO ? rawIO->SetDO(InDOStatus) : -1;
 }
@@ -186,19 +186,30 @@ int DevelopHelper::IODeviceDetails::SetDOOff(const char* InOAction)
 	return rawIO ? rawIO->SetDOOff(InOAction) : -1;
 }
 
-int DevelopHelper::IODeviceDetails::SetDO(const char* InOAction, short InValue)
+int DevelopHelper::IODeviceDetails::DOImmediate()
 {
-	return rawIO ? rawIO->SetDO(InOAction, InValue):-1;
+	return rawIO?rawIO->DOImmediate():-1;
 }
 
-int DevelopHelper::IODeviceDetails::SetDO(const FKey& InKey, short InValue)
+int DevelopHelper::IODeviceDetails::SetDO(const char* InOAction, float InValue, bool bIngoreMassage/*bIngoreMassage=false*/)
+{
+	return rawIO ? rawIO->SetDO(InOAction, InValue,bIngoreMassage):-1;
+}
+
+int DevelopHelper::IODeviceDetails::SetDO(const FKey& InKey, float InValue)
 {
     return rawIO ? rawIO->SetDO(InKey, InValue) : -1;
 }
 
-int DevelopHelper::IODeviceDetails::GetDO(short* OutDOStatus)
+int DevelopHelper::IODeviceDetails::GetDO(float* OutDOStatus)
 {
     return rawIO ? rawIO->GetDO(OutDOStatus) : -1;
+}
+
+
+float DevelopHelper::IODeviceDetails::GetDO(const char* InOAction)
+{
+	return rawIO ? rawIO->GetDO(InOAction) : -1;
 }
 
 bool DevelopHelper::IODeviceDetails::GetKey(const FKey& InKey)
@@ -231,7 +242,7 @@ float DevelopHelper::IODeviceDetails::GetKeyDownDuration(const FKey& InKey)
     return PlayerInput::Instance().GetKeyDownTime(InKey, device.GetID());
 }
 
-short DevelopHelper::IODeviceDetails::GetDO(const FKey& InKey)
+float DevelopHelper::IODeviceDetails::GetDO(const FKey& InKey)
 {
     return rawIO ? rawIO->GetDO(InKey) : -1;
 }

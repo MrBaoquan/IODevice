@@ -15,7 +15,7 @@ void DevelopHelper::RawIO::Tick(float DeltaSeconds)
     
 }
 
-int DevelopHelper::RawIO::SetDO(short* InDOStatus)
+int DevelopHelper::RawIO::SetDO(float* InDOStatus)
 {
     return -1;
 }
@@ -32,22 +32,32 @@ int DevelopHelper::RawIO::SetDOOff(const char* InOAction)
 	return -1;
 }
 
-int DevelopHelper::RawIO::SetDO(const char* InOAction, short val)
+int DevelopHelper::RawIO::DOImmediate()
+{
+	return 0;
+}
+
+int DevelopHelper::RawIO::SetDO(const char* InOAction, float val, bool bIgnoreMassage/*=false*/)
 {
 	return -1;
 }
-
-int DevelopHelper::RawIO::SetDO(const FKey InKey, short val)
+int DevelopHelper::RawIO::SetDO(const FKey& InKey, float val)
 {
     return -1;
 }
 
-int DevelopHelper::RawIO::GetDO(short* OutDOStatus)
+int DevelopHelper::RawIO::GetDO(float* OutDOStatus)
 {
     return -1;
 }
 
-short DevelopHelper::RawIO::GetDO(const FKey InKey)
+
+float DevelopHelper::RawIO::GetDO(const char* InOAction)
+{
+	return 0;
+}
+
+float DevelopHelper::RawIO::GetDO(const FKey InKey)
 {
     return 0;
 }

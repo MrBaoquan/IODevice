@@ -62,30 +62,60 @@ IOCAPI int __stdcall BindAxis(BSTR InDeviceName, BSTR InAxisName, InputAxisSigna
 }
 
 
-IOCAPI short __stdcall GetDOSingle(BSTR InDeviceName, BSTR InKeyName)
+IOCAPI float __stdcall GetDOSingle(BSTR InDeviceName, BSTR InKeyName)
 {
 	dh::IODevice& _device = getIODevice(InDeviceName);
 	return _device.GetDO(BSTR2String(InKeyName).c_str());
 }
 
-IOCAPI int __stdcall GetDOAll(BSTR InDeviceName, short* InStatus)
+IOCAPI float __stdcall GetDOAction(BSTR InDeviceName, BSTR InOAction)
+{
+	dh::IODevice& _device = getIODevice(InDeviceName);
+	return _device.GetDO(BSTR2String(InOAction).data());
+}
+
+IOCAPI int __stdcall GetDOAll(BSTR InDeviceName, float* InStatus)
 {
 	dh::IODevice& _device = getIODevice(InDeviceName);
 	return _device.GetDO(InStatus);
 }
 
-IOCAPI int __stdcall SetDOSingle(BSTR InDeviceName, BSTR InKeyName, short InVal)
+IOCAPI int __stdcall SetDOSingle(BSTR InDeviceName, BSTR InKeyName, float InVal)
 {
 	dh::IODevice& _device = getIODevice(InDeviceName);
 	return _device.SetDO(DevelopHelper::FKey(BSTR2String(InKeyName).data()),InVal);
 }
 
-IOCAPI int __stdcall SetDOAll(BSTR InDeviceName, short* InStatus)
+IOCAPI int __stdcall SetDOAll(BSTR InDeviceName, float* InStatus)
 {
 	dh::IODevice& _device = getIODevice(InDeviceName);
 	return _device.SetDO(InStatus);
 }
 
+
+IOCAPI int __stdcall SetDOAction(BSTR InDeviceName, BSTR InOAction, float InVal, bool bIngoreMassage/*=false*/)
+{
+	dh::IODevice& _device = getIODevice(InDeviceName);
+	return _device.SetDO(BSTR2String(InOAction).data(), InVal, bIngoreMassage);
+}
+
+IOCAPI int _stdcall SetDOOn(BSTR InDeviceName, BSTR InOAction)
+{
+	dh::IODevice& _device = getIODevice(InDeviceName);
+	return _device.SetDOOn(BSTR2String(InOAction).data());
+}
+
+IOCAPI int _stdcall SetDOOff(BSTR InDeviceName, BSTR InOAction)
+{
+	dh::IODevice& _device = getIODevice(InDeviceName);
+	return _device.SetDOOff(BSTR2String(InOAction).data());
+}
+
+IOCAPI int DOImmediate(BSTR InDeviceName)
+{
+	dh::IODevice& _device = getIODevice(InDeviceName);
+	return _device.DOImmediate();
+}
 
 /**
 * loop ¼ì²â
@@ -142,22 +172,4 @@ IOCAPI float __stdcall GetKeyDownDuration(BSTR InDeviceName, BSTR InKey)
 {
 	dh::IODevice& _device = getIODevice(InDeviceName);
 	return _device.GetKeyDownDuration(BSTR2String(InKey).c_str());
-}
-
-IOCAPI int __stdcall SetDOAction(BSTR InDeviceName, BSTR InOAction, short InVal)
-{
-	dh::IODevice& _device = getIODevice(InDeviceName);
-	return _device.SetDO(BSTR2String(InOAction).data(), InVal);
-}
-
-IOCAPI int _stdcall SetDOOn(BSTR InDeviceName, BSTR InOAction)
-{
-	dh::IODevice& _device = getIODevice(InDeviceName);
-	return _device.SetDOOn(BSTR2String(InOAction).data());
-}
-
-IOCAPI int _stdcall SetDOOff(BSTR InDeviceName, BSTR InOAction)
-{
-	dh::IODevice& _device = getIODevice(InDeviceName);
-	return _device.SetDOOff(BSTR2String(InOAction).data());
 }

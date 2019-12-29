@@ -34,7 +34,6 @@ namespace IODevice_C_CSharpTest
             _device.BindAction("TestAction", InputEvent.IE_Pressed, this.onActionPressed);
             _device.BindAction("TestAction", InputEvent.IE_Released, this.onActionReleased);
 
-
             _device.BindKey(IOKeyCode.AnyKey, InputEvent.IE_Pressed, this.onAnyKeyPressed);
             _device.BindKey(IOKeyCode.AnyKey, InputEvent.IE_Released, this.onAnyKeyReleased);
 
@@ -49,12 +48,13 @@ namespace IODevice_C_CSharpTest
             IODevice _device = IODeviceController.GetIODevice("ExtDev");
             if (_device.GetKeyDown(IOKeyCode.A))
             {
-                _device.SetDO(IOKeyCode.OAxis_04, 1);
-                _device.SetDOOn("Start");
-
+                _device.SetDO("Start",450000.0f);
+                Debug.WriteLine(_device.GetDO("Start"));
             }
             if (_device.GetKeyUp(IOKeyCode.A))
             {
+                _device.SetDO("Start",0.0f);
+                Debug.WriteLine(_device.GetDO("Start"));
                 //Debug.WriteLine("A Released");
             }
             //Debug.WriteLine(_device.GetKeyDownDuration(IOKeyCode.B));

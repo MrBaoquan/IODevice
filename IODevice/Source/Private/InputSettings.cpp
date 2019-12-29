@@ -240,6 +240,7 @@ int DevelopHelper::UInputSettings::Uninitialize()
 	AxisMappings.clear();
 	ActionMappings.clear();
 	KeyProperties.clear();
+	OActionMappings.clear();
 
 	return 0;
 }

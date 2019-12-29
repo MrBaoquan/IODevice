@@ -5,61 +5,28 @@
 -->
 
 <IORoot>
-  
-<!-- Default device, posses all keyboard & mouse event, this node could not be removed . Must put this node at the top position . -->
-<!-- Strandar Device -->
-  <Device Name="Standard" Type="Standard">
-      <Properties>
-          <Key Name="Left" DeadZone="0.0" Sensitivity="1.0" Exponent="1.0" Invert="False" InvertEvent="False"></Key>
-      </Properties>
-    
-      <!-- Action mapping start -->
-      <Action Name="TestAction">
-          <Key Name="AnyKey"></Key>
-      </Action>
-    
-      <Action Name="Fire">
-          <Key Name="LeftMouseButton"></Key>
-      </Action>
-      <!-- Action mapping end -->
-    
-      <!-- Axis mapping start -->
-      <Axis Name="MoveLR">
-          <Key Name="Left" Scale="-1"></Key>
-          <Key Name="Right" Scale="1"></Key>
-      </Axis>
-      <!-- Axis mapping end -->
- 
-  </Device>
 
-  <Device Name="ExtDev" Type="External" DllName="IOUI"  Index="0">
+  <!-- Default device, posses all keyboard & mouse event, this node could not be removed . Must put this node at the top position . -->
+  <!-- Strandar Device -->
+  <Device Name="Standard" Type="Standard"></Device>
+
+  <Device Name="ExtDev" Type="External" DllName="PCI2312A"  Index="0">
     <Properties>
       <Key Name="Axis_00" PreOffset="0.0" PreScale="1.0" Max="5" DeadZone="0.5" Sensitivity="1.0" Exponent="1.0" Invert="False" InvertEvent="False"></Key>
     </Properties>
-
-    <!-- Axis mapping start -->
-    <Axis Name="MoveLR">
-      <Key Name="Left" Scale="-1"></Key>
-      <Key Name="Right" Scale="1"></Key>
-    </Axis>
-    <!-- Axis mapping end -->
 
     <Action Name="TestAction">
       <Key Name="AnyKey"></Key>
     </Action>
 
     <Axis Name="TestAxis">
-      <Key Name="Axis_00" Scale="1.0" />
       <Key Name="Right" Scale="1" />
+      <Key Name="Left" Scale="-5" />
     </Axis>
-    
+
     <OAction Name="Start">
-      <Key Name="OAxis_00" Scale="1" InvertEvent="False"></Key>
-      <Key Name="OAxis_01" Scale="1" InvertEvent="False"></Key>
-    </OAction>
-    <OAction Name="Start1">
-      <Key Name="OAxis_02" Scale="1"></Key>
-      <Key Name="OAxis_03" Scale="1"></Key>
+      <Key Name="OAxis_00" Scale="10" InvertEvent="False"></Key>
+      <Key Name="OAxis_02" Scale="1" InvertEvent="False"></Key>
     </OAction>
 
   </Device>

@@ -35,25 +35,31 @@ namespace IOToolkit.Core
         public static extern int BindAxis([MarshalAs(UnmanagedType.BStr)] string InDeviceName, [MarshalAs(UnmanagedType.BStr)] string InAxisName, NativeAxisSignature InHandler);
 
         [DllImport(DllName,CallingConvention = CallingConvention.StdCall)]
-        public static extern short GetDOSingle([MarshalAs(UnmanagedType.BStr)] string InDeviceName, [MarshalAs(UnmanagedType.BStr)] string InKeyName);
+        public static extern float GetDOSingle([MarshalAs(UnmanagedType.BStr)] string InDeviceName, [MarshalAs(UnmanagedType.BStr)] string InKeyName);
 
         [DllImport(DllName, CallingConvention = CallingConvention.StdCall)]
-        public static extern int GetDOAll([MarshalAs(UnmanagedType.BStr)] string InDeviceName, [MarshalAs(UnmanagedType.LPArray)] short[] DOStatus);
+        public static extern float GetDOAction([MarshalAs(UnmanagedType.BStr)] string InDeviceName, [MarshalAs(UnmanagedType.BStr)] string InOAction);
 
         [DllImport(DllName, CallingConvention = CallingConvention.StdCall)]
-        public static extern int SetDOSingle([MarshalAs(UnmanagedType.BStr)] string InDeviceName, [MarshalAs(UnmanagedType.BStr)] string InKeyName, short InStatus);
+        public static extern int GetDOAll([MarshalAs(UnmanagedType.BStr)] string InDeviceName, [MarshalAs(UnmanagedType.LPArray)] float[] DOStatus);
 
         [DllImport(DllName, CallingConvention = CallingConvention.StdCall)]
-        public static extern int SetDOAll([MarshalAs(UnmanagedType.BStr)] string InDeviceName, [MarshalAs(UnmanagedType.LPArray)] short[] DOStatus);
+        public static extern int SetDOSingle([MarshalAs(UnmanagedType.BStr)] string InDeviceName, [MarshalAs(UnmanagedType.BStr)] string InKeyName, float InStatus);
 
         [DllImport(DllName, CallingConvention = CallingConvention.StdCall)]
-        public static extern int SetDOAction([MarshalAs(UnmanagedType.BStr)] string InDeviceName, [MarshalAs(UnmanagedType.BStr)] string InActionName, short InVal);
+        public static extern int SetDOAll([MarshalAs(UnmanagedType.BStr)] string InDeviceName, [MarshalAs(UnmanagedType.LPArray)] float[] DOStatus);
+
+        [DllImport(DllName, CallingConvention = CallingConvention.StdCall)]
+        public static extern int SetDOAction([MarshalAs(UnmanagedType.BStr)] string InDeviceName, [MarshalAs(UnmanagedType.BStr)] string InActionName, float InVal, bool bIngoreMassage=false);
 
         [DllImport(DllName, CallingConvention = CallingConvention.StdCall)]
         public static extern int SetDOOn([MarshalAs(UnmanagedType.BStr)] string InDeviceName, [MarshalAs(UnmanagedType.BStr)] string InActionName);
 
         [DllImport(DllName, CallingConvention = CallingConvention.StdCall)]
         public static extern int SetDOOff([MarshalAs(UnmanagedType.BStr)] string InDeviceName, [MarshalAs(UnmanagedType.BStr)] string InActionName);
+
+        [DllImport(DllName, CallingConvention = CallingConvention.StdCall)]
+        public static extern int DOImmediate([MarshalAs(UnmanagedType.BStr)] string InDeviceName);
 
         [DllImport(DllName, CallingConvention = CallingConvention.StdCall)]
         public static extern void Query();

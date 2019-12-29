@@ -47,14 +47,16 @@ public:
     void BindAction(std::string ActionName, const InputEvent KeyEvent,InputActionHandlerSignature delegate);
     void BindAction(std::string ActionName, const InputEvent KeyEvent, InputActionHandlerWithKeySignature delegate);
 
-    int SetDO(short* InDOStatus);
-    int SetDO(const FKey& InKey, short InValue);
-	int SetDO(const char* InOAction, short InValue);
+    int SetDO(float* InDOStatus);
+    int SetDO(const FKey& InKey, float InValue);
+	int SetDO(const char* InOAction, float InValue, bool bIgnoreMassage=false);
 	int SetDOOn(const char* InOAction);
 	int SetDOOff(const char* InOAction);
+	int DOImmediate();
 
-    int GetDO(short* OutDOStatus);
-	short GetDO(const FKey& InKey);
+    int GetDO(float* OutDOStatus);
+	float GetDO(const FKey& InKey);
+	float GetDO(const char* InOAction);
 
     bool GetKey(const FKey& InKey);
     bool GetKeyDown(const FKey& InKey);

@@ -42,18 +42,18 @@ void DevelopHelper::ExternalIO::Tick(float DeltaSeconds)
 	// 获取输入通道值
     if (outputCount > 0)
     {
+		this->DOImmediate();
         GetDO(DOStatus);
     }
     
 }
 
+/**
+ * Note: 仅针对核心主逻辑  并非用户层/业务层尾帧
+ */
 void DevelopHelper::ExternalIO::OnFrameEnd()
 {
-    if (bDoDOAtFrameEnd)
-    {
-        SetDO(DOStatus);
-        bDoDOAtFrameEnd = false;
-    }
+   
 }
 
 void DevelopHelper::ExternalIO::Destroy()
@@ -72,7 +72,7 @@ int DevelopHelper::ExternalIO::ConvertFKeyToChannel(const FKey& InKey)
     return std::atoi(num_str.data());
 }
 
-short DevelopHelper::ExternalIO::GetDO(const FKey InKey)
+float DevelopHelper::ExternalIO::GetDO(const FKey InKey)
 {
     int numChannel = ConvertFKeyToChannel(InKey);
     if (!IsValidChannel(numChannel,outputCount))
@@ -80,6 +80,17 @@ short DevelopHelper::ExternalIO::GetDO(const FKey InKey)
         return 0;
     }
     return DOStatus[numChannel];
+}
+
+float DevelopHelper::ExternalIO::GetDO(const char* InOAction)
+{
+	if (!bValid) { return 0; }
+	if (!OActionMappings.count(InOAction)) { return 0; }
+	
+	if (rawDOStatus.count(InOAction)) {
+		return rawDOStatus.at(InOAction);
+	}
+	return 0;
 }
 
 
@@ -111,7 +122,7 @@ int DevelopHelper::ExternalIO::GetDeviceAD(std::vector<short>& OutADStatus)
     return retCode;
 }
 
-int DevelopHelper::ExternalIO::GetDO(std::vector<short>& OutDOStatus)
+int DevelopHelper::ExternalIO::GetDO(std::vector<float>& OutDOStatus)
 {
     static short exDoStatus[MaxIOCount];
     int retCode = externalDll.GetDeviceDO(deviceIndex, exDoStatus);
@@ -124,60 +135,87 @@ int DevelopHelper::ExternalIO::GetDO(std::vector<short>& OutDOStatus)
     return retCode;
 }
 
-int DevelopHelper::ExternalIO::GetDO(short* OutDOStatus)
+int DevelopHelper::ExternalIO::GetDO(float* OutDOStatus)
 {
     if (!bValid) { return 0; }
-	memcpy(OutDOStatus, DOStatus.data(), sizeof(short)*outputCount);
+	memcpy(OutDOStatus, DOStatus.data(), sizeof(float)*outputCount);
     return 1;
 }
 
 // Set All by raw data
-int DevelopHelper::ExternalIO::SetDO(short* InDOStatus)
+int DevelopHelper::ExternalIO::SetDO(float* InDOStatus)
 {
     if (!bValid) { return 0; }
-	memcpy(DOStatus.data(), InDOStatus, sizeof(short)*outputCount);
-	bDoDOAtFrameEnd = true;
+	memcpy(DOStatus.data(), InDOStatus, sizeof(float)*outputCount);
+	bDOChanged = true;
 	return 1;
 }
 
+
 int DevelopHelper::ExternalIO::SetDOOn(const char* InOAction)
 {
-	return this->SetDO(InOAction, 1);
+	return  this->SetDO(InOAction, 1.0f);
 }
 
 
 int DevelopHelper::ExternalIO::SetDOOff(const char* InOAction)
 {
-	return this->SetDO(InOAction,0);
+	return this->SetDO(InOAction,0.f);
 }
 
-// Set do by oaction
-int DevelopHelper::ExternalIO::SetDO(const char* InOAction, short val)
+int DevelopHelper::ExternalIO::DOImmediate()
+{
+	if (bDOChanged) {
+		int _retCode = this->SetDO(DOStatus);
+		bDOChanged = false;
+		return _retCode;
+	}
+	return -1;
+}
+
+// Set do by o action
+int DevelopHelper::ExternalIO::SetDO(const char* InOAction, float val, bool bIgnoreMassage/*=false*/)
 {
 	if (!bValid) { return 0; }
 	if (!OActionMappings.count(InOAction)) { return 0; }
+	/**
+	 * 设置输出的原始值 用于GetDO(OAction) 取值
+	 */
 	const std::vector<FOutputActionKey>& _keys = OActionMappings.at(InOAction);
+	if (!rawDOStatus.count(InOAction)) {
+		rawDOStatus.insert(std::pair<std::string, float>(InOAction, val));
+	}
+	else {
+		rawDOStatus[InOAction] = val;
+	}
+
+	/**
+	 * 根据原始值输入计算实际输出值
+	 */
 	for (auto& _actionKey : _keys)
 	{
 		int _channel = ConvertFKeyToChannel(_actionKey.Key);
 		if(!IsValidChannel(_channel,outputCount)){continue;}
-		float _rawValue = static_cast<float>(val);
-		if (_actionKey.InvertEvent) {
-			if (_rawValue == 0.f) {
-				_rawValue = 1.f;
+		float _rawValue = val;
+		if (!bIgnoreMassage) {
+			if (_actionKey.InvertEvent) {
+				if (_rawValue == 0.f) {
+					_rawValue = 1.f;
+				}
+				else {
+					_rawValue = 0.f;
+				}
 			}
-			else {
-				_rawValue = 0.f;
-			}
+			_rawValue = MassageKeyInput(_actionKey.Key, _rawValue) * _actionKey.Scale;
 		}
-		DOStatus[_channel] = static_cast<short>(MassageKeyInput(_actionKey.Key, _rawValue) * _actionKey.Scale);
+		DOStatus[_channel] = _rawValue;
 	}
-	bDoDOAtFrameEnd = true;
+	bDOChanged = true;
 	return 1;
 }
 
-// Set do by singel channel
-int DevelopHelper::ExternalIO::SetDO(const FKey InKey, short val)
+// Set do by single channel
+int DevelopHelper::ExternalIO::SetDO(const FKey& InKey, float val)
 {
 	int numChannel = ConvertFKeyToChannel(InKey);
 	if (!IsValidChannel(numChannel, outputCount))
@@ -185,16 +223,16 @@ int DevelopHelper::ExternalIO::SetDO(const FKey InKey, short val)
 		return 0;
 	}
 	DOStatus[numChannel] = val;
-	bDoDOAtFrameEnd = true;
+	bDOChanged = true;
 	return 1;
 }
 
-int DevelopHelper::ExternalIO::SetDO(std::vector<short>& InDOStatus)
+int DevelopHelper::ExternalIO::SetDO(std::vector<float>& InDOStatus)
 {
     static short tmpDOStatus[MaxIOCount];
     for (size_t index = 0;index < InDOStatus.size();index++)
     {
-        tmpDOStatus[index] = DOStatus[index];
+        tmpDOStatus[index] = static_cast<short>(DOStatus[index]);
     }
     return externalDll.SetDeviceDO(deviceIndex, tmpDOStatus);
 }
@@ -209,7 +247,7 @@ void DevelopHelper::ExternalIO::Constructor()
     int loadDllErrCode = externalDll.GetErrCode();
     if (loadDllErrCode != 0)
     {
-        IOLog::Instance().Error(std::string("Load externall dll ")+externalDll.GetDllName()+" failed. error code:" + std::to_string(loadDllErrCode));
+        IOLog::Instance().Error(std::string("Load external dll ")+externalDll.GetDllName()+" failed. error code:" + std::to_string(loadDllErrCode));
         bValid = false;
         return;
     }
@@ -219,7 +257,7 @@ void DevelopHelper::ExternalIO::Constructor()
     axisCount = devInfo->AxisCount;
 
     DIStatus = std::vector<BYTE>(inputCount, 0);
-    DOStatus = std::vector<short>(outputCount, 0);
+	DOStatus = std::vector<float>(outputCount, 0);
     ADStatus = std::vector<short>(axisCount, 0);
 
     channelsState = std::vector<ButtonState>(inputCount);

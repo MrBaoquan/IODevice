@@ -121,29 +121,34 @@ namespace IOToolkit
             IONativeWrapper.BindAxis(this.ID, InAxisName, _proxy);
         }
 
-        public short GetDO(Key InKey)
+        public float GetDO(Key InKey)
         {
             return IONativeWrapper.GetDOSingle(this.ID, InKey);
         }
 
-        public int GetDO(short[] DOStatus)
+        public float GetDO(string InOAction)
+        {
+            return IONativeWrapper.GetDOAction(this.ID, InOAction);
+        }
+
+        public int GetDO(float[] DOStatus)
         {
             return IONativeWrapper.GetDOAll(this.ID, DOStatus);
         }
 
-        public int SetDO(Key InKey, short InStatus)
+        public int SetDO(Key InKey, float InStatus)
         {
             return IONativeWrapper.SetDOSingle(this.ID, InKey, InStatus);
         }
 
-        public int SetDO(short[] InStatus)
+        public int SetDO(float[] InStatus)
         {
             return IONativeWrapper.SetDOAll(this.ID, InStatus);
         }
 
-        public int SetDO(string OAction, short InVal)
+        public int SetDO(string OAction, float InVal, bool bIgnoreMassage=false)
         {
-            return IONativeWrapper.SetDOAction(this.ID, OAction, InVal);
+            return IONativeWrapper.SetDOAction(this.ID, OAction, InVal, bIgnoreMassage);
         }
 
         public int SetDOOn(string OAction)
@@ -154,6 +159,11 @@ namespace IOToolkit
         public int SetDOOff(string OAction)
         {
             return IONativeWrapper.SetDOOff(this.ID, OAction);
+        }
+
+        public int DOImmeditate()
+        {
+            return IONativeWrapper.DOImmediate(this.ID);
         }
 
         public bool GetKey(string InKey)

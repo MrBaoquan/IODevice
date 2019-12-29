@@ -31,17 +31,19 @@ public:
 
     virtual const bool Valid() const { return false; }
 
-    virtual int SetDO(short* InDOStatus);
+    virtual int SetDO(float* InDOStatus);
 
-    virtual int SetDO(const FKey InKey, short val);
-
-	virtual int SetDO(const char* InOAction, short val);
+	virtual int SetDO(const char* InOAction, float val, bool bIgnoreMassage=false);
+	virtual int SetDO(const FKey& InKey, float val);
 	virtual int SetDOOn(const char* InOAction);
 	virtual int SetDOOff(const char* InOAction);
+	virtual int DOImmediate();
 
-    virtual int GetDO(short* OutDOStatus);
+    virtual int GetDO(float* OutDOStatus);
 
-    virtual short GetDO(const FKey InKey);
+    virtual float GetDO(const FKey InKey);
+
+	virtual float GetDO(const char* InOAction);
 
 	virtual void Initialize() = 0;
 

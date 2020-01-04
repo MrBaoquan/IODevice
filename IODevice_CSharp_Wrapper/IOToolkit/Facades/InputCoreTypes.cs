@@ -34,6 +34,36 @@ namespace IOToolkit
         {
             return v.ID;
         }
+
+        public static bool operator ==(Key lhs,Key rhs)
+        {
+            if (ReferenceEquals(rhs, null)) return false;
+            if (ReferenceEquals(rhs, lhs)) return true;
+            return lhs.ID == rhs.ID;
+        }
+
+        public static bool operator !=(Key lhs,Key rhs)
+        {
+            return lhs.ID != rhs.ID;
+        }
+
+        public override bool Equals(object rhs)
+        {
+            if (this.GetType() != rhs.GetType()) return false;
+            Key _rhs = rhs as Key;
+            return _rhs == this;
+        }
+
+        public override int GetHashCode()
+        {
+            return StringComparer.InvariantCulture.GetHashCode(ID);
+        }
+
+        public override string ToString()
+        {
+            return this.ID;
+        }
+
     }
 
     public struct IOKeyCode

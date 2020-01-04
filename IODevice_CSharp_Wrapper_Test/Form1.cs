@@ -34,8 +34,8 @@ namespace IODevice_C_CSharpTest
             _device.BindAction("TestAction", InputEvent.IE_Pressed, this.onActionPressed);
             _device.BindAction("TestAction", InputEvent.IE_Released, this.onActionReleased);
 
-            _device.BindKey(IOKeyCode.AnyKey, InputEvent.IE_Pressed, this.onAnyKeyPressed);
-            _device.BindKey(IOKeyCode.AnyKey, InputEvent.IE_Released, this.onAnyKeyReleased);
+            //_device.BindKey(IOKeyCode.AnyKey, InputEvent.IE_Pressed, this.onAnyKeyPressed);
+            //_device.BindKey(IOKeyCode.AnyKey, InputEvent.IE_Released, this.onAnyKeyReleased);
 
             _device.BindAxis("MoveLR", this.OnMove);
             timer1.Start();

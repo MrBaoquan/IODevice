@@ -18,9 +18,7 @@ BOOL CALLBACK EnumWindowsProc(HWND hwnd, LPARAM lParam)
 {
     DWORD dwCurProcessId = *((DWORD*)lParam);
     DWORD dwProcessId = 0;
-    
     GetWindowThreadProcessId(hwnd, &dwProcessId);
-    
     if (dwProcessId == dwCurProcessId && GetParent(hwnd) == NULL)
     {
         *((HWND *)lParam) = hwnd;
@@ -198,8 +196,9 @@ void DevelopHelper::IOApplication::PreShutdown()
 
 int DevelopHelper::IOApplication::SetWindowsHook()
 {
-    DWORD threadID = GetCurrentThreadId();
-    HHOOK hhk1 = SetWindowsHookEx(WH_GETMESSAGE, IOApplication::OnMessageProc,IOApplication::dllInstance, threadID);
+	DWORD dwProcessId = 0;
+	DWORD threadID = GetWindowThreadProcessId(IOApplication::mainWindow, &dwProcessId);
+    HHOOK hhk1 = SetWindowsHookEx(WH_GETMESSAGE, IOApplication::OnMessageProc, NULL, threadID);
     if (hhk1)
     {
         IOApplication::hhks.push_back(hhk1);
@@ -209,7 +208,7 @@ int DevelopHelper::IOApplication::SetWindowsHook()
         return ErrorCode;
     }
 
-    HHOOK hhk2 = SetWindowsHookEx(WH_CALLWNDPROCRET, IOApplication::CallWndRetProc, IOApplication::dllInstance, threadID);
+    HHOOK hhk2 = SetWindowsHookEx(WH_CALLWNDPROCRET, IOApplication::CallWndRetProc, NULL, threadID);
     if (hhk2)
     {
         IOApplication::hhks.push_back(hhk2);
@@ -219,7 +218,7 @@ int DevelopHelper::IOApplication::SetWindowsHook()
         return ErrorCode;
     }
 
-	HHOOK hhk3 = SetWindowsHookEx(WH_CALLWNDPROC, IOApplication::CallWndProc, IOApplication::dllInstance, threadID);
+	HHOOK hhk3 = SetWindowsHookEx(WH_CALLWNDPROC, IOApplication::CallWndProc, NULL, threadID);
 	if (hhk3)
 	{
 		IOApplication::hhks.push_back(hhk3);

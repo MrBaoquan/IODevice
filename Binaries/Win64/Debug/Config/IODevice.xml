@@ -10,7 +10,7 @@
   <!-- Strandar Device -->
   <Device Name="Standard" Type="Standard"></Device>
 
-  <Device Name="ExtDev" Type="External" DllName="PCI2312A"  Index="0">
+  <Device Name="ExtDev" Type="External" DllName="RPLidar"  Index="0">
     <Properties>
       <Key Name="Axis_00" PreOffset="0.0" PreScale="1.0" Max="5" DeadZone="0.5" Sensitivity="1.0" Exponent="1.0" Invert="False" InvertEvent="False"></Key>
     </Properties>
@@ -24,9 +24,9 @@
       <Key Name="Left" Scale="-5" />
     </Axis>
 
-    <OAction Name="Start">
-      <Key Name="OAxis_00" Scale="10" InvertEvent="False"></Key>
+    <OAction Name="Output">
       <Key Name="OAxis_02" Scale="1" InvertEvent="False"></Key>
+      <Key Name="OAxis_03" Scale="1" InvertEvent="False"></Key>
     </OAction>
 
   </Device>

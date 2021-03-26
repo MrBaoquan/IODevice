@@ -74,6 +74,7 @@ int DevelopHelper::ExternalIO::ConvertFKeyToChannel(const FKey& InKey)
 
 float DevelopHelper::ExternalIO::GetDO(const FKey InKey)
 {
+	if (!bValid) { return 0; }
     int numChannel = ConvertFKeyToChannel(InKey);
     if (!IsValidChannel(numChannel,outputCount))
     {
@@ -217,6 +218,7 @@ int DevelopHelper::ExternalIO::SetDO(const char* InOAction, float val, bool bIgn
 // Set do by single channel
 int DevelopHelper::ExternalIO::SetDO(const FKey& InKey, float val)
 {
+	if (!bValid) return 0;
 	int numChannel = ConvertFKeyToChannel(InKey);
 	if (!IsValidChannel(numChannel, outputCount))
 	{
@@ -229,6 +231,7 @@ int DevelopHelper::ExternalIO::SetDO(const FKey& InKey, float val)
 
 int DevelopHelper::ExternalIO::SetDO(std::vector<float>& InDOStatus)
 {
+	if (!bValid) return 0;
     static short tmpDOStatus[MaxIOCount];
     for (size_t index = 0;index < InDOStatus.size();index++)
     {

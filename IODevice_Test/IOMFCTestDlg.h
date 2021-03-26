@@ -70,4 +70,10 @@ public:
 	CStatic read_axis_value;
 	CStatic read_label;
 	afx_msg void OnBnClickedButton2();
+	afx_msg void OnBnClickedButton3();
+	afx_msg void OnBnClickedButton1();
+
+	void SyncDO(float newValue);
+	CButton btn_plus;
+	CButton btn_minus;
 };

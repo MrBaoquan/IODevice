@@ -13,13 +13,14 @@
   <Device Name="ExtDev" Type="External" DllName="IOUI"  Index="0">
     <Properties>
       <!--
-        PreOffset: 预偏移值
-        PreScale: 预缩放值
-        Min,Max: 限定区间 [Min,Max]
+        针对Axis值, 原始值会首先除以1000, 目的是将范围限制在 [-1,1], 然后按照以下顺序依次处理数据
+        PreOffset: 预偏移值                     cur+=PreOffset
+        PreScale: 预缩放值                      cur*=PreScale
         DeadZone: 无效值区间
-        Exponent: 指数增长
-        Sensitivity: 敏感度(缩放值)
-        Invert: 反转 等同于 Sensitivity=-1
+        Exponent: 指数增长                       std::sin(cur)*std::powf(std::abs(cur), Exponent);
+        Sensitivity: 敏感度(缩放值)              cur*=Sensitivity
+        Min,Max: 限定区间 [Min,Max]              cur = clamp(cur,Min,Max) 
+        Invert: 反转 等同于 Sensitivity=-1       cur*=Invert
         InvertEvent: 在设备 Type=External 时,针对 Acttion 输入有效 反转IE_Pressed&IE_Released事件
       -->
       <Key Name="Axis_00" PreOffset="0.0" PreScale="1.0" Min="0"  Max="5" DeadZone="0.0" Sensitivity="1.0" Exponent="1.0" Invert="False" InvertEvent="False"></Key>
@@ -42,7 +43,7 @@
     <!-- 输出动作 -->
     <OAction Name="TurnOnLight">
       <!--
-        InvertEvent: 反转输出
+        InvertEvent: 反转输出 (0 和 非0)
       -->
       <Key Name="OAxis_00" InvertEvent="True" />
       <Key Name="OAxis_01" />

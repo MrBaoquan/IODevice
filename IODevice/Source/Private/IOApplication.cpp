@@ -71,10 +71,13 @@ BOOL WINAPI DllMain(
     {
     case DLL_PROCESS_ATTACH:
         IOApplication::dllInstance = hinstDLL;
-        
-        /** Initialize Paths before initialize IOLog, because IOLog need a correct log path. */
-        Paths::Instance().SetModule(IOApplication::dllInstance);
-
+		{
+			/** Initialize Paths before initialize IOLog, because IOLog need a correct log path. */
+			Paths::Instance().SetModule(IOApplication::dllInstance);
+			std::string dllPath = Paths::Instance().GetModuleDir() + "ExternalLibraries\\Core\\";
+			std::wstring _wdllPath(dllPath.begin(), dllPath.end());
+			AddDllDirectory(_wdllPath.data());
+		}
         break;
     case DLL_PROCESS_DETACH:
         IOApplication::UnHookWindow();

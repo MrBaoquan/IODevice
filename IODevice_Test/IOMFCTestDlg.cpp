@@ -81,6 +81,8 @@ void CIOMFCTestDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDC_EDIT4, action_input);
 	DDX_Control(pDX, IDC_STATIC3, read_axis_value);
 	DDX_Control(pDX, IDC_STATIC14, read_label);
+	DDX_Control(pDX, IDC_BUTTON3, btn_plus);
+	DDX_Control(pDX, IDC_BUTTON1, btn_minus);
 }
 
 
@@ -110,6 +112,8 @@ BEGIN_MESSAGE_MAP(CIOMFCTestDlg, CDialogEx)
 	ON_BN_CLICKED(IDC_RADIO5, &CIOMFCTestDlg::OnBnClickedRadio5)
 	ON_BN_CLICKED(IDC_RADIO6, &CIOMFCTestDlg::OnBnClickedRadio5)
 	ON_BN_CLICKED(IDC_BUTTON2, &CIOMFCTestDlg::OnBnClickedButton2)
+	ON_BN_CLICKED(IDC_BUTTON3, &CIOMFCTestDlg::OnBnClickedButton3)
+	ON_BN_CLICKED(IDC_BUTTON1, &CIOMFCTestDlg::OnBnClickedButton1)
 END_MESSAGE_MAP()
 
 // CIOMFCTestDlg 消息处理程序
@@ -154,7 +158,7 @@ BOOL CIOMFCTestDlg::OnInitDialog()
     // TODO: 在此添加额外的初始化代码
     SetTimer(1, 0.02, NULL);
 
-	oaction_slider.SetRange(0, 1000);
+	oaction_slider.SetRange(-1000, 1000);
 	oaction_slider.SetTicFreq(10);
 	action_input.SetWindowTextW(TEXT("Axis_00"));
 	oaction_input.SetWindowTextW(TEXT("OAxis_00"));
@@ -280,7 +284,6 @@ void CIOMFCTestDlg::OnActionWithKeyRepeat(DevelopHelper::FKey key)
 void CIOMFCTestDlg::OnAxis(float val)
 {
 	std::string _msg = std::to_string(val);
-  // OutputDebugStringA(_msg.data());
    SetDlgItemTextA(this->m_hWnd, label_axis_status, _msg.data());
 }
 
@@ -370,6 +373,7 @@ void CIOMFCTestDlg::OnBnClickedRadio5()
 }
 
 
+// 配置文件重载
 void CIOMFCTestDlg::OnBnClickedButton2()
 {
 	DevelopHelper::IODeviceController::Instance().Unload();
@@ -377,4 +381,44 @@ void CIOMFCTestDlg::OnBnClickedButton2()
 	this->ReBindActions();
 	AppendLog(TEXT("Hot reload succeed"));
 	// TODO: 在此添加控件通知处理程序代码
+}
+
+// +
+void CIOMFCTestDlg::OnBnClickedButton3()
+{
+	int _sliderValue = oaction_slider.GetPos();
+	_sliderValue += 1;
+	oaction_slider.SetPos(_sliderValue);
+	o_set_value.SetWindowTextW(std::to_wstring(_sliderValue).data());
+	SyncDO(_sliderValue);
+	// TODO: 在此添加控件通知处理程序代码
+}
+
+// -
+void CIOMFCTestDlg::OnBnClickedButton1()
+{
+	
+	int _sliderValue = oaction_slider.GetPos();
+	_sliderValue -= 1;
+	oaction_slider.SetPos(_sliderValue);
+	o_set_value.SetWindowTextW(std::to_wstring(_sliderValue).data());
+	SyncDO(_sliderValue);
+	// TODO: 在此添加控件通知处理程序代码
+}
+
+void CIOMFCTestDlg::SyncDO(float newValue)
+{
+	using namespace DevelopHelper;
+	std::string _resultStr = this->GetOInputStr(oaction_input);
+	switch (out_radio_group)
+	{
+	case 0:
+		IODeviceController::Instance().GetIODevice("ExtDev").SetDO(FKey(_resultStr.data()), newValue);
+		break;
+	case 1:
+		IODeviceController::Instance().GetIODevice("ExtDev").SetDO(_resultStr.data(), newValue);
+		break;
+	default:
+		break;
+	}
 }

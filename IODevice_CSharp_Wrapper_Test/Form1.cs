@@ -27,10 +27,8 @@ namespace IODevice_C_CSharpTest
         {
             //_delegate = new NativeDelegate.NativeActionSignature(this.onKeyPressed);
             IODeviceController.Load();
-            IODeviceController.UnLoad();
-            IODeviceController.Load();
 
-            IODevice _device = IODeviceController.GetIODevice("Standard");
+            IODevice _device = IODeviceController.GetIODevice("ExtDev");
             _device.BindAction("TestAction", InputEvent.IE_Pressed, this.onActionPressed);
             _device.BindAction("TestAction", InputEvent.IE_Released, this.onActionReleased);
 
@@ -39,6 +37,7 @@ namespace IODevice_C_CSharpTest
 
             _device.BindAxis("MoveLR", this.OnMove);
             timer1.Start();
+            timer1.Interval = 20;
         }
 
         private void timer1_Tick(object sender, EventArgs e)
@@ -46,20 +45,22 @@ namespace IODevice_C_CSharpTest
             IODeviceController.Update();
 
             IODevice _device = IODeviceController.GetIODevice("ExtDev");
-            if (_device.GetKeyDown(IOKeyCode.A))
+            var _ret = _device.GetKeyDown(IOKeyCode.A);
+            if (_ret)
             {
-                _device.SetDO("Start",450000.0f);
+                int _res = _device.SetDO("Start",1.0f);
                 Debug.WriteLine(_device.GetDO("Start"));
             }
             if (_device.GetKeyUp(IOKeyCode.A))
             {
-                _device.SetDO("Start",0.0f);
+                //_device.SetDO("Start",0.0f);
                 Debug.WriteLine(_device.GetDO("Start"));
-                //Debug.WriteLine("A Released");
             }
+
+            //Debug.WriteLine(_device.GetDO("Start"));
             //Debug.WriteLine(_device.GetKeyDownDuration(IOKeyCode.B));
             //Debug.WriteLine(_device.GetAxisKey(IOKeyCode.MouseX));
-            //Debug.WriteLine(_device.GetAxis("MoveLR"));
+            Debug.WriteLine(_device.GetAxis("TestAxis"));
         }
 
         private void onAnyKeyPressed()
@@ -80,6 +81,7 @@ namespace IODevice_C_CSharpTest
         private void onActionPressed(Key InKeyName)
         {
             actionLabel.Text = InKeyName + "Pressed";
+            Debug.WriteLine(InKeyName);
         }
 
         private void onActionReleased(Key InKey)

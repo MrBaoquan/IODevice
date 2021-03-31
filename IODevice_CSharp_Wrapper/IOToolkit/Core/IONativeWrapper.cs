@@ -65,15 +65,19 @@ namespace IOToolkit.Core
         public static extern void Query();
 
         [DllImport(DllName, CallingConvention = CallingConvention.StdCall)]
+        [return: MarshalAs(UnmanagedType.I1)]
         public static extern void ClearAllBindings();
 
         [DllImport(DllName, CallingConvention = CallingConvention.StdCall)]
+        [return: MarshalAs(UnmanagedType.I1)]
         public static extern bool GetKey([MarshalAs(UnmanagedType.BStr)] string InDeviceName,[MarshalAs(UnmanagedType.BStr)] string InKey);
 
         [DllImport(DllName, CallingConvention = CallingConvention.StdCall)]
+        [return: MarshalAs(UnmanagedType.I1)]
         public static extern bool GetKeyDown([MarshalAs(UnmanagedType.BStr)] string InDeviceName, [MarshalAs(UnmanagedType.BStr)] string InKey);
 
         [DllImport(DllName, CallingConvention = CallingConvention.StdCall)]
+        [return: MarshalAs(UnmanagedType.I1)]
         public static extern  bool GetKeyUp([MarshalAs(UnmanagedType.BStr)] string InDeviceName, [MarshalAs(UnmanagedType.BStr)] string InKey);
 
         [DllImport(DllName, CallingConvention = CallingConvention.StdCall)]

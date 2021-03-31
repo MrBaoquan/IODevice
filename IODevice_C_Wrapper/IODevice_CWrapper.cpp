@@ -111,7 +111,8 @@ IOCAPI int _stdcall SetDOOff(BSTR InDeviceName, BSTR InOAction)
 	return _device.SetDOOff(BSTR2String(InOAction).data());
 }
 
-IOCAPI int DOImmediate(BSTR InDeviceName)
+
+IOCAPI int __stdcall DOImmediate(BSTR InDeviceName)
 {
 	dh::IODevice& _device = getIODevice(InDeviceName);
 	return _device.DOImmediate();
@@ -147,7 +148,7 @@ IOCAPI bool __stdcall GetKey(BSTR InDeviceName, BSTR InKey)
 IOCAPI bool __stdcall GetKeyDown(BSTR InDeviceName, BSTR InKey)
 {
 	dh::IODevice& _device = getIODevice(InDeviceName);
-	return _device.GetKeyDown(BSTR2String(InKey).c_str());
+	return _device.GetKeyDown(BSTR2String(InKey).c_str());;
 }
 
 IOCAPI bool __stdcall GetKeyUp(BSTR InDeviceName, BSTR InKey)

@@ -7,7 +7,7 @@
 #include "CoreTypes.inl"
 #include "InputCoreTypes.h"
 
-namespace DevelopHelper
+namespace IOToolkit
 {
 
 struct FKeyDetails

@@ -18,7 +18,7 @@ namespace fs = std::experimental::filesystem;
 
 
 
-std::shared_ptr<DevelopHelper::RawIO> DevelopHelper::RawIOFactory::CreateRawInput(DevicePropeties deviceProps)
+std::shared_ptr<IOToolkit::RawIO> IOToolkit::RawIOFactory::CreateRawInput(DevicePropeties deviceProps)
 {
     if (deviceProps.Type == IOType::Standard)
     {
@@ -33,7 +33,7 @@ std::shared_ptr<DevelopHelper::RawIO> DevelopHelper::RawIOFactory::CreateRawInpu
     }
     else if (deviceProps.Type == IOType::Joystick)
     {
-        std::shared_ptr<Joystick> joystick = std::make_shared<DevelopHelper::Joystick>(deviceProps.DeviceID, deviceProps.DeviceIndex);
+        std::shared_ptr<Joystick> joystick = std::make_shared<IOToolkit::Joystick>(deviceProps.DeviceID, deviceProps.DeviceIndex);
         if (joystick->Valid())
         {
             IOLog::Instance().Log(std::string("Create Joystick IO <") + deviceProps.Name + "> succeed.");

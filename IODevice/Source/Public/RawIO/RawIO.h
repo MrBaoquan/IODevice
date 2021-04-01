@@ -11,7 +11,7 @@
 #include "CoreTypes/InputKeyProperties.h"
 #include "LessKey.h"
 
-namespace  DevelopHelper
+namespace  IOToolkit
 {
 
 const uint8 InvalidDeviceID = static_cast<uint8>(255);

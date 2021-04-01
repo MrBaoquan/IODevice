@@ -93,7 +93,7 @@ void CIOMFCTestDlg::DoDataExchange(CDataExchange* pDX)
 
 void CIOMFCTestDlg::ReBindActions(std::string DeviceName)
 {
-	using namespace DevelopHelper;
+	using namespace IOToolkit;
 	OutputDebugStringA(DeviceName.data());
 	OutputDebugStringA("\r\n");
 	IODeviceController::Instance().ClearBindings();
@@ -110,7 +110,7 @@ void CIOMFCTestDlg::ReBindActions(std::string DeviceName)
 
 void CIOMFCTestDlg::SyncDevices()
 {
-	using namespace DevelopHelper;
+	using namespace IOToolkit;
 	using namespace rapidxml;
 	std::string _currentDeviceName = currentDeviceName();
 	std::wstring _wcurDeviceName = std::wstring(_currentDeviceName.begin(), _currentDeviceName.end());
@@ -202,7 +202,7 @@ BOOL CIOMFCTestDlg::OnInitDialog()
 	SetIcon(m_hIcon, TRUE);			// 设置大图标
 	SetIcon(m_hIcon, FALSE);		// 设置小图标
 
-    using namespace DevelopHelper;
+    using namespace IOToolkit;
 
     /*IOSettings::Instance().SetIOConfigPath("IODevice.xml");*/
 	IODeviceController::Instance().Load();
@@ -289,7 +289,7 @@ void CIOMFCTestDlg::OnTimer(UINT_PTR nIDEvent)
 {
     // TODO: 在此添加消息处理程序代码和/或调用默认值
 
-    using namespace DevelopHelper;
+    using namespace IOToolkit;
     //OutputDebugStringA("Update...\n");
     IODeviceController::Instance().Update();
 
@@ -315,16 +315,16 @@ void CIOMFCTestDlg::OnTimer(UINT_PTR nIDEvent)
     CDialogEx::OnTimer(nIDEvent);
 }
 
-void CIOMFCTestDlg::OnActionWithKeyDown(DevelopHelper::FKey key)
+void CIOMFCTestDlg::OnActionWithKeyDown(IOToolkit::FKey key)
 {
-	using namespace DevelopHelper;
+	using namespace IOToolkit;
 	std::string _msg = std::string(key.GetName()).append(" pressed\n");
 	SetDlgItemTextA(this->m_hWnd, label_btn_status, _msg.data());
 }
 
-void CIOMFCTestDlg::OnActionWithKeyUp(DevelopHelper::FKey key)
+void CIOMFCTestDlg::OnActionWithKeyUp(IOToolkit::FKey key)
 {
-	using namespace DevelopHelper;
+	using namespace IOToolkit;
 	std::string _msg = std::string(key.GetName()).append(" released\n");
 	SetDlgItemTextA(this->m_hWnd, label_btn_status, _msg.data());
 }
@@ -341,7 +341,7 @@ std::string CIOMFCTestDlg::currentDeviceName()
 	return std::string(_wstr.begin(), _wstr.end());
 }
 
-void CIOMFCTestDlg::OnActionWithKeyRepeat(DevelopHelper::FKey key)
+void CIOMFCTestDlg::OnActionWithKeyRepeat(IOToolkit::FKey key)
 {
 	//OutputDebugStringA(std::string(key.GetName()).append(" repeat\n").data());   
 }
@@ -375,7 +375,7 @@ void CIOMFCTestDlg::OnStnClickedbtnstatus()
 
 void CIOMFCTestDlg::OnHScroll(UINT nSBCode, UINT nPos, CScrollBar* pScrollBar)
 {
-	using namespace DevelopHelper;
+	using namespace IOToolkit;
 	
 	std::string _resultStr = this->GetOInputStr(oaction_input);
 	int _sliderValue = oaction_slider.GetPos();
@@ -442,8 +442,8 @@ void CIOMFCTestDlg::OnBnClickedRadio5()
 // 配置文件重载
 void CIOMFCTestDlg::OnBnClickedButton2()
 {
-	DevelopHelper::IODeviceController::Instance().Unload();
-	DevelopHelper::IODeviceController::Instance().Load();
+	IOToolkit::IODeviceController::Instance().Unload();
+	IOToolkit::IODeviceController::Instance().Load();
 	SyncDevices();
 	AppendLog(TEXT("Hot reload succeed"));
 	// TODO: 在此添加控件通知处理程序代码
@@ -474,7 +474,7 @@ void CIOMFCTestDlg::OnBnClickedButton1()
 
 void CIOMFCTestDlg::SyncDO(float newValue)
 {
-	using namespace DevelopHelper;
+	using namespace IOToolkit;
 	auto& _device = IODeviceController::Instance().GetIODevice(currentDeviceName().data());
 	if (!_device.IsValid()) return;
 	std::string _resultStr = this->GetOInputStr(oaction_input);

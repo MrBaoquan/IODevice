@@ -49,14 +49,14 @@ HWND GetMainWindow()
     {
         
 #ifdef WIN_64
-        DevelopHelper::IOLog::Instance().Log(std::string("Succeed in finding process id of main window, and the title of main window is ") + HWNDToString((HWND)(__int64)(dwCurrentProcessId)));
+        IOToolkit::IOLog::Instance().Log(std::string("Succeed in finding process id of main window, and the title of main window is ") + HWNDToString((HWND)(__int64)(dwCurrentProcessId)));
         return (HWND)(__int64)(dwCurrentProcessId);
 #else
-        DevelopHelper::IOLog::Instance().Log(std::string("Succeed in finding process id of main window, and the title of main window is ") + HWNDToString((HWND)(dwCurrentProcessId)));
+        IOToolkit::IOLog::Instance().Log(std::string("Succeed in finding process id of main window, and the title of main window is ") + HWNDToString((HWND)(dwCurrentProcessId)));
         return (HWND)(dwCurrentProcessId);
 #endif // WIN_64
     }
-    DevelopHelper::IOLog::Instance().Warning("Could not find process id of main window, make sure your program have a window. ");
+    IOToolkit::IOLog::Instance().Warning("Could not find process id of main window, make sure your program have a window. ");
     return NULL;
 }
 
@@ -66,7 +66,7 @@ BOOL WINAPI DllMain(
     _In_ LPVOID    lpvReserved
 )
 {
-    using namespace DevelopHelper;
+    using namespace IOToolkit;
     switch (fdwReason)
     {
     case DLL_PROCESS_ATTACH:
@@ -93,16 +93,16 @@ BOOL WINAPI DllMain(
     return TRUE;
 }
 
-std::vector<HHOOK> DevelopHelper::IOApplication::hhks;
+std::vector<HHOOK> IOToolkit::IOApplication::hhks;
 
-HWND DevelopHelper::IOApplication::mainWindow;
+HWND IOToolkit::IOApplication::mainWindow;
 
-HINSTANCE DevelopHelper::IOApplication::dllInstance;
+HINSTANCE IOToolkit::IOApplication::dllInstance;
 
 
-bool DevelopHelper::IOApplication::bLoaded = false;
+bool IOToolkit::IOApplication::bLoaded = false;
 
-int DevelopHelper::IOApplication::Constructor()
+int IOToolkit::IOApplication::Constructor()
 {
 	IOLog::Instance().Log(std::string("\n\n\n------------------------------  (*^_^*) Welcome to use IOToolkit (*^_^*) ------------------------------\n\
 		\n\
@@ -118,13 +118,13 @@ int DevelopHelper::IOApplication::Constructor()
 }
 
 
-int DevelopHelper::IOApplication::Destructor()
+int IOToolkit::IOApplication::Destructor()
 {
 	return 0;
 }
 
 
-int DevelopHelper::IOApplication::DyLoad()
+int IOToolkit::IOApplication::DyLoad()
 {
 	if (IOApplication::bLoaded) {
 		IOLog::Instance().Warning(std::string("------------------------------  IOToolkit is alreay loaded  ------------------------------\n"));
@@ -142,7 +142,7 @@ int DevelopHelper::IOApplication::DyLoad()
 }
 
 
-int DevelopHelper::IOApplication::DyUnload()
+int IOToolkit::IOApplication::DyUnload()
 {
 	if (!IOApplication::bLoaded) {
 		IOLog::Instance().Warning(std::string("------------------------------  IOToolkit is alreay unloaded  ------------------------------\n"));
@@ -157,7 +157,7 @@ int DevelopHelper::IOApplication::DyUnload()
 	return 0;
 }
 
-void DevelopHelper::IOApplication::RegisterRawInput()
+void IOToolkit::IOApplication::RegisterRawInput()
 {
     HWND hwnd = GetMainWindow();
     IOApplication::mainWindow = hwnd;
@@ -187,17 +187,17 @@ void DevelopHelper::IOApplication::RegisterRawInput()
     }
 }
 
-bool DevelopHelper::IOApplication::SuccessResult(int code)
+bool IOToolkit::IOApplication::SuccessResult(int code)
 {
     return code == SuccessCode;
 }
 
-void DevelopHelper::IOApplication::PreShutdown()
+void IOToolkit::IOApplication::PreShutdown()
 {
 	IOApplication::DyUnload();
 }
 
-int DevelopHelper::IOApplication::SetWindowsHook()
+int IOToolkit::IOApplication::SetWindowsHook()
 {
 	DWORD dwProcessId = 0;
 	DWORD threadID = GetWindowThreadProcessId(IOApplication::mainWindow, &dwProcessId);
@@ -235,7 +235,7 @@ int DevelopHelper::IOApplication::SetWindowsHook()
     return SuccessCode;
 }
 
-void DevelopHelper::IOApplication::UnHookWindow()
+void IOToolkit::IOApplication::UnHookWindow()
 {
     for (auto& hhk:IOApplication::hhks)
     {
@@ -243,18 +243,18 @@ void DevelopHelper::IOApplication::UnHookWindow()
     }
 }
 
-LRESULT CALLBACK DevelopHelper::IOApplication::OnMessageProc(int code, WPARAM wParam, LPARAM lParam)
+LRESULT CALLBACK IOToolkit::IOApplication::OnMessageProc(int code, WPARAM wParam, LPARAM lParam)
 {
     return StandardIO::OnMessageProc(code, wParam, lParam);
 }
 
-LRESULT CALLBACK DevelopHelper::IOApplication::CallWndRetProc(_In_ int nCode, _In_ WPARAM wParam, _In_ LPARAM lParam)
+LRESULT CALLBACK IOToolkit::IOApplication::CallWndRetProc(_In_ int nCode, _In_ WPARAM wParam, _In_ LPARAM lParam)
 {
     return StandardIO::CallWndRetProc(nCode, wParam, lParam);
 }
 
 
-LRESULT CALLBACK DevelopHelper::IOApplication::CallWndProc(_In_ int nCode, _In_ WPARAM wParam, _In_ LPARAM lParam)
+LRESULT CALLBACK IOToolkit::IOApplication::CallWndProc(_In_ int nCode, _In_ WPARAM wParam, _In_ LPARAM lParam)
 {
 	if (nCode != HC_ACTION)
 	{

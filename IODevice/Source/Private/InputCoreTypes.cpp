@@ -7,16 +7,16 @@
 #include <string>
 #include "InputCoreTypes.h"
 #include "IOStatics.h"
-using namespace DevelopHelper;
+using namespace IOToolkit;
 
-DevelopHelper::FKey::FKey(const char* InKeyName)
+IOToolkit::FKey::FKey(const char* InKeyName)
 {
     size_t length = strlen(InKeyName);
     keyName = new char[length + 1];
     memcpy(keyName, InKeyName, length + 1);
 }
 
-DevelopHelper::FKey::~FKey()
+IOToolkit::FKey::~FKey()
 {
     if (keyName != nullptr)
     {
@@ -24,19 +24,19 @@ DevelopHelper::FKey::~FKey()
     }
 }
 
-const bool DevelopHelper::FKey::IsValid() const
+const bool IOToolkit::FKey::IsValid() const
 {
     return StaticKeys::ValidKey(*this);
 }
 
-const bool DevelopHelper::FKey::IsModifierKey() const
+const bool IOToolkit::FKey::IsModifierKey() const
 {
     if (!IsValid()) { return false; }
     std::shared_ptr<FKeyDetails> keyDetail = StaticKeys::InputKeys[*this];
     return keyDetail ? keyDetail->IsModifierKey() : false;
 }
 
-bool DevelopHelper::FKey::IsFloatAxis() const
+bool IOToolkit::FKey::IsFloatAxis() const
 {
     if (!IsValid()) 
     {
@@ -46,14 +46,14 @@ bool DevelopHelper::FKey::IsFloatAxis() const
     return keyDetail ? keyDetail->IsFloatAxis() : false;
 }
 
-bool DevelopHelper::FKey::IsVectorAxis() const
+bool IOToolkit::FKey::IsVectorAxis() const
 {
     if (!IsValid()) { return false; }
     std::shared_ptr<FKeyDetails> keyDetail = StaticKeys::InputKeys[*this];
     return keyDetail ? keyDetail->IsVectorAxis() : false;
 }
 
-void DevelopHelper::FKey::operator=(const FKey& rhs)
+void IOToolkit::FKey::operator=(const FKey& rhs)
 {
     if (this->keyName != nullptr)
     {
@@ -64,19 +64,19 @@ void DevelopHelper::FKey::operator=(const FKey& rhs)
     memcpy(keyName, rhs.GetName(), length + 1);
 }
 
-DevelopHelper::FKey::FKey(const FKey& key)
+IOToolkit::FKey::FKey(const FKey& key)
 {
     size_t length = strlen(key.GetName());
     keyName = new char[length + 1];
     memcpy(keyName, key.GetName(), length + 1);
 }
 
-bool DevelopHelper::operator==(const FKey & KeyA, const FKey & KeyB)
+bool IOToolkit::operator==(const FKey & KeyA, const FKey & KeyB)
 {
     return std::string(KeyA.keyName) == std::string(KeyB.keyName);
 }
 
-bool DevelopHelper::operator!=(const FKey & KeyA, const FKey & KeyB)
+bool IOToolkit::operator!=(const FKey & KeyA, const FKey & KeyB)
 {
     return std::string(KeyA.keyName) != std::string(KeyB.keyName);
 }
@@ -198,149 +198,149 @@ const FKey EKeys::RightAlt("RightAlt");
 const FKey EKeys::LeftCommand("LeftCommand");
 const FKey EKeys::RightCommand("RightCommand");
 
-const DevelopHelper::FKey DevelopHelper::EKeys::Invalid("NAME_None");
+const IOToolkit::FKey IOToolkit::EKeys::Invalid("NAME_None");
 
-const DevelopHelper::FKey DevelopHelper::EKeys::Button_00("Button_00");
-const DevelopHelper::FKey DevelopHelper::EKeys::Button_01("Button_01");
-const DevelopHelper::FKey DevelopHelper::EKeys::Button_02("Button_02");
-const DevelopHelper::FKey DevelopHelper::EKeys::Button_03("Button_03");
-const DevelopHelper::FKey DevelopHelper::EKeys::Button_04("Button_04");
-const DevelopHelper::FKey DevelopHelper::EKeys::Button_05("Button_05");
-const DevelopHelper::FKey DevelopHelper::EKeys::Button_06("Button_06");
-const DevelopHelper::FKey DevelopHelper::EKeys::Button_07("Button_07");
-const DevelopHelper::FKey DevelopHelper::EKeys::Button_08("Button_08");
-const DevelopHelper::FKey DevelopHelper::EKeys::Button_09("Button_09");
-const DevelopHelper::FKey DevelopHelper::EKeys::Button_10("Button_10");
-const DevelopHelper::FKey DevelopHelper::EKeys::Button_11("Button_11");
-const DevelopHelper::FKey DevelopHelper::EKeys::Button_12("Button_12");
-const DevelopHelper::FKey DevelopHelper::EKeys::Button_13("Button_13");
-const DevelopHelper::FKey DevelopHelper::EKeys::Button_14("Button_14");
-const DevelopHelper::FKey DevelopHelper::EKeys::Button_15("Button_15");
-const DevelopHelper::FKey DevelopHelper::EKeys::Button_16("Button_16");
-const DevelopHelper::FKey DevelopHelper::EKeys::Button_17("Button_17");
-const DevelopHelper::FKey DevelopHelper::EKeys::Button_18("Button_18");
-const DevelopHelper::FKey DevelopHelper::EKeys::Button_19("Button_19");
-const DevelopHelper::FKey DevelopHelper::EKeys::Button_20("Button_20");
-const DevelopHelper::FKey DevelopHelper::EKeys::Button_21("Button_21");
-const DevelopHelper::FKey DevelopHelper::EKeys::Button_22("Button_22");
-const DevelopHelper::FKey DevelopHelper::EKeys::Button_23("Button_23");
-const DevelopHelper::FKey DevelopHelper::EKeys::Button_24("Button_24");
-const DevelopHelper::FKey DevelopHelper::EKeys::Button_25("Button_25");
-const DevelopHelper::FKey DevelopHelper::EKeys::Button_26("Button_26");
-const DevelopHelper::FKey DevelopHelper::EKeys::Button_27("Button_27");
-const DevelopHelper::FKey DevelopHelper::EKeys::Button_28("Button_28");
-const DevelopHelper::FKey DevelopHelper::EKeys::Button_29("Button_29");
-const DevelopHelper::FKey DevelopHelper::EKeys::Button_30("Button_30");
-const DevelopHelper::FKey DevelopHelper::EKeys::Button_31("Button_31");
+const IOToolkit::FKey IOToolkit::EKeys::Button_00("Button_00");
+const IOToolkit::FKey IOToolkit::EKeys::Button_01("Button_01");
+const IOToolkit::FKey IOToolkit::EKeys::Button_02("Button_02");
+const IOToolkit::FKey IOToolkit::EKeys::Button_03("Button_03");
+const IOToolkit::FKey IOToolkit::EKeys::Button_04("Button_04");
+const IOToolkit::FKey IOToolkit::EKeys::Button_05("Button_05");
+const IOToolkit::FKey IOToolkit::EKeys::Button_06("Button_06");
+const IOToolkit::FKey IOToolkit::EKeys::Button_07("Button_07");
+const IOToolkit::FKey IOToolkit::EKeys::Button_08("Button_08");
+const IOToolkit::FKey IOToolkit::EKeys::Button_09("Button_09");
+const IOToolkit::FKey IOToolkit::EKeys::Button_10("Button_10");
+const IOToolkit::FKey IOToolkit::EKeys::Button_11("Button_11");
+const IOToolkit::FKey IOToolkit::EKeys::Button_12("Button_12");
+const IOToolkit::FKey IOToolkit::EKeys::Button_13("Button_13");
+const IOToolkit::FKey IOToolkit::EKeys::Button_14("Button_14");
+const IOToolkit::FKey IOToolkit::EKeys::Button_15("Button_15");
+const IOToolkit::FKey IOToolkit::EKeys::Button_16("Button_16");
+const IOToolkit::FKey IOToolkit::EKeys::Button_17("Button_17");
+const IOToolkit::FKey IOToolkit::EKeys::Button_18("Button_18");
+const IOToolkit::FKey IOToolkit::EKeys::Button_19("Button_19");
+const IOToolkit::FKey IOToolkit::EKeys::Button_20("Button_20");
+const IOToolkit::FKey IOToolkit::EKeys::Button_21("Button_21");
+const IOToolkit::FKey IOToolkit::EKeys::Button_22("Button_22");
+const IOToolkit::FKey IOToolkit::EKeys::Button_23("Button_23");
+const IOToolkit::FKey IOToolkit::EKeys::Button_24("Button_24");
+const IOToolkit::FKey IOToolkit::EKeys::Button_25("Button_25");
+const IOToolkit::FKey IOToolkit::EKeys::Button_26("Button_26");
+const IOToolkit::FKey IOToolkit::EKeys::Button_27("Button_27");
+const IOToolkit::FKey IOToolkit::EKeys::Button_28("Button_28");
+const IOToolkit::FKey IOToolkit::EKeys::Button_29("Button_29");
+const IOToolkit::FKey IOToolkit::EKeys::Button_30("Button_30");
+const IOToolkit::FKey IOToolkit::EKeys::Button_31("Button_31");
 
-const DevelopHelper::FKey DevelopHelper::EKeys::Axis_00("Axis_00");
-const DevelopHelper::FKey DevelopHelper::EKeys::Axis_01("Axis_01");
-const DevelopHelper::FKey DevelopHelper::EKeys::Axis_02("Axis_02");
-const DevelopHelper::FKey DevelopHelper::EKeys::Axis_03("Axis_03");
-const DevelopHelper::FKey DevelopHelper::EKeys::Axis_04("Axis_04");
-const DevelopHelper::FKey DevelopHelper::EKeys::Axis_05("Axis_05");
-const DevelopHelper::FKey DevelopHelper::EKeys::Axis_06("Axis_06");
-const DevelopHelper::FKey DevelopHelper::EKeys::Axis_07("Axis_07");
-const DevelopHelper::FKey DevelopHelper::EKeys::Axis_08("Axis_08");
-const DevelopHelper::FKey DevelopHelper::EKeys::Axis_09("Axis_09");
-const DevelopHelper::FKey DevelopHelper::EKeys::Axis_10("Axis_10");
-const DevelopHelper::FKey DevelopHelper::EKeys::Axis_11("Axis_11");
-const DevelopHelper::FKey DevelopHelper::EKeys::Axis_12("Axis_12");
-const DevelopHelper::FKey DevelopHelper::EKeys::Axis_13("Axis_13");
-const DevelopHelper::FKey DevelopHelper::EKeys::Axis_14("Axis_14");
-const DevelopHelper::FKey DevelopHelper::EKeys::Axis_15("Axis_15");
-const DevelopHelper::FKey DevelopHelper::EKeys::Axis_16("Axis_16");
-const DevelopHelper::FKey DevelopHelper::EKeys::Axis_17("Axis_17");
-const DevelopHelper::FKey DevelopHelper::EKeys::Axis_18("Axis_18");
-const DevelopHelper::FKey DevelopHelper::EKeys::Axis_19("Axis_19");
-const DevelopHelper::FKey DevelopHelper::EKeys::Axis_20("Axis_20");
-const DevelopHelper::FKey DevelopHelper::EKeys::Axis_21("Axis_21");
-const DevelopHelper::FKey DevelopHelper::EKeys::Axis_22("Axis_22");
-const DevelopHelper::FKey DevelopHelper::EKeys::Axis_23("Axis_23");
-const DevelopHelper::FKey DevelopHelper::EKeys::Axis_24("Axis_24");
-const DevelopHelper::FKey DevelopHelper::EKeys::Axis_25("Axis_25");
-const DevelopHelper::FKey DevelopHelper::EKeys::Axis_26("Axis_26");
-const DevelopHelper::FKey DevelopHelper::EKeys::Axis_27("Axis_27");
-const DevelopHelper::FKey DevelopHelper::EKeys::Axis_28("Axis_28");
-const DevelopHelper::FKey DevelopHelper::EKeys::Axis_29("Axis_29");
-const DevelopHelper::FKey DevelopHelper::EKeys::Axis_30("Axis_30");
-const DevelopHelper::FKey DevelopHelper::EKeys::Axis_31("Axis_31");
+const IOToolkit::FKey IOToolkit::EKeys::Axis_00("Axis_00");
+const IOToolkit::FKey IOToolkit::EKeys::Axis_01("Axis_01");
+const IOToolkit::FKey IOToolkit::EKeys::Axis_02("Axis_02");
+const IOToolkit::FKey IOToolkit::EKeys::Axis_03("Axis_03");
+const IOToolkit::FKey IOToolkit::EKeys::Axis_04("Axis_04");
+const IOToolkit::FKey IOToolkit::EKeys::Axis_05("Axis_05");
+const IOToolkit::FKey IOToolkit::EKeys::Axis_06("Axis_06");
+const IOToolkit::FKey IOToolkit::EKeys::Axis_07("Axis_07");
+const IOToolkit::FKey IOToolkit::EKeys::Axis_08("Axis_08");
+const IOToolkit::FKey IOToolkit::EKeys::Axis_09("Axis_09");
+const IOToolkit::FKey IOToolkit::EKeys::Axis_10("Axis_10");
+const IOToolkit::FKey IOToolkit::EKeys::Axis_11("Axis_11");
+const IOToolkit::FKey IOToolkit::EKeys::Axis_12("Axis_12");
+const IOToolkit::FKey IOToolkit::EKeys::Axis_13("Axis_13");
+const IOToolkit::FKey IOToolkit::EKeys::Axis_14("Axis_14");
+const IOToolkit::FKey IOToolkit::EKeys::Axis_15("Axis_15");
+const IOToolkit::FKey IOToolkit::EKeys::Axis_16("Axis_16");
+const IOToolkit::FKey IOToolkit::EKeys::Axis_17("Axis_17");
+const IOToolkit::FKey IOToolkit::EKeys::Axis_18("Axis_18");
+const IOToolkit::FKey IOToolkit::EKeys::Axis_19("Axis_19");
+const IOToolkit::FKey IOToolkit::EKeys::Axis_20("Axis_20");
+const IOToolkit::FKey IOToolkit::EKeys::Axis_21("Axis_21");
+const IOToolkit::FKey IOToolkit::EKeys::Axis_22("Axis_22");
+const IOToolkit::FKey IOToolkit::EKeys::Axis_23("Axis_23");
+const IOToolkit::FKey IOToolkit::EKeys::Axis_24("Axis_24");
+const IOToolkit::FKey IOToolkit::EKeys::Axis_25("Axis_25");
+const IOToolkit::FKey IOToolkit::EKeys::Axis_26("Axis_26");
+const IOToolkit::FKey IOToolkit::EKeys::Axis_27("Axis_27");
+const IOToolkit::FKey IOToolkit::EKeys::Axis_28("Axis_28");
+const IOToolkit::FKey IOToolkit::EKeys::Axis_29("Axis_29");
+const IOToolkit::FKey IOToolkit::EKeys::Axis_30("Axis_30");
+const IOToolkit::FKey IOToolkit::EKeys::Axis_31("Axis_31");
 
-const DevelopHelper::FKey DevelopHelper::EKeys::OAxis_00("OAxis_00");
-const DevelopHelper::FKey DevelopHelper::EKeys::OAxis_01("OAxis_01");
-const DevelopHelper::FKey DevelopHelper::EKeys::OAxis_02("OAxis_02");
-const DevelopHelper::FKey DevelopHelper::EKeys::OAxis_03("OAxis_03");
-const DevelopHelper::FKey DevelopHelper::EKeys::OAxis_04("OAxis_04");
-const DevelopHelper::FKey DevelopHelper::EKeys::OAxis_05("OAxis_05");
-const DevelopHelper::FKey DevelopHelper::EKeys::OAxis_06("OAxis_06");
-const DevelopHelper::FKey DevelopHelper::EKeys::OAxis_07("OAxis_07");
-const DevelopHelper::FKey DevelopHelper::EKeys::OAxis_08("OAxis_08");
-const DevelopHelper::FKey DevelopHelper::EKeys::OAxis_09("OAxis_09");
-const DevelopHelper::FKey DevelopHelper::EKeys::OAxis_10("OAxis_10");
-const DevelopHelper::FKey DevelopHelper::EKeys::OAxis_11("OAxis_11");
-const DevelopHelper::FKey DevelopHelper::EKeys::OAxis_12("OAxis_12");
-const DevelopHelper::FKey DevelopHelper::EKeys::OAxis_13("OAxis_13");
-const DevelopHelper::FKey DevelopHelper::EKeys::OAxis_14("OAxis_14");
-const DevelopHelper::FKey DevelopHelper::EKeys::OAxis_15("OAxis_15");
-const DevelopHelper::FKey DevelopHelper::EKeys::OAxis_16("OAxis_16");
-const DevelopHelper::FKey DevelopHelper::EKeys::OAxis_17("OAxis_17");
-const DevelopHelper::FKey DevelopHelper::EKeys::OAxis_18("OAxis_18");
-const DevelopHelper::FKey DevelopHelper::EKeys::OAxis_19("OAxis_19");
-const DevelopHelper::FKey DevelopHelper::EKeys::OAxis_20("OAxis_20");
-const DevelopHelper::FKey DevelopHelper::EKeys::OAxis_21("OAxis_21");
-const DevelopHelper::FKey DevelopHelper::EKeys::OAxis_22("OAxis_22");
-const DevelopHelper::FKey DevelopHelper::EKeys::OAxis_23("OAxis_23");
-const DevelopHelper::FKey DevelopHelper::EKeys::OAxis_24("OAxis_24");
-const DevelopHelper::FKey DevelopHelper::EKeys::OAxis_25("OAxis_25");
-const DevelopHelper::FKey DevelopHelper::EKeys::OAxis_26("OAxis_26");
-const DevelopHelper::FKey DevelopHelper::EKeys::OAxis_27("OAxis_27");
-const DevelopHelper::FKey DevelopHelper::EKeys::OAxis_28("OAxis_28");
-const DevelopHelper::FKey DevelopHelper::EKeys::OAxis_29("OAxis_29");
-const DevelopHelper::FKey DevelopHelper::EKeys::OAxis_30("OAxis_30");
-const DevelopHelper::FKey DevelopHelper::EKeys::OAxis_31("OAxis_31");
+const IOToolkit::FKey IOToolkit::EKeys::OAxis_00("OAxis_00");
+const IOToolkit::FKey IOToolkit::EKeys::OAxis_01("OAxis_01");
+const IOToolkit::FKey IOToolkit::EKeys::OAxis_02("OAxis_02");
+const IOToolkit::FKey IOToolkit::EKeys::OAxis_03("OAxis_03");
+const IOToolkit::FKey IOToolkit::EKeys::OAxis_04("OAxis_04");
+const IOToolkit::FKey IOToolkit::EKeys::OAxis_05("OAxis_05");
+const IOToolkit::FKey IOToolkit::EKeys::OAxis_06("OAxis_06");
+const IOToolkit::FKey IOToolkit::EKeys::OAxis_07("OAxis_07");
+const IOToolkit::FKey IOToolkit::EKeys::OAxis_08("OAxis_08");
+const IOToolkit::FKey IOToolkit::EKeys::OAxis_09("OAxis_09");
+const IOToolkit::FKey IOToolkit::EKeys::OAxis_10("OAxis_10");
+const IOToolkit::FKey IOToolkit::EKeys::OAxis_11("OAxis_11");
+const IOToolkit::FKey IOToolkit::EKeys::OAxis_12("OAxis_12");
+const IOToolkit::FKey IOToolkit::EKeys::OAxis_13("OAxis_13");
+const IOToolkit::FKey IOToolkit::EKeys::OAxis_14("OAxis_14");
+const IOToolkit::FKey IOToolkit::EKeys::OAxis_15("OAxis_15");
+const IOToolkit::FKey IOToolkit::EKeys::OAxis_16("OAxis_16");
+const IOToolkit::FKey IOToolkit::EKeys::OAxis_17("OAxis_17");
+const IOToolkit::FKey IOToolkit::EKeys::OAxis_18("OAxis_18");
+const IOToolkit::FKey IOToolkit::EKeys::OAxis_19("OAxis_19");
+const IOToolkit::FKey IOToolkit::EKeys::OAxis_20("OAxis_20");
+const IOToolkit::FKey IOToolkit::EKeys::OAxis_21("OAxis_21");
+const IOToolkit::FKey IOToolkit::EKeys::OAxis_22("OAxis_22");
+const IOToolkit::FKey IOToolkit::EKeys::OAxis_23("OAxis_23");
+const IOToolkit::FKey IOToolkit::EKeys::OAxis_24("OAxis_24");
+const IOToolkit::FKey IOToolkit::EKeys::OAxis_25("OAxis_25");
+const IOToolkit::FKey IOToolkit::EKeys::OAxis_26("OAxis_26");
+const IOToolkit::FKey IOToolkit::EKeys::OAxis_27("OAxis_27");
+const IOToolkit::FKey IOToolkit::EKeys::OAxis_28("OAxis_28");
+const IOToolkit::FKey IOToolkit::EKeys::OAxis_29("OAxis_29");
+const IOToolkit::FKey IOToolkit::EKeys::OAxis_30("OAxis_30");
+const IOToolkit::FKey IOToolkit::EKeys::OAxis_31("OAxis_31");
 
 
 /** Joystick axes */
 
-const DevelopHelper::FKey DevelopHelper::EKeys::JS_X("JS_X");/* x-axis position              */
-const DevelopHelper::FKey DevelopHelper::EKeys::JS_Y("JS_Y");/* y-axis position              */
-const DevelopHelper::FKey DevelopHelper::EKeys::JS_Z("JS_Z");/* z-axis position              */
-const DevelopHelper::FKey DevelopHelper::EKeys::JS_Rx("JS_Rx");/* x-axis rotation              */
-const DevelopHelper::FKey DevelopHelper::EKeys::JS_Ry("JS_Ry");/* y-axis rotation              */
-const DevelopHelper::FKey DevelopHelper::EKeys::JS_Rz("JS_Rz");/* z-axis rotation              */
-const DevelopHelper::FKey DevelopHelper::EKeys::JS_VX("JS_VX");/* x-axis velocity              */
-const DevelopHelper::FKey DevelopHelper::EKeys::JS_VY("JS_VY");/* y-axis velocity              */
-const DevelopHelper::FKey DevelopHelper::EKeys::JS_VZ("JS_VZ");/* z-axis velocity              */
-const DevelopHelper::FKey DevelopHelper::EKeys::JS_VRx("JS_VRx");/* x-axis angular velocity      */
-const DevelopHelper::FKey DevelopHelper::EKeys::JS_VRy("JS_VRy");/* y-axis angular velocity      */
-const DevelopHelper::FKey DevelopHelper::EKeys::JS_VRz("JS_VRz");/* z-axis angular velocity      */
-const DevelopHelper::FKey DevelopHelper::EKeys::JS_AX("JS_AX");/* x-axis acceleration          */
-const DevelopHelper::FKey DevelopHelper::EKeys::JS_AY("JS_AY");/* y-axis acceleration          */
-const DevelopHelper::FKey DevelopHelper::EKeys::JS_AZ("JS_AZ");/* z-axis acceleration          */
-const DevelopHelper::FKey DevelopHelper::EKeys::JS_ARx("JS_ARx");/* x-axis angular acceleration  */
-const DevelopHelper::FKey DevelopHelper::EKeys::JS_ARy("JS_ARy");/* y-axis angular acceleration  */
-const DevelopHelper::FKey DevelopHelper::EKeys::JS_ARz("JS_ARz");/* z-axis angular acceleration  */
-const DevelopHelper::FKey DevelopHelper::EKeys::JS_FX("JS_FX");/* x-axis force                 */
-const DevelopHelper::FKey DevelopHelper::EKeys::JS_FY("JS_FY");/* y-axis force                 */
-const DevelopHelper::FKey DevelopHelper::EKeys::JS_FZ("JS_FZ");/* z-axis force                 */
-const DevelopHelper::FKey DevelopHelper::EKeys::JS_FRx("JS_FRx");/* x-axis torque                */
-const DevelopHelper::FKey DevelopHelper::EKeys::JS_FRy("JS_FRy");/* y-axis torque                */
-const DevelopHelper::FKey DevelopHelper::EKeys::JS_FRz("JS_FRz");/* z-axis torque                */
+const IOToolkit::FKey IOToolkit::EKeys::JS_X("JS_X");/* x-axis position              */
+const IOToolkit::FKey IOToolkit::EKeys::JS_Y("JS_Y");/* y-axis position              */
+const IOToolkit::FKey IOToolkit::EKeys::JS_Z("JS_Z");/* z-axis position              */
+const IOToolkit::FKey IOToolkit::EKeys::JS_Rx("JS_Rx");/* x-axis rotation              */
+const IOToolkit::FKey IOToolkit::EKeys::JS_Ry("JS_Ry");/* y-axis rotation              */
+const IOToolkit::FKey IOToolkit::EKeys::JS_Rz("JS_Rz");/* z-axis rotation              */
+const IOToolkit::FKey IOToolkit::EKeys::JS_VX("JS_VX");/* x-axis velocity              */
+const IOToolkit::FKey IOToolkit::EKeys::JS_VY("JS_VY");/* y-axis velocity              */
+const IOToolkit::FKey IOToolkit::EKeys::JS_VZ("JS_VZ");/* z-axis velocity              */
+const IOToolkit::FKey IOToolkit::EKeys::JS_VRx("JS_VRx");/* x-axis angular velocity      */
+const IOToolkit::FKey IOToolkit::EKeys::JS_VRy("JS_VRy");/* y-axis angular velocity      */
+const IOToolkit::FKey IOToolkit::EKeys::JS_VRz("JS_VRz");/* z-axis angular velocity      */
+const IOToolkit::FKey IOToolkit::EKeys::JS_AX("JS_AX");/* x-axis acceleration          */
+const IOToolkit::FKey IOToolkit::EKeys::JS_AY("JS_AY");/* y-axis acceleration          */
+const IOToolkit::FKey IOToolkit::EKeys::JS_AZ("JS_AZ");/* z-axis acceleration          */
+const IOToolkit::FKey IOToolkit::EKeys::JS_ARx("JS_ARx");/* x-axis angular acceleration  */
+const IOToolkit::FKey IOToolkit::EKeys::JS_ARy("JS_ARy");/* y-axis angular acceleration  */
+const IOToolkit::FKey IOToolkit::EKeys::JS_ARz("JS_ARz");/* z-axis angular acceleration  */
+const IOToolkit::FKey IOToolkit::EKeys::JS_FX("JS_FX");/* x-axis force                 */
+const IOToolkit::FKey IOToolkit::EKeys::JS_FY("JS_FY");/* y-axis force                 */
+const IOToolkit::FKey IOToolkit::EKeys::JS_FZ("JS_FZ");/* z-axis force                 */
+const IOToolkit::FKey IOToolkit::EKeys::JS_FRx("JS_FRx");/* x-axis torque                */
+const IOToolkit::FKey IOToolkit::EKeys::JS_FRy("JS_FRy");/* y-axis torque                */
+const IOToolkit::FKey IOToolkit::EKeys::JS_FRz("JS_FRz");/* z-axis torque                */
 
-const DevelopHelper::FKey DevelopHelper::EKeys::JS_Slider_00("JS_Slider_00");
-const DevelopHelper::FKey DevelopHelper::EKeys::JS_Slider_01("JS_Slider_01");
+const IOToolkit::FKey IOToolkit::EKeys::JS_Slider_00("JS_Slider_00");
+const IOToolkit::FKey IOToolkit::EKeys::JS_Slider_01("JS_Slider_01");
 
-const DevelopHelper::FKey DevelopHelper::EKeys::JS_VSlider_00("JS_VSlider_00");
-const DevelopHelper::FKey DevelopHelper::EKeys::JS_VSlider_01("JS_VSlider_01");
+const IOToolkit::FKey IOToolkit::EKeys::JS_VSlider_00("JS_VSlider_00");
+const IOToolkit::FKey IOToolkit::EKeys::JS_VSlider_01("JS_VSlider_01");
 
-const DevelopHelper::FKey DevelopHelper::EKeys::JS_ASlider_00("JS_ASlider_00");
-const DevelopHelper::FKey DevelopHelper::EKeys::JS_ASlider_01("JS_ASlider_01");
+const IOToolkit::FKey IOToolkit::EKeys::JS_ASlider_00("JS_ASlider_00");
+const IOToolkit::FKey IOToolkit::EKeys::JS_ASlider_01("JS_ASlider_01");
 
-const DevelopHelper::FKey DevelopHelper::EKeys::JS_FSlider_00("JS_FSlider_00");
-const DevelopHelper::FKey DevelopHelper::EKeys::JS_FSlider_01("JS_FSlider_01");
+const IOToolkit::FKey IOToolkit::EKeys::JS_FSlider_00("JS_FSlider_00");
+const IOToolkit::FKey IOToolkit::EKeys::JS_FSlider_01("JS_FSlider_01");
 
-const DevelopHelper::FKey DevelopHelper::EKeys::JS_POV_00("JS_POV_00");
-const DevelopHelper::FKey DevelopHelper::EKeys::JS_POV_01("JS_POV_01");
-const DevelopHelper::FKey DevelopHelper::EKeys::JS_POV_02("JS_POV_02");
-const DevelopHelper::FKey DevelopHelper::EKeys::JS_POV_03("JS_POV_03");
+const IOToolkit::FKey IOToolkit::EKeys::JS_POV_00("JS_POV_00");
+const IOToolkit::FKey IOToolkit::EKeys::JS_POV_01("JS_POV_01");
+const IOToolkit::FKey IOToolkit::EKeys::JS_POV_02("JS_POV_02");
+const IOToolkit::FKey IOToolkit::EKeys::JS_POV_03("JS_POV_03");
 

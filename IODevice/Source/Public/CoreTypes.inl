@@ -1,5 +1,5 @@
 #pragma once
-namespace DevelopHelper
+namespace IOToolkit
 {
 
 typedef unsigned __int8      uint8;

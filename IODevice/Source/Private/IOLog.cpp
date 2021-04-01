@@ -15,13 +15,13 @@
 namespace fs = std::experimental::filesystem;
 namespace spd = spdlog;
 
-DevelopHelper::IOLog& DevelopHelper::IOLog::Instance()
+IOToolkit::IOLog& IOToolkit::IOLog::Instance()
 {
     static IOLog instance;
     return instance;
 }
 
-void DevelopHelper::IOLog::Log(std::string msg)
+void IOToolkit::IOLog::Log(std::string msg)
 {
     try
     {
@@ -39,7 +39,7 @@ void DevelopHelper::IOLog::Log(std::string msg)
     }
 }
 
-void DevelopHelper::IOLog::Warning(std::string msg)
+void IOToolkit::IOLog::Warning(std::string msg)
 {
     try
     {
@@ -57,7 +57,7 @@ void DevelopHelper::IOLog::Warning(std::string msg)
     }
 }
 
-void DevelopHelper::IOLog::Error(std::string msg)
+void IOToolkit::IOLog::Error(std::string msg)
 {
     try
     {
@@ -76,7 +76,7 @@ void DevelopHelper::IOLog::Error(std::string msg)
 }
 
 
-void DevelopHelper::IOLog::ReleaseLogger()
+void IOToolkit::IOLog::ReleaseLogger()
 {
 	spdlog::drop("IO_Logger");
 	IOLogger = nullptr;
@@ -134,7 +134,7 @@ void FilterFiles(std::string DirPath, int maxNum = 10)
     }
 }
 
-DevelopHelper::IOLog::IOLog()
+IOToolkit::IOLog::IOLog()
 {
     try
     {
@@ -163,12 +163,12 @@ DevelopHelper::IOLog::IOLog()
     }
 }
 
-DevelopHelper::IOLog::~IOLog()
+IOToolkit::IOLog::~IOLog()
 {
     FilterFiles(Paths::Instance().GetLogDir());
 }
 
-void DevelopHelper::IOLog::MakeReference()
+void IOToolkit::IOLog::MakeReference()
 {
 	if (IOLogger) { return; }
 	try

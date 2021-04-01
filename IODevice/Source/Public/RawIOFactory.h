@@ -10,7 +10,7 @@
 #include "RawIO/RawIO.h"
 #include "CoreTypes/IOTypes.h"
 
-namespace DevelopHelper
+namespace IOToolkit
 {
 
 struct DevicePropeties

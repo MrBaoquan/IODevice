@@ -9,7 +9,7 @@
 #include "InputSettings.h"
 #include "IOLog.h"
 
-void DevelopHelper::IODevices::AddDevice(IODeviceDetails& deviceDetails)
+void IOToolkit::IODevices::AddDevice(IODeviceDetails& deviceDetails)
 {
     if (HasDevice(deviceDetails.getName())) 
     {
@@ -22,7 +22,7 @@ void DevelopHelper::IODevices::AddDevice(IODeviceDetails& deviceDetails)
     IOLog::Instance().Log(msg);
 }
 
-DevelopHelper::IODevice& DevelopHelper::IODevices::GetDevice(const std::string deviceName)
+IOToolkit::IODevice& IOToolkit::IODevices::GetDevice(const std::string deviceName)
 {
     if (HasDevice(deviceName))
     {
@@ -33,7 +33,7 @@ DevelopHelper::IODevice& DevelopHelper::IODevices::GetDevice(const std::string d
     }
 }
 
-DevelopHelper::IODeviceDetails& DevelopHelper::IODevices::GetDeviceDetail(const std::string deviceName)
+IOToolkit::IODeviceDetails& IOToolkit::IODevices::GetDeviceDetail(const std::string deviceName)
 {
     if (HasDevice(deviceName))
     {
@@ -44,7 +44,7 @@ DevelopHelper::IODeviceDetails& DevelopHelper::IODevices::GetDeviceDetail(const 
     }
 }
 
-DevelopHelper::IODeviceDetails& DevelopHelper::IODevices::GetDeviceDetail(uint8 deviceID)
+IOToolkit::IODeviceDetails& IOToolkit::IODevices::GetDeviceDetail(uint8 deviceID)
 {
     for (auto&deviceIt : devices)
     {
@@ -57,7 +57,7 @@ DevelopHelper::IODeviceDetails& DevelopHelper::IODevices::GetDeviceDetail(uint8 
     return Invalid;
 }
 
-DevelopHelper::IODeviceDetails& DevelopHelper::IODevices::GetDeviceDetail(const IODevice& InDevice)
+IOToolkit::IODeviceDetails& IOToolkit::IODevices::GetDeviceDetail(const IODevice& InDevice)
 {
     for (auto&deviceIt : devices)
     {
@@ -70,12 +70,12 @@ DevelopHelper::IODeviceDetails& DevelopHelper::IODevices::GetDeviceDetail(const 
     return Invalid;
 }
 
-const DevelopHelper::uint8 DevelopHelper::IODevices::GetDevicesCount()
+const IOToolkit::uint8 IOToolkit::IODevices::GetDevicesCount()
 {
     return static_cast<uint8>(IODevices::devices.size());
 }
 
-const DevelopHelper::uint8 DevelopHelper::IODevices::GetDevicesCount(std::string InType)
+const IOToolkit::uint8 IOToolkit::IODevices::GetDevicesCount(std::string InType)
 {
     uint8 count = 0;
     for (auto& device:devices)
@@ -89,13 +89,13 @@ const DevelopHelper::uint8 DevelopHelper::IODevices::GetDevicesCount(std::string
 
 }
 
-int DevelopHelper::IODevices::Initialize()
+int IOToolkit::IODevices::Initialize()
 {
     return UInputSettings::Instance().Initialize();
 }
 
 
-int DevelopHelper::IODevices::UnInitialize()
+int IOToolkit::IODevices::UnInitialize()
 {
 	UInputSettings::Instance().Uninitialize();
 	for (auto& device : devices) {
@@ -105,7 +105,7 @@ int DevelopHelper::IODevices::UnInitialize()
 	return 0;
 }
 
-bool DevelopHelper::IODevices::HasDevice(const std::string deviceName)
+bool IOToolkit::IODevices::HasDevice(const std::string deviceName)
 {
     if (devices.count(deviceName))
     {
@@ -114,16 +114,16 @@ bool DevelopHelper::IODevices::HasDevice(const std::string deviceName)
     return false;
 }
 
-std::map<std::string, DevelopHelper::IODeviceDetails>& DevelopHelper::IODevices::GetDevcies()
+std::map<std::string, IOToolkit::IODeviceDetails>& IOToolkit::IODevices::GetDevcies()
 {
     return devices;
 }
 
-std::map<std::string, DevelopHelper::IODeviceDetails> DevelopHelper::IODevices::devices;
+std::map<std::string, IOToolkit::IODeviceDetails> IOToolkit::IODevices::devices;
 
-DevelopHelper::IODeviceDetails DevelopHelper::IODevices::Invalid("Invalid", nullptr);
+IOToolkit::IODeviceDetails IOToolkit::IODevices::Invalid("Invalid", nullptr);
 
-std::shared_ptr<DevelopHelper::FKeyDetails> DevelopHelper::StaticKeys::GetKeyDetails(const FKey& key)
+std::shared_ptr<IOToolkit::FKeyDetails> IOToolkit::StaticKeys::GetKeyDetails(const FKey& key)
 {
     std::shared_ptr<FKeyDetails>* keyDetails=nullptr;
     if (InputKeys.count(key))
@@ -135,9 +135,9 @@ std::shared_ptr<DevelopHelper::FKeyDetails> DevelopHelper::StaticKeys::GetKeyDet
 }
 
 
-std::map<DevelopHelper::FKey, std::shared_ptr<DevelopHelper::FKeyDetails>, DevelopHelper::LessKey> DevelopHelper::StaticKeys::InputKeys;
+std::map<IOToolkit::FKey, std::shared_ptr<IOToolkit::FKeyDetails>, IOToolkit::LessKey> IOToolkit::StaticKeys::InputKeys;
 
-void DevelopHelper::StaticKeys::Initialize()
+void IOToolkit::StaticKeys::Initialize()
 {
     AddKey(FKeyDetails(EKeys::AnyKey, "AnyKey"));
 
@@ -399,14 +399,14 @@ void DevelopHelper::StaticKeys::Initialize()
     AddKey(FKeyDetails(EKeys::JS_POV_03, "JS_POV_03", FKeyDetails::FloatAxis | FKeyDetails::UpdateAxisWithoutSamples));
 }
 
-void DevelopHelper::StaticKeys::AddKey(const FKeyDetails& keyDetails)
+void IOToolkit::StaticKeys::AddKey(const FKeyDetails& keyDetails)
 {
     const FKey& key = keyDetails.GetKey();
     std::shared_ptr<FKeyDetails> sharedKeyDetails = std::make_shared<FKeyDetails>(keyDetails);
     InputKeys.insert(std::pair<FKey, std::shared_ptr<FKeyDetails>>(key, sharedKeyDetails));
 }
 
-bool DevelopHelper::StaticKeys::ValidKey(const FKey& key)
+bool IOToolkit::StaticKeys::ValidKey(const FKey& key)
 {
     if (InputKeys.count(key)
         ||IsExternalKey(key)
@@ -418,7 +418,7 @@ bool DevelopHelper::StaticKeys::ValidKey(const FKey& key)
     return false;
 }
 
-bool DevelopHelper::StaticKeys::IsExternalKey(const FKey& InKey)
+bool IOToolkit::StaticKeys::IsExternalKey(const FKey& InKey)
 {
     const std::string externalBtnStr = "Button_";
 
@@ -430,7 +430,7 @@ bool DevelopHelper::StaticKeys::IsExternalKey(const FKey& InKey)
     return false;
 }
 
-bool DevelopHelper::StaticKeys::IsExternalAxisKey(const FKey& InKey)
+bool IOToolkit::StaticKeys::IsExternalAxisKey(const FKey& InKey)
 {
     const std::string externalAxisStr = "Axis_";
     const std::string KeyName(InKey.GetName());

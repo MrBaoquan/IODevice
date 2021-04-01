@@ -6,7 +6,7 @@
 #pragma once
 #include "spdlog/spdlog.h"
 
-namespace DevelopHelper
+namespace IOToolkit
 {
 
 class IOLog

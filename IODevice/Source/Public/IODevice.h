@@ -7,7 +7,7 @@
 #include "IOExportsAPI.h"
 #include "ExportCoreTypes.h"
 
-namespace DevelopHelper
+namespace IOToolkit
 {
 
 /**

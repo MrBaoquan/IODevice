@@ -8,7 +8,7 @@
 #include <functional>
 #include "InputCoreTypes.h"
 
-namespace DevelopHelper
+namespace IOToolkit
 {
 
 

@@ -18,7 +18,7 @@
  * Device class, posses all raw input and events.
  */
 
-namespace DevelopHelper
+namespace IOToolkit
 {
 
 struct IODeviceDetails

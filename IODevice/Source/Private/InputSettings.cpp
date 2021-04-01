@@ -14,13 +14,13 @@
 #include "IOLog.h"
 #include "IOApplication.h"
 
-DevelopHelper::UInputSettings& DevelopHelper::UInputSettings::Instance()
+IOToolkit::UInputSettings& IOToolkit::UInputSettings::Instance()
 {
     static UInputSettings instance;
     return instance;
 }
 
-int DevelopHelper::UInputSettings::Initialize()
+int IOToolkit::UInputSettings::Initialize()
 {
     using namespace rapidxml;
     
@@ -235,7 +235,7 @@ int DevelopHelper::UInputSettings::Initialize()
 }
 
 
-int DevelopHelper::UInputSettings::Uninitialize()
+int IOToolkit::UInputSettings::Uninitialize()
 {
 	AxisMappings.clear();
 	ActionMappings.clear();
@@ -245,7 +245,7 @@ int DevelopHelper::UInputSettings::Uninitialize()
 	return 0;
 }
 
-const bool DevelopHelper::UInputSettings::HasAxis(uint8 deviceID, std::string axisName)
+const bool IOToolkit::UInputSettings::HasAxis(uint8 deviceID, std::string axisName)
 {
     if (deviceID < IODevices::GetDevicesCount())
     {
@@ -260,13 +260,13 @@ const bool DevelopHelper::UInputSettings::HasAxis(uint8 deviceID, std::string ax
     return false;
 }
 
-int DevelopHelper::UInputSettings::SetConfigPath(const char* InPath)
+int IOToolkit::UInputSettings::SetConfigPath(const char* InPath)
 {
     customConfigPath = InPath;
     return 1;
 }
 
-const bool DevelopHelper::UInputSettings::HasAction(uint8 deviceID, std::string actionName)
+const bool IOToolkit::UInputSettings::HasAction(uint8 deviceID, std::string actionName)
 {
     if (deviceID < IODevices::GetDevicesCount())
     {
@@ -281,7 +281,7 @@ const bool DevelopHelper::UInputSettings::HasAction(uint8 deviceID, std::string 
     return false;
 }
 
-bool DevelopHelper::UInputSettings::AddDevcie(DevicePropeties deviceProps)
+bool IOToolkit::UInputSettings::AddDevcie(DevicePropeties deviceProps)
 {
     std::shared_ptr<RawIO> rawIO = RawIOFactory::CreateRawInput(deviceProps);
     if (!rawIO)
@@ -293,7 +293,7 @@ bool DevelopHelper::UInputSettings::AddDevcie(DevicePropeties deviceProps)
     return true;
 }
 
-float DevelopHelper::UInputSettings::GetNodeValue(const char* val, float defaultValue /*= 0.f*/)
+float IOToolkit::UInputSettings::GetNodeValue(const char* val, float defaultValue /*= 0.f*/)
 {
     float newVal = defaultValue;
     std::string strVal(val);

@@ -7,7 +7,7 @@
 
 #include "IODevice_CWrapper.h"
 
-namespace dh = DevelopHelper;
+namespace dh = IOToolkit;
 
 #pragma comment(lib,"IODevice.lib")
 
@@ -83,7 +83,7 @@ IOCAPI int __stdcall GetDOAll(BSTR InDeviceName, float* InStatus)
 IOCAPI int __stdcall SetDOSingle(BSTR InDeviceName, BSTR InKeyName, float InVal)
 {
 	dh::IODevice& _device = getIODevice(InDeviceName);
-	return _device.SetDO(DevelopHelper::FKey(BSTR2String(InKeyName).data()),InVal);
+	return _device.SetDO(IOToolkit::FKey(BSTR2String(InKeyName).data()),InVal);
 }
 
 IOCAPI int __stdcall SetDOAll(BSTR InDeviceName, float* InStatus)

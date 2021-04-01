@@ -7,7 +7,7 @@
 #include <cfloat>
 #include "CoreTypes.inl"
 
-namespace DevelopHelper
+namespace IOToolkit
 {
 
 

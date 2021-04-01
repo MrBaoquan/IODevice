@@ -13,6 +13,8 @@ extern "C"
 
 	IOCAPI int __stdcall Load();
 	IOCAPI int __stdcall UnLoad();
+
+	IOCAPI int __stdcall SetIOConfigPath(BSTR InFilePath);
 	
 	IOCAPI int __stdcall BindKey(BSTR InDeviceName, BSTR InKeyName, int InKeyEvent, InputActionSignature InHandler);
 	IOCAPI int __stdcall BindAction(BSTR InDeviceName, BSTR InActionName, int InKeyEvent, InputActionWithKeySignature InHandler);

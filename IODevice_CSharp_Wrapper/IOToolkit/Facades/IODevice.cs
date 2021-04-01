@@ -4,12 +4,24 @@ using System.Collections.Generic;
 
 namespace IOToolkit
 {
+    /// <summary>
+    /// IO设备
+    /// </summary>
     public abstract partial class IODevice
     {
+        /// <summary>
+        /// 构造设备
+        /// </summary>
+        /// <param name="InID"></param>
         public IODevice(string InID)
         {
             this.ID = InID;
         }
+
+        /// <summary>
+        /// 设备是否合法  当前无效
+        /// </summary>
+        /// <returns></returns>
 
         public bool IsValid()
         {

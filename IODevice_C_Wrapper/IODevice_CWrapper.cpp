@@ -3,6 +3,7 @@
 #include <iostream>
 
 #include "IODeviceController.h"
+#include "IOSettings.h"
 #include "StringUtils.hpp"
 
 #include "IODevice_CWrapper.h"
@@ -25,6 +26,11 @@ IOCAPI int __stdcall UnLoad()
 	return dh::IODeviceController::Instance().Unload();
 }
 
+
+IOCAPI int __stdcall SetIOConfigPath(BSTR InFilePath)
+{
+	return dh::IOSettings::Instance().SetIOConfigPath(BSTR2String(InFilePath).c_str());
+}
 
 IOCAPI int __stdcall BindKey(BSTR InDeviceName, BSTR InKeyName, int InKeyEvent, InputActionSignature InHandler)
 {

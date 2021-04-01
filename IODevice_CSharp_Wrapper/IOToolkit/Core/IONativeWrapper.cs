@@ -26,6 +26,9 @@ namespace IOToolkit.Core
         public static extern int UnLoad();
 
         [DllImport(DllName, CallingConvention = CallingConvention.StdCall)]
+        public static extern int SetIOConfigPath([MarshalAs(UnmanagedType.BStr)] string InFilePath);
+
+        [DllImport(DllName, CallingConvention = CallingConvention.StdCall)]
         public static extern int BindKey([MarshalAs(UnmanagedType.BStr)] string InDeviceName, [MarshalAs(UnmanagedType.BStr)] string InKeyName, int InKeyEvent, NativeActionSignature InHandler);
 
         [DllImport(DllName, CallingConvention = CallingConvention.StdCall)]

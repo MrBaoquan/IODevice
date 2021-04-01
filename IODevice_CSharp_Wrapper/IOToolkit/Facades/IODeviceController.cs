@@ -7,6 +7,9 @@ using System.Threading.Tasks;
 
 namespace IOToolkit
 {
+    /// <summary>
+    /// IO设备管理
+    /// </summary>
     public class IODeviceController
     {
         private class IODeviceNative : IODevice

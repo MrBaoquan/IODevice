@@ -27,7 +27,7 @@ namespace IODevice_C_CSharpTest
         {
             //_delegate = new NativeDelegate.NativeActionSignature(this.onKeyPressed);
             IODeviceController.Load();
-
+            IOSettings.SetIOConfigPath("");
             IODevice _device = IODeviceController.GetIODevice("ExtDev");
             _device.BindAction("TestAction", InputEvent.IE_Pressed, this.onActionPressed);
             _device.BindAction("TestAction", InputEvent.IE_Released, this.onActionReleased);

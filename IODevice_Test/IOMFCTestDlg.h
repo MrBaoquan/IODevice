@@ -22,7 +22,9 @@ public:
 	protected:
 	virtual void DoDataExchange(CDataExchange* pDX);	// DDX/DDV 支持
 
-	void ReBindActions();
+	void ReBindActions(std::string DeviceName);
+
+	void SyncDevices();
 // 实现
 protected:
 	HICON m_hIcon;
@@ -38,6 +40,7 @@ public:
     
     void OnActionWithKeyDown(DevelopHelper::FKey key);
     void OnActionWithKeyUp(DevelopHelper::FKey key);
+	std::string currentDeviceName();
     void OnActionWithKeyRepeat(DevelopHelper::FKey key);
 	void OnAxis(float InValue);
 
@@ -76,4 +79,6 @@ public:
 	void SyncDO(float newValue);
 	CButton btn_plus;
 	CButton btn_minus;
+	CComboBox deviceListBox;
+	afx_msg void OnCbnSelchangeCombo2();
 };

@@ -8,9 +8,12 @@
 
   <!-- Must put this node at the top position . -->
   <!-- Strandar Device -->
+  <!--
+    Type: 键盘=>Standard 遥感=>Joystick 外部拓展(板卡等)=>External
+  -->
   <Device Name="Standard" Type="Standard"></Device>
 
-  <Device Name="ExtDev" Type="External" DllName="IOUI"  Index="0">
+  <Device Name="PCI2312A" Type="External" DllName="PCI2312A"  Index="0">
     <Properties>
       <!--
         针对Axis值, 原始值会首先除以1000, 目的是将范围限制在 [-1,1], 然后按照以下顺序依次处理数据
@@ -28,7 +31,8 @@
 
     <!-- 输入动作 -->
     <Action Name="TestAction">
-      <Key Name="Axis_00"></Key>
+      <Key Name="AnyKey"></Key>
+      <!--<Key Name="Axis_00"></Key>-->
     </Action>
 
     <!-- 模拟量输入 -->
@@ -36,7 +40,7 @@
       <!--
         Scale: 模拟量缩放系数
       -->
-      <Key Name="Axis_00" Scale="1.0" />
+      <Key Name="Left" Scale="1" />
       <Key Name="Right" Scale="1" />
     </Axis>
 
@@ -44,9 +48,10 @@
     <OAction Name="TurnOnLight">
       <!--
         InvertEvent: 反转输出 (0 和 非0)
+        Scale: 输出值缩放系数
       -->
-      <Key Name="OAxis_00" InvertEvent="True" />
-      <Key Name="OAxis_01" />
+      <Key Name="OAxis_00" Scale="1" InvertEvent="True" />
+      <Key Name="OAxis_02" />
     </OAction>
 
   </Device>

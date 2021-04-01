@@ -9,6 +9,10 @@
 
 #include <chrono>
 #include <ctime>
+#include <algorithm>
+#include "rapidxml.hpp"
+#include "rapidxml_utils.hpp"
+#include "Paths.hpp"
 
 #pragma comment(lib,"IODevice.lib")
 #include "IOSettings.h"
@@ -83,18 +87,68 @@ void CIOMFCTestDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDC_STATIC14, read_label);
 	DDX_Control(pDX, IDC_BUTTON3, btn_plus);
 	DDX_Control(pDX, IDC_BUTTON1, btn_minus);
+	DDX_Control(pDX, IDC_COMBO2, deviceListBox);
 }
 
 
-void CIOMFCTestDlg::ReBindActions()
+void CIOMFCTestDlg::ReBindActions(std::string DeviceName)
 {
 	using namespace DevelopHelper;
-	IODevice& extDev = IODeviceController::Instance().GetIODevice("ExtDev");
+	OutputDebugStringA(DeviceName.data());
+	OutputDebugStringA("\r\n");
+	IODeviceController::Instance().ClearBindings();
+
+	IODevice& extDev = IODeviceController::Instance().GetIODevice(DeviceName.data());
+
 	extDev.BindAction("TestAction", IE_Pressed, this, &CIOMFCTestDlg::OnActionWithKeyDown);
 	extDev.BindAction("TestAction", IE_Released, this, &CIOMFCTestDlg::OnActionWithKeyUp);
 	extDev.BindAction("TestAction", IE_Repeat, this, &CIOMFCTestDlg::OnActionWithKeyRepeat);
 
 	extDev.BindAxis("TestAxis", this, &CIOMFCTestDlg::OnAxis);
+}
+
+
+void CIOMFCTestDlg::SyncDevices()
+{
+	using namespace DevelopHelper;
+	using namespace rapidxml;
+	std::string _currentDeviceName = currentDeviceName();
+	std::wstring _wcurDeviceName = std::wstring(_currentDeviceName.begin(), _currentDeviceName.end());
+	deviceListBox.ResetContent();
+	std::string _filepath = Paths::Instance().GetModuleDir() + "Config\\IODevice.xml";
+	try
+	{
+		file<> fdoc(_filepath.data());
+		xml_document<> doc;
+		doc.parse<0>(fdoc.data());
+		xml_node<>* root = doc.first_node();
+		std::vector<std::wstring> _deviceNames;
+		for (xml_node<>* device = root->first_node("Device"); device; device = device->next_sibling())
+		{
+			// All devices.
+			std::string DeviceName = device->first_attribute("Name") ? device->first_attribute("Name")->value() : "Invalid";
+			_deviceNames.push_back(std::wstring(DeviceName.begin(), DeviceName.end()));
+		}
+		std::wstring _defaultDevice = _deviceNames[0];
+		if (_deviceNames.size() > 1) {
+			_defaultDevice = _deviceNames[1];
+		}
+		std::reverse(_deviceNames.begin(), _deviceNames.end());
+		auto* _listBox = &deviceListBox;
+		std::for_each(_deviceNames.begin(), _deviceNames.end(), [_listBox](std::wstring _name) {
+			_listBox->AddString(_name.data());
+		});
+
+		if (std::find(_deviceNames.begin(), _deviceNames.end(), _wcurDeviceName.data()) != _deviceNames.end()) {
+			deviceListBox.SelectString(0, _wcurDeviceName.data());
+		}else
+		{
+			deviceListBox.SelectString(0, _defaultDevice.data());
+		}
+		
+		this->ReBindActions(currentDeviceName());
+		
+	}catch(std::exception& e){}
 }
 
 BEGIN_MESSAGE_MAP(CIOMFCTestDlg, CDialogEx)
@@ -114,6 +168,7 @@ BEGIN_MESSAGE_MAP(CIOMFCTestDlg, CDialogEx)
 	ON_BN_CLICKED(IDC_BUTTON2, &CIOMFCTestDlg::OnBnClickedButton2)
 	ON_BN_CLICKED(IDC_BUTTON3, &CIOMFCTestDlg::OnBnClickedButton3)
 	ON_BN_CLICKED(IDC_BUTTON1, &CIOMFCTestDlg::OnBnClickedButton1)
+	ON_CBN_SELCHANGE(IDC_COMBO2, &CIOMFCTestDlg::OnCbnSelchangeCombo2)
 END_MESSAGE_MAP()
 
 // CIOMFCTestDlg 消息处理程序
@@ -151,9 +206,8 @@ BOOL CIOMFCTestDlg::OnInitDialog()
 
     /*IOSettings::Instance().SetIOConfigPath("IODevice.xml");*/
 	IODeviceController::Instance().Load();
-	IODevice& extDev = IODeviceController::Instance().GetIODevice("ExtDev");
-   
-	this->ReBindActions();
+
+	SyncDevices();
 
     // TODO: 在此添加额外的初始化代码
     SetTimer(1, 0.02, NULL);
@@ -275,6 +329,18 @@ void CIOMFCTestDlg::OnActionWithKeyUp(DevelopHelper::FKey key)
 	SetDlgItemTextA(this->m_hWnd, label_btn_status, _msg.data());
 }
 
+
+std::string CIOMFCTestDlg::currentDeviceName()
+{
+	CString str;
+	int _curSel = deviceListBox.GetCurSel();
+	if (_curSel == -1) return "";
+
+	deviceListBox.GetLBText(_curSel, str);
+	auto _wstr = std::wstring(str.GetString());
+	return std::string(_wstr.begin(), _wstr.end());
+}
+
 void CIOMFCTestDlg::OnActionWithKeyRepeat(DevelopHelper::FKey key)
 {
 	//OutputDebugStringA(std::string(key.GetName()).append(" repeat\n").data());   
@@ -378,7 +444,7 @@ void CIOMFCTestDlg::OnBnClickedButton2()
 {
 	DevelopHelper::IODeviceController::Instance().Unload();
 	DevelopHelper::IODeviceController::Instance().Load();
-	this->ReBindActions();
+	SyncDevices();
 	AppendLog(TEXT("Hot reload succeed"));
 	// TODO: 在此添加控件通知处理程序代码
 }
@@ -409,16 +475,25 @@ void CIOMFCTestDlg::OnBnClickedButton1()
 void CIOMFCTestDlg::SyncDO(float newValue)
 {
 	using namespace DevelopHelper;
+	auto& _device = IODeviceController::Instance().GetIODevice(currentDeviceName().data());
+	if (!_device.IsValid()) return;
 	std::string _resultStr = this->GetOInputStr(oaction_input);
 	switch (out_radio_group)
 	{
 	case 0:
-		IODeviceController::Instance().GetIODevice("ExtDev").SetDO(FKey(_resultStr.data()), newValue);
+		_device.SetDO(FKey(_resultStr.data()), newValue);
 		break;
 	case 1:
-		IODeviceController::Instance().GetIODevice("ExtDev").SetDO(_resultStr.data(), newValue);
+		_device.SetDO(_resultStr.data(), newValue);
 		break;
 	default:
 		break;
 	}
+}
+
+
+void CIOMFCTestDlg::OnCbnSelchangeCombo2()
+{
+	// TODO: 在此添加控件通知处理程序代码
+	this->ReBindActions(currentDeviceName());
 }

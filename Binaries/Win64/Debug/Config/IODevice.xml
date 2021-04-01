@@ -10,9 +10,9 @@
   <!-- Strandar Device -->
   <Device Name="Standard" Type="Standard"></Device>
 
-  <Device Name="ExtDev" Type="External" DllName="PCI2312A"  Index="0">
+  <Device Name="PCI2312A" Type="External" DllName="PCI2312A"  Index="0">
     <Properties>
-      <Key Name="Axis_00" PreOffset="0.0" PreScale="1.0" Max="5" DeadZone="0.5" Sensitivity="1.0" Exponent="1.0" Invert="False" InvertEvent="False"></Key>
+      <Key Name="Axis_01" PreScale="1000.0" ></Key>
     </Properties>
 
     <Action Name="TestAction">
@@ -25,8 +25,8 @@
     </Axis>
 
     <OAction Name="Output">
-      <Key Name="OAxis_02" Scale="1" InvertEvent="False"></Key>
-      <Key Name="OAxis_03" Scale="1" InvertEvent="False"></Key>
+      <Key Name="OAxis_02" Scale="1" InvertEvent="True"></Key>
+      <Key Name="OAxis_04" Scale="1" InvertEvent="False"></Key>
     </OAction>
 
   </Device>

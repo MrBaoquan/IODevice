@@ -10,7 +10,7 @@
 #include "CoreTypes.inl"
 #include "InputCoreTypes.h"
 
-namespace DevelopHelper
+namespace IOToolkit
 {
 /**
  * Manager standard input key mapping

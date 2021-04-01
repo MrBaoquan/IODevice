@@ -14,7 +14,7 @@
 #include "InputChord.h"
 #include "CoreTypes/InputKeyProperties.h"
 
-namespace DevelopHelper
+namespace IOToolkit
 {
 
 struct FInputActionKeyMapping

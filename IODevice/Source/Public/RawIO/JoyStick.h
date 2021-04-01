@@ -7,7 +7,7 @@
 #include "CustomIOBase.h"
 #include "DIJoyStick.hpp"
 
-namespace DevelopHelper
+namespace IOToolkit
 {
 
 class JoyStickServer

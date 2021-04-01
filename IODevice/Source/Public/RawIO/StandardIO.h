@@ -9,7 +9,7 @@
 #include "Math/Vector2D.h"
 #include "CoreTypes/IOTypes.h"
 
-namespace DevelopHelper
+namespace IOToolkit
 {
 
     namespace EMouseButtons

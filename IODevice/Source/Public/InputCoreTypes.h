@@ -9,7 +9,7 @@
 #include "IOExportsAPI.h"
 #include "CoreTypes.inl"
 
-namespace DevelopHelper
+namespace IOToolkit
 {
 
 /**

@@ -10,80 +10,80 @@
 
 #define CLAMP(x, low, high)  (((x) > (high)) ? (high) : (((x) < (low)) ? (low) : (x)))
 
-void DevelopHelper::RawIO::Tick(float DeltaSeconds)
+void IOToolkit::RawIO::Tick(float DeltaSeconds)
 {
     
 }
 
-int DevelopHelper::RawIO::SetDO(float* InDOStatus)
+int IOToolkit::RawIO::SetDO(float* InDOStatus)
 {
     return -1;
 }
 
 
-int DevelopHelper::RawIO::SetDOOn(const char* InOAction)
+int IOToolkit::RawIO::SetDOOn(const char* InOAction)
 {
 	return -1;
 }
 
 
-int DevelopHelper::RawIO::SetDOOff(const char* InOAction)
+int IOToolkit::RawIO::SetDOOff(const char* InOAction)
 {
 	return -1;
 }
 
-int DevelopHelper::RawIO::DOImmediate()
+int IOToolkit::RawIO::DOImmediate()
 {
 	return 0;
 }
 
-int DevelopHelper::RawIO::SetDO(const char* InOAction, float val, bool bIgnoreMassage/*=false*/)
+int IOToolkit::RawIO::SetDO(const char* InOAction, float val, bool bIgnoreMassage/*=false*/)
 {
 	return -1;
 }
-int DevelopHelper::RawIO::SetDO(const FKey& InKey, float val)
+int IOToolkit::RawIO::SetDO(const FKey& InKey, float val)
 {
     return -1;
 }
 
-int DevelopHelper::RawIO::GetDO(float* OutDOStatus)
+int IOToolkit::RawIO::GetDO(float* OutDOStatus)
 {
     return -1;
 }
 
 
-float DevelopHelper::RawIO::GetDO(const char* InOAction)
+float IOToolkit::RawIO::GetDO(const char* InOAction)
 {
 	return 0;
 }
 
-float DevelopHelper::RawIO::GetDO(const FKey InKey)
+float IOToolkit::RawIO::GetDO(const FKey InKey)
 {
     return 0;
 }
 
-void DevelopHelper::RawIO::OnFrameEnd()
+void IOToolkit::RawIO::OnFrameEnd()
 {
 
 }
 
 
-void DevelopHelper::RawIO::InputKey(FKey InKey, InputEvent keyEvent,int deviceID)
+void IOToolkit::RawIO::InputKey(FKey InKey, InputEvent keyEvent,int deviceID)
 {
     PlayerInput::Instance().InputKey(InKey, keyEvent, deviceID);
 }
 
-void DevelopHelper::RawIO::InputAxis(FKey Key, float Delta, float DeltaTime, uint8 InID, int32 NumSamples)
+void IOToolkit::RawIO::InputAxis(FKey Key, float Delta, float DeltaTime, uint8 InID, int32 NumSamples)
 {
     PlayerInput::Instance().InputAxis(Key, Delta, 0.f, InID, NumSamples);
 }
 
-void DevelopHelper::RawIO::Initialize()
+void IOToolkit::RawIO::Initialize()
 {
     KeyProperties = UInputSettings::Instance().KeyProperties[deviceID];
 }
 
-void DevelopHelper::RawIO::DispatchButtonEvent(std::vector<BYTE> DIStatus, std::vector<ButtonState>& channelsState)
+void IOToolkit::RawIO::DispatchButtonEvent(std::vector<BYTE> DIStatus, std::vector<ButtonState>& channelsState)
 {
     for (uint8 channelIndex = 0;channelIndex < DIStatus.size();channelIndex++)
     {
@@ -99,7 +99,7 @@ void DevelopHelper::RawIO::DispatchButtonEvent(std::vector<BYTE> DIStatus, std::
     }
 }
 
-void DevelopHelper::RawIO::DispatchAxisEvent(std::vector<short> InAxis)
+void IOToolkit::RawIO::DispatchAxisEvent(std::vector<short> InAxis)
 {
     for (uint8 index = 0;index < InAxis.size();++index)
     {
@@ -107,7 +107,7 @@ void DevelopHelper::RawIO::DispatchAxisEvent(std::vector<short> InAxis)
     }
 }
 
-DevelopHelper::InputEvent DevelopHelper::RawIO::GetChannelEvent(ButtonState& chState)
+IOToolkit::InputEvent IOToolkit::RawIO::GetChannelEvent(ButtonState& chState)
 {
     InputEvent FinalInputEvent = IE_MAX;
     bool bPressed = IsKeyPressed(chState);
@@ -145,7 +145,7 @@ DevelopHelper::InputEvent DevelopHelper::RawIO::GetChannelEvent(ButtonState& chS
     return FinalInputEvent;
 }
 
-bool DevelopHelper::RawIO::IsKeyPressed(struct ButtonState& chState)
+bool IOToolkit::RawIO::IsKeyPressed(struct ButtonState& chState)
 {
     bool bPressed = chState.status == pressedValue ? true : false;
     if (KeyProperties.count(chState.Key))
@@ -159,7 +159,7 @@ bool DevelopHelper::RawIO::IsKeyPressed(struct ButtonState& chState)
     return bPressed;
 }
 
-DevelopHelper::FKey DevelopHelper::RawIO::GetButtonKey(uint8 channelIndex)
+IOToolkit::FKey IOToolkit::RawIO::GetButtonKey(uint8 channelIndex)
 {
     std::string channelKeyPrefix("Button_");
     std::string fullKeyName = "";
@@ -175,7 +175,7 @@ DevelopHelper::FKey DevelopHelper::RawIO::GetButtonKey(uint8 channelIndex)
     return FKey(fullKeyName.data());
 }
 
-DevelopHelper::FKey DevelopHelper::RawIO::GetAxisKey(uint8 axisIndex)
+IOToolkit::FKey IOToolkit::RawIO::GetAxisKey(uint8 axisIndex)
 {
     std::string channelKeyPrefix("Axis_");
     std::string fullKeyName = "";
@@ -192,7 +192,7 @@ DevelopHelper::FKey DevelopHelper::RawIO::GetAxisKey(uint8 axisIndex)
 }
 
 
-DevelopHelper::FKey DevelopHelper::RawIO::GetOAxisKey(uint8 oaxisIndex)
+IOToolkit::FKey IOToolkit::RawIO::GetOAxisKey(uint8 oaxisIndex)
 {
 	std::string channelKeyPrefix("OAxis_");
 	std::string fullKeyName = "";
@@ -208,7 +208,7 @@ DevelopHelper::FKey DevelopHelper::RawIO::GetOAxisKey(uint8 oaxisIndex)
 	return FKey(fullKeyName.data());
 }
 
-float DevelopHelper::RawIO::MassageKeyInput(FKey InKey, float InRawValue)
+float IOToolkit::RawIO::MassageKeyInput(FKey InKey, float InRawValue)
 {
 	float NewVal = InRawValue;
 	if (KeyProperties.count(InKey))

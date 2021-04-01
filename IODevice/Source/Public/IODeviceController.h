@@ -7,7 +7,7 @@
 
 #include "IODevice.h"
 
-namespace DevelopHelper
+namespace IOToolkit
 {
 
 class IOAPI IODeviceController

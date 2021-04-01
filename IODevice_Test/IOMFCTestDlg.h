@@ -38,10 +38,10 @@ protected:
 public:
     afx_msg void OnTimer(UINT_PTR nIDEvent);
     
-    void OnActionWithKeyDown(DevelopHelper::FKey key);
-    void OnActionWithKeyUp(DevelopHelper::FKey key);
+    void OnActionWithKeyDown(IOToolkit::FKey key);
+    void OnActionWithKeyUp(IOToolkit::FKey key);
 	std::string currentDeviceName();
-    void OnActionWithKeyRepeat(DevelopHelper::FKey key);
+    void OnActionWithKeyRepeat(IOToolkit::FKey key);
 	void OnAxis(float InValue);
 
 	std::string GetOInputStr(const CEdit& _edit);

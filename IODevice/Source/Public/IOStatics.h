@@ -13,7 +13,7 @@
 #include "LessKey.h"
 #include "KeyDetails.h"
 
-namespace DevelopHelper
+namespace IOToolkit
 {
 
 class IODevices

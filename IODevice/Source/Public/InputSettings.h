@@ -8,7 +8,7 @@
 #include "InputCoreTypes.h"
 #include "PlayerInput.h"
 
-namespace DevelopHelper
+namespace IOToolkit
 {
 
 class UInputSettings

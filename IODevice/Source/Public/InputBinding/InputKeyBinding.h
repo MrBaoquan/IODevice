@@ -7,7 +7,7 @@
 #include "InputBinding.h"
 #include "InputChord.h"
 
-namespace DevelopHelper 
+namespace IOToolkit 
 {
 
 /**

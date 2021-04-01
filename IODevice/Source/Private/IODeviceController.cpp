@@ -10,7 +10,7 @@
 #include "IOApplication.h"
 #include "IOLog.h"
 
-using namespace DevelopHelper;
+using namespace IOToolkit;
 
 /** Application main entry. */
 IODeviceController::IODeviceController()
@@ -37,31 +37,31 @@ IODeviceController& IODeviceController::Instance()
 }
 
 
-int DevelopHelper::IODeviceController::Load()
+int IOToolkit::IODeviceController::Load()
 {
 	IOApplication::DyLoad();
 	return 0;
 }
 
 
-int DevelopHelper::IODeviceController::Unload()
+int IOToolkit::IODeviceController::Unload()
 {
     IOApplication::DyUnload();
 	return 0;
 }
 
-DevelopHelper::IODevice& DevelopHelper::IODeviceController::GetIODevice(const char* deviceName)
+IOToolkit::IODevice& IOToolkit::IODeviceController::GetIODevice(const char* deviceName)
 {
     return IODevices::GetDevice(deviceName);
 }
 
-const float DevelopHelper::IODeviceController::GetDeltaSeconds() const
+const float IOToolkit::IODeviceController::GetDeltaSeconds() const
 {
     return deltaTime;
 }
 
 /** Application tick entry. */
-void DevelopHelper::IODeviceController::Update()
+void IOToolkit::IODeviceController::Update()
 {
     static float minDelta = 0.02f;
     static unsigned long lastTime = GetTickCount();
@@ -89,7 +89,7 @@ void DevelopHelper::IODeviceController::Update()
     lastTime = GetTickCount();
 }
 
-void DevelopHelper::IODeviceController::ClearBindings()
+void IOToolkit::IODeviceController::ClearBindings()
 {
     for (auto& deviceIt : IODevices::GetDevcies())
     {

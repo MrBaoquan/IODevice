@@ -9,7 +9,7 @@
 #include "CoreTypes/IOTypes.h"
 #include "IOLog.h"
 
-DevelopHelper::ExternalIO::ExternalIO(uint8 InID, uint8 InDeviceIndex, std::string InFullDllName):
+IOToolkit::ExternalIO::ExternalIO(uint8 InID, uint8 InDeviceIndex, std::string InFullDllName):
                                  CustomIOBase(InID,InDeviceIndex,IOType::External)
                                 ,externalDll(InFullDllName.data())
                                 ,bValid(false)
@@ -17,7 +17,7 @@ DevelopHelper::ExternalIO::ExternalIO(uint8 InID, uint8 InDeviceIndex, std::stri
 	Constructor();
 }
 
-void DevelopHelper::ExternalIO::Tick(float DeltaSeconds)
+void IOToolkit::ExternalIO::Tick(float DeltaSeconds)
 {
     if (!bValid) { return; }
 
@@ -51,12 +51,12 @@ void DevelopHelper::ExternalIO::Tick(float DeltaSeconds)
 /**
  * Note: 仅针对核心主逻辑  并非用户层/业务层尾帧
  */
-void DevelopHelper::ExternalIO::OnFrameEnd()
+void IOToolkit::ExternalIO::OnFrameEnd()
 {
    
 }
 
-void DevelopHelper::ExternalIO::Destroy()
+void IOToolkit::ExternalIO::Destroy()
 {
 	if (bValid)
 	{
@@ -64,7 +64,7 @@ void DevelopHelper::ExternalIO::Destroy()
 	}
 }
 
-int DevelopHelper::ExternalIO::ConvertFKeyToChannel(const FKey& InKey)
+int IOToolkit::ExternalIO::ConvertFKeyToChannel(const FKey& InKey)
 {
     std::string keyName = InKey.GetName();
     size_t pos = keyName.find_first_of('_');
@@ -72,7 +72,7 @@ int DevelopHelper::ExternalIO::ConvertFKeyToChannel(const FKey& InKey)
     return std::atoi(num_str.data());
 }
 
-float DevelopHelper::ExternalIO::GetDO(const FKey InKey)
+float IOToolkit::ExternalIO::GetDO(const FKey InKey)
 {
 	if (!bValid) { return 0; }
     int numChannel = ConvertFKeyToChannel(InKey);
@@ -83,7 +83,7 @@ float DevelopHelper::ExternalIO::GetDO(const FKey InKey)
     return DOStatus[numChannel];
 }
 
-float DevelopHelper::ExternalIO::GetDO(const char* InOAction)
+float IOToolkit::ExternalIO::GetDO(const char* InOAction)
 {
 	if (!bValid) { return 0; }
 	if (!OActionMappings.count(InOAction)) { return 0; }
@@ -95,13 +95,13 @@ float DevelopHelper::ExternalIO::GetDO(const char* InOAction)
 }
 
 
-void DevelopHelper::ExternalIO::Initialize()
+void IOToolkit::ExternalIO::Initialize()
 {
 	__super::Initialize();
 	OActionMappings = UInputSettings::Instance().OActionMappings[deviceID];
 }
 
-int DevelopHelper::ExternalIO::GetDeviceDI(std::vector<BYTE>& OutDIStatus)
+int IOToolkit::ExternalIO::GetDeviceDI(std::vector<BYTE>& OutDIStatus)
 {
     static BYTE exDIStatus[MaxIOCount];
     int retCode = externalDll.GetDeviceDI(deviceIndex, exDIStatus);
@@ -112,7 +112,7 @@ int DevelopHelper::ExternalIO::GetDeviceDI(std::vector<BYTE>& OutDIStatus)
     return retCode;
 }
 
-int DevelopHelper::ExternalIO::GetDeviceAD(std::vector<short>& OutADStatus)
+int IOToolkit::ExternalIO::GetDeviceAD(std::vector<short>& OutADStatus)
 {
     static short exADStatus[MaxIOCount];
     int retCode = externalDll.GetDeviceAD(deviceIndex, exADStatus);
@@ -123,7 +123,7 @@ int DevelopHelper::ExternalIO::GetDeviceAD(std::vector<short>& OutADStatus)
     return retCode;
 }
 
-int DevelopHelper::ExternalIO::GetDO(std::vector<float>& OutDOStatus)
+int IOToolkit::ExternalIO::GetDO(std::vector<float>& OutDOStatus)
 {
     static short exDoStatus[MaxIOCount];
     int retCode = externalDll.GetDeviceDO(deviceIndex, exDoStatus);
@@ -136,7 +136,7 @@ int DevelopHelper::ExternalIO::GetDO(std::vector<float>& OutDOStatus)
     return retCode;
 }
 
-int DevelopHelper::ExternalIO::GetDO(float* OutDOStatus)
+int IOToolkit::ExternalIO::GetDO(float* OutDOStatus)
 {
     if (!bValid) { return 0; }
 	memcpy(OutDOStatus, DOStatus.data(), sizeof(float)*outputCount);
@@ -144,7 +144,7 @@ int DevelopHelper::ExternalIO::GetDO(float* OutDOStatus)
 }
 
 // Set All by raw data
-int DevelopHelper::ExternalIO::SetDO(float* InDOStatus)
+int IOToolkit::ExternalIO::SetDO(float* InDOStatus)
 {
     if (!bValid) { return 0; }
 	memcpy(DOStatus.data(), InDOStatus, sizeof(float)*outputCount);
@@ -153,18 +153,18 @@ int DevelopHelper::ExternalIO::SetDO(float* InDOStatus)
 }
 
 
-int DevelopHelper::ExternalIO::SetDOOn(const char* InOAction)
+int IOToolkit::ExternalIO::SetDOOn(const char* InOAction)
 {
 	return  this->SetDO(InOAction, 1.0f);
 }
 
 
-int DevelopHelper::ExternalIO::SetDOOff(const char* InOAction)
+int IOToolkit::ExternalIO::SetDOOff(const char* InOAction)
 {
 	return this->SetDO(InOAction,0.f);
 }
 
-int DevelopHelper::ExternalIO::DOImmediate()
+int IOToolkit::ExternalIO::DOImmediate()
 {
 	if (bDOChanged) {
 		int _retCode = this->SetDO(DOStatus);
@@ -175,7 +175,7 @@ int DevelopHelper::ExternalIO::DOImmediate()
 }
 
 // Set do by o action
-int DevelopHelper::ExternalIO::SetDO(const char* InOAction, float val, bool bIgnoreMassage/*=false*/)
+int IOToolkit::ExternalIO::SetDO(const char* InOAction, float val, bool bIgnoreMassage/*=false*/)
 {
 	if (!bValid) { return 0; }
 	if (!OActionMappings.count(InOAction)) { return 0; }
@@ -216,7 +216,7 @@ int DevelopHelper::ExternalIO::SetDO(const char* InOAction, float val, bool bIgn
 }
 
 // Set do by single channel
-int DevelopHelper::ExternalIO::SetDO(const FKey& InKey, float val)
+int IOToolkit::ExternalIO::SetDO(const FKey& InKey, float val)
 {
 	if (!bValid) return 0;
 	int numChannel = ConvertFKeyToChannel(InKey);
@@ -229,7 +229,7 @@ int DevelopHelper::ExternalIO::SetDO(const FKey& InKey, float val)
 	return 1;
 }
 
-int DevelopHelper::ExternalIO::SetDO(std::vector<float>& InDOStatus)
+int IOToolkit::ExternalIO::SetDO(std::vector<float>& InDOStatus)
 {
 	if (!bValid) return 0;
     static short tmpDOStatus[MaxIOCount];
@@ -240,12 +240,12 @@ int DevelopHelper::ExternalIO::SetDO(std::vector<float>& InDOStatus)
     return externalDll.SetDeviceDO(deviceIndex, tmpDOStatus);
 }
 
-DevelopHelper::ExternalIO::~ExternalIO()
+IOToolkit::ExternalIO::~ExternalIO()
 {
     
 }
 
-void DevelopHelper::ExternalIO::Constructor()
+void IOToolkit::ExternalIO::Constructor()
 {
     int loadDllErrCode = externalDll.GetErrCode();
     if (loadDllErrCode != 0)
@@ -269,7 +269,7 @@ void DevelopHelper::ExternalIO::Constructor()
     bValid = externalDll.OpenDevice(deviceIndex)==1;
 }
 
-bool DevelopHelper::ExternalIO::IsValidChannel(int InChannel, int InMaxNumber)
+bool IOToolkit::ExternalIO::IsValidChannel(int InChannel, int InMaxNumber)
 {
     if (InChannel < 0 || InChannel >= InMaxNumber)
     {

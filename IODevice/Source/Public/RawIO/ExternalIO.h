@@ -21,7 +21,7 @@ struct __declspec(dllimport) DeviceInfo
     BYTE AxisCount = 0;
 };
 
-namespace DevelopHelper
+namespace IOToolkit
 {
 
 class IOUIDLL :public PDLL

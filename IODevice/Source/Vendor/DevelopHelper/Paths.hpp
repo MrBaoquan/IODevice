@@ -7,7 +7,7 @@
 #include <string>
 #include <windows.h>
 
-namespace DevelopHelper
+namespace IOToolkit
 {
 
 class Paths

@@ -6,9 +6,9 @@
 #include "KeyDetails.h"
 #include "IOStatics.h"
 
-using namespace DevelopHelper;
+using namespace IOToolkit;
 
-DevelopHelper::FKeyDetails::FKeyDetails(const FKey InKey, const std::string InDisplayName, const unsigned __int8 InKeyFlags /*= 0*/)
+IOToolkit::FKeyDetails::FKeyDetails(const FKey InKey, const std::string InDisplayName, const unsigned __int8 InKeyFlags /*= 0*/)
     : Key(InKey)
     , DisplayName(InDisplayName)
     , bIsModifierKey((InKeyFlags & EKeyFlags::ModifierKey) != 0)
@@ -30,12 +30,12 @@ DevelopHelper::FKeyDetails::FKeyDetails(const FKey InKey, const std::string InDi
     }
 }
 
-bool DevelopHelper::FKeyDetails::IsFloatAxis() const
+bool IOToolkit::FKeyDetails::IsFloatAxis() const
 {
     return AxisType == EInputAxisType::Float;
 }
 
-bool DevelopHelper::FKeyDetails::IsVectorAxis() const
+bool IOToolkit::FKeyDetails::IsVectorAxis() const
 {
     return AxisType == EInputAxisType::Vector;
 }

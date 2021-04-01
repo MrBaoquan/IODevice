@@ -9,12 +9,12 @@
 #include "InputSettings.h"
 #include "IOLog.h"
 
-DevelopHelper::IODevice& DevelopHelper::IODeviceDetails::GetDevice()
+IOToolkit::IODevice& IOToolkit::IODeviceDetails::GetDevice()
 {
     return device;
 }
 
-void DevelopHelper::IODeviceDetails::Initialize()
+void IOToolkit::IODeviceDetails::Initialize()
 {
     if (rawIO)
     {
@@ -22,7 +22,7 @@ void DevelopHelper::IODeviceDetails::Initialize()
     }
 }
 
-void DevelopHelper::IODeviceDetails::Tick(float DeltaSeconds)
+void IOToolkit::IODeviceDetails::Tick(float DeltaSeconds)
 {
     if (rawIO)
     {
@@ -30,7 +30,7 @@ void DevelopHelper::IODeviceDetails::Tick(float DeltaSeconds)
     }
 }
 
-void DevelopHelper::IODeviceDetails::Destroy()
+void IOToolkit::IODeviceDetails::Destroy()
 {
 	if (rawIO)
 	{
@@ -39,7 +39,7 @@ void DevelopHelper::IODeviceDetails::Destroy()
 	this->ClearBinding();
 }
 
-void DevelopHelper::IODeviceDetails::ProcessFrameEnd()
+void IOToolkit::IODeviceDetails::ProcessFrameEnd()
 {
     if (rawIO)
     {
@@ -47,7 +47,7 @@ void DevelopHelper::IODeviceDetails::ProcessFrameEnd()
     }
 }
 
-void DevelopHelper::IODeviceDetails::ClearBinding()
+void IOToolkit::IODeviceDetails::ClearBinding()
 {
     KeyBindings.clear();
     ActionBindings.clear();
@@ -55,7 +55,7 @@ void DevelopHelper::IODeviceDetails::ClearBinding()
     AxisKeyBindings.clear();
 }
 
-void DevelopHelper::IODeviceDetails::BindKey(const FKey& InKey, InputEvent InEvent,InputActionHandlerSignature delegate)
+void IOToolkit::IODeviceDetails::BindKey(const FKey& InKey, InputEvent InEvent,InputActionHandlerSignature delegate)
 {
     if (!ValidDevcie(std::string(" Key ") + InKey.GetName()))
     {
@@ -79,7 +79,7 @@ void DevelopHelper::IODeviceDetails::BindKey(const FKey& InKey, InputEvent InEve
     KeyBindings.push_back(KB);
 }
 
-void DevelopHelper::IODeviceDetails::BindAxis(const std::string axisName, FInputAxisHandlerSignature delegate)
+void IOToolkit::IODeviceDetails::BindAxis(const std::string axisName, FInputAxisHandlerSignature delegate)
 {
     if (!ValidDevcie(std::string(" Axis ") + axisName))
     {
@@ -101,7 +101,7 @@ void DevelopHelper::IODeviceDetails::BindAxis(const std::string axisName, FInput
     AxisBindings.push_back(AB);
 }
 
-void DevelopHelper::IODeviceDetails::BindAxisKey(const FKey AxisKey, FInputAxisHandlerSignature delegate)
+void IOToolkit::IODeviceDetails::BindAxisKey(const FKey AxisKey, FInputAxisHandlerSignature delegate)
 {
     if (!ValidDevcie(std::string(" AxisKey ") + AxisKey.GetName()))
     {
@@ -124,7 +124,7 @@ void DevelopHelper::IODeviceDetails::BindAxisKey(const FKey AxisKey, FInputAxisH
     AxisKeyBindings.push_back(AB);
 }
 
-void DevelopHelper::IODeviceDetails::BindAction(std::string ActionName, const InputEvent KeyEvent, InputActionHandlerWithKeySignature delegate)
+void IOToolkit::IODeviceDetails::BindAction(std::string ActionName, const InputEvent KeyEvent, InputActionHandlerWithKeySignature delegate)
 {
 	if (!ValidDevcie(std::string(" Action ") + ActionName))
 	{
@@ -146,7 +146,7 @@ void DevelopHelper::IODeviceDetails::BindAction(std::string ActionName, const In
 	AddActionBinding(AB);
 }
 
-void DevelopHelper::IODeviceDetails::BindAction(std::string ActionName, const InputEvent KeyEvent, InputActionHandlerSignature delegate)
+void IOToolkit::IODeviceDetails::BindAction(std::string ActionName, const InputEvent KeyEvent, InputActionHandlerSignature delegate)
 {
     if (!ValidDevcie(std::string(" Action ") + ActionName))
     {
@@ -169,96 +169,96 @@ void DevelopHelper::IODeviceDetails::BindAction(std::string ActionName, const In
     AddActionBinding(AB);
 }
 
-int DevelopHelper::IODeviceDetails::SetDO(float* InDOStatus)
+int IOToolkit::IODeviceDetails::SetDO(float* InDOStatus)
 {
     return rawIO ? rawIO->SetDO(InDOStatus) : -1;
 }
 
 
-int DevelopHelper::IODeviceDetails::SetDOOn(const char* InOAction)
+int IOToolkit::IODeviceDetails::SetDOOn(const char* InOAction)
 {
 	return rawIO ? rawIO->SetDOOn(InOAction) : -1;
 }
 
 
-int DevelopHelper::IODeviceDetails::SetDOOff(const char* InOAction)
+int IOToolkit::IODeviceDetails::SetDOOff(const char* InOAction)
 {
 	return rawIO ? rawIO->SetDOOff(InOAction) : -1;
 }
 
-int DevelopHelper::IODeviceDetails::DOImmediate()
+int IOToolkit::IODeviceDetails::DOImmediate()
 {
 	return rawIO?rawIO->DOImmediate():-1;
 }
 
-int DevelopHelper::IODeviceDetails::SetDO(const char* InOAction, float InValue, bool bIngoreMassage/*bIngoreMassage=false*/)
+int IOToolkit::IODeviceDetails::SetDO(const char* InOAction, float InValue, bool bIngoreMassage/*bIngoreMassage=false*/)
 {
 	return rawIO ? rawIO->SetDO(InOAction, InValue,bIngoreMassage):-1;
 }
 
-int DevelopHelper::IODeviceDetails::SetDO(const FKey& InKey, float InValue)
+int IOToolkit::IODeviceDetails::SetDO(const FKey& InKey, float InValue)
 {
     return rawIO ? rawIO->SetDO(InKey, InValue) : -1;
 }
 
-int DevelopHelper::IODeviceDetails::GetDO(float* OutDOStatus)
+int IOToolkit::IODeviceDetails::GetDO(float* OutDOStatus)
 {
     return rawIO ? rawIO->GetDO(OutDOStatus) : -1;
 }
 
 
-float DevelopHelper::IODeviceDetails::GetDO(const char* InOAction)
+float IOToolkit::IODeviceDetails::GetDO(const char* InOAction)
 {
 	return rawIO ? rawIO->GetDO(InOAction) : -1;
 }
 
-bool DevelopHelper::IODeviceDetails::GetKey(const FKey& InKey)
+bool IOToolkit::IODeviceDetails::GetKey(const FKey& InKey)
 {
     return PlayerInput::Instance().GetKey(InKey, device.GetID());
 }
 
-bool DevelopHelper::IODeviceDetails::GetKeyDown(const FKey& InKey)
+bool IOToolkit::IODeviceDetails::GetKeyDown(const FKey& InKey)
 {
     return PlayerInput::Instance().GetKeyDown(InKey, device.GetID());
 }
 
-bool DevelopHelper::IODeviceDetails::GetKeyUp(const FKey& InKey)
+bool IOToolkit::IODeviceDetails::GetKeyUp(const FKey& InKey)
 {
     return PlayerInput::Instance().GetKeyUp(InKey, device.GetID());
 }
 
-float DevelopHelper::IODeviceDetails::GetAxis(const char* AxisName)
+float IOToolkit::IODeviceDetails::GetAxis(const char* AxisName)
 {
     return PlayerInput::Instance().GetAxis(AxisName, device.GetID());
 }
 
-float DevelopHelper::IODeviceDetails::GetAxisKey(const FKey& InKey)
+float IOToolkit::IODeviceDetails::GetAxisKey(const FKey& InKey)
 {
     return PlayerInput::Instance().GetAxisKey(InKey, device.GetID());
 }
 
-float DevelopHelper::IODeviceDetails::GetKeyDownDuration(const FKey& InKey)
+float IOToolkit::IODeviceDetails::GetKeyDownDuration(const FKey& InKey)
 {
     return PlayerInput::Instance().GetKeyDownTime(InKey, device.GetID());
 }
 
-float DevelopHelper::IODeviceDetails::GetDO(const FKey& InKey)
+float IOToolkit::IODeviceDetails::GetDO(const FKey& InKey)
 {
     return rawIO ? rawIO->GetDO(InKey) : -1;
 }
 
 
-DevelopHelper::FInputActionBinding& DevelopHelper::IODeviceDetails::GetActionBinding(const int32 BindingIndex)
+IOToolkit::FInputActionBinding& IOToolkit::IODeviceDetails::GetActionBinding(const int32 BindingIndex)
 {
     return ActionBindings[BindingIndex];
 }
 
-std::string DevelopHelper::IODeviceDetails::getName()
+std::string IOToolkit::IODeviceDetails::getName()
 {
     return name;
 }
 
-std::string DevelopHelper::IODeviceDetails::getIOType()
+std::string IOToolkit::IODeviceDetails::getIOType()
 {
     if(rawIO)
     {
@@ -266,7 +266,7 @@ std::string DevelopHelper::IODeviceDetails::getIOType()
     }
     return "Invalid";
 }
-void DevelopHelper::IODeviceDetails::AddActionBinding(const FInputActionBinding & InBinding)
+void IOToolkit::IODeviceDetails::AddActionBinding(const FInputActionBinding & InBinding)
 {
     ActionBindings.push_back(FInputActionBinding(InBinding));
     FInputActionBinding& Binding = ActionBindings.back();
@@ -297,7 +297,7 @@ void DevelopHelper::IODeviceDetails::AddActionBinding(const FInputActionBinding 
     }
 }
 
-bool DevelopHelper::IODeviceDetails::ValidDevcie(std::string customMsg)
+bool IOToolkit::IODeviceDetails::ValidDevcie(std::string customMsg)
 {
     IODeviceDetails& s = *this;
     if (GetDevice().IsValid())

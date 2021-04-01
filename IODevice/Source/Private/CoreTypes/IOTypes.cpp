@@ -5,10 +5,10 @@
 
 #include "CoreTypes/IOTypes.h"
 
-const std::string DevelopHelper::IOType::Standard = "Standard";
+const std::string IOToolkit::IOType::Standard = "Standard";
 
-const std::string DevelopHelper::IOType::Joystick = "Joystick";
+const std::string IOToolkit::IOType::Joystick = "Joystick";
 
-const std::string DevelopHelper::IOType::External = "External";
+const std::string IOToolkit::IOType::External = "External";
 
-const std::string DevelopHelper::IOType::Invalid = "Invalid";
+const std::string IOToolkit::IOType::Invalid = "Invalid";

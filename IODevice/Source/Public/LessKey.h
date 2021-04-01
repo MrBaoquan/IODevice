@@ -4,7 +4,7 @@
  */
 
 #pragma once
-namespace DevelopHelper
+namespace IOToolkit
 {
 
 class LessKey

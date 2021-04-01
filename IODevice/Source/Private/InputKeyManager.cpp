@@ -8,7 +8,7 @@
 #include <map>
 #include "IOStatics.h"
 
-DevelopHelper::uint32 DevelopHelper::InputKeyManager::GetKeyMap(uint32* KeyCodes, std::string* KeyNames, uint32 MaxMappings)
+IOToolkit::uint32 IOToolkit::InputKeyManager::GetKeyMap(uint32* KeyCodes, std::string* KeyNames, uint32 MaxMappings)
 {
 #define ADDKEYMAP(KeyCode, KeyName)		if (NumMappings<MaxMappings) { KeyCodes[NumMappings]=KeyCode; KeyNames[NumMappings]=KeyName; ++NumMappings; };
 
@@ -125,12 +125,12 @@ DevelopHelper::uint32 DevelopHelper::InputKeyManager::GetKeyMap(uint32* KeyCodes
 #undef ADDKEYMAP
 }
 
-DevelopHelper::uint32 DevelopHelper::InputKeyManager::GetCharKeyMap(uint32* KeyCodes, std::string* KeyNames, uint32 MaxMappings)
+IOToolkit::uint32 IOToolkit::InputKeyManager::GetCharKeyMap(uint32* KeyCodes, std::string* KeyNames, uint32 MaxMappings)
 {
-    return DevelopHelper::InputKeyManager::GetStandardPrintableKeyMap(KeyCodes, KeyNames, MaxMappings, true, false);
+    return IOToolkit::InputKeyManager::GetStandardPrintableKeyMap(KeyCodes, KeyNames, MaxMappings, true, false);
 }
 
-DevelopHelper::uint32 DevelopHelper::InputKeyManager::GetStandardPrintableKeyMap(uint32* KeyCodes, std::string* KeyNames, uint32 MaxMappings, bool bMapUppercaseKeys, bool bMapLowercaseKeys)
+IOToolkit::uint32 IOToolkit::InputKeyManager::GetStandardPrintableKeyMap(uint32* KeyCodes, std::string* KeyNames, uint32 MaxMappings, bool bMapUppercaseKeys, bool bMapLowercaseKeys)
 {
     uint32 NumMappings = 0;
 
@@ -243,19 +243,19 @@ DevelopHelper::uint32 DevelopHelper::InputKeyManager::GetStandardPrintableKeyMap
     return NumMappings;
 }
 
-DevelopHelper::InputKeyManager& DevelopHelper::InputKeyManager::Instance()
+IOToolkit::InputKeyManager& IOToolkit::InputKeyManager::Instance()
 {
     static InputKeyManager instance;
     return instance;
 }
 
-void DevelopHelper::InputKeyManager::GetCodesFromKey(const FKey, const uint32*& KeyCode, const uint32*& CharCode) const
+void IOToolkit::InputKeyManager::GetCodesFromKey(const FKey, const uint32*& KeyCode, const uint32*& CharCode) const
 {
     //CharCode = KeyMapCharToEnum.FindKey(Key);
     //KeyCode = KeyMapVirtualToEnum.FindKey(Key);
 }
 
-DevelopHelper::FKey DevelopHelper::InputKeyManager::GetKeyFromCodes(const uint32 KeyCode, const uint32 CharCode) const
+IOToolkit::FKey IOToolkit::InputKeyManager::GetKeyFromCodes(const uint32 KeyCode, const uint32 CharCode) const
 {
     FKey key = EKeys::Invalid;
 
@@ -274,7 +274,7 @@ DevelopHelper::FKey DevelopHelper::InputKeyManager::GetKeyFromCodes(const uint32
     return key;
 }
 
-void DevelopHelper::InputKeyManager::InitKeyMappings()
+void IOToolkit::InputKeyManager::InitKeyMappings()
 {
     static const uint32 MAX_KEY_MAPPINGS(256);
     uint32 KeyCodes[MAX_KEY_MAPPINGS], CharCodes[MAX_KEY_MAPPINGS];
@@ -306,12 +306,12 @@ void DevelopHelper::InputKeyManager::InitKeyMappings()
     }
 }
 
-const std::map<DevelopHelper::uint32, DevelopHelper::FKey>& DevelopHelper::InputKeyManager::GetKeyMapVirtualToEnum() const
+const std::map<IOToolkit::uint32, IOToolkit::FKey>& IOToolkit::InputKeyManager::GetKeyMapVirtualToEnum() const
 {
     return KeyMapVirtualToEnum;
 }
 
-const std::map<DevelopHelper::uint32, DevelopHelper::FKey>& DevelopHelper::InputKeyManager::GetKeyMapCharToEnum() const
+const std::map<IOToolkit::uint32, IOToolkit::FKey>& IOToolkit::InputKeyManager::GetKeyMapCharToEnum() const
 {
     return KeyMapCharToEnum;
 }

@@ -17,7 +17,7 @@ class IOAPI IODevice
 {
 public:
 	/**
-	 * 其他重载函数据此进行衍生
+	 * 绑定按键回调
 	 */
 	void BindKey(const FKey& key, InputEvent KeyEvent, std::function<void(void)> keyDelegate);
 
@@ -25,23 +25,31 @@ public:
     void BindKey(const FKey& Key, InputEvent KeyEvent, UserClass* Object, void(UserClass::*Method)());
 
 	/**
-	* 其他重载函数据此进行衍生
-	*/
+	 * 绑定轴回调
+	 */
 	void BindAxis(const char* axisName, std::function<void(float)> axisDelegate);
 
     template<class UserClass>
     void BindAxis(const char* axisName, UserClass* Object, void(UserClass::*Method)(float));
 
+
+	/**
+	 * 绑定键轴回调
+	 */
+	void BindAxisKey(const FKey& key, std::function<void(float)> axisDelegate);
+
     template<class UserClass>
     void BindAxisKey(const FKey AxisKey, UserClass* Object, void(UserClass::*Method)(float));
 
 	/**
-	 * 其他重载函数据此进行衍生
+	 * 绑定动作回调
 	 */
 	void BindAction(const char* actionName, InputEvent KeyEvent, std::function<void(FKey)> actionDelegate);
 
-	template<class... VarTypes>
-	void BindAction(const char* actionName, InputEvent KeyEvent, void(* Method)(VarTypes...), VarTypes... args);
+	void BindAction(const char* actionName, InputEvent KeyEvent, std::function<void(void)> actionDelegate);
+
+	/*template<class... VarTypes>
+	void BindAction(const char* actionName, InputEvent KeyEvent, void(* Method)(VarTypes...), VarTypes... args);*/
 
     template<class UserClass>
     void BindAction(const char* actionName, InputEvent KeyEvent, UserClass* Object, void(UserClass::*Method)());
@@ -143,9 +151,6 @@ private:
     IODevice() :deviceID(0) {}
     ~IODevice() = default;
     IODevice(uint8 InID) :deviceID(InID) {}
-
-    void BindAxisKey(const FKey& key, std::function<void(float)> axisDelegate);
-    void BindAction(const char* actionName, InputEvent KeyEvent, std::function<void(void)> actionDelegate);
 
     uint8 deviceID;
 

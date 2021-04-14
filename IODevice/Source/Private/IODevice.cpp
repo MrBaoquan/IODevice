@@ -19,13 +19,20 @@ void IOToolkit::IODevice::BindAxisKey(const FKey& key, std::function<void(float)
     deviceDetails.BindAxisKey(key, axisDelegate);
 }
 
+
+//void IOToolkit::IODevice::BindAction(const char* actionName, InputEvent KeyEvent, void(*Method)(void))
+//{
+//	IODeviceDetails& deviceDetails = IODevices::GetDeviceDetail(deviceID);
+//	deviceDetails.BindAction(actionName, KeyEvent, Method);
+//}
+
 void IOToolkit::IODevice::BindAxis(const char* axisName, std::function<void(float)> axisDelegate)
 {
     IODeviceDetails& deviceDetails = IODevices::GetDeviceDetail(deviceID);
     deviceDetails.BindAxis(axisName, axisDelegate);
 }
 
-void IOToolkit::IODevice::BindAction(const char* actionName, InputEvent KeyEvent, std::function<void()> actionDelegate)
+void IOToolkit::IODevice::BindAction(const char* actionName, InputEvent KeyEvent, std::function<void(void)> actionDelegate)
 {
     IODeviceDetails& deviceDetails = IODevices::GetDeviceDetail(deviceID);
     deviceDetails.BindAction(actionName, KeyEvent, actionDelegate);

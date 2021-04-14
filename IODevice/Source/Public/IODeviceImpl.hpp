@@ -63,14 +63,12 @@ void IOToolkit::IODevice::BindKey(const FKey& Key, InputEvent KeyEvent, UserClas
 }
 
 
-
-
-template<class... VarTypes>
-void IOToolkit::IODevice::BindAction(const char* actionName, InputEvent KeyEvent, void(*Method)(VarTypes...), VarTypes... args)
-{
-	std:function<void(FKey)> FuncRef = std::bind(DynamicFuncDelegate<VarTypes...>().Bind(Method, args...),std::placeholders::_1);
-	this->BindAction(actionName, KeyEvent, FuncRef);
-}
+//template<class... VarTypes>
+//void IOToolkit::IODevice::BindAction(const char* actionName, InputEvent KeyEvent, void(*Method)(VarTypes...), VarTypes... args)
+//{
+//	std:function<void(FKey)> FuncRef = std::bind(DynamicFuncDelegate<VarTypes...>().Bind(Method, args...),std::placeholders::_1);
+//	this->BindAction(actionName, KeyEvent, FuncRef);
+//}
 
 
 template<class UserClass>

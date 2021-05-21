@@ -12,7 +12,7 @@
 #include "Paths.hpp"
 #include "spdlog/sinks/simple_file_sink.h"
 
-namespace fs = std::experimental::filesystem;
+namespace fs = std::filesystem;
 namespace spd = spdlog;
 
 IOToolkit::IOLog& IOToolkit::IOLog::Instance()
@@ -82,11 +82,22 @@ void IOToolkit::IOLog::ReleaseLogger()
 	IOLogger = nullptr;
 }
 
+template <typename TP>
+std::time_t to_time_t(TP tp)
+{
+    using namespace std::chrono;
+    auto sctp = time_point_cast<system_clock::duration>(tp - TP::clock::now()
+        + system_clock::now());
+    return system_clock::to_time_t(sctp);
+}
+
+
 const std::string GetDateTimeString(std::string filePath)
 {
     auto time = fs::last_write_time(filePath);
-    std::chrono::time_point<std::chrono::system_clock> now(time);
-    std::time_t start_time = std::chrono::system_clock::to_time_t(now);
+    //std::chrono::time_point<std::chrono::system_clock> now();
+
+    std::time_t start_time = to_time_t(time);
     char timedisplay[100];
     struct tm buf;
     errno_t err = localtime_s(&buf, &start_time);
@@ -115,7 +126,7 @@ void FilterFiles(std::string DirPath, int maxNum = 10)
         num++;
         fs::path p = dirIt.path();
         auto ftime = fs::last_write_time(p);
-        std::time_t cftime = decltype(ftime)::clock::to_time_t(ftime); // assuming system_clock
+        std::time_t cftime = to_time_t(ftime);// decltype(ftime)::clock::to_time_t(ftime); // assuming system_clock
         files.push_back(FileInfo(p, cftime));
     }
     if (num > maxNum)

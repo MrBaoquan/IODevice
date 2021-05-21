@@ -4,6 +4,7 @@
  */
 
 #pragma once
+#include <string>
 #include "CoreTypes.inl"
 #include "InputCoreTypes.h"
 

@@ -4,6 +4,7 @@
  */
 
 #pragma once
+#include <string>
 namespace IOToolkit
 {
 

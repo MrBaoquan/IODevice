@@ -14,18 +14,13 @@
 
 #pragma comment(lib,"Winmm.lib")
 
-BOOL CALLBACK EnumWindowsProc(HWND hwnd, LPARAM lParam)
-{
-    DWORD dwCurProcessId = *((DWORD*)lParam);
-    DWORD dwProcessId = 0;
-    GetWindowThreadProcessId(hwnd, &dwProcessId);
-    if (dwProcessId == dwCurProcessId && GetParent(hwnd) == NULL)
-    {
-        *((HWND *)lParam) = hwnd;
-        return FALSE;
-    }
-    return TRUE;
-}
+std::vector<HHOOK> IOToolkit::IOApplication::hhks;
+std::vector<HWND> IOToolkit::IOApplication::mainWindows;
+HINSTANCE IOToolkit::IOApplication::dllInstance;
+
+
+bool IOToolkit::IOApplication::bLoaded = false;
+
 
 std::string HWNDToString(HWND input)
 {
@@ -42,21 +37,40 @@ std::string HWNDToString(HWND input)
     return output;
 }
 
-HWND GetMainWindow()
+BOOL CALLBACK EnumWindowsProc(HWND hwnd, LPARAM lParam)
+{
+    DWORD dwCurProcessId = *((DWORD*)lParam);
+    DWORD dwProcessId = 0;
+    GetWindowThreadProcessId(hwnd, &dwProcessId);
+
+    if (dwProcessId == dwCurProcessId && GetWindow(hwnd, GW_OWNER) == (HWND)0)
+    {
+        IOToolkit::IOApplication::mainWindows.push_back(hwnd);
+        //IOToolkit::IOLog::Instance().Log(std::string("Succeed in finding process id of window, and the title of window is: ") + HWNDToString(hwnd));
+        /* Filter Unity "Hold on" dialog*/
+        /*if (HWNDToString(hwnd) == "Hold on") return TRUE;
+        *((HWND *)lParam) = hwnd;
+        return FALSE;*/
+    }
+    return TRUE;
+}
+
+HWND RefreshMainWindows()
 {
     static DWORD dwCurrentProcessId = GetCurrentProcessId();
-    if (!EnumWindows(EnumWindowsProc, (LPARAM)&dwCurrentProcessId))
-    {
-        
-#ifdef WIN_64
-        IOToolkit::IOLog::Instance().Log(std::string("Succeed in finding process id of main window, and the title of main window is ") + HWNDToString((HWND)(__int64)(dwCurrentProcessId)));
-        return (HWND)(__int64)(dwCurrentProcessId);
-#else
-        IOToolkit::IOLog::Instance().Log(std::string("Succeed in finding process id of main window, and the title of main window is ") + HWNDToString((HWND)(dwCurrentProcessId)));
-        return (HWND)(dwCurrentProcessId);
-#endif // WIN_64
-    }
-    IOToolkit::IOLog::Instance().Warning("Could not find process id of main window, make sure your program have a window. ");
+    EnumWindows(EnumWindowsProc, (LPARAM)&dwCurrentProcessId);
+//    if (!EnumWindows(EnumWindowsProc, (LPARAM)&dwCurrentProcessId))
+//    {
+//        
+//#ifdef WIN_64
+//        IOToolkit::IOLog::Instance().Log(std::string("Succeed in finding process id of main window, and the title of main window is ") + HWNDToString((HWND)(__int64)(dwCurrentProcessId)));
+//        return (HWND)(__int64)(dwCurrentProcessId);
+//#else
+//        IOToolkit::IOLog::Instance().Log(std::string("Succeed in finding process id of main window, and the title of main window is ") + HWNDToString((HWND)(dwCurrentProcessId)));
+//        return (HWND)(dwCurrentProcessId);
+//#endif // WIN_64
+//    }
+//    IOToolkit::IOLog::Instance().Warning("Could not find process id of main window, make sure your program have a window. ");
     return NULL;
 }
 
@@ -93,15 +107,6 @@ BOOL WINAPI DllMain(
     return TRUE;
 }
 
-std::vector<HHOOK> IOToolkit::IOApplication::hhks;
-
-HWND IOToolkit::IOApplication::mainWindow;
-
-HINSTANCE IOToolkit::IOApplication::dllInstance;
-
-
-bool IOToolkit::IOApplication::bLoaded = false;
-
 int IOToolkit::IOApplication::Constructor()
 {
 	IOLog::Instance().Log(std::string("\n\n\n------------------------------  (*^_^*) Welcome to use IOToolkit (*^_^*) ------------------------------\n\
@@ -113,7 +118,6 @@ int IOToolkit::IOApplication::Constructor()
 "));
     /** Key mapping */
     StaticKeys::Initialize();
-	IOApplication::RegisterRawInput();
     return SuccessCode;
 }
 
@@ -132,7 +136,12 @@ int IOToolkit::IOApplication::DyLoad()
 	}
 
 	IOLog::Instance().Log(std::string("------------------------------  IOToolkit Loading...  ------------------------------"));
+    IOApplication::mainWindows.clear();
+
+    IOToolkit::IOApplication::mainWindows.clear();
+    IOApplication::RegisterRawInput();
 	IOApplication::SetWindowsHook();
+
 	/** Device initializtion */
 	IODevices::Initialize();
 	PlayerInput::Instance().Initialize();
@@ -151,16 +160,22 @@ int IOToolkit::IOApplication::DyUnload()
 	IOApplication::UnHookWindow();
 	IODevices::UnInitialize();
 	PlayerInput::Instance().UnInitialize();
-	IOApplication::bLoaded = false;
-	IOLog::Instance().Log(std::string("------------------------------  IOToolkit has been unloaded  ------------------------------\n"));
-	IOLog::Instance().ReleaseLogger();
+    
+    IOToolkit::IOApplication::mainWindows.clear();
+    IOApplication::bLoaded = false;
+	
+    IOLog::Instance().Log(std::string("------------------------------  IOToolkit has been unloaded  ------------------------------\n"));
+    IOLog::Instance().ReleaseLogger();
 	return 0;
 }
 
 void IOToolkit::IOApplication::RegisterRawInput()
 {
-    HWND hwnd = GetMainWindow();
-    IOApplication::mainWindow = hwnd;
+    RefreshMainWindows();
+
+    if (IOToolkit::IOApplication::mainWindows.size() <= 0) return;
+    auto _windows = IOToolkit::IOApplication::mainWindows;
+
 
 #ifndef HID_USAGE_PAGE_GENERIC
 #define HID_USAGE_PAGE_GENERIC         ((USHORT) 0x01)
@@ -169,22 +184,20 @@ void IOToolkit::IOApplication::RegisterRawInput()
 #define HID_USAGE_GENERIC_MOUSE        ((USHORT) 0x02)
 #endif
 
-    RAWINPUTDEVICE Rid[1];
-    Rid[0].usUsagePage = HID_USAGE_PAGE_GENERIC;
-    Rid[0].usUsage = HID_USAGE_GENERIC_MOUSE;
-    Rid[0].dwFlags = RIDEV_INPUTSINK;
-    Rid[0].hwndTarget = IOApplication::mainWindow;
-
-    // Joystick for rawinput .
-    //Rid[1].usUsagePage = 0x01;
-    //Rid[1].usUsage = 0x04;
-    //Rid[1].dwFlags = 0;                 // adds joystick
-    //Rid[1].hwndTarget = IOApplication::mainWindow;
-
-    if (RegisterRawInputDevices(Rid, 1, sizeof(Rid[0])) == FALSE)
+    for each (auto _window in _windows)
     {
-        IOLog::Instance().Warning("Register raw input devcies failed. ");
+        RAWINPUTDEVICE Rid[1];
+        Rid[0].usUsagePage = HID_USAGE_PAGE_GENERIC;
+        Rid[0].usUsage = HID_USAGE_GENERIC_MOUSE;
+        Rid[0].dwFlags = RIDEV_INPUTSINK;
+        Rid[0].hwndTarget = _window;
+
+        if (RegisterRawInputDevices(Rid, 1, sizeof(Rid[0])) == FALSE)
+        {
+            IOLog::Instance().Warning("Register raw input devcies failed. Title: " + HWNDToString(_window));
+        }
     }
+
 }
 
 bool IOToolkit::IOApplication::SuccessResult(int code)
@@ -199,38 +212,52 @@ void IOToolkit::IOApplication::PreShutdown()
 
 int IOToolkit::IOApplication::SetWindowsHook()
 {
-	DWORD dwProcessId = 0;
-	DWORD threadID = GetWindowThreadProcessId(IOApplication::mainWindow, &dwProcessId);
-    HHOOK hhk1 = SetWindowsHookEx(WH_GETMESSAGE, IOApplication::OnMessageProc, NULL, threadID);
-    if (hhk1)
-    {
-        IOApplication::hhks.push_back(hhk1);
-    }else
-    {
-        IOLog::Instance().Warning("Hook WM_GETMESSAGE Failed ...");
+    RefreshMainWindows();
+    if (IOToolkit::IOApplication::mainWindows.size() <= 0) {
+        IOToolkit::IOLog::Instance().Warning("Could not find any window in current process, please make sure your program have one window at least! ");
         return ErrorCode;
+    } 
+
+    auto _windows = IOToolkit::IOApplication::mainWindows;
+
+    for each (auto _window in _windows)
+    {
+        DWORD dwProcessId = 0;
+        DWORD threadID = GetWindowThreadProcessId(_window, &dwProcessId);
+        HHOOK hhk1 = SetWindowsHookEx(WH_GETMESSAGE, IOApplication::OnMessageProc, NULL, threadID);
+        if (hhk1)
+        {
+            IOApplication::hhks.push_back(hhk1);
+        }
+        else
+        {
+            IOLog::Instance().Warning("Hook WM_GETMESSAGE Failed ...");
+            return ErrorCode;
+        }
+
+        HHOOK hhk2 = SetWindowsHookEx(WH_CALLWNDPROCRET, IOApplication::CallWndRetProc, NULL, threadID);
+        if (hhk2)
+        {
+            IOApplication::hhks.push_back(hhk2);
+        }
+        else
+        {
+            IOLog::Instance().Warning("Hook WH_CALLWNDPROCRET Failed ...");
+            return ErrorCode;
+        }
+
+        HHOOK hhk3 = SetWindowsHookEx(WH_CALLWNDPROC, IOApplication::CallWndProc, NULL, threadID);
+        if (hhk3)
+        {
+            IOApplication::hhks.push_back(hhk3);
+        }
+        else
+        {
+            IOLog::Instance().Warning("Hook WH_CALLWNDPROC Failed ...");
+            return ErrorCode;
+        }
     }
 
-    HHOOK hhk2 = SetWindowsHookEx(WH_CALLWNDPROCRET, IOApplication::CallWndRetProc, NULL, threadID);
-    if (hhk2)
-    {
-        IOApplication::hhks.push_back(hhk2);
-    }else
-    {
-        IOLog::Instance().Warning("Hook WH_CALLWNDPROCRET Failed ...");
-        return ErrorCode;
-    }
-
-	HHOOK hhk3 = SetWindowsHookEx(WH_CALLWNDPROC, IOApplication::CallWndProc, NULL, threadID);
-	if (hhk3)
-	{
-		IOApplication::hhks.push_back(hhk3);
-	}
-	else
-	{
-		IOLog::Instance().Warning("Hook WH_CALLWNDPROC Failed ...");
-		return ErrorCode;
-	}
 
     return SuccessCode;
 }
@@ -241,6 +268,7 @@ void IOToolkit::IOApplication::UnHookWindow()
     {
         UnhookWindowsHookEx(hhk);
     }
+    IOApplication::hhks.clear();
 }
 
 LRESULT CALLBACK IOToolkit::IOApplication::OnMessageProc(int code, WPARAM wParam, LPARAM lParam)

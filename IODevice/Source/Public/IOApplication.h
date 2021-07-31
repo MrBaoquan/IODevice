@@ -19,7 +19,7 @@ class IOApplication
 {
 public:
     static std::vector<HHOOK> hhks;
-    static HWND mainWindow;
+	static std::vector<HWND> mainWindows;
     static HINSTANCE dllInstance;
 
 	/**

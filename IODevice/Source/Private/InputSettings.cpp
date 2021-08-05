@@ -260,6 +260,21 @@ const bool IOToolkit::UInputSettings::HasAxis(uint8 deviceID, std::string axisNa
     return false;
 }
 
+const bool IOToolkit::UInputSettings::HasOAction(uint8 deviceID, std::string oactionName)
+{
+    if (deviceID < IODevices::GetDevicesCount())
+    {
+        for (auto& action : ActionMappings[deviceID])
+        {
+            if (action.ActionName == oactionName)
+            {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
 int IOToolkit::UInputSettings::SetConfigPath(const char* InPath)
 {
     customConfigPath = InPath;

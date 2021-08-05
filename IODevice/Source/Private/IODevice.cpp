@@ -47,21 +47,18 @@ void IOToolkit::IODevice::BindAction(const char* actionName, InputEvent KeyEvent
 
 int IOToolkit::IODevice::SetDO(float* InDOStatus)
 {
-    if (!this->IsValid()) { return -1; }
     IODeviceDetails& deviceDetails = IODevices::GetDeviceDetail(deviceID);
     return deviceDetails.SetDO(InDOStatus);
 }
 
 int IOToolkit::IODevice::SetDO(const char* InOAction, float InValue, bool bIgnoreMassage/*=false*/)
 {
-	if (!this->IsValid()) { return -1; }
 	IODeviceDetails& deviceDetails = IODevices::GetDeviceDetail(deviceID);
 	return deviceDetails.SetDO(InOAction, InValue, bIgnoreMassage);
 }
 
 int IOToolkit::IODevice::SetDOOn(const char* InOAction)
 {
-	if (!this->IsValid()) { return -1; }
 	IODeviceDetails& deviceDetails = IODevices::GetDeviceDetail(deviceID);
 	return deviceDetails.SetDOOn(InOAction);
 }
@@ -69,28 +66,24 @@ int IOToolkit::IODevice::SetDOOn(const char* InOAction)
 
 int IOToolkit::IODevice::SetDOOff(const char* InOAction)
 {
-	if (!this->IsValid()) { return -1; }
 	IODeviceDetails& deviceDetails = IODevices::GetDeviceDetail(deviceID);
 	return deviceDetails.SetDOOff(InOAction);
 }
 
 int IOToolkit::IODevice::DOImmediate()
 {
-	if (!this->IsValid()) { return -1; }
 	IODeviceDetails& deviceDetails = IODevices::GetDeviceDetail(deviceID);
 	return deviceDetails.DOImmediate();
 }
 
 int IOToolkit::IODevice::SetDO(const FKey& InKey, float InValue)
 {
-    if (!this->IsValid()) { return -1; }
     IODeviceDetails& deviceDetails = IODevices::GetDeviceDetail(deviceID);
     return deviceDetails.SetDO(InKey, InValue);
 }
 
 int IOToolkit::IODevice::GetDO(float* OutDOStatus)
 {
-    if (!this->IsValid()) { return -1; }
     IODeviceDetails& deviceDetails = IODevices::GetDeviceDetail(deviceID);
     return deviceDetails.GetDO(OutDOStatus);
 }
@@ -98,56 +91,48 @@ int IOToolkit::IODevice::GetDO(float* OutDOStatus)
 
 float IOToolkit::IODevice::GetDO(const char* InOAction)
 {
-	if (!this->IsValid()) { return -1; }
 	IODeviceDetails& deviceDetails = IODevices::GetDeviceDetail(deviceID);
 	return deviceDetails.GetDO(InOAction);
 }
 
 float IOToolkit::IODevice::GetDO(const FKey& InKey)
 {
-	if (!this->IsValid()) { return -1; }
 	IODeviceDetails& deviceDetails = IODevices::GetDeviceDetail(deviceID);
 	return deviceDetails.GetDO(InKey);
 }
 
 bool IOToolkit::IODevice::GetKey(const FKey& InKey)
 {
-    if (!this->IsValid()) { return false; }
     IODeviceDetails& deviceDetails = IODevices::GetDeviceDetail(deviceID);
     return deviceDetails.GetKey(InKey);
 }
 
 bool IOToolkit::IODevice::GetKeyDown(const FKey& InKey)
 {
-    if (!this->IsValid()) { return false; }
     IODeviceDetails& deviceDetails = IODevices::GetDeviceDetail(deviceID);
     return deviceDetails.GetKeyDown(InKey);
 }
 
 bool IOToolkit::IODevice::GetKeyUp(const FKey& InKey)
 {
-    if (!this->IsValid()) { return false; }
     IODeviceDetails& deviceDetails = IODevices::GetDeviceDetail(deviceID);
     return deviceDetails.GetKeyUp(InKey);
 }
 
 float IOToolkit::IODevice::GetAxis(const char* AxisName)
 {
-    if (!this->IsValid()) { return 0.f; }
     IODeviceDetails& deviceDetails = IODevices::GetDeviceDetail(deviceID);
     return deviceDetails.GetAxis(AxisName);
 }
 
 float IOToolkit::IODevice::GetAxisKey(const FKey& InKey)
 {
-    if (!this->IsValid()) { return 0.f; }
     IODeviceDetails& deviceDetails = IODevices::GetDeviceDetail(deviceID);
     return deviceDetails.GetAxisKey(InKey);
 }
 
 float IOToolkit::IODevice::GetKeyDownDuration(const FKey& InKey)
 {
-    if (!this->IsValid()) { return -1; }
     IODeviceDetails& deviceDetails = IODevices::GetDeviceDetail(deviceID);
     return deviceDetails.GetKeyDownDuration(InKey);
 }

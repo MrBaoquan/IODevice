@@ -36,6 +36,7 @@ public:
 
     const bool HasAction(uint8 deviceID, std::string actionName);
     const bool HasAxis(uint8 deviceID, std::string axisName);
+    const bool HasOAction(uint8 deviceID, std::string oactionName);
 
     int SetConfigPath(const char* InPath);
 

@@ -57,7 +57,7 @@ void IOToolkit::IODeviceDetails::ClearBinding()
 
 void IOToolkit::IODeviceDetails::BindKey(const FKey& InKey, InputEvent InEvent,InputActionHandlerSignature delegate)
 {
-    if (!ValidDevcie(std::string(" Key ") + InKey.GetName()))
+    if (!ValidDevcie(std::string(" [BindKey] ") + InKey.GetName()))
     {
         return;
     }
@@ -81,7 +81,7 @@ void IOToolkit::IODeviceDetails::BindKey(const FKey& InKey, InputEvent InEvent,I
 
 void IOToolkit::IODeviceDetails::BindAxis(const std::string axisName, FInputAxisHandlerSignature delegate)
 {
-    if (!ValidDevcie(std::string(" Axis ") + axisName))
+    if (!ValidDevcie(std::string(" [BindAxis] ") + axisName))
     {
         return;
     }
@@ -103,7 +103,7 @@ void IOToolkit::IODeviceDetails::BindAxis(const std::string axisName, FInputAxis
 
 void IOToolkit::IODeviceDetails::BindAxisKey(const FKey AxisKey, FInputAxisHandlerSignature delegate)
 {
-    if (!ValidDevcie(std::string(" AxisKey ") + AxisKey.GetName()))
+    if (!ValidDevcie(std::string(" [BindAxisKey] ") + AxisKey.GetName()))
     {
         return;
     }
@@ -126,7 +126,7 @@ void IOToolkit::IODeviceDetails::BindAxisKey(const FKey AxisKey, FInputAxisHandl
 
 void IOToolkit::IODeviceDetails::BindAction(std::string ActionName, const InputEvent KeyEvent, InputActionHandlerWithKeySignature delegate)
 {
-	if (!ValidDevcie(std::string(" Action ") + ActionName))
+	if (!ValidDevcie(std::string(" [BindAction] ") + ActionName))
 	{
 		return;
 	}
@@ -148,7 +148,7 @@ void IOToolkit::IODeviceDetails::BindAction(std::string ActionName, const InputE
 
 void IOToolkit::IODeviceDetails::BindAction(std::string ActionName, const InputEvent KeyEvent, InputActionHandlerSignature delegate)
 {
-    if (!ValidDevcie(std::string(" Action ") + ActionName))
+    if (!ValidDevcie(std::string(" [BindAction] ") + ActionName))
     {
         return;
     }
@@ -171,79 +171,163 @@ void IOToolkit::IODeviceDetails::BindAction(std::string ActionName, const InputE
 
 int IOToolkit::IODeviceDetails::SetDO(float* InDOStatus)
 {
+    if (!ValidDevcie(std::string(" [SetDO] ")))
+    {
+        return -1;
+    }
     return rawIO ? rawIO->SetDO(InDOStatus) : -1;
 }
 
 
 int IOToolkit::IODeviceDetails::SetDOOn(const char* InOAction)
 {
+    if (!ValidDevcie(std::string(" [SetDOOn] ") + InOAction))
+    {
+        return -1;
+    }
+
+    if (!UInputSettings::Instance().HasOAction(device.GetID(), InOAction))
+    {
+        std::string msg = std::string("Try to resolve [OAction] ") + InOAction + " failed, because can not find matched oaction name in config files. device name: " + getName();
+        IOLog::Instance().Warning(msg);
+        return -1;
+    }
 	return rawIO ? rawIO->SetDOOn(InOAction) : -1;
 }
 
 
 int IOToolkit::IODeviceDetails::SetDOOff(const char* InOAction)
 {
+    if (!ValidDevcie(std::string(" [SetDOOff] ") + InOAction))
+    {
+        return -1;
+    }
+    if (!UInputSettings::Instance().HasOAction(device.GetID(), InOAction))
+    {
+        std::string msg = std::string("Try to resolve [OAction] ") + InOAction + " failed, because can not find matched oaction name in config files. device name: " + getName();
+        IOLog::Instance().Warning(msg);
+        return -1;
+    }
+
 	return rawIO ? rawIO->SetDOOff(InOAction) : -1;
 }
 
 int IOToolkit::IODeviceDetails::DOImmediate()
 {
+    if (!ValidDevcie(std::string(" [DOImmediate] ")))
+    {
+        return -1;
+    }
 	return rawIO?rawIO->DOImmediate():-1;
 }
 
 int IOToolkit::IODeviceDetails::SetDO(const char* InOAction, float InValue, bool bIngoreMassage/*bIngoreMassage=false*/)
 {
+    if (!ValidDevcie(std::string(" [SetDO] ") + InOAction))
+    {
+        return -1;
+    }
+
+    if (!UInputSettings::Instance().HasOAction(device.GetID(), InOAction))
+    {
+        std::string msg = std::string("Try to resolve [OAction] ") + InOAction + " failed, because can not find matched oaction name in config files. device name: " + getName();
+        IOLog::Instance().Warning(msg);
+        return -1;
+    }
+
 	return rawIO ? rawIO->SetDO(InOAction, InValue,bIngoreMassage):-1;
 }
 
 int IOToolkit::IODeviceDetails::SetDO(const FKey& InKey, float InValue)
 {
+    if (!ValidDevcie(std::string(" [SetDO] ") + InKey.GetName()))
+    {
+        return -1;
+    }
     return rawIO ? rawIO->SetDO(InKey, InValue) : -1;
 }
 
 int IOToolkit::IODeviceDetails::GetDO(float* OutDOStatus)
 {
+    if (!ValidDevcie(std::string(" [GetDO] ")))
+    {
+        return -1;
+    }
     return rawIO ? rawIO->GetDO(OutDOStatus) : -1;
 }
 
 
 float IOToolkit::IODeviceDetails::GetDO(const char* InOAction)
 {
+    if (!ValidDevcie(std::string(" [GetDO] ") + InOAction))
+    {
+        return -1;
+    }
 	return rawIO ? rawIO->GetDO(InOAction) : -1;
 }
 
 bool IOToolkit::IODeviceDetails::GetKey(const FKey& InKey)
 {
+    if (!ValidDevcie(std::string(" [GetKey] ") + InKey.GetName()))
+    {
+        return false;
+    }
     return PlayerInput::Instance().GetKey(InKey, device.GetID());
 }
 
 bool IOToolkit::IODeviceDetails::GetKeyDown(const FKey& InKey)
 {
+    if (!ValidDevcie(std::string(" [GetKeyDown] ") + InKey.GetName()))
+    {
+        return false;
+    }
     return PlayerInput::Instance().GetKeyDown(InKey, device.GetID());
 }
 
 bool IOToolkit::IODeviceDetails::GetKeyUp(const FKey& InKey)
 {
+    if (!ValidDevcie(std::string(" [GetKeyUp] ") + InKey.GetName()))
+    {
+        return false;
+    }
     return PlayerInput::Instance().GetKeyUp(InKey, device.GetID());
 }
 
 float IOToolkit::IODeviceDetails::GetAxis(const char* AxisName)
 {
+    if (!ValidDevcie(std::string(" [GetAxis] ") + AxisName))
+    {
+        return -1;
+    }
+
     return PlayerInput::Instance().GetAxis(AxisName, device.GetID());
 }
 
 float IOToolkit::IODeviceDetails::GetAxisKey(const FKey& InKey)
 {
+    if (!ValidDevcie(std::string(" [GetAxisKey] ") + InKey.GetName()))
+    {
+        return -1;
+    }
+
     return PlayerInput::Instance().GetAxisKey(InKey, device.GetID());
 }
 
 float IOToolkit::IODeviceDetails::GetKeyDownDuration(const FKey& InKey)
 {
+    if (!ValidDevcie(std::string(" [GetKeyDownDuration] ") + InKey.GetName()))
+    {
+        return -1;
+    }
     return PlayerInput::Instance().GetKeyDownTime(InKey, device.GetID());
 }
 
 float IOToolkit::IODeviceDetails::GetDO(const FKey& InKey)
 {
+    if (!ValidDevcie(std::string(" [GetDO] ") + InKey.GetName()))
+    {
+        return -1;
+    }
     return rawIO ? rawIO->GetDO(InKey) : -1;
 }
 
@@ -304,7 +388,7 @@ bool IOToolkit::IODeviceDetails::ValidDevcie(std::string customMsg)
     {
         return true;
     }
-    std::string msg = std::string("Trying to bind") + customMsg + " delegate with an invalid device";
+    std::string msg = std::string("Trying to resolve") + customMsg + " with an invalid device, make sure that device exists!";
     IOLog::Instance().Warning(msg);
     return false;
 }

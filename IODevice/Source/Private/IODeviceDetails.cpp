@@ -188,7 +188,7 @@ int IOToolkit::IODeviceDetails::SetDOOn(const char* InOAction)
 
     if (!UInputSettings::Instance().HasOAction(device.GetID(), InOAction))
     {
-        std::string msg = std::string("Try to resolve [OAction] ") + InOAction + " failed, because can not find matched oaction name in config files. device name: " + getName();
+        std::string msg = std::string("Try to resolve [SetDOOn] ") + InOAction + " failed, because can not find matched oaction name in config files. device name: " + getName();
         IOLog::Instance().Warning(msg);
         return -1;
     }
@@ -204,7 +204,7 @@ int IOToolkit::IODeviceDetails::SetDOOff(const char* InOAction)
     }
     if (!UInputSettings::Instance().HasOAction(device.GetID(), InOAction))
     {
-        std::string msg = std::string("Try to resolve [OAction] ") + InOAction + " failed, because can not find matched oaction name in config files. device name: " + getName();
+        std::string msg = std::string("Try to resolve [SetDOOff] ") + InOAction + " failed, because can not find matched oaction name in config files. device name: " + getName();
         IOLog::Instance().Warning(msg);
         return -1;
     }
@@ -230,7 +230,7 @@ int IOToolkit::IODeviceDetails::SetDO(const char* InOAction, float InValue, bool
 
     if (!UInputSettings::Instance().HasOAction(device.GetID(), InOAction))
     {
-        std::string msg = std::string("Try to resolve [OAction] ") + InOAction + " failed, because can not find matched oaction name in config files. device name: " + getName();
+        std::string msg = std::string("Try to resolve [SetDO] ") + InOAction + " failed, because can not find matched oaction name in config files. device name: " + getName();
         IOLog::Instance().Warning(msg);
         return -1;
     }
@@ -263,6 +263,14 @@ float IOToolkit::IODeviceDetails::GetDO(const char* InOAction)
     {
         return -1;
     }
+
+    if (!UInputSettings::Instance().HasOAction(device.GetID(), InOAction))
+    {
+        std::string msg = std::string("Try to resolve [GetDO] ") + InOAction + " failed, because can not find matched oaction name in config files. device name: " + getName();
+        IOLog::Instance().Warning(msg);
+        return -1;
+    }
+
 	return rawIO ? rawIO->GetDO(InOAction) : -1;
 }
 

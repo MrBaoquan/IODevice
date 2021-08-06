@@ -264,13 +264,8 @@ const bool IOToolkit::UInputSettings::HasOAction(uint8 deviceID, std::string oac
 {
     if (deviceID < IODevices::GetDevicesCount())
     {
-        for (auto& action : ActionMappings[deviceID])
-        {
-            if (action.ActionName == oactionName)
-            {
-                return true;
-            }
-        }
+        auto& _oactions = OActionMappings[deviceID];
+        if (_oactions.contains(oactionName)) return true;
     }
     return false;
 }

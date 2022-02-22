@@ -45,12 +45,10 @@ BOOL CALLBACK EnumWindowsProc(HWND hwnd, LPARAM lParam)
 
     if (dwProcessId == dwCurProcessId && GetWindow(hwnd, GW_OWNER) == (HWND)0)
     {
+        if (std::find(IOToolkit::IOApplication::mainWindows.begin(), IOToolkit::IOApplication::mainWindows.end(), hwnd)!= IOToolkit::IOApplication::mainWindows.end()){
+            return FALSE;
+        }
         IOToolkit::IOApplication::mainWindows.push_back(hwnd);
-        //IOToolkit::IOLog::Instance().Log(std::string("Succeed in finding process id of window, and the title of window is: ") + HWNDToString(hwnd));
-        /* Filter Unity "Hold on" dialog*/
-        /*if (HWNDToString(hwnd) == "Hold on") return TRUE;
-        *((HWND *)lParam) = hwnd;
-        return FALSE;*/
     }
     return TRUE;
 }
@@ -59,18 +57,6 @@ HWND RefreshMainWindows()
 {
     static DWORD dwCurrentProcessId = GetCurrentProcessId();
     EnumWindows(EnumWindowsProc, (LPARAM)&dwCurrentProcessId);
-//    if (!EnumWindows(EnumWindowsProc, (LPARAM)&dwCurrentProcessId))
-//    {
-//        
-//#ifdef WIN_64
-//        IOToolkit::IOLog::Instance().Log(std::string("Succeed in finding process id of main window, and the title of main window is ") + HWNDToString((HWND)(__int64)(dwCurrentProcessId)));
-//        return (HWND)(__int64)(dwCurrentProcessId);
-//#else
-//        IOToolkit::IOLog::Instance().Log(std::string("Succeed in finding process id of main window, and the title of main window is ") + HWNDToString((HWND)(dwCurrentProcessId)));
-//        return (HWND)(dwCurrentProcessId);
-//#endif // WIN_64
-//    }
-//    IOToolkit::IOLog::Instance().Warning("Could not find process id of main window, make sure your program have a window. ");
     return NULL;
 }
 
@@ -184,7 +170,7 @@ void IOToolkit::IOApplication::RegisterRawInput()
 #define HID_USAGE_GENERIC_MOUSE        ((USHORT) 0x02)
 #endif
 
-    for each (auto _window in _windows)
+    for (auto _window : _windows)
     {
         RAWINPUTDEVICE Rid[1];
         Rid[0].usUsagePage = HID_USAGE_PAGE_GENERIC;
@@ -220,10 +206,16 @@ int IOToolkit::IOApplication::SetWindowsHook()
 
     auto _windows = IOToolkit::IOApplication::mainWindows;
 
-    for each (auto _window in _windows)
+    std::vector<DWORD> _hhks;
+    for  (auto _window : _windows)
     {
         DWORD dwProcessId = 0;
         DWORD threadID = GetWindowThreadProcessId(_window, &dwProcessId);
+        if (std::find(_hhks.begin(), _hhks.end(), threadID) != _hhks.end()) {
+            continue;
+        }
+        IOToolkit::IOLog::Instance().Log(std::string("Hook Window: ") + HWNDToString(_window) + "; PID: " + std::to_string(dwProcessId) + "; TID: " + std::to_string(threadID));
+        _hhks.push_back(threadID);
         HHOOK hhk1 = SetWindowsHookEx(WH_GETMESSAGE, IOApplication::OnMessageProc, NULL, threadID);
         if (hhk1)
         {

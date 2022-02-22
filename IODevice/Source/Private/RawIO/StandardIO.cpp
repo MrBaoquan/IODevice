@@ -309,7 +309,7 @@ void IOToolkit::StandardIO::Build()
 
 void IOToolkit::StandardIO::OnKeyDown(uint32 keyCode, uint32 charCode, bool isRepeat/*=false*/)
 {
-    FKey& key = InputKeyManager::Instance().GetKeyFromCodes(keyCode, charCode);
+    FKey key = InputKeyManager::Instance().GetKeyFromCodes(keyCode, charCode);
     //if (!isRepeat)
     //{
     //    OutputDebugStringA(std::string(key.GetName()).append("keydown \n").data());
@@ -325,7 +325,7 @@ void IOToolkit::StandardIO::OnKeyDown(uint32 keyCode, uint32 charCode, bool isRe
 
 void IOToolkit::StandardIO::OnKeyUp(uint32 keyCode, uint32 charCode, bool isRepeat /*= false*/)
 {
-    FKey& key = InputKeyManager::Instance().GetKeyFromCodes(keyCode, charCode);
+    FKey key = InputKeyManager::Instance().GetKeyFromCodes(keyCode, charCode);
    // OutputDebugStringA(std::string(key.GetName()).append("keyup \n").data());
     if (key == EKeys::Invalid)
     {

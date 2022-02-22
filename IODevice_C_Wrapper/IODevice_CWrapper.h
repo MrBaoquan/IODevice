@@ -50,6 +50,7 @@ extern "C"
 
 	IOCAPI void __stdcall Query();
 
+	IOCAPI void __stdcall ClearBindings(BSTR InDeviceName);
 	IOCAPI void __stdcall ClearAllBindings();
 	
 }

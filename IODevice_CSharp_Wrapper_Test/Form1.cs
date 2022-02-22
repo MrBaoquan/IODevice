@@ -29,13 +29,19 @@ namespace IODevice_C_CSharpTest
             IODeviceController.Load();
             IOSettings.SetIOConfigPath("");
             IODevice _device = IODeviceController.GetIODevice("ExtDev");
-            _device.BindAction("TestAction", InputEvent.IE_Pressed, this.onActionPressed);
-            _device.BindAction("TestAction", InputEvent.IE_Released, this.onActionReleased);
+            //_device.BindAction("TestAction", InputEvent.IE_Pressed, this.onActionPressed);
+            //_device.BindAction("TestAction", InputEvent.IE_Released, this.onActionReleased);
+
+            IODeviceController.GetIODevice("Standard")
+                .BindKey("A", InputEvent.IE_Pressed, () =>
+            {
+                Debug.WriteLine("A Pressed");
+            });
 
             //_device.BindKey(IOKeyCode.AnyKey, InputEvent.IE_Pressed, this.onAnyKeyPressed);
             //_device.BindKey(IOKeyCode.AnyKey, InputEvent.IE_Released, this.onAnyKeyReleased);
 
-            _device.BindAxis("MoveLR", this.OnMove);
+            //_device.BindAxis("MoveLR", this.OnMove);
             timer1.Start();
             timer1.Interval = 20;
         }
@@ -60,7 +66,7 @@ namespace IODevice_C_CSharpTest
             //Debug.WriteLine(_device.GetDO("Start"));
             //Debug.WriteLine(_device.GetKeyDownDuration(IOKeyCode.B));
             //Debug.WriteLine(_device.GetAxisKey(IOKeyCode.MouseX));
-            Debug.WriteLine(_device.GetAxis("TestAxis"));
+            //Debug.WriteLine(_device.GetAxis("TestAxis"));
         }
 
         private void onAnyKeyPressed()

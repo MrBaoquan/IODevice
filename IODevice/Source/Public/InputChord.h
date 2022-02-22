@@ -217,10 +217,10 @@ public:
     * @param Chord The input chord to get the hash value for.
     * @return The hash value.
     */
-    friend uint32 GetTypeHash(const FInputChord& Chord)
-    {
-        return GetTypeHash(Chord.Key) ^ (Chord.bShift | Chord.bCtrl >> 1 | Chord.bAlt >> 2 | Chord.bCmd >> 3);
-    }
+	/*friend uint32 GetTypeHash(const FInputChord& Chord)
+	{
+		return GetTypeHash(Chord.Key) ^ (Chord.bShift | Chord.bCtrl >> 1 | Chord.bAlt >> 2 | Chord.bCmd >> 3);
+	}*/
 };
 
 

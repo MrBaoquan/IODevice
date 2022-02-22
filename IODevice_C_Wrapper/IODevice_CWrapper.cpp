@@ -5,6 +5,7 @@
 #include "IODeviceController.h"
 #include "IOSettings.h"
 #include "StringUtils.hpp"
+#include "Paths.hpp"
 
 #include "IODevice_CWrapper.h"
 
@@ -15,6 +16,37 @@ namespace dh = IOToolkit;
 // PreDeclare
 dh::IODevice& getIODevice(BSTR);
 
+
+BOOL WINAPI DllMain(
+	_In_ HINSTANCE hinstDLL,
+	_In_ DWORD     fdwReason,
+	_In_ LPVOID    lpvReserved
+)
+{
+	DevelopHelper::Paths::Instance().SetModule(hinstDLL);
+	switch (fdwReason)
+	{
+	case DLL_PROCESS_ATTACH:
+	{
+		std::string dllPath = DevelopHelper::Paths::Instance().GetModuleDir() + "\\";
+		SetDllDirectoryA(dllPath.data());
+		std::string _path = DevelopHelper::Paths::Instance().GetModuleDir() + "IODevice.dll";
+		auto _module = LoadLibraryA(_path.data());
+		OutputDebugStringA("============== Attched IODevice_CWrapper.dll ... ================ \n");
+	}
+	break;
+	case DLL_PROCESS_DETACH:
+		OutputDebugStringA("============== Detached IODevice_CWrapper.dll ... ================ \n");
+		break;
+	case DLL_THREAD_ATTACH:
+		break;
+	case DLL_THREAD_DETACH:
+		break;
+	default:
+		break;
+	}
+	return TRUE;
+}
 
 IOCAPI int __stdcall Load()
 {
@@ -179,4 +211,10 @@ IOCAPI float __stdcall GetKeyDownDuration(BSTR InDeviceName, BSTR InKey)
 {
 	dh::IODevice& _device = getIODevice(InDeviceName);
 	return _device.GetKeyDownDuration(BSTR2String(InKey).c_str());
+}
+
+IOCAPI void __stdcall ClearBindings(BSTR InDeviceName)
+{
+	dh::IODevice& _device = getIODevice(InDeviceName);
+	_device.ClearBindings();
 }

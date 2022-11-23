@@ -47,6 +47,9 @@ namespace IOToolkit.Core
         public static extern int GetDOAll([MarshalAs(UnmanagedType.BStr)] string InDeviceName, [MarshalAs(UnmanagedType.LPArray)] float[] DOStatus);
 
         [DllImport(DllName, CallingConvention = CallingConvention.StdCall)]
+        public static extern int RefreshStreamingData([MarshalAs(UnmanagedType.BStr)] string InDeviceName, [MarshalAs(UnmanagedType.LPArray)] byte[] StreamingData, UInt32 DataSize);
+
+        [DllImport(DllName, CallingConvention = CallingConvention.StdCall)]
         public static extern int SetDOSingle([MarshalAs(UnmanagedType.BStr)] string InDeviceName, [MarshalAs(UnmanagedType.BStr)] string InKeyName, float InStatus);
 
         [DllImport(DllName, CallingConvention = CallingConvention.StdCall)]
@@ -68,7 +71,9 @@ namespace IOToolkit.Core
         public static extern void Query();
 
         [DllImport(DllName, CallingConvention = CallingConvention.StdCall)]
-        [return: MarshalAs(UnmanagedType.I1)]
+        public static extern void ClearBindings([MarshalAs(UnmanagedType.BStr)] string InDeviceName);
+
+        [DllImport(DllName, CallingConvention = CallingConvention.StdCall)]
         public static extern void ClearAllBindings();
 
         [DllImport(DllName, CallingConvention = CallingConvention.StdCall)]

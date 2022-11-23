@@ -40,10 +40,9 @@ public:
 	virtual int DOImmediate();
 
     virtual int GetDO(float* OutDOStatus);
-
     virtual float GetDO(const FKey InKey);
-
 	virtual float GetDO(const char* InOAction);
+    virtual int RefreshStreamingData(BYTE* StreamingData, unsigned int DataSize);
 
 	virtual void Initialize() = 0;
 

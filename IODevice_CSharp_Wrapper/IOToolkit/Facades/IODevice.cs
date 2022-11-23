@@ -241,6 +241,11 @@ namespace IOToolkit
             return IONativeWrapper.GetDOAll(this.ID, DOStatus);
         }
 
+        public int RefreshStreamingData(byte[] StreamingData)
+        {
+            return IONativeWrapper.RefreshStreamingData(this.ID, StreamingData, (UInt32)StreamingData.Length);
+        }
+
         /// <summary>
         /// 设置一个键的输出值
         /// </summary>
@@ -361,6 +366,14 @@ namespace IOToolkit
         public float GetKeyDownDuration(Key InKey)
         {
             return IONativeWrapper.GetKeyDownDuration(this.ID, InKey);
+        }
+
+        /// <summary>
+        /// 清除本设备上已绑定的键轴
+        /// </summary>
+        public void ClearBindings()
+        {
+            IONativeWrapper.ClearBindings(this.ID);
         }
 
         //  ------------- Properties -------------

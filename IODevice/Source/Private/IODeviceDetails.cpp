@@ -257,6 +257,15 @@ int IOToolkit::IODeviceDetails::GetDO(float* OutDOStatus)
 }
 
 
+int IOToolkit::IODeviceDetails::RefreshStreamingData(BYTE* StreamingData, unsigned int DataSize)
+{
+	if (!ValidDevcie(std::string(" [RefreshStreamingData] ")))
+	{
+		return -1;
+	}
+	return rawIO ? rawIO->RefreshStreamingData(StreamingData,DataSize) : -1;
+}
+
 float IOToolkit::IODeviceDetails::GetDO(const char* InOAction)
 {
     if (!ValidDevcie(std::string(" [GetDO] ") + InOAction))

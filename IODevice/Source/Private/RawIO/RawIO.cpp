@@ -52,6 +52,11 @@ int IOToolkit::RawIO::GetDO(float* OutDOStatus)
 }
 
 
+int IOToolkit::RawIO::RefreshStreamingData(BYTE* StreamingData, unsigned int DataSize)
+{
+    return 0;
+}
+
 float IOToolkit::RawIO::GetDO(const char* InOAction)
 {
 	return 0;

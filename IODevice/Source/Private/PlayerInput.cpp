@@ -128,7 +128,7 @@ const float IOToolkit::PlayerInput::GetKeyDownTime(const FKey& InKey, uint8 devi
     if (KeyStateMap.count(InKey)&&bPressed)
     {
         const FKeyState& keyState = KeyStateMap.at(InKey);
-        float curTime = GetTickCount() / 1000.f;
+        float curTime = GetTickCount64() / 1000.f;
         return curTime - keyState.LastUpDownTransitionTime;
     }
     return 0.0f;

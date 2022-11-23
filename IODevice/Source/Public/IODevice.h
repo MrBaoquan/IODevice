@@ -98,6 +98,13 @@ public:
      */
 	float GetDO(const FKey& InKey);
 	float GetDO(const char* InOAction);
+
+    /**
+     * 刷新设备自定义数据流
+     * @param StreamingData 数据流缓冲区
+     * @param DataSize  数据缓冲区大小
+     */
+    int RefreshStreamingData(BYTE* StreamingData, unsigned int DataSize);
   
     /**
      * 获取设备指定按键状态

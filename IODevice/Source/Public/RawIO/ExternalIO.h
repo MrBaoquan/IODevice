@@ -35,6 +35,7 @@ class IOUIDLL :public PDLL
     DECLARE_FUNCTION2(int, GetDeviceDO, uint8, short*)
     DECLARE_FUNCTION2(int, GetDeviceDI, uint8, BYTE*)
     DECLARE_FUNCTION2(int, GetDeviceAD, uint8, short*)
+    DECLARE_FUNCTION3(int, RefreshStreamingData, uint8, BYTE*, unsigned int)
 };
 
 class ExternalIO : public CustomIOBase
@@ -60,6 +61,9 @@ public:
     virtual int GetDO(float* OutDOStatus) override;
     virtual float GetDO(const FKey InKey) override;
 	virtual float GetDO(const char* InOAction) override;
+
+    virtual int RefreshStreamingData(BYTE* StreamingData, unsigned int DataSize) override;
+    
 	virtual void Initialize() override;
     virtual ~ExternalIO() override;
 

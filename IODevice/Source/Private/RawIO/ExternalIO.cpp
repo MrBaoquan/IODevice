@@ -45,7 +45,6 @@ void IOToolkit::ExternalIO::Tick(float DeltaSeconds)
 		this->DOImmediate();
         GetDO(DOStatus);
     }
-    
 }
 
 /**
@@ -81,6 +80,13 @@ float IOToolkit::ExternalIO::GetDO(const FKey InKey)
         return 0;
     }
     return DOStatus[numChannel];
+}
+
+
+int IOToolkit::ExternalIO::RefreshStreamingData(BYTE* StreamingData, unsigned int DataSize)
+{
+	if (!bValid) { return 0; }
+	return externalDll.RefreshStreamingData(deviceIndex, StreamingData, DataSize);
 }
 
 float IOToolkit::ExternalIO::GetDO(const char* InOAction)

@@ -10,18 +10,18 @@
   <!-- Strandar Device -->
   <Device Name="Standard" Type="Standard"></Device>
 
-  <Device Name="PCI2312A" Type="External" DllName="PCI2312A"  Index="0">
-    <Properties>
-      <Key Name="Axis_01" PreScale="1000.0" ></Key>
-    </Properties>
+  <Device Name="PCI2312A" Type="External" DllName="TUIO"  Index="0">
+    
 
     <Action Name="TestAction">
       <Key Name="AnyKey"></Key>
     </Action>
 
     <Axis Name="TestAxis">
-      <Key Name="Right" Scale="1" />
-      <Key Name="Left" Scale="-5" />
+        <Key Name="Right" Scale="1" />
+        <Key Name="Left" Scale="-5" />
+	    <Key Name="Button_02"/>
+		
     </Axis>
 
     <OAction Name="Output">

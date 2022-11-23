@@ -23,6 +23,7 @@ extern "C"
 	IOCAPI float __stdcall GetDOSingle(BSTR InDeviceName,BSTR InKeyName);
 	IOCAPI float __stdcall GetDOAction(BSTR InDeviceName, BSTR InOAction);
 	IOCAPI int __stdcall GetDOAll(BSTR InDeviceName, float* InStatus);
+	IOCAPI int RefreshStreamingData(BSTR InDeviceName, BYTE* StreamingData, unsigned int DataSize);
 	
 
 	IOCAPI int __stdcall SetDOSingle(BSTR InDeviceName, BSTR InKeyName, float InVal);

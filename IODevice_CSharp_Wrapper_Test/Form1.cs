@@ -28,20 +28,11 @@ namespace IODevice_C_CSharpTest
             //_delegate = new NativeDelegate.NativeActionSignature(this.onKeyPressed);
             IODeviceController.Load();
             IOSettings.SetIOConfigPath("");
-            IODevice _device = IODeviceController.GetIODevice("ExtDev");
-            //_device.BindAction("TestAction", InputEvent.IE_Pressed, this.onActionPressed);
-            //_device.BindAction("TestAction", InputEvent.IE_Released, this.onActionReleased);
-
-            IODeviceController.GetIODevice("Standard")
-                .BindKey("A", InputEvent.IE_Pressed, () =>
-            {
-                Debug.WriteLine("A Pressed");
-            });
-
-            //_device.BindKey(IOKeyCode.AnyKey, InputEvent.IE_Pressed, this.onAnyKeyPressed);
-            //_device.BindKey(IOKeyCode.AnyKey, InputEvent.IE_Released, this.onAnyKeyReleased);
-
-            //_device.BindAxis("MoveLR", this.OnMove);
+            IODevice _device = IODeviceController.GetIODevice("PCI2312A");
+            _device.BindAction("TestAction", InputEvent.IE_Pressed, this.onActionPressed);
+            _device.BindAction("TestAction", InputEvent.IE_Released, this.onActionReleased);
+            _device.ClearBindings();
+            
             timer1.Start();
             timer1.Interval = 20;
         }
@@ -50,18 +41,22 @@ namespace IODevice_C_CSharpTest
         {
             IODeviceController.Update();
 
-            IODevice _device = IODeviceController.GetIODevice("ExtDev");
-            var _ret = _device.GetKeyDown(IOKeyCode.A);
-            if (_ret)
-            {
-                int _res = _device.SetDO("Start",1.0f);
-                Debug.WriteLine(_device.GetDO("Start"));
-            }
-            if (_device.GetKeyUp(IOKeyCode.A))
-            {
-                //_device.SetDO("Start",0.0f);
-                Debug.WriteLine(_device.GetDO("Start"));
-            }
+            Byte[] _data = new Byte[512];
+            int _recvSize = IODeviceController.GetIODevice("PCI2312A").RefreshStreamingData(_data);
+            string _test = System.Text.Encoding.Default.GetString(_data);
+            Console.WriteLine("Test");
+            //IODevice _device = IODeviceController.GetIODevice("ExtDev");
+            //var _ret = _device.GetKeyDown(IOKeyCode.A);
+            //if (_ret)
+            //{
+            //    int _res = _device.SetDO("Start",1.0f);
+            //    Debug.WriteLine(_device.GetDO("Start"));
+            //}
+            //if (_device.GetKeyUp(IOKeyCode.A))
+            //{
+            //    //_device.SetDO("Start",0.0f);
+            //    Debug.WriteLine(_device.GetDO("Start"));
+            //}
 
             //Debug.WriteLine(_device.GetDO("Start"));
             //Debug.WriteLine(_device.GetKeyDownDuration(IOKeyCode.B));

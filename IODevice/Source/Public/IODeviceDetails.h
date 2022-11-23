@@ -58,6 +58,8 @@ public:
 	float GetDO(const FKey& InKey);
 	float GetDO(const char* InOAction);
 
+    int RefreshStreamingData(BYTE* StreamingData, unsigned int DataSize);
+
     bool GetKey(const FKey& InKey);
     bool GetKeyDown(const FKey& InKey);
     bool GetKeyUp(const FKey& InKey);

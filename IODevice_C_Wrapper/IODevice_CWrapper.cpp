@@ -118,6 +118,12 @@ IOCAPI int __stdcall GetDOAll(BSTR InDeviceName, float* InStatus)
 	return _device.GetDO(InStatus);
 }
 
+IOCAPI int RefreshStreamingData(BSTR InDeviceName, BYTE* StreamingData, unsigned int DataSize)
+{
+	dh::IODevice& _device = getIODevice(InDeviceName);
+	return _device.RefreshStreamingData(StreamingData, DataSize);
+}
+
 IOCAPI int __stdcall SetDOSingle(BSTR InDeviceName, BSTR InKeyName, float InVal)
 {
 	dh::IODevice& _device = getIODevice(InDeviceName);
@@ -218,3 +224,5 @@ IOCAPI void __stdcall ClearBindings(BSTR InDeviceName)
 	dh::IODevice& _device = getIODevice(InDeviceName);
 	_device.ClearBindings();
 }
+
+

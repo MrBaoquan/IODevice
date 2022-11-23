@@ -89,6 +89,12 @@ int IOToolkit::IODevice::GetDO(float* OutDOStatus)
 }
 
 
+int IOToolkit::IODevice::RefreshStreamingData(BYTE* StreamingData, unsigned int DataSize)
+{
+    IODeviceDetails& deviceDetails = IODevices::GetDeviceDetail(deviceID);
+    return deviceDetails.RefreshStreamingData(StreamingData, DataSize);
+}
+
 float IOToolkit::IODevice::GetDO(const char* InOAction)
 {
 	IODeviceDetails& deviceDetails = IODevices::GetDeviceDetail(deviceID);

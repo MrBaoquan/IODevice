@@ -10,7 +10,7 @@
   <!-- Strandar Device -->
   <Device Name="Standard" Type="Standard"></Device>
 
-  <Device Name="PCI2312A" Type="External" DllName="TUIO"  Index="0">
+  <Device Name="PCI2312A" Type="External" DllName="IOUI"  Index="0">
     
 
     <Action Name="TestAction">

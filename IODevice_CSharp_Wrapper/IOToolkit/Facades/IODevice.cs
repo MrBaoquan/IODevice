@@ -303,7 +303,7 @@ namespace IOToolkit
         /// 立即执行输出动作
         /// </summary>
         /// <returns></returns>
-        public int DOImmeditate()
+        public int DOImmediate()
         {
             return IONativeWrapper.DOImmediate(this.ID);
         }

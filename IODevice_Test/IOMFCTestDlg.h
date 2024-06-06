@@ -81,4 +81,5 @@ public:
 	CButton btn_minus;
 	CComboBox deviceListBox;
 	afx_msg void OnCbnSelchangeCombo2();
+	virtual BOOL PreTranslateMessage(MSG* pMsg);
 };

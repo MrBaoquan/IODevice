@@ -43,6 +43,7 @@ int IOToolkit::UInputSettings::Initialize()
         doc.parse<0>(fdoc.data());
         xml_node<>* root = doc.first_node();
         uint8 deviceID = 0;
+
         for (xml_node<>* device = root->first_node("Device");device;device = device->next_sibling())
         {
             // All devices.
@@ -60,7 +61,7 @@ int IOToolkit::UInputSettings::Initialize()
             // Auto add standard device if no standard xml node in config file.
             if (IOType != IOType::Standard&&deviceID == 0)
             {
-                if(!AddDevcie(DevicePropeties(0, IOType::Standard, IOType::Standard, "", 0)))
+                if(!AddDevice(DeviceProperties(0, IOType::Standard, IOType::Standard, "", 0)))
                 {
                     IOLog::Instance().Error(std::string("Create standard device failed "));
                     return ErrorCode;
@@ -69,6 +70,7 @@ int IOToolkit::UInputSettings::Initialize()
                 ActionMappings.push_back(std::vector<FInputActionKeyMapping>());
                 AxisMappings.push_back(std::vector<FInputAxisKeyMapping>());
                 KeyProperties.push_back(std::map<FKey, FInputKeyProperties, LessKey>());
+                OActionMappings.push_back(std::map<std::string, std::vector<FOutputActionKey>>());
             }
 
             // if standard device node not at the top position.
@@ -88,7 +90,7 @@ int IOToolkit::UInputSettings::Initialize()
                 }
             }
 
-            if (!AddDevcie(DevicePropeties(deviceID, IOType, DeviceName, DllName, deviceIndex)))
+            if (!AddDevice(DeviceProperties(deviceID, IOType, DeviceName, DllName, deviceIndex)))
             {
                 continue;
             }
@@ -260,12 +262,12 @@ const bool IOToolkit::UInputSettings::HasAxis(uint8 deviceID, std::string axisNa
     return false;
 }
 
-const bool IOToolkit::UInputSettings::HasOAction(uint8 deviceID, std::string oactionName)
+const bool IOToolkit::UInputSettings::HasOAction(uint8 deviceID, std::string oActionName)
 {
     if (deviceID < IODevices::GetDevicesCount())
     {
         auto& _oactions = OActionMappings[deviceID];
-        if (_oactions.contains(oactionName)) return true;
+        if (_oactions.contains(oActionName)) return true;
     }
     return false;
 }
@@ -291,7 +293,7 @@ const bool IOToolkit::UInputSettings::HasAction(uint8 deviceID, std::string acti
     return false;
 }
 
-bool IOToolkit::UInputSettings::AddDevcie(DevicePropeties deviceProps)
+bool IOToolkit::UInputSettings::AddDevice(DeviceProperties deviceProps)
 {
     std::shared_ptr<RawIO> rawIO = RawIOFactory::CreateRawInput(deviceProps);
     if (!rawIO)

@@ -31,9 +31,9 @@ namespace IOToolkit
         /// </summary>
         /// <returns></returns>
 
-        public static int UnLoad()
+        public static int Unload()
         {
-            return IONativeWrapper.UnLoad();
+            return IONativeWrapper.Unload();
         }
 
         /// <summary>

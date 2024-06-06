@@ -6,7 +6,7 @@
 #include "IOSettings.h"
 #include "StringUtils.hpp"
 #include "Paths.hpp"
-
+#include <filesystem>
 #include "IODevice_CWrapper.h"
 
 namespace dh = IOToolkit;
@@ -53,15 +53,14 @@ IOCAPI int __stdcall Load()
 	return dh::IODeviceController::Instance().Load();
 }
 
-IOCAPI int __stdcall UnLoad()
+IOCAPI int __stdcall Unload()
 {
 	return dh::IODeviceController::Instance().Unload();
 }
 
-
 IOCAPI int __stdcall SetIOConfigPath(BSTR InFilePath)
 {
-	return dh::IOSettings::Instance().SetIOConfigPath(BSTR2String(InFilePath).c_str());
+	return dh::IOSettings::Instance().SetIOConfigPath(std::filesystem::path(std::wstring(InFilePath)).string().data());
 }
 
 IOCAPI int __stdcall BindKey(BSTR InDeviceName, BSTR InKeyName, int InKeyEvent, InputActionSignature InHandler)

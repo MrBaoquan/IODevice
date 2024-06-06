@@ -12,7 +12,7 @@ extern "C"
 {
 
 	IOCAPI int __stdcall Load();
-	IOCAPI int __stdcall UnLoad();
+	IOCAPI int __stdcall Unload();
 
 	IOCAPI int __stdcall SetIOConfigPath(BSTR InFilePath);
 	

@@ -497,3 +497,11 @@ void CIOMFCTestDlg::OnCbnSelchangeCombo2()
 	// TODO: 在此添加控件通知处理程序代码
 	this->ReBindActions(currentDeviceName());
 }
+
+
+BOOL CIOMFCTestDlg::PreTranslateMessage(MSG* pMsg)
+{
+	// TODO: 在此添加专用代码和/或调用基类
+	if (pMsg->message == WM_KEYDOWN && pMsg->wParam == VK_RETURN)     return   TRUE;
+	return CDialogEx::PreTranslateMessage(pMsg);
+}

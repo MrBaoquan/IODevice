@@ -13,7 +13,7 @@
 namespace IOToolkit
 {
 
-struct DevicePropeties
+struct DeviceProperties
 {
     uint8 DeviceID;
 
@@ -29,8 +29,8 @@ struct DevicePropeties
     /** Device index */
     uint8 DeviceIndex;
 
-    DevicePropeties() :DeviceID(InvalidDeviceID) ,Type(IOType::Invalid),DeviceIndex(0),DllName(IOType::Invalid){}
-    DevicePropeties(uint8 InDeviceID,std::string InType,std::string InName, std::string InDllName, uint8 InDeviceIndex):
+    DeviceProperties() :DeviceID(InvalidDeviceID) ,Type(IOType::Invalid),DeviceIndex(0),DllName(IOType::Invalid){}
+    DeviceProperties(uint8 InDeviceID,std::string InType,std::string InName, std::string InDllName, uint8 InDeviceIndex):
         DeviceID(InDeviceID)
         ,Type(InType)
         ,Name(InName)
@@ -42,7 +42,7 @@ struct DevicePropeties
 class RawIOFactory
 {
 public:
-    static std::shared_ptr<RawIO> CreateRawInput(DevicePropeties deviceProps);
+    static std::shared_ptr<RawIO> CreateRawInput(DeviceProperties deviceProps);
 
 };
 

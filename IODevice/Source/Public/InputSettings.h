@@ -44,7 +44,7 @@ private:
     UInputSettings() {}
     ~UInputSettings(){}
 
-    bool AddDevcie(struct DevicePropeties deviceProps);
+    bool AddDevice(struct DeviceProperties deviceProps);
     float GetNodeValue(const char* val,float defaultValue = 0.f);
 
     std::string customConfigPath = "Invalid";

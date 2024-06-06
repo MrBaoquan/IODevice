@@ -278,7 +278,7 @@ LRESULT CALLBACK IOToolkit::IOApplication::CallWndProc(_In_ int nCode, _In_ WPAR
 {
 	if (nCode != HC_ACTION)
 	{
-		return CallNextHookEx(IOApplication::hhks[2], nCode, wParam, lParam);
+		return CallNextHookEx(nullptr, nCode, wParam, lParam);
 	}
 	PCWPSTRUCT data = (PCWPSTRUCT)lParam;
 	UINT msg = data->message;
@@ -295,5 +295,6 @@ LRESULT CALLBACK IOToolkit::IOApplication::CallWndProc(_In_ int nCode, _In_ WPAR
 	default:
 		break;
 	}
-	return CallNextHookEx(IOApplication::hhks[2], nCode, wParam, lParam);
+    
+	return CallNextHookEx(nullptr, nCode, wParam, lParam);
 }

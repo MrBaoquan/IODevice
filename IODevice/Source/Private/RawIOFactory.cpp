@@ -17,7 +17,7 @@
 namespace fs = std::filesystem;
 
 
-std::shared_ptr<IOToolkit::RawIO> IOToolkit::RawIOFactory::CreateRawInput(DevicePropeties deviceProps)
+std::shared_ptr<IOToolkit::RawIO> IOToolkit::RawIOFactory::CreateRawInput(DeviceProperties deviceProps)
 {
     if (deviceProps.Type == IOType::Standard)
     {

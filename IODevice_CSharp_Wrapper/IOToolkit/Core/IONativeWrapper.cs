@@ -23,7 +23,7 @@ namespace IOToolkit.Core
         public static extern int Load();
 
         [DllImport(DllName, CallingConvention = CallingConvention.StdCall)]
-        public static extern int UnLoad();
+        public static extern int Unload();
 
         [DllImport(DllName, CallingConvention = CallingConvention.StdCall)]
         public static extern int SetIOConfigPath([MarshalAs(UnmanagedType.BStr)] string InFilePath);

@@ -47,6 +47,7 @@ void IOToolkit::PlayerInput::Tick(float DeltaSeconds)
 
 void IOToolkit::PlayerInput::InputKey(FKey& InKey, InputEvent KeyEvent,const uint8 deviceID, float AmountDepressed)
 {
+    if (KeyStateMaps.size() <= 0) return;
     std::map<FKey, FKeyState, LessKey>& KeyStateMap = KeyStateMaps[deviceID];
     KeyStateMap.try_emplace(InKey);
     FKeyState& keyState = KeyStateMap[InKey];
@@ -91,6 +92,7 @@ void IOToolkit::PlayerInput::InputKey(FKey& InKey, InputEvent KeyEvent,const uin
 void IOToolkit::PlayerInput::InputAxis(FKey Key, float Delta, float DeltaTime, uint8 deviceID, int32 NumSamples)
 {
     if (NumSamples <= 0) { return; }
+    if (KeyStateMaps.size() <= 0) return;
     std::map<FKey, FKeyState, LessKey>& KeyStateMap = KeyStateMaps[deviceID];
 	
     KeyStateMap.try_emplace(Key);

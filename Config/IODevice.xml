@@ -5,6 +5,14 @@
 -->
 
 <IORoot>
-  <Device Name="Standard" Type="Standard"></Device>
+  <Device Name="extDev" Type="External" DllName="Debugger" Index="0">
+	
+	<!-- 输入动作绑定 -->
+	<Action Name="StartGame">
+		<Key Name="S" />
+		<Key Name="Button_00" />
+	</Action>
+	
+  </Device>
 
 </IORoot>

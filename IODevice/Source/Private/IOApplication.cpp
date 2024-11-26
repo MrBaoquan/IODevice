@@ -81,7 +81,6 @@ BOOL WINAPI DllMain(
         break;
     case DLL_PROCESS_DETACH:
         IOApplication::UnHookWindow();
-		IOLog::Instance().Log(std::string("------------------------------  IOToolkit has been detached, Bye!  ------------------------------"));
         break;
     case DLL_THREAD_ATTACH:
         break;
@@ -151,7 +150,6 @@ int IOToolkit::IOApplication::DyUnload()
     IOApplication::bLoaded = false;
 	
     IOLog::Instance().Log(std::string("------------------------------  IOToolkit has been unloaded  ------------------------------\n"));
-    IOLog::Instance().ReleaseLogger();
 	return 0;
 }
 
@@ -216,7 +214,7 @@ int IOToolkit::IOApplication::SetWindowsHook()
         }
         IOToolkit::IOLog::Instance().Log(std::string("Hook Window: ") + HWNDToString(_window) + "; PID: " + std::to_string(dwProcessId) + "; TID: " + std::to_string(threadID));
         _hhks.push_back(threadID);
-        HHOOK hhk1 = SetWindowsHookEx(WH_GETMESSAGE, IOApplication::OnMessageProc, NULL, threadID);
+        HHOOK hhk1 = SetWindowsHookEx(WH_GETMESSAGE, IOApplication::OnMessageProc, IOApplication::dllInstance, threadID);
         if (hhk1)
         {
             IOApplication::hhks.push_back(hhk1);
@@ -227,7 +225,7 @@ int IOToolkit::IOApplication::SetWindowsHook()
             return ErrorCode;
         }
 
-        HHOOK hhk2 = SetWindowsHookEx(WH_CALLWNDPROCRET, IOApplication::CallWndRetProc, NULL, threadID);
+        HHOOK hhk2 = SetWindowsHookEx(WH_CALLWNDPROCRET, IOApplication::CallWndRetProc, IOApplication::dllInstance, threadID);
         if (hhk2)
         {
             IOApplication::hhks.push_back(hhk2);
@@ -238,7 +236,7 @@ int IOToolkit::IOApplication::SetWindowsHook()
             return ErrorCode;
         }
 
-        HHOOK hhk3 = SetWindowsHookEx(WH_CALLWNDPROC, IOApplication::CallWndProc, NULL, threadID);
+        HHOOK hhk3 = SetWindowsHookEx(WH_CALLWNDPROC, IOApplication::CallWndProc, IOApplication::dllInstance, threadID);
         if (hhk3)
         {
             IOApplication::hhks.push_back(hhk3);

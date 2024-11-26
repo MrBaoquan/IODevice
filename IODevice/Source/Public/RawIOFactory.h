@@ -13,32 +13,6 @@
 namespace IOToolkit
 {
 
-struct DeviceProperties
-{
-    uint8 DeviceID;
-
-    /** Raw Input&Output Type */
-    std::string Type;
-
-    /** Name of device. use to get devcie. */
-    std::string Name;
-
-    /** For external raw IO */
-    std::string DllName;
-
-    /** Device index */
-    uint8 DeviceIndex;
-
-    DeviceProperties() :DeviceID(InvalidDeviceID) ,Type(IOType::Invalid),DeviceIndex(0),DllName(IOType::Invalid){}
-    DeviceProperties(uint8 InDeviceID,std::string InType,std::string InName, std::string InDllName, uint8 InDeviceIndex):
-        DeviceID(InDeviceID)
-        ,Type(InType)
-        ,Name(InName)
-        ,DllName(InDllName)
-        ,DeviceIndex(InDeviceIndex){}
-};
-
-
 class RawIOFactory
 {
 public:

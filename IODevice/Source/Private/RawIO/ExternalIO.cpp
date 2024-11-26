@@ -110,6 +110,8 @@ void IOToolkit::ExternalIO::Initialize()
 int IOToolkit::ExternalIO::GetDeviceDI(std::vector<BYTE>& OutDIStatus)
 {
     static BYTE exDIStatus[MaxIOCount];
+	std::copy(OutDIStatus.begin(), OutDIStatus.end(), exDIStatus);
+
     int retCode = externalDll.GetDeviceDI(deviceIndex, exDIStatus);
     for (size_t index = 0;index < OutDIStatus.size();index++)
     {
@@ -121,6 +123,8 @@ int IOToolkit::ExternalIO::GetDeviceDI(std::vector<BYTE>& OutDIStatus)
 int IOToolkit::ExternalIO::GetDeviceAD(std::vector<short>& OutADStatus)
 {
     static short exADStatus[MaxIOCount];
+	std::copy(OutADStatus.begin(), OutADStatus.end(), exADStatus);
+
     int retCode = externalDll.GetDeviceAD(deviceIndex, exADStatus);
     for (size_t index = 0;index < OutADStatus.size();index++) 
     {
@@ -132,6 +136,8 @@ int IOToolkit::ExternalIO::GetDeviceAD(std::vector<short>& OutADStatus)
 int IOToolkit::ExternalIO::GetDO(std::vector<float>& OutDOStatus)
 {
     static short exDoStatus[MaxIOCount];
+	std::copy(OutDOStatus.begin(), OutDOStatus.end(), exDoStatus);
+
     int retCode = externalDll.GetDeviceDO(deviceIndex, exDoStatus);
 	if (retCode == 1) {
 		for (size_t index = 0; index < OutDOStatus.size(); ++index)

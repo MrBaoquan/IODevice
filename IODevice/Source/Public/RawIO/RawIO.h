@@ -8,15 +8,13 @@
 #include <vector>
 #include "CoreTypes.inl"
 #include "InputCoreTypes.h"
+#include "CoreTypes/IOTypes.h"
 #include "CoreTypes/InputKeyProperties.h"
 #include "LessKey.h"
 
 namespace  IOToolkit
 {
 
-const uint8 InvalidDeviceID = static_cast<uint8>(255);
-const uint8 MaxIOCount = static_cast<uint8>(255);
-const float MaxAxisValue = 1000.f;
 
 class RawIO
 {
@@ -53,7 +51,7 @@ public:
     void InputAxis(FKey Key, float Delta, float DeltaTime, uint8 InID, int32 NumSamples);
 
     const uint8 ID()const { return deviceID; };
-    const std::string getIOType()const { return IOType; }
+    const std::string& getIOType()const { return IOType; }
 public:
     struct ButtonState
     {

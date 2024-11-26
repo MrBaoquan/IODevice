@@ -354,19 +354,31 @@ IOToolkit::FInputActionBinding& IOToolkit::IODeviceDetails::GetActionBinding(con
     return ActionBindings[BindingIndex];
 }
 
-std::string IOToolkit::IODeviceDetails::getName()
+const std::string& IOToolkit::IODeviceDetails::getName()
 {
     return name;
 }
-
-std::string IOToolkit::IODeviceDetails::getIOType()
+const std::string& INVALID_DEVICE = "Invalid";
+const std::string& IOToolkit::IODeviceDetails::getIOType()
 {
     if(rawIO)
     {
        return rawIO->getIOType();
     }
-    return "Invalid";
+    return INVALID_DEVICE;
 }
+
+const std::string& IOToolkit::IODeviceDetails::getDllName()
+{
+    return props.DllName;
+}
+
+
+IOToolkit::uint8 IOToolkit::IODeviceDetails::getIndex()
+{
+    return props.DeviceIndex;
+}
+
 void IOToolkit::IODeviceDetails::AddActionBinding(const FInputActionBinding & InBinding)
 {
     ActionBindings.push_back(FInputActionBinding(InBinding));

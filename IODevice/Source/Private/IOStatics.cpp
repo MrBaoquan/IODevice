@@ -121,7 +121,7 @@ std::map<std::string, IOToolkit::IODeviceDetails>& IOToolkit::IODevices::GetDevc
 
 std::map<std::string, IOToolkit::IODeviceDetails> IOToolkit::IODevices::devices;
 
-IOToolkit::IODeviceDetails IOToolkit::IODevices::Invalid("Invalid", nullptr);
+IOToolkit::IODeviceDetails IOToolkit::IODevices::Invalid(DeviceProperties(), nullptr);
 
 std::shared_ptr<IOToolkit::FKeyDetails> IOToolkit::StaticKeys::GetKeyDetails(const FKey& key)
 {

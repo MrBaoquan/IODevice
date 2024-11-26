@@ -15,8 +15,14 @@ extern "C"
 	IOCAPI int __stdcall Unload();
 
 	IOCAPI int __stdcall SetIOConfigPath(BSTR InFilePath);
+	IOCAPI int __stdcall SetIOLogDir(BSTR InLogDir);
+
+	IOCAPI BSTR __stdcall DeviceIOType(BSTR InDeviceName);
+	IOCAPI BSTR __stdcall DeviceDllName(BSTR InDeviceName);
+	IOCAPI int __stdcall DeviceIndex(BSTR InDeviceName);
 	
 	IOCAPI int __stdcall BindKey(BSTR InDeviceName, BSTR InKeyName, int InKeyEvent, InputActionSignature InHandler);
+	IOCAPI int __stdcall BindAxisKey(BSTR InDeviceName, BSTR InAxisName, InputAxisSignature InHandler);
 	IOCAPI int __stdcall BindAction(BSTR InDeviceName, BSTR InActionName, int InKeyEvent, InputActionWithKeySignature InHandler);
 	IOCAPI int __stdcall BindAxis(BSTR InDeviceName, BSTR InAxisName, InputAxisSignature InHandler);
 	
@@ -24,7 +30,6 @@ extern "C"
 	IOCAPI float __stdcall GetDOAction(BSTR InDeviceName, BSTR InOAction);
 	IOCAPI int __stdcall GetDOAll(BSTR InDeviceName, float* InStatus);
 	IOCAPI int RefreshStreamingData(BSTR InDeviceName, BYTE* StreamingData, unsigned int DataSize);
-	
 
 	IOCAPI int __stdcall SetDOSingle(BSTR InDeviceName, BSTR InKeyName, float InVal);
 	IOCAPI int __stdcall SetDOAll(BSTR InDeviceName, float* InStatus);

@@ -149,6 +149,34 @@ void IOToolkit::IODevice::ClearBindings()
     deviceDetails.ClearBinding();
 }
 
+
+const char* IOToolkit::IODevice::Name()
+{
+    IODeviceDetails& deviceDetails = IODevices::GetDeviceDetail(deviceID);
+    return deviceDetails.getName().data();
+}
+
+const char* IOToolkit::IODevice::DllName()
+{
+    IODeviceDetails& deviceDetails = IODevices::GetDeviceDetail(deviceID);
+    auto dllName = deviceDetails.getDllName().data();
+    return deviceDetails.getDllName().data();
+}
+
+
+const char* IOToolkit::IODevice::IOType()
+{
+    IODeviceDetails& deviceDetails = IODevices::GetDeviceDetail(deviceID);
+    return deviceDetails.getIOType().data();
+}
+
+
+const IOToolkit::uint8 IOToolkit::IODevice::Index()
+{
+    IODeviceDetails& deviceDetails = IODevices::GetDeviceDetail(deviceID);
+    return deviceDetails.getIndex();
+}
+
 const bool IOToolkit::IODevice::IsValid() const
 {
     return deviceID != InvalidDeviceID;

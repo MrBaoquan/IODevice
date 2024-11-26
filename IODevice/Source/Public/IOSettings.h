@@ -17,6 +17,11 @@ namespace IOToolkit
         /** Set IODevice.xml file path */
         int SetIOConfigPath(const char* InPath);
 
+        /**
+         * Set Log Directory
+         */
+        int SetIOLogDir(const char* InLogDir);
+
     private:
         IOSettings(){}
 

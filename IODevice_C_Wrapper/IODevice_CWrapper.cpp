@@ -63,12 +63,27 @@ IOCAPI int __stdcall SetIOConfigPath(BSTR InFilePath)
 	return dh::IOSettings::Instance().SetIOConfigPath(std::filesystem::path(std::wstring(InFilePath)).string().data());
 }
 
+IOCAPI int __stdcall SetIOLogDir(BSTR InLogDir)
+{
+	return dh::IOSettings::Instance().SetIOLogDir(std::filesystem::path(std::wstring(InLogDir)).string().data());
+}
+
+
 IOCAPI int __stdcall BindKey(BSTR InDeviceName, BSTR InKeyName, int InKeyEvent, InputActionSignature InHandler)
 {
 	int _result = -1;
 	std::string _keyName = BSTR2String(InKeyName);
 	dh::IODevice& _device = getIODevice(InDeviceName);
 	_device.BindKey(_keyName.c_str(), (dh::InputEvent)InKeyEvent, InHandler);
+	return _result;
+}
+
+IOCAPI int __stdcall BindAxisKey(BSTR InDeviceName, BSTR InAxisName, InputAxisSignature InHandler)
+{
+	int _result = -1;
+	std::string _axisKeyName = BSTR2String(InAxisName);
+	dh::IODevice& _device = getIODevice(InDeviceName);
+	_device.BindAxisKey(_axisKeyName.c_str(), InHandler);
 	return _result;
 }
 
@@ -224,4 +239,21 @@ IOCAPI void __stdcall ClearBindings(BSTR InDeviceName)
 	_device.ClearBindings();
 }
 
+IOCAPI BSTR __stdcall DeviceIOType(BSTR InDeviceName)
+{
+	dh::IODevice& _device = getIODevice(InDeviceName);
+	return string2BSTR(_device.IOType());
+}
+
+IOCAPI BSTR __stdcall DeviceDllName(BSTR InDeviceName)
+{
+	dh::IODevice& _device = getIODevice(InDeviceName);
+	return string2BSTR(_device.DllName());
+}
+
+IOCAPI int __stdcall DeviceIndex(BSTR InDeviceName)
+{
+	dh::IODevice& _device = getIODevice(InDeviceName);
+	return _device.Index();
+}
 

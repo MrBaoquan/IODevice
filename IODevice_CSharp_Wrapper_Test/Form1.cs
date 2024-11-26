@@ -26,12 +26,17 @@ namespace IODevice_C_CSharpTest
         private void Form1_Load(object sender, EventArgs e)
         {
             //_delegate = new NativeDelegate.NativeActionSignature(this.onKeyPressed);
+            // IOSettings.SetIOConfigPath("D:\\测试\\IODevice.xml");
+            IOSettings.SetIOLogDir("D:\\Logs1");
+
             IODeviceController.Load();
-            IOSettings.SetIOConfigPath("D:\\测试\\IODevice.xml");
             IODevice _device = IODeviceController.GetIODevice("PCI2312A");
+            var _dllName = _device.DllName();
+            var _ioType = _device.IOType();
+            var _idx = _device.Index();
             _device.BindAction("TestAction", InputEvent.IE_Pressed, this.onActionPressed);
             _device.BindAction("TestAction", InputEvent.IE_Released, this.onActionReleased);
-            _device.ClearBindings();
+            
             
             timer1.Start();
             timer1.Interval = 20;
@@ -41,9 +46,9 @@ namespace IODevice_C_CSharpTest
         {
             IODeviceController.Update();
 
-            Byte[] _data = new Byte[512];
-            int _recvSize = IODeviceController.GetIODevice("PCI2312A").RefreshStreamingData(_data);
-            string _test = System.Text.Encoding.Default.GetString(_data);
+            // Byte[] _data = new Byte[512];
+            // int _recvSize = IODeviceController.GetIODevice("PCI2312A").RefreshStreamingData(_data);
+            // string _test = System.Text.Encoding.Default.GetString(_data);
             Console.WriteLine("Test");
             //IODevice _device = IODeviceController.GetIODevice("ExtDev");
             //var _ret = _device.GetKeyDown(IOKeyCode.A);
@@ -81,6 +86,13 @@ namespace IODevice_C_CSharpTest
 
         private void onActionPressed(Key InKeyName)
         {
+            IOSettings.SetIOLogDir("D:\\Logs1");
+            IOToolkit.IODeviceController.Unload();
+            IOToolkit.IODeviceController.Load();
+            IODevice _device = IODeviceController.GetIODevice("PCI2312A");
+            _device.BindAction("TestAction", InputEvent.IE_Pressed, this.onActionPressed);
+            _device.BindAction("TestAction", InputEvent.IE_Released, this.onActionReleased);
+
             actionLabel.Text = InKeyName + "Pressed";
             Debug.WriteLine(InKeyName);
         }

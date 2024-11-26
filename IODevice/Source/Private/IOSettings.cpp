@@ -5,6 +5,8 @@
 
 #include "..\Public\IOSettings.h"
 #include "InputSettings.h"
+#include "IOLog.h"
+
 /** Copyright (c) 2018 Hefei And Technology Co.,Ltd All rights reserved
  *  Author: MrBaoquan
  *  CreateTime: 2018-8-7 15:39
@@ -21,4 +23,9 @@ IOSettings & IOSettings::Instance()
 int IOSettings::SetIOConfigPath(const char* InPath)
 {
     return UInputSettings::Instance().SetConfigPath(InPath);
+}
+
+int IOToolkit::IOSettings::SetIOLogDir(const char* InLogDir)
+{
+    return IOLog::Instance().SetLogDir(InLogDir);
 }

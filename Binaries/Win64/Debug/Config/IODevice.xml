@@ -12,16 +12,15 @@
 
   <Device Name="PCI2312A" Type="External" DllName="IOUI"  Index="0">
     
-
     <Action Name="TestAction">
-      <Key Name="AnyKey"></Key>
+        <Key Name="S"></Key>
+		<Key Name="Button_00"></Key>
     </Action>
 
     <Axis Name="TestAxis">
         <Key Name="Right" Scale="1" />
         <Key Name="Left" Scale="-5" />
 	    <Key Name="Button_02"/>
-		
     </Axis>
 
     <OAction Name="Output">

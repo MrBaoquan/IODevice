@@ -13,5 +13,10 @@ namespace IOToolkit
         {
             return IONativeWrapper.SetIOConfigPath(InFilePath);
         }
+
+        public static int SetIOLogDir(string InLogDir)
+        {
+            return IONativeWrapper.SetIOLogDir(InLogDir);
+        }
     }
 }

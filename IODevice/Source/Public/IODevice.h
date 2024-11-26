@@ -150,6 +150,11 @@ public:
     /** 清除该设备绑定的所有回调函数 */
     void ClearBindings();
 
+    const char* Name();
+    const char* DllName();
+    const char* IOType();
+    const uint8 Index();
+
     const bool IsValid() const;
     const uint8 GetID() const;
     const bool operator==(const IODevice& rhs);

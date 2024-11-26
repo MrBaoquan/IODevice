@@ -300,7 +300,7 @@ bool IOToolkit::UInputSettings::AddDevice(DeviceProperties deviceProps)
     {
         return false;
     }
-    IODeviceDetails ID(deviceProps.Name, rawIO);
+    IODeviceDetails ID(deviceProps, rawIO);
     IODevices::AddDevice(ID);
     return true;
 }

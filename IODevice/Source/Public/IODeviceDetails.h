@@ -13,6 +13,7 @@
 #include "InputBinding/InputKeyBinding.h"
 #include "InputBinding/InputActionBinding.h"
 #include "RawIO/RawIO.h"
+#include "CoreTypes/IOTypes.h"
 
 /**
  * Device class, posses all raw input and events.
@@ -28,9 +29,10 @@ public:
                     name("Invalid")
                     ,rawIO(nullptr)
                     ,device(InvalidDeviceID){}
-    IODeviceDetails(std::string InName, std::shared_ptr<RawIO> InRawIO):
-                     name(InName)
+    IODeviceDetails(DeviceProperties props, std::shared_ptr<RawIO> InRawIO):
+                     name(props.Name)
                     ,device(InRawIO?InRawIO->ID(): InvalidDeviceID)
+					,props(props)
                     ,rawIO(InRawIO){}
     IODevice& GetDevice();
 
@@ -71,8 +73,10 @@ public:
     
     int32 GetNumActionBindings()const { return static_cast<int32>(ActionBindings.size()); }
     FInputActionBinding& GetActionBinding(const int32 BindingIndex);
-    std::string getName();
-    std::string getIOType();
+    const std::string& getName();
+    const std::string& getIOType();
+    const std::string& getDllName();
+    uint8 getIndex();
 private:
     void AddActionBinding(const FInputActionBinding& Binding);
     bool ValidDevcie(std::string customMsg);
@@ -90,7 +94,8 @@ private:
     IODevice device;
     std::string name;
     std::shared_ptr<RawIO> rawIO;
-
+   
+    DeviceProperties props;
 };
 
 };

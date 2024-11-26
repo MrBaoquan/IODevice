@@ -18,6 +18,21 @@ namespace IOToolkit
             this.ID = InID;
         }
 
+        public string DllName()
+        {
+            return IONativeWrapper.DeviceDllName(this.ID);
+        }
+
+        public string IOType()
+        {
+            return IONativeWrapper.DeviceIOType(this.ID);
+        }
+
+        public int Index()
+        {
+            return IONativeWrapper.DeviceIndex(this.ID);
+        }
+
         /// <summary>
         /// 设备是否合法  当前无效
         /// </summary>
@@ -42,6 +57,21 @@ namespace IOToolkit
             });
             delegateRefs.Add(_proxy);
             IONativeWrapper.BindKey(this.ID, InKey,(int)InEvent, _proxy);
+        }
+
+        public void BindKey<T1>(Key InKey, InputEvent InEvent, Action<T1> InHandler, T1 _param1)
+        {
+            BindKey(InKey, InEvent, () =>InHandler.Invoke(_param1));
+        }
+
+        public void BindKey<T1, T2>(Key InKey, InputEvent InEvent, Action<T1, T2> InHandler, T1 _param1, T2 _param2)
+        {
+            BindKey(InKey, InEvent, () => InHandler.Invoke(_param1, _param2));
+        }
+
+        public void BindKey<T1, T2, T3>(Key InKey, InputEvent InEvent, Action<T1, T2, T3> InHandler, T1 _param1, T2 _param2, T3 _param3)
+        {
+            BindKey(InKey, InEvent, () => InHandler.Invoke(_param1, _param2, _param3));
         }
 
         /// <summary>
@@ -209,6 +239,16 @@ namespace IOToolkit
             });
             delegateRefs.Add(_proxy);
             IONativeWrapper.BindAxis(this.ID, InAxisName, _proxy);
+        }
+
+        public void BindAxisKey(Key InKey, Action<float> InHandler)
+        {
+            NativeAxisSignature _proxy = new NativeAxisSignature((float InVal) =>
+            {
+                InHandler(InVal);
+            });
+            delegateRefs.Add(_proxy);
+            IONativeWrapper.BindAxisKey(this.ID, InKey, _proxy);
         }
 
         /// <summary>

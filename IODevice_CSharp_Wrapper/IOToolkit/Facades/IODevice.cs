@@ -40,7 +40,7 @@ namespace IOToolkit
 
         public bool IsValid()
         {
-            return true;
+            return IONativeWrapper.IsValid(this.ID);
         }
         
         /// <summary>

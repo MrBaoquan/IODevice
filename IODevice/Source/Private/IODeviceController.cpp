@@ -32,6 +32,7 @@ IODeviceController::~IODeviceController()
 
 IODeviceController& IODeviceController::Instance()
 {
+
     static IODeviceController single_instance;
     return single_instance;
 }

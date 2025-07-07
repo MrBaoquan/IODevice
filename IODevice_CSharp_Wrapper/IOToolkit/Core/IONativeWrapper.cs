@@ -25,6 +25,9 @@ namespace IOToolkit.Core
         [DllImport(DllName, CallingConvention = CallingConvention.StdCall)]
         public static extern int Unload();
 
+        [DllImport(DllName, CallingConvention = CallingConvention.StdCall)]
+        public static extern bool IsValid([MarshalAs(UnmanagedType.BStr)] string InDeviceName);
+
         [DllImport(DllName, CallingConvention =CallingConvention.StdCall)]
         [return: MarshalAs(UnmanagedType.BStr)]
         public static extern string DeviceDllName([MarshalAs(UnmanagedType.BStr)] string InDeviceName);

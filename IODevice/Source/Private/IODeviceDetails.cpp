@@ -379,6 +379,15 @@ IOToolkit::uint8 IOToolkit::IODeviceDetails::getIndex()
     return props.DeviceIndex;
 }
 
+bool IOToolkit::IODeviceDetails::isValid()
+{
+    if (rawIO)
+    {
+        return rawIO->Valid();
+    }
+    return false;
+}
+
 void IOToolkit::IODeviceDetails::AddActionBinding(const FInputActionBinding & InBinding)
 {
     ActionBindings.push_back(FInputActionBinding(InBinding));

@@ -1,0 +1,176 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d" d:DesignWidth="1280" d:DesignHeight="720"
+			 xmlns:vm="using:IOTester.ViewModels"
+			 xmlns:controls="using:IOTester.Controls"
+             x:Class="IOTester.Controls.IODeviceView"
+			 x:DataType="vm:Device">
+
+	<Design.DataContext>
+		<vm:Device />
+	</Design.DataContext>
+
+	<UserControl.Styles>
+		<Style Selector="Button.DIButton">
+			<Setter Property="Background" Value="#e2e8f0"></Setter>
+		</Style>
+		
+		<Style Selector="Button.DIButton:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+			<Setter Property="Background" Value="#e2e8f0"></Setter>
+		</Style>
+		<Style Selector="Button.DIButton.active:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+			<Setter Property="Background" Value="#059669"></Setter>
+			<Setter Property="Foreground" Value="White"></Setter>
+		</Style>
+		
+
+		<Style Selector="Button.DIButton.active">
+			<Setter Property="Background" Value="#059669"></Setter>
+			<Setter Property="Foreground" Value="White"></Setter>
+		</Style>
+	</UserControl.Styles>
+	
+	<DockPanel>
+		<Border DockPanel.Dock="Top" BorderBrush="#e5e7eb" BorderThickness="0 0 0 0" Padding="0 0 0 0">
+			<StackPanel HorizontalAlignment="Right" Margin="20 8" IsVisible="{Binding HasConfig}">
+				<Button Classes="img-btn" ToolTip.Tip="修改配置" Command="{Binding EditConfigCommand}">
+					<Image Width="24" Height="24" Source="avares://IOTester/Assets/edit-config.png" />
+				</Button>
+			</StackPanel>
+		</Border>
+		
+		<Grid ColumnDefinitions="5*, 2, 4*">
+			<ScrollViewer Grid.Column="0">
+				<StackPanel>
+					<StackPanel>
+						<TextBlock Text="Action" Background="#e0f2fe" Padding="16 8" />
+						<ItemsRepeater ItemsSource="{Binding ActionList}">
+							<ItemsRepeater.Layout>
+								<WrapLayout Orientation="Horizontal" />
+							</ItemsRepeater.Layout>
+							<ItemsRepeater.ItemTemplate>
+								<DataTemplate>
+									<controls:IONodeView MaxWidth="250" />
+								</DataTemplate>
+							</ItemsRepeater.ItemTemplate>
+						</ItemsRepeater>
+					</StackPanel>
+	
+					<StackPanel Margin="0 16 0 0">
+						<TextBlock Text="OAction" Background="#e0f2fe" Padding="16 8" />
+						<ItemsRepeater ItemsSource="{Binding OActionList}">
+							<ItemsRepeater.Layout>
+								<WrapLayout Orientation="Horizontal" />
+							</ItemsRepeater.Layout>
+							<ItemsRepeater.ItemTemplate>
+								<DataTemplate>
+									<controls:IONodeView MaxWidth="250" />
+								</DataTemplate>
+							</ItemsRepeater.ItemTemplate>
+						</ItemsRepeater>
+					</StackPanel>
+
+					<StackPanel Margin="0 16 0 0">
+						<TextBlock Text="Axis" Background="#e0f2fe" Padding="16 8" />
+						<ItemsRepeater ItemsSource="{Binding AxisList}">
+							<ItemsRepeater.Layout>
+								<WrapLayout Orientation="Horizontal" />
+							</ItemsRepeater.Layout>
+							<ItemsRepeater.ItemTemplate>
+								<DataTemplate>
+									<controls:IONodeView MaxWidth="250" />
+								</DataTemplate>
+							</ItemsRepeater.ItemTemplate>
+						</ItemsRepeater>
+					</StackPanel>
+				</StackPanel>
+			</ScrollViewer>
+			<GridSplitter Grid.Column="1" Background="WhiteSmoke" ResizeDirection="Columns" />
+			<ScrollViewer Grid.Column="2" Margin="8 0" >
+				<StackPanel Orientation="Vertical">
+					<Border Padding="16 8" Background="#e0f2fe">
+						<StackPanel Orientation="Horizontal" >
+							<TextBlock Text="DI输入" VerticalAlignment="Center" />
+							<ComboBox SelectedIndex="{Binding SelectedDICountIndex}" MaxDropDownHeight="200" Margin="16 0" BorderThickness="1" BorderBrush="#e5e7eb">
+								<ComboBoxItem>16 通道</ComboBoxItem>
+								<ComboBoxItem>32 通道</ComboBoxItem>
+								<ComboBoxItem>64 通道</ComboBoxItem>
+								<ComboBoxItem>128 通道</ComboBoxItem>
+								<ComboBoxItem>256 通道</ComboBoxItem>
+							</ComboBox>
+						</StackPanel>
+					</Border>
+					<ItemsRepeater ItemsSource="{Binding DIKeys}">
+						<ItemsRepeater.Layout>
+							<WrapLayout Orientation="Horizontal" />
+						</ItemsRepeater.Layout>
+						<ItemsRepeater.ItemTemplate>
+							<DataTemplate>
+								<Button Classes.active="{Binding Active}" Width="100" Height="32"  Classes="DIButton" Margin="4">
+									<TextBlock Text="{Binding Name}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+								</Button>
+							</DataTemplate>
+						</ItemsRepeater.ItemTemplate>
+					</ItemsRepeater>
+					
+					
+					<Border Padding="16 8" Margin="0 16 0 0" Background="#e0f2fe">
+						<StackPanel Orientation="Horizontal">
+							<TextBlock Text="DO输出" VerticalAlignment="Center" />
+							<ComboBox SelectedIndex="{Binding SelectedDOCountIndex}" MaxDropDownHeight="200" Margin="16 0" BorderThickness="1" BorderBrush="#e5e7eb">
+								<ComboBoxItem>16 通道</ComboBoxItem>
+								<ComboBoxItem>32 通道</ComboBoxItem>
+								<ComboBoxItem>64 通道</ComboBoxItem>
+								<ComboBoxItem>128 通道</ComboBoxItem>
+								<ComboBoxItem>256 通道</ComboBoxItem>
+							</ComboBox>
+						</StackPanel>
+					</Border>
+					<ItemsRepeater ItemsSource="{Binding DOKeys}">
+						<ItemsRepeater.Layout>
+							<WrapLayout Orientation="Horizontal" />
+						</ItemsRepeater.Layout>
+						<ItemsRepeater.ItemTemplate>
+							<DataTemplate>
+								<Button Classes.active="{Binding Active}" Width="100" Height="32"  Classes="DIButton" Margin="4" Command="{Binding ToggleDOCommand}">
+									<TextBlock Text="{Binding Name}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+								</Button>
+							</DataTemplate>
+						</ItemsRepeater.ItemTemplate>
+					</ItemsRepeater>
+
+					<Border Padding="16 8" Margin="0 16 0 0" Background="#e0f2fe">
+						<StackPanel Orientation="Horizontal">
+							<TextBlock Text="AD 输入" VerticalAlignment="Center" />
+							<ComboBox SelectedIndex="{Binding SelectedADCountIndex}" MaxDropDownHeight="200" Margin="16 0" BorderThickness="1" BorderBrush="#e5e7eb">
+								<ComboBoxItem>16 通道</ComboBoxItem>
+								<ComboBoxItem>32 通道</ComboBoxItem>
+								<ComboBoxItem>64 通道</ComboBoxItem>
+								<ComboBoxItem>128 通道</ComboBoxItem>
+								<ComboBoxItem>256 通道</ComboBoxItem>
+							</ComboBox>
+						</StackPanel>
+					</Border>
+					<ItemsRepeater ItemsSource="{Binding ADKeys}">
+						<ItemsRepeater.Layout>
+							<WrapLayout Orientation="Horizontal" />
+						</ItemsRepeater.Layout>
+						<ItemsRepeater.ItemTemplate>
+							<DataTemplate>
+								<StackPanel Orientation="Horizontal" Margin="4">
+									<TextBlock Width="70" HorizontalAlignment="Center" Text="{Binding Name}" VerticalAlignment="Center" Margin="8 0 0 0" />
+									<Button Classes.active="{Binding Active}" Width="100" Height="32"  Classes="DIButton" Margin="0" Command="{Binding ToggleDOCommand}">
+										<TextBlock Text="{Binding Value, StringFormat='{}{0:F3}'}}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+									</Button>
+								</StackPanel>
+							</DataTemplate>
+						</ItemsRepeater.ItemTemplate>
+					</ItemsRepeater>
+				</StackPanel>
+
+			</ScrollViewer>
+		</Grid>
+	</DockPanel>
+</UserControl>

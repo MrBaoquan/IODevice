@@ -1,0 +1,71 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:IOTester.ViewModels"
+		xmlns:controls="using:IOTester.Controls"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+		xmlns:iconPacks="https://github.com/MahApps/IconPacks.Avalonia"
+        mc:Ignorable="d" d:DesignWidth="1280" d:DesignHeight="720"
+        x:Class="IOTester.Views.MainWindow"
+        x:DataType="vm:MainWindowViewModel"
+        Icon="/Assets/avalonia-logo.ico"
+        Title="IO聚合调试平台">
+
+    <Design.DataContext>
+        <!-- This only sets the DataContext for the previewer in an IDE,
+             to set the actual DataContext for runtime, set the DataContext property in code (look at App.axaml.cs) -->
+        <vm:MainWindowViewModel/>
+    </Design.DataContext>
+
+	<Window.Styles>
+		<Style Selector="Button.img-btn">
+			<Setter Property="Background" Value="" />
+			<Setter Property="Height" Value="36" />
+		</Style>
+	</Window.Styles>
+
+	<DockPanel>
+		<Border DockPanel.Dock="Top" BorderBrush="#e5e7eb" BorderThickness="0 0 0 1" Padding="0 8 0 0">
+			<StackPanel  Orientation="Horizontal" HorizontalAlignment="Right" Margin="16 8">
+				<Button Classes="img-btn" ToolTip.Tip="查看日志" Command="{Binding ViewIOLogCommand}">
+					<Image Width="28" Height="28" Source="avares://IOTester/Assets/view-log.png" />
+				</Button>
+				<Button Classes="img-btn" ToolTip.Tip="修改配置" Command="{Binding EditIOConfigCommand}">
+					<Image Width="32" Height="32" Source="avares://IOTester/Assets/edit-config.png" />
+				</Button>
+
+				<Button Classes="img-btn" Command="{Binding OpenCloseDeviceCommand}" Background="#e2e8f0" Height="36"
+						Margin="16 0 0 0"
+					>
+					<StackPanel Orientation="Horizontal">
+						<Image IsVisible="{Binding !IsStared}" Width="24" Height="24" Source="avares://IOTester/Assets/start.png" />
+						<Image IsVisible="{Binding IsStared}" Width="24" Height="24" Source="avares://IOTester/Assets/stop.png" />
+						<TextBlock IsVisible="{Binding IsStared}" Text="关闭" Padding="16 4" />
+						<TextBlock IsVisible="{Binding !IsStared}" Text="打开" Padding="16 4" />
+					</StackPanel>
+				</Button>
+			</StackPanel>	
+		</Border>
+
+		
+		<TabControl Margin="5"
+					SelectedItem="{Binding SelectedIODevcie}"
+					ItemsSource="{Binding Devices}">
+			<TabControl.ItemTemplate>
+				<DataTemplate>
+					<StackPanel Orientation="Horizontal">
+						<TextBlock Text="{Binding Title}" />
+						<Ellipse IsVisible="{Binding IsValid}" Width="16" Height="16" Fill="#059669" Stroke="Black" StrokeThickness="0" Margin="16 0"/>
+						<Ellipse IsVisible="{Binding !IsValid}" Width="16" Height="16" Fill="#dc2626" Stroke="Black" StrokeThickness="0" Margin="16 0"/>
+					</StackPanel>
+				</DataTemplate>
+			</TabControl.ItemTemplate>
+			<TabControl.ContentTemplate>
+				<DataTemplate>
+					<controls:IODeviceView />
+				</DataTemplate>
+			</TabControl.ContentTemplate>
+		</TabControl>
+	</DockPanel>
+
+</Window>

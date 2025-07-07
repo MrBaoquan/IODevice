@@ -77,6 +77,7 @@ public:
     const std::string& getIOType();
     const std::string& getDllName();
     uint8 getIndex();
+    bool isValid();
 private:
     void AddActionBinding(const FInputActionBinding& Binding);
     bool ValidDevcie(std::string customMsg);

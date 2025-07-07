@@ -6,54 +6,56 @@
 
 <IORoot>
 
-  <!-- Must put this node at the top position . -->
-  <!-- Strandar Device -->
-  <!--
+	<!-- Must put this node at the top position . -->
+	<!-- Strandar Device -->
+	<!--
     Type: 键盘=>Standard 遥感=>Joystick 外部拓展(板卡等)=>External
   -->
-  <Device Name="Standard" Type="Standard"></Device>
+	<Device Name="Standard" Type="Standard"></Device>
 
-  <Device Name="PCI2312A" Type="External" DllName="PCI2312A"  Index="0">
-    <Properties>
-      <!--
+	<Device Name="PCI2312A" Type="External" DllName="PCI2312A" Index="0">
+		<Properties>
+			<!--
         针对Axis值, 原始值会首先除以1000, 目的是将范围限制在 [-1,1], 然后按照以下顺序依次处理数据
-        PreOffset: 预偏移值                     cur+=PreOffset
-        PreScale: 预缩放值                      cur*=PreScale
+        PreOffset: 预偏移值 cur+=PreOffset
+        PreScale: 预缩放值 cur*=PreScale
         DeadZone: 无效值区间
         Exponent: 指数增长                       std::sin(cur)*std::powf(std::abs(cur), Exponent);
-        Sensitivity: 敏感度(缩放值)              cur*=Sensitivity
+        Sensitivity: 敏感度(缩放值) cur*=Sensitivity
         Min,Max: 限定区间 [Min,Max]              cur = clamp(cur,Min,Max) 
-        Invert: 反转 等同于 Sensitivity=-1       cur*=Invert
+        Invert: 反转 等同于 Sensitivity=-1 cur*=Invert
         InvertEvent: 在设备 Type=External 时,针对 Acttion 输入有效 反转IE_Pressed&IE_Released事件
       -->
-      <Key Name="Axis_00" PreOffset="0.0" PreScale="1.0" Min="0"  Max="5" DeadZone="0.0" Sensitivity="1.0" Exponent="1.0" Invert="False" InvertEvent="False"></Key>
-    </Properties>
+			<Key Name="Axis_00" PreOffset="0.0" PreScale="1.0" Min="0" Max="5" DeadZone="0.0" Sensitivity="1.0" Exponent="1.0" Invert="False" InvertEvent="False" />
+			<!-- 反转通道事件  -->
+			<Key Name="Button_00" InvertEvent="True" />
+		</Properties>
 
-    <!-- 输入动作 -->
-    <Action Name="TestAction">
-      <Key Name="AnyKey"></Key>
-      <!--<Key Name="Axis_00"></Key>-->
-    </Action>
+		<!-- 输入动作 -->
+		<Action Name="TestAction">
+			<Key Name="AnyKey" />
+			<!--<Key Name="Axis_00"></Key>-->
+		</Action>
 
-    <!-- 模拟量输入 -->
-    <Axis Name="TestAxis">
-      <!--
+		<!-- 模拟量输入 -->
+		<Axis Name="TestAxis">
+			<!--
         Scale: 模拟量缩放系数
       -->
-      <Key Name="Left" Scale="1" />
-      <Key Name="Right" Scale="1" />
-    </Axis>
+			<Key Name="Left" Scale="1" />
+			<Key Name="Right" Scale="1" />
+		</Axis>
 
-    <!-- 输出动作 -->
-    <OAction Name="TurnOnLight">
-      <!--
+		<!-- 输出动作 -->
+		<OAction Name="TurnOnLight">
+			<!--
         InvertEvent: 反转输出 (0 和 非0)
         Scale: 输出值缩放系数
       -->
-      <Key Name="OAxis_00" Scale="1" InvertEvent="True" />
-      <Key Name="OAxis_02" />
-    </OAction>
+			<Key Name="OAxis_00" Scale="1" InvertEvent="True" />
+			<Key Name="OAxis_02" />
+		</OAction>
 
-  </Device>
+	</Device>
 
 </IORoot>

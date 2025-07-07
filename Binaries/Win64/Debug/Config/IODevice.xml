@@ -6,28 +6,35 @@
 
 <IORoot>
 
-  <!-- Default device, posses all keyboard & mouse event, this node could not be removed . Must put this node at the top position . -->
-  <!-- Strandar Device -->
-  <Device Name="Standard" Type="Standard"></Device>
+	<Device Name="ExtDev" Type="External" DllName="netio" Index="10">
 
-  <Device Name="PCI2312A" Type="External" DllName="IOUI"  Index="0">
-    
-    <Action Name="TestAction">
-        <Key Name="S"></Key>
-		<Key Name="Button_00"></Key>
-    </Action>
+		<Action Name="Start" Label="开始互动">
+			<Key Name="Button_00" />
+			<Key Name="S" />
+		</Action>
 
-    <Axis Name="TestAxis">
-        <Key Name="Right" Scale="1" />
-        <Key Name="Left" Scale="-5" />
-	    <Key Name="Button_02"/>
-    </Axis>
+		<Action Name="Fire" Label="开火">
+			<Key Name="Button_01" />
+			<Key Name="F" />
+		</Action>
 
-    <OAction Name="Output">
-      <Key Name="OAxis_02" Scale="1" InvertEvent="True"></Key>
-      <Key Name="OAxis_04" Scale="1" InvertEvent="False"></Key>
-    </OAction>
+		<Axis Name="MoveX" Label="左右移动">
+			<Key Name="Axis_00" Scale="10" />
+			<Key Name="Right" Scale="10" />
+			<Key Name="Left" Scale="-10" />
+		</Axis>
 
-  </Device>
+		<Axis Name="MoveY" Label="前后移动">
+			<Key Name="Axis_01" Scale="10" />
+			<Key Name="Up" Scale="10" />
+			<Key Name="Down" Scale="-10" />
+		</Axis>
+
+		<OAction Name="Light" Label="氛围灯">
+			<Key Name="OAxis_00" Scale="10" InvertEvent="False" />
+			<Key Name="OAxis_02" Scale="5" InvertEvent="False" />
+		</OAction>
+
+	</Device>
 
 </IORoot>

@@ -179,7 +179,8 @@ const IOToolkit::uint8 IOToolkit::IODevice::Index()
 
 const bool IOToolkit::IODevice::IsValid() const
 {
-    return deviceID != InvalidDeviceID;
+    IODeviceDetails& deviceDetails = IODevices::GetDeviceDetail(deviceID);
+    return deviceID != InvalidDeviceID && deviceDetails.isValid();
 }
 
 const IOToolkit::uint8 IOToolkit::IODevice::GetID() const

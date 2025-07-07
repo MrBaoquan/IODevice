@@ -1,0 +1,110 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d" d:DesignWidth="300" d:DesignHeight="450"
+			 xmlns:vm="using:IOTester.ViewModels"
+			 xmlns:converter="using:IOTester.Converters"
+			 xmlns:iconPacks="https://github.com/MahApps/IconPacks.Avalonia"
+             x:Class="IOTester.Controls.IONodeView"
+			 x:DataType="vm:IONodeBase">
+	
+	<Design.DataContext>
+		<vm:OAction />
+	</Design.DataContext>
+
+	<UserControl.Styles>
+
+	</UserControl.Styles>
+
+	<Border BorderThickness="1" CornerRadius="6" Background="WhiteSmoke" Margin="8 4">
+		<StackPanel Orientation="Vertical" HorizontalAlignment="Stretch" Classes="active">
+			<StackPanel.Styles>
+
+				<Style Selector="Grid TextBlock">
+					<Setter Property="Foreground" Value="Black" />
+					<Setter Property="Padding" Value="8 4" />
+				</Style>
+				
+				<Style Selector="Grid.active">
+					<Setter Property="Background" Value="#059669" />
+				</Style>
+
+				<Style Selector="Grid.active TextBlock">
+					<Setter Property="Foreground" Value="White" />
+				</Style>
+				
+				<Style Selector="Grid.active iconPacks|PackIconIonicons">
+					<Setter Property="Foreground" Value="White" />
+				</Style>
+
+				<Style Selector="ToggleButton iconPacks|PackIconIonicons.icon-on">
+					<Setter Property="IsVisible" Value="False"/>
+				</Style>
+				
+				<Style Selector="ToggleButton iconPacks|PackIconIonicons.icon-off">
+					<Setter Property="IsVisible" Value="True"/>
+				</Style>
+
+				<Style Selector="Button">
+					<Setter Property="Background" Value="Transparent"/>
+				</Style>
+	
+			</StackPanel.Styles>
+			
+			<!-- 节点名称 -->
+			<Border BorderThickness="0,0,0,1" BorderBrush="DarkGray">
+				<Grid Classes.active="{Binding Active}" Margin="0 0 5 0">
+					<Grid.ColumnDefinitions>
+						<ColumnDefinition Width="100"/>
+						<ColumnDefinition Width="*"/>
+						<ColumnDefinition Width="40"/>
+					</Grid.ColumnDefinitions>
+					<TextBlock Grid.Column="0" Text="{Binding DeviceLabel}" Padding="8 10 8 4" FontSize="16" HorizontalAlignment="Stretch" />
+					<TextBlock Grid.Column="1" Text="{Binding Value, StringFormat='{}{0:F2}'}" HorizontalAlignment="Stretch" VerticalAlignment="Center"
+									IsVisible="{Binding ShowNodeValue}"
+							/>
+					<Button Grid.Column="2" Padding="8 0" HorizontalAlignment="Center" Background="Transparent" Command="{Binding ToggleDOCommand}"
+									IsVisible="{Binding ShowBtn}"
+							>
+						<Panel VerticalAlignment="Center" HorizontalAlignment="Center">
+							<iconPacks:PackIconIonicons IsVisible="{Binding Active}" Kind="RadioButtonOniOS"/>
+							<iconPacks:PackIconIonicons IsVisible="{Binding !Active}" Kind="RadioButtonOffiOS"/>
+						</Panel>
+					</Button>
+				</Grid>
+			</Border>
+
+			<!-- 节点按键列表 -->
+			<ItemsRepeater ItemsSource="{Binding Keys}">
+				<ItemsRepeater.ItemTemplate>
+					<DataTemplate>
+						<Grid Margin="5 2" Classes.active="{Binding Active}" VerticalAlignment="Center" >
+							<Grid.ColumnDefinitions>
+								<ColumnDefinition Width="100"/>
+								<ColumnDefinition Width="*"/>
+								<ColumnDefinition Width="40"/>
+							</Grid.ColumnDefinitions>
+							
+							<TextBlock Grid.Column="0" Text="{Binding Name}" HorizontalAlignment="Stretch"  VerticalAlignment="Center" />
+							<TextBlock Grid.Column="1" Text="{Binding Value, StringFormat='{}{0:F2}'}" HorizontalAlignment="Stretch" VerticalAlignment="Center"
+									IsVisible="{Binding $parent[UserControl].DataContext.ShowKeyValue}"
+							/>
+
+							<Button Grid.Column="2" Padding="8 0" Background="Transparent" Command="{Binding ToggleDOCommand}"  HorizontalAlignment="Center"
+									IsVisible="{Binding $parent[UserControl].DataContext.ShowBtn}"
+							>
+								<Panel VerticalAlignment="Center">
+									<iconPacks:PackIconIonicons IsVisible="{Binding Active}" Kind="RadioButtonOniOS"/>
+									<iconPacks:PackIconIonicons IsVisible="{Binding !Active}" Kind="RadioButtonOffiOS"/>
+								</Panel>
+							</Button>
+						</Grid>
+					</DataTemplate>
+				</ItemsRepeater.ItemTemplate>
+			</ItemsRepeater>
+	
+		</StackPanel>
+	</Border>
+
+</UserControl>

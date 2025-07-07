@@ -8,7 +8,7 @@
   <Device Name="extDev" Type="External" DllName="Debugger" Index="0">
 	
 	<!-- 输入动作绑定 -->
-	<Action Name="StartGame">
+	<Action Name="StartGame" Label="开始游戏">
 		<Key Name="S" />
 		<Key Name="Button_00" />
 	</Action>

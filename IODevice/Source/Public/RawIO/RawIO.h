@@ -52,6 +52,7 @@ public:
 
     const uint8 ID()const { return deviceID; };
     const std::string& getIOType()const { return IOType; }
+
 public:
     struct ButtonState
     {

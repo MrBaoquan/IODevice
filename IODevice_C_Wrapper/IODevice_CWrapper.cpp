@@ -117,7 +117,7 @@ IOCAPI int __stdcall BindAxis(BSTR InDeviceName, BSTR InAxisName, InputAxisSigna
 IOCAPI float __stdcall GetDOSingle(BSTR InDeviceName, BSTR InKeyName)
 {
 	dh::IODevice& _device = getIODevice(InDeviceName);
-	return _device.GetDO(BSTR2String(InKeyName).c_str());
+	return _device.GetDO(IOToolkit::FKey(BSTR2String(InKeyName).data()));
 }
 
 IOCAPI float __stdcall GetDOAction(BSTR InDeviceName, BSTR InOAction)
@@ -255,5 +255,11 @@ IOCAPI int __stdcall DeviceIndex(BSTR InDeviceName)
 {
 	dh::IODevice& _device = getIODevice(InDeviceName);
 	return _device.Index();
+}
+
+IOCAPI bool __stdcall IsValid(BSTR InDeviceName)
+{
+	dh::IODevice& _device = getIODevice(InDeviceName);
+	return _device.IsValid();
 }
 

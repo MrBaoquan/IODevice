@@ -20,6 +20,7 @@ extern "C"
 	IOCAPI BSTR __stdcall DeviceIOType(BSTR InDeviceName);
 	IOCAPI BSTR __stdcall DeviceDllName(BSTR InDeviceName);
 	IOCAPI int __stdcall DeviceIndex(BSTR InDeviceName);
+	IOCAPI bool __stdcall IsValid(BSTR InDeviceName);
 	
 	IOCAPI int __stdcall BindKey(BSTR InDeviceName, BSTR InKeyName, int InKeyEvent, InputActionSignature InHandler);
 	IOCAPI int __stdcall BindAxisKey(BSTR InDeviceName, BSTR InAxisName, InputAxisSignature InHandler);

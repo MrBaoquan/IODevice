@@ -52,7 +52,7 @@ int IOToolkit::UInputSettings::Initialize()
             std::string DllName = device->first_attribute("DllName") ? device->first_attribute("DllName")->value() : IOType::Invalid;
             uint8 deviceIndex = static_cast<uint8>(GetNodeValue(device->first_attribute("Index") ? device->first_attribute("Index")->value() : "", 0));
 
-            if (DeviceName == IOType::Invalid)
+            if (DeviceName == IOType::Invalid || IODevices::HasDevice(DeviceName))
             {
                 IOLog::Instance().Error("Please make sure that all of your Device node have a correct Name attribute. ");
                 continue;

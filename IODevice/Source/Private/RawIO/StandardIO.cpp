@@ -368,7 +368,7 @@ void IOToolkit::StandardIO::OnWindowActivationChanged(EWindowActivation Activati
 {
     if (ActivationType==EWindowActivation::Deactivate)
     {
-        PlayerInput::Instance().FlushPressedKeys();
+        // PlayerInput::Instance().FlushPressedKeys();
     }
 }
 

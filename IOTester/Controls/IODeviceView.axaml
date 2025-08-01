@@ -4,6 +4,7 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              mc:Ignorable="d" d:DesignWidth="1280" d:DesignHeight="720"
 			 xmlns:vm="using:IOTester.ViewModels"
+			 xmlns:iconPacks="https://github.com/MahApps/IconPacks.Avalonia"
 			 xmlns:controls="using:IOTester.Controls"
              x:Class="IOTester.Controls.IODeviceView"
 			 x:DataType="vm:Device">
@@ -12,7 +13,38 @@
 		<vm:Device />
 	</Design.DataContext>
 
+	<UserControl.Resources>
+		<Thickness x:Key="ExpanderHeaderPadding">0</Thickness>
+		<Thickness x:Key="ExpanderBorderThickness">0</Thickness>
+
+		<Flyout x:Key="MySharedFlyout" Placement="Top" ShowMode="Transient">
+			<TextBlock Text="Hello World" />
+		</Flyout>
+	</UserControl.Resources>
+
+
 	<UserControl.Styles>
+		<!-- IO 控制按钮样式 -->
+		<Style Selector="Button.IOControl">
+			<Setter Property="Background" Value="#e2e8f0"></Setter>
+		</Style>
+
+		<Style Selector="Button.IOControl:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+			<Setter Property="Background" Value="#e2e8f0"></Setter>
+		</Style>
+		<Style Selector="Button.IOControl.active:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+			<Setter Property="Background" Value="#059669"></Setter>
+			<Setter Property="Foreground" Value="White"></Setter>
+		</Style>
+
+
+		<Style Selector="Button.IOControl.active">
+			<Setter Property="Background" Value="#059669"></Setter>
+			<Setter Property="Foreground" Value="White"></Setter>
+		</Style>
+		
+		
+		<!-- IO Key 按钮样式 -->
 		<Style Selector="Button.DIButton">
 			<Setter Property="Background" Value="#e2e8f0"></Setter>
 		</Style>
@@ -30,22 +62,64 @@
 			<Setter Property="Background" Value="#059669"></Setter>
 			<Setter Property="Foreground" Value="White"></Setter>
 		</Style>
+
+		<Style Selector="Expander /template/ ToggleButton#ExpanderHeader:pointerover">
+			<Setter Property="Background" Value="LightBlue" />
+		</Style>
+		<Style Selector="Expander /template/ ToggleButton#ExpanderHeader">
+			<Setter Property="Background" Value="#e0f2fe" />
+		</Style>
+
+		<Style Selector="Expander /template/ ToggleButton#ExpanderHeader /template/ Border#ToggleButtonBackground:pointerover">
+			<Setter Property="Background" Value="#e0f2fe" />
+		</Style>
+
+		<Style Selector="Expander /template/ ToggleButton#ExpanderHeader">
+			<Setter Property="BorderThickness" Value="0" />
+		</Style>
+		
 	</UserControl.Styles>
 	
 	<DockPanel>
 		<Border DockPanel.Dock="Top" BorderBrush="#e5e7eb" BorderThickness="0 0 0 0" Padding="0 0 0 0">
-			<StackPanel HorizontalAlignment="Right" Margin="20 8" IsVisible="{Binding HasConfig}">
-				<Button Classes="img-btn" ToolTip.Tip="修改配置" Command="{Binding EditConfigCommand}">
-					<Image Width="24" Height="24" Source="avares://IOTester/Assets/edit-config.png" />
-				</Button>
+			<StackPanel>
+				<Separator Background="#e2e8f0" HorizontalAlignment="Stretch" Margin="0 0 0 8" />
+				<Grid ColumnDefinitions="24,*,24">
+					<ToggleButton IsChecked="{Binding UserIOFullscreen}" Grid.Column="0" Width="24" Height="24" Padding="4" ToolTip.Tip="左侧全屏">
+						<Image Source="avares://IOTester/Assets/fullscreen.png" />
+					</ToggleButton>
+					<StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Grid.Column="1">
+						<Button Classes="img-btn" ToolTip.Tip="修改配置" Command="{Binding EditConfigCommand}" 
+									Width="24" Height="24" Padding="0"
+								Margin="8 0" >
+							<Image Source="avares://IOTester/Assets/edit-config.png" />
+						</Button>
+					</StackPanel>
+
+					<ToggleButton IsChecked="{Binding StandardIOFullscreen}" Grid.Column="2" Width="24" Height="24" Padding="4" ToolTip.Tip="右侧全屏">
+						<Image Source="avares://IOTester/Assets/fullscreen.png" />
+					</ToggleButton>
+				</Grid>
+				<Separator Background="#e2e8f0" HorizontalAlignment="Stretch" Padding="0" Margin="0 8 0 0" />
 			</StackPanel>
 		</Border>
 		
-		<Grid ColumnDefinitions="5*, 2, 4*">
-			<ScrollViewer Grid.Column="0">
+		<Grid>
+			<Grid.ColumnDefinitions>
+				<ColumnDefinition Width="{Binding CustomWidth}" />
+				<ColumnDefinition Width="2" />
+				<ColumnDefinition Width="{Binding StandardWidth}" />
+			</Grid.ColumnDefinitions>
+			<ScrollViewer Grid.Column="0" MinWidth="1">
 				<StackPanel>
-					<StackPanel>
-						<TextBlock Text="Action" Background="#e0f2fe" Padding="16 8" />
+					<!-- Action 输入 -->
+					<Expander VerticalAlignment="Top" Margin="0"  Padding="0"  Background="White"
+							  BorderBrush="Transparent" HorizontalAlignment="Stretch"
+							  IsExpanded="True"
+					>
+						<Expander.Header>
+							<TextBlock Text="Action 输入" Background="#e0f2fe" Padding="16 8" />
+						</Expander.Header>
 						<ItemsRepeater ItemsSource="{Binding ActionList}">
 							<ItemsRepeater.Layout>
 								<WrapLayout Orientation="Horizontal" />
@@ -56,24 +130,16 @@
 								</DataTemplate>
 							</ItemsRepeater.ItemTemplate>
 						</ItemsRepeater>
-					</StackPanel>
+					</Expander>
 	
-					<StackPanel Margin="0 16 0 0">
-						<TextBlock Text="OAction" Background="#e0f2fe" Padding="16 8" />
-						<ItemsRepeater ItemsSource="{Binding OActionList}">
-							<ItemsRepeater.Layout>
-								<WrapLayout Orientation="Horizontal" />
-							</ItemsRepeater.Layout>
-							<ItemsRepeater.ItemTemplate>
-								<DataTemplate>
-									<controls:IONodeView MaxWidth="250" />
-								</DataTemplate>
-							</ItemsRepeater.ItemTemplate>
-						</ItemsRepeater>
-					</StackPanel>
-
-					<StackPanel Margin="0 16 0 0">
-						<TextBlock Text="Axis" Background="#e0f2fe" Padding="16 8" />
+					<!-- AD 输入 -->
+					<Expander VerticalAlignment="Top" Margin="0 12 0 0"  Padding="0"  Background="White"
+					  BorderBrush="Transparent" HorizontalAlignment="Stretch"
+					  IsExpanded="True"
+					>
+						<Expander.Header>
+							<TextBlock Text="Axis 输入" Background="#e0f2fe" Padding="16 8" />
+						</Expander.Header>
 						<ItemsRepeater ItemsSource="{Binding AxisList}">
 							<ItemsRepeater.Layout>
 								<WrapLayout Orientation="Horizontal" />
@@ -84,92 +150,180 @@
 								</DataTemplate>
 							</ItemsRepeater.ItemTemplate>
 						</ItemsRepeater>
-					</StackPanel>
+					</Expander>
+					
+
+					<!-- OAction 输出 -->
+					<Expander VerticalAlignment="Top" Margin="0 12 0 0"  Padding="0"  Background="White"
+							  BorderBrush="Transparent" HorizontalAlignment="Stretch"
+							  IsExpanded="True"
+					>
+						<Expander.Header>
+							<TextBlock Text="OAction 输出" Background="#e0f2fe" Padding="16 8" />
+						</Expander.Header>
+						<ItemsRepeater ItemsSource="{Binding OActionList}">
+							<ItemsRepeater.Layout>
+								<WrapLayout Orientation="Horizontal" />
+							</ItemsRepeater.Layout>
+							<ItemsRepeater.ItemTemplate>
+								<DataTemplate>
+									<controls:IONodeView MaxWidth="250" />
+								</DataTemplate>
+							</ItemsRepeater.ItemTemplate>
+						</ItemsRepeater>
+					</Expander>
 				</StackPanel>
 			</ScrollViewer>
 			<GridSplitter Grid.Column="1" Background="WhiteSmoke" ResizeDirection="Columns" />
-			<ScrollViewer Grid.Column="2" Margin="8 0" >
+			<ScrollViewer Grid.Column="2" Margin="0" MinWidth="1">
 				<StackPanel Orientation="Vertical">
-					<Border Padding="16 8" Background="#e0f2fe">
-						<StackPanel Orientation="Horizontal" >
-							<TextBlock Text="DI输入" VerticalAlignment="Center" />
-							<ComboBox SelectedIndex="{Binding SelectedDICountIndex}" MaxDropDownHeight="200" Margin="16 0" BorderThickness="1" BorderBrush="#e5e7eb">
-								<ComboBoxItem>16 通道</ComboBoxItem>
-								<ComboBoxItem>32 通道</ComboBoxItem>
-								<ComboBoxItem>64 通道</ComboBoxItem>
-								<ComboBoxItem>128 通道</ComboBoxItem>
-								<ComboBoxItem>256 通道</ComboBoxItem>
-							</ComboBox>
-						</StackPanel>
-					</Border>
-					<ItemsRepeater ItemsSource="{Binding DIKeys}">
-						<ItemsRepeater.Layout>
-							<WrapLayout Orientation="Horizontal" />
-						</ItemsRepeater.Layout>
-						<ItemsRepeater.ItemTemplate>
-							<DataTemplate>
-								<Button Classes.active="{Binding Active}" Width="100" Height="32"  Classes="DIButton" Margin="4">
-									<TextBlock Text="{Binding Name}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-								</Button>
-							</DataTemplate>
-						</ItemsRepeater.ItemTemplate>
-					</ItemsRepeater>
-					
-					
-					<Border Padding="16 8" Margin="0 16 0 0" Background="#e0f2fe">
-						<StackPanel Orientation="Horizontal">
-							<TextBlock Text="DO输出" VerticalAlignment="Center" />
-							<ComboBox SelectedIndex="{Binding SelectedDOCountIndex}" MaxDropDownHeight="200" Margin="16 0" BorderThickness="1" BorderBrush="#e5e7eb">
-								<ComboBoxItem>16 通道</ComboBoxItem>
-								<ComboBoxItem>32 通道</ComboBoxItem>
-								<ComboBoxItem>64 通道</ComboBoxItem>
-								<ComboBoxItem>128 通道</ComboBoxItem>
-								<ComboBoxItem>256 通道</ComboBoxItem>
-							</ComboBox>
-						</StackPanel>
-					</Border>
-					<ItemsRepeater ItemsSource="{Binding DOKeys}">
-						<ItemsRepeater.Layout>
-							<WrapLayout Orientation="Horizontal" />
-						</ItemsRepeater.Layout>
-						<ItemsRepeater.ItemTemplate>
-							<DataTemplate>
-								<Button Classes.active="{Binding Active}" Width="100" Height="32"  Classes="DIButton" Margin="4" Command="{Binding ToggleDOCommand}">
-									<TextBlock Text="{Binding Name}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-								</Button>
-							</DataTemplate>
-						</ItemsRepeater.ItemTemplate>
-					</ItemsRepeater>
-
-					<Border Padding="16 8" Margin="0 16 0 0" Background="#e0f2fe">
-						<StackPanel Orientation="Horizontal">
-							<TextBlock Text="AD 输入" VerticalAlignment="Center" />
-							<ComboBox SelectedIndex="{Binding SelectedADCountIndex}" MaxDropDownHeight="200" Margin="16 0" BorderThickness="1" BorderBrush="#e5e7eb">
-								<ComboBoxItem>16 通道</ComboBoxItem>
-								<ComboBoxItem>32 通道</ComboBoxItem>
-								<ComboBoxItem>64 通道</ComboBoxItem>
-								<ComboBoxItem>128 通道</ComboBoxItem>
-								<ComboBoxItem>256 通道</ComboBoxItem>
-							</ComboBox>
-						</StackPanel>
-					</Border>
-					<ItemsRepeater ItemsSource="{Binding ADKeys}">
-						<ItemsRepeater.Layout>
-							<WrapLayout Orientation="Horizontal" />
-						</ItemsRepeater.Layout>
-						<ItemsRepeater.ItemTemplate>
-							<DataTemplate>
-								<StackPanel Orientation="Horizontal" Margin="4">
-									<TextBlock Width="70" HorizontalAlignment="Center" Text="{Binding Name}" VerticalAlignment="Center" Margin="8 0 0 0" />
-									<Button Classes.active="{Binding Active}" Width="100" Height="32"  Classes="DIButton" Margin="0" Command="{Binding ToggleDOCommand}">
-										<TextBlock Text="{Binding Value, StringFormat='{}{0:F3}'}}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-									</Button>
+					<!-- DI 输入 -->
+					<Expander VerticalAlignment="Top" Margin="0"  Padding="0"  Background="White"
+							  BorderBrush="Transparent" HorizontalAlignment="Stretch"
+							  IsExpanded="{Binding DIExpand}"
+					>
+						<Expander.Header>
+							<Border Padding="16 8" Background="#e0f2fe">
+								<StackPanel Orientation="Vertical">
+									<Grid ColumnDefinitions="50,100,180,100">
+										<TextBlock Grid.Column="0" Text="DI 输入" VerticalAlignment="Center" />
+										<ComboBox Grid.Column="1" SelectedIndex="{Binding SelectedDICountIndex}"
+												  Width="100"
+												  MaxDropDownHeight="200" Margin="16 0 0 0" BorderThickness="1" BorderBrush="#e5e7eb">
+											<ComboBoxItem>8 通道</ComboBoxItem>
+											<ComboBoxItem>16 通道</ComboBoxItem>
+											<ComboBoxItem>32 通道</ComboBoxItem>
+											<ComboBoxItem>64 通道</ComboBoxItem>
+											<ComboBoxItem>128 通道</ComboBoxItem>
+											<ComboBoxItem>256 通道</ComboBoxItem>
+										</ComboBox>
+										<StackPanel Grid.Column="2" Orientation="Horizontal" Margin="16 0 0 0">
+											<TextBlock Text="偏移" VerticalAlignment="Center" />
+											<NumericUpDown  Value="{Binding OffsetDIIndex}"
+															Minimum="0" Maximum="{Binding OffsetDIMaxIndex}"
+															Width="120" Margin="8 0 0 0" FormatString="0" />
+										</StackPanel>
+									</Grid>
+									<StackPanel Orientation="Horizontal"></StackPanel>
 								</StackPanel>
-							</DataTemplate>
-						</ItemsRepeater.ItemTemplate>
-					</ItemsRepeater>
-				</StackPanel>
+							</Border>
+						</Expander.Header>
 
+						<ItemsRepeater ItemsSource="{Binding DIKeys}">
+							<ItemsRepeater.Layout>
+								<WrapLayout Orientation="Horizontal" />
+							</ItemsRepeater.Layout>
+							<ItemsRepeater.ItemTemplate>
+								<DataTemplate>
+									<Button Classes.active="{Binding Active}" Width="100" Height="32"  Classes="DIButton" Margin="4">
+										<TextBlock Text="{Binding Name}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+									</Button>
+								</DataTemplate>
+							</ItemsRepeater.ItemTemplate>
+						</ItemsRepeater>
+					</Expander>
+	
+
+					<!-- AD 输入 -->
+					<Expander VerticalAlignment="Top" Margin="0 16 0 0 "  Padding="0"  Background="White"
+							  BorderBrush="Transparent" HorizontalAlignment="Stretch"
+							  IsExpanded="{Binding ADExpand}"
+					>
+						<Expander.Header>
+							<Border Padding="16 8" Background="#e0f2fe">
+								<StackPanel Orientation="Vertical">
+									<Grid ColumnDefinitions="50,100,180,100">
+										<TextBlock Grid.Column="0" Text="AD 输入" VerticalAlignment="Center" />
+										<ComboBox Grid.Column="1" SelectedIndex="{Binding SelectedADCountIndex}" 
+												  Width="100"
+												  MaxDropDownHeight="200" Margin="16 0 0 0" BorderThickness="1" BorderBrush="#e5e7eb">
+											<ComboBoxItem>8 通道</ComboBoxItem>
+											<ComboBoxItem>16 通道</ComboBoxItem>
+											<ComboBoxItem>32 通道</ComboBoxItem>
+											<ComboBoxItem>64 通道</ComboBoxItem>
+											<ComboBoxItem>128 通道</ComboBoxItem>
+											<ComboBoxItem>256 通道</ComboBoxItem>
+										</ComboBox>
+										<StackPanel Grid.Column="2" Orientation="Horizontal" Margin="16 0 0 0">
+											<TextBlock Text="偏移" VerticalAlignment="Center" />
+											<NumericUpDown  Value="{Binding OffsetADIndex}"
+															Minimum="0" Maximum="{Binding OffsetADMaxIndex}"
+															Width="120" Margin="8 0 0 0" FormatString="0" />
+										</StackPanel>
+									</Grid>
+									<StackPanel Orientation="Horizontal"></StackPanel>
+								</StackPanel>
+							</Border>
+						</Expander.Header>
+						
+						<ItemsRepeater ItemsSource="{Binding ADKeys}">
+							<ItemsRepeater.Layout>
+								<WrapLayout Orientation="Horizontal" />
+							</ItemsRepeater.Layout>
+							<ItemsRepeater.ItemTemplate>
+								<DataTemplate>
+									<StackPanel Orientation="Horizontal" Margin="4">
+										<TextBlock Width="70" HorizontalAlignment="Center" Text="{Binding Name}" VerticalAlignment="Center" Margin="8 0 0 0" />
+										<Button Classes.active="{Binding Active}" Width="100" Height="32"  Classes="DIButton" Margin="0" Command="{Binding ToggleDOCommand}">
+											<TextBlock Text="{Binding Value, StringFormat='{}{0:F3}'}}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+										</Button>
+									</StackPanel>
+								</DataTemplate>
+							</ItemsRepeater.ItemTemplate>
+						</ItemsRepeater>
+					</Expander>
+					
+					
+					<!-- 输出控制 -->
+					<Expander VerticalAlignment="Top" Margin="0 16 0 0 "  Padding="0"  Background="White"
+							  BorderBrush="Transparent" HorizontalAlignment="Stretch"
+							  IsExpanded="{Binding DOExpand}"
+					>
+						<Expander.Header>
+							<Border Padding="16 8" Background="#e0f2fe">
+								<StackPanel Orientation="Vertical">
+									<Grid ColumnDefinitions="50,100,180,100">
+										<TextBlock Grid.Column="0" Text="DO 输出" VerticalAlignment="Center" />
+										<ComboBox Grid.Column="1" SelectedIndex="{Binding SelectedDOCountIndex}" MaxDropDownHeight="200" 
+												  BorderThickness="1" Width="100" Margin="16 0 0 0" BorderBrush="#e5e7eb">
+											<ComboBoxItem>8 通道</ComboBoxItem>
+											<ComboBoxItem>16 通道</ComboBoxItem>
+											<ComboBoxItem>32 通道</ComboBoxItem>
+											<ComboBoxItem>64 通道</ComboBoxItem>
+											<ComboBoxItem>128 通道</ComboBoxItem>
+											<ComboBoxItem>256 通道</ComboBoxItem>
+										</ComboBox>
+										<StackPanel Grid.Column="2" Orientation="Horizontal" Margin="16 0 0 0">
+											<TextBlock Text="偏移" VerticalAlignment="Center" />
+											<NumericUpDown  Value="{Binding OffsetDOIndex}" 
+															Minimum="0" Maximum="{Binding OffsetDOMaxIndex}" 
+															Width="120" Margin="8 0 0 0" FormatString="0" />
+										</StackPanel>
+										<Button  Grid.Column="3" Classes.active="{Binding AllOn}" Classes="IOControl"
+												 Margin="16 0 0 0"
+												 Width="80" Height="32" Command="{Binding ToggleAllDOCommand}">
+											<TextBlock Text="{Binding ToggleAllDOText}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+										</Button>
+									</Grid>
+									<StackPanel Orientation="Horizontal"></StackPanel>
+								</StackPanel>
+							</Border>
+						</Expander.Header>
+						<ItemsRepeater ItemsSource="{Binding DOKeys}" x:Name="DORepeater">
+							<ItemsRepeater.Layout>
+								<WrapLayout Orientation="Horizontal" />
+							</ItemsRepeater.Layout>
+							<ItemsRepeater.ItemTemplate>
+								<DataTemplate>
+									<Button Classes.active="{Binding Active}" Width="100" Height="32"  Classes="DIButton" Margin="4" Command="{Binding ToggleDOCommand}">
+										<TextBlock Text="{Binding Name}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+									</Button>
+								</DataTemplate>
+							</ItemsRepeater.ItemTemplate>
+						</ItemsRepeater>
+					</Expander>
+				
+				</StackPanel>
 			</ScrollViewer>
 		</Grid>
 	</DockPanel>

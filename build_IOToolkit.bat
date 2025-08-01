@@ -1,7 +1,5 @@
 @echo off
 
-call release_csharpwrapper_test.bat Win64
-
 cd IODevice
 call ../release_iodevice.bat Win64
 call ../release_iodevice.bat Win32

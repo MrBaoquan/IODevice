@@ -2,7 +2,7 @@
   "profiles": {
     "IOTester": {
       "commandName": "Project",
-      "nativeDebugging": false,
+      "nativeDebugging": true,
       "hotReloadEnabled": true
     }
   }

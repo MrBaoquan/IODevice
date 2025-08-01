@@ -6,6 +6,7 @@ using IOTester.ViewModels;
 using ReactiveUI;
 using System;
 using System.Diagnostics;
+using System.Reactive.Disposables;
 using System.Reactive.Linq;
 
 namespace IOTester.Views
@@ -14,8 +15,15 @@ namespace IOTester.Views
     {
         public MainWindow()
         {
-            this.WhenActivated(disposeables =>{});
+            this.WhenActivated(disposeables =>{
+                ViewModel.OnTabChangedCommand.Subscribe(_ =>
+                {
+                    this.InvalidateMeasure();
+                    this.InvalidateArrange();
+                }).DisposeWith(disposeables);
+            });
             InitializeComponent();
+
 
             //this.ref_TabControl.DataContextChanged += (e, sender) =>
             //{

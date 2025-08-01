@@ -6,7 +6,7 @@
 
 <IORoot>
 
-	<Device Name="ExtDev" Type="External" DllName="netio" Index="10">
+	<Device Name="ExtDev" Type="External" DllName="modbus" Index="1">
 
 		<Action Name="Start" Label="开始互动">
 			<Key Name="Button_00" />
@@ -36,5 +36,6 @@
 		</OAction>
 
 	</Device>
+	<Device Name="ExtDev0" Type="External" DllName="ioui" Index="1" />
 
 </IORoot>

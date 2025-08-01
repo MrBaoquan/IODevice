@@ -1,6 +1,10 @@
-﻿using DynamicData;
+﻿using Avalonia;
+using DynamicData;
 using IOTester.Models;
+using IOTester.Views;
 using IOToolkit;
+using MsBox.Avalonia;
+using MsBox.Avalonia.Enums;
 using ReactiveUI;
 using System;
 using System.Collections.Generic;
@@ -34,6 +38,8 @@ namespace IOTester.ViewModels
             }
         }
 
+        public ReactiveCommand<Unit, Device> OnTabChangedCommand { get; }
+
         public ReactiveCommand<Unit, Unit> OpenCloseDeviceCommand { get; }
         public ReactiveCommand<Unit, Unit> ViewIOLogCommand { get; }
         public ReactiveCommand<Unit, Unit> EditIOConfigCommand { get; }
@@ -50,9 +56,16 @@ namespace IOTester.ViewModels
 
         public ObservableCollection<Action> tempList { get; set; } = new ObservableCollection<Action>();
 
-        public void Load()
+        public async void Load()
         {
-            IORoot.Instance.SetConfig(Path.Combine(AppRoot, "Config\\IODevice.xml")).Load();
+            var _errorMsg = IORoot.Instance.SetConfig(Path.Combine(AppRoot, "Config\\IODevice.xml")).Load();
+            if (_errorMsg != string.Empty)
+            {
+                var box = MessageBoxManager
+                    .GetMessageBoxStandard("提示", _errorMsg,ButtonEnum.Ok);
+
+                var result = await box.ShowAsync();
+            }
             IORoot.Instance.AfterDeserialization();
 
             _devListSource.Edit(_source =>
@@ -67,6 +80,12 @@ namespace IOTester.ViewModels
 
         public MainWindowViewModel()
         {
+
+            OnTabChangedCommand = ReactiveCommand.Create(() =>
+            {
+                return SelectedIODevcie;
+            });
+
             OpenCloseDeviceCommand = ReactiveCommand.Create(() =>
             {
                 if (IsStared)
@@ -107,17 +126,17 @@ namespace IOTester.ViewModels
                 {
                     if (_ == null) return;
                     _.TriggerUIUpdate();
+                    OnTabChangedCommand.Execute().Subscribe();
                 });
             
             this.WhenActivated((CompositeDisposable disposables) =>
             {
-
                 Load();
 
                 IsStared = true;
                 Devices.ToList().ForEach(_ => _.Update());
 
-                var _tickHandler = Observable.Interval(TimeSpan.FromMilliseconds(50))
+                var _tickHandler = Observable.Interval(TimeSpan.FromMilliseconds(40))
                     .ObserveOn(RxApp.MainThreadScheduler)
                     .Subscribe(_ =>
                 {

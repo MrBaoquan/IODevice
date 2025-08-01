@@ -22,6 +22,19 @@
 			<Setter Property="Background" Value="" />
 			<Setter Property="Height" Value="36" />
 		</Style>
+
+		<Style Selector="TabControl /template/ ItemsPresenter#PART_ItemsPresenter">
+			<Setter Property="Margin" Value="0" />
+		</Style>
+
+		<Style Selector="TabItem:selected /template/ Border#PART_SelectedPipe">
+			<Setter Property="Margin" Value="0" />
+		</Style>
+
+		<Style Selector="TabControl[TabStripPlacement=Top] /template/ ItemsPresenter#PART_ItemsPresenter">
+			<Setter Property="Margin" Value="0" />
+		</Style>
+
 	</Window.Styles>
 
 	<DockPanel>
@@ -47,13 +60,12 @@
 			</StackPanel>	
 		</Border>
 
-		
-		<TabControl Margin="5"
+		<TabControl Margin="5 5 5 0"
 					SelectedItem="{Binding SelectedIODevcie}"
 					ItemsSource="{Binding Devices}">
 			<TabControl.ItemTemplate>
 				<DataTemplate>
-					<StackPanel Orientation="Horizontal">
+					<StackPanel Orientation="Horizontal" Margin="0">
 						<TextBlock Text="{Binding Title}" />
 						<Ellipse IsVisible="{Binding IsValid}" Width="16" Height="16" Fill="#059669" Stroke="Black" StrokeThickness="0" Margin="16 0"/>
 						<Ellipse IsVisible="{Binding !IsValid}" Width="16" Height="16" Fill="#dc2626" Stroke="Black" StrokeThickness="0" Margin="16 0"/>

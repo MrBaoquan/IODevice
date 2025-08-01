@@ -13,4 +13,8 @@
         <FluentTheme />
 		<StyleInclude Source="avares://IconPacks.Avalonia.Ionicons/Ionicons.axaml" />
     </Application.Styles>
+
+	<Application.Resources>
+		<Thickness x:Key="ExpanderContentPadding">16</Thickness>
+	</Application.Resources>
 </Application>

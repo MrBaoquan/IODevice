@@ -89,7 +89,7 @@
 						<Image Source="avares://IOTester/Assets/fullscreen.png" />
 					</ToggleButton>
 					<StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Grid.Column="1">
-						<Button Classes="img-btn" ToolTip.Tip="修改配置" Command="{Binding EditConfigCommand}" 
+						<Button Classes="img-btn" ToolTip.Tip="修改设备配置" Command="{Binding EditConfigCommand}" 
 									Width="24" Height="24" Padding="0"
 								Margin="8 0" >
 							<Image Source="avares://IOTester/Assets/edit-config.png" />
@@ -189,7 +189,7 @@
 										<TextBlock Grid.Column="0" Text="DI 输入" VerticalAlignment="Center" />
 										<ComboBox Grid.Column="1" SelectedIndex="{Binding SelectedDICountIndex}"
 												  Width="100"
-												  MaxDropDownHeight="200" Margin="16 0 0 0" BorderThickness="1" BorderBrush="#e5e7eb">
+												  MaxDropDownHeight="200" Margin="16 0 0 0" BorderThickness="1" BorderBrush="#e2e8f0">
 											<ComboBoxItem>8 通道</ComboBoxItem>
 											<ComboBoxItem>16 通道</ComboBoxItem>
 											<ComboBoxItem>32 通道</ComboBoxItem>
@@ -199,7 +199,7 @@
 										</ComboBox>
 										<StackPanel Grid.Column="2" Orientation="Horizontal" Margin="16 0 0 0">
 											<TextBlock Text="偏移" VerticalAlignment="Center" />
-											<NumericUpDown  Value="{Binding OffsetDIIndex}"
+											<NumericUpDown  Value="{Binding OffsetDIIndex}" BorderBrush="#e2e8f0"
 															Minimum="0" Maximum="{Binding OffsetDIMaxIndex}"
 															Width="120" Margin="8 0 0 0" FormatString="0" />
 										</StackPanel>
@@ -236,7 +236,7 @@
 										<TextBlock Grid.Column="0" Text="AD 输入" VerticalAlignment="Center" />
 										<ComboBox Grid.Column="1" SelectedIndex="{Binding SelectedADCountIndex}" 
 												  Width="100"
-												  MaxDropDownHeight="200" Margin="16 0 0 0" BorderThickness="1" BorderBrush="#e5e7eb">
+												  MaxDropDownHeight="200" Margin="16 0 0 0" BorderThickness="1" BorderBrush="#e2e8f0">
 											<ComboBoxItem>8 通道</ComboBoxItem>
 											<ComboBoxItem>16 通道</ComboBoxItem>
 											<ComboBoxItem>32 通道</ComboBoxItem>
@@ -246,7 +246,7 @@
 										</ComboBox>
 										<StackPanel Grid.Column="2" Orientation="Horizontal" Margin="16 0 0 0">
 											<TextBlock Text="偏移" VerticalAlignment="Center" />
-											<NumericUpDown  Value="{Binding OffsetADIndex}"
+											<NumericUpDown  Value="{Binding OffsetADIndex}" BorderBrush="#e2e8f0"
 															Minimum="0" Maximum="{Binding OffsetADMaxIndex}"
 															Width="120" Margin="8 0 0 0" FormatString="0" />
 										</StackPanel>
@@ -285,7 +285,7 @@
 									<Grid ColumnDefinitions="50,100,180,100">
 										<TextBlock Grid.Column="0" Text="DO 输出" VerticalAlignment="Center" />
 										<ComboBox Grid.Column="1" SelectedIndex="{Binding SelectedDOCountIndex}" MaxDropDownHeight="200" 
-												  BorderThickness="1" Width="100" Margin="16 0 0 0" BorderBrush="#e5e7eb">
+												  BorderThickness="1" Width="100" Margin="16 0 0 0" BorderBrush="#e2e8f0">
 											<ComboBoxItem>8 通道</ComboBoxItem>
 											<ComboBoxItem>16 通道</ComboBoxItem>
 											<ComboBoxItem>32 通道</ComboBoxItem>
@@ -295,7 +295,7 @@
 										</ComboBox>
 										<StackPanel Grid.Column="2" Orientation="Horizontal" Margin="16 0 0 0">
 											<TextBlock Text="偏移" VerticalAlignment="Center" />
-											<NumericUpDown  Value="{Binding OffsetDOIndex}" 
+											<NumericUpDown  Value="{Binding OffsetDOIndex}" BorderBrush="#e2e8f0"
 															Minimum="0" Maximum="{Binding OffsetDOMaxIndex}" 
 															Width="120" Margin="8 0 0 0" FormatString="0" />
 										</StackPanel>

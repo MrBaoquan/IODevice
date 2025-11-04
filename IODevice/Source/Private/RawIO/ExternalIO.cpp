@@ -21,7 +21,7 @@ void IOToolkit::ExternalIO::Tick(float DeltaSeconds)
 {
     if (!bValid) { return; }
 
-	// ·Ö·¢°´¼üÊäÈëÊÂ¼ş
+	// åˆ†å‘æŒ‰é”®è¾“å…¥äº‹ä»¶
     if (inputCount > 0)
     {
         if(GetDeviceDI(DIStatus))
@@ -30,7 +30,7 @@ void IOToolkit::ExternalIO::Tick(float DeltaSeconds)
         }
     }
     
-	// ·Ö·¢ÖáÊäÈëÊÂ¼ş
+	// åˆ†å‘è½´è¾“å…¥äº‹ä»¶
     if (axisCount > 0)
     {
         if (GetDeviceAD(ADStatus)) 
@@ -39,7 +39,7 @@ void IOToolkit::ExternalIO::Tick(float DeltaSeconds)
         }
     }
 
-	// »ñÈ¡ÊäÈëÍ¨µÀÖµ
+	// è·å–è¾“å…¥é€šé“å€¼
     if (outputCount > 0)
     {
 		this->DOImmediate();
@@ -48,7 +48,7 @@ void IOToolkit::ExternalIO::Tick(float DeltaSeconds)
 }
 
 /**
- * Note: ½öÕë¶ÔºËĞÄÖ÷Âß¼­  ²¢·ÇÓÃ»§²ã/ÒµÎñ²ãÎ²Ö¡
+ * Note: ä»…é’ˆå¯¹æ ¸å¿ƒä¸»é€»è¾‘  å¹¶éç”¨æˆ·å±‚/ä¸šåŠ¡å±‚å°¾å¸§
  */
 void IOToolkit::ExternalIO::OnFrameEnd()
 {
@@ -192,7 +192,7 @@ int IOToolkit::ExternalIO::SetDO(const char* InOAction, float val, bool bIgnoreM
 	if (!bValid) { return 0; }
 	if (!OActionMappings.count(InOAction)) { return 0; }
 	/**
-	 * ÉèÖÃÊä³öµÄÔ­Ê¼Öµ ÓÃÓÚGetDO(OAction) È¡Öµ
+	 * è®¾ç½®è¾“å‡ºçš„åŸå§‹å€¼ ç”¨äºGetDO(OAction) å–å€¼
 	 */
 	const std::vector<FOutputActionKey>& _keys = OActionMappings.at(InOAction);
 	if (!rawDOStatus.count(InOAction)) {
@@ -203,7 +203,7 @@ int IOToolkit::ExternalIO::SetDO(const char* InOAction, float val, bool bIgnoreM
 	}
 
 	/**
-	 * ¸ù¾İÔ­Ê¼ÖµÊäÈë¼ÆËãÊµ¼ÊÊä³öÖµ
+	 * æ ¹æ®åŸå§‹å€¼è¾“å…¥è®¡ç®—å®é™…è¾“å‡ºå€¼
 	 */
 	for (auto& _actionKey : _keys)
 	{
@@ -276,7 +276,7 @@ void IOToolkit::ExternalIO::Constructor()
     ADStatus = std::vector<short>(axisCount, 0);
 
     channelsState = std::vector<ButtonState>(inputCount);
-	// »ù±¾±äÁ¿³õÊ¼»¯Íê³Éºó ÔÙ³õÊ¼»¯¸¸Àà
+	// åŸºæœ¬å˜é‡åˆå§‹åŒ–å®Œæˆå å†åˆå§‹åŒ–çˆ¶ç±»
 	__super::Constructor();
     bValid = externalDll.OpenDevice(deviceIndex)==1;
 }

@@ -43,7 +43,7 @@
 				<Button Classes="img-btn" ToolTip.Tip="查看日志" Command="{Binding ViewIOLogCommand}">
 					<Image Width="28" Height="28" Source="avares://IOTester/Assets/view-log.png" />
 				</Button>
-				<Button Classes="img-btn" ToolTip.Tip="修改配置" Command="{Binding EditIOConfigCommand}">
+				<Button Classes="img-btn" ToolTip.Tip="IO交互编排" Command="{Binding EditIOConfigCommand}">
 					<Image Width="32" Height="32" Source="avares://IOTester/Assets/edit-config.png" />
 				</Button>
 

@@ -80,7 +80,8 @@ BOOL WINAPI DllMain(
 		}
         break;
     case DLL_PROCESS_DETACH:
-        IOApplication::UnHookWindow();
+        // UnHookWindow 已经在 DyUnload() 中调用，这里不需要再次调用
+        // 如果在这里调用，说明进程异常退出（DyUnload 未被调用），此时也无需清理
         break;
     case DLL_THREAD_ATTACH:
         break;
@@ -142,7 +143,15 @@ int IOToolkit::IOApplication::DyUnload()
 		IOLog::Instance().Warning(std::string("------------------------------  IOToolkit is alreay unloaded  ------------------------------\n"));
 		return -1;
 	}
+	
+	// 【关键修复】先移除Windows hooks，阻止新的窗口消息进入
+	// 这必须在 IODevices::UnInitialize() 之前执行，确保设备清理时不会有hook消息干扰
 	IOApplication::UnHookWindow();
+	
+	// 等待一小段时间，让已经在处理的消息完成
+	Sleep(50);
+	
+	// 然后才清理设备（包括 COMBOKEYS 的 UninstallRawInput）
 	IODevices::UnInitialize();
 	PlayerInput::Instance().UnInitialize();
     

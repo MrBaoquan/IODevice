@@ -171,10 +171,7 @@ LRESULT CALLBACK IOToolkit::StandardIO::OnMessageProc(int code, WPARAM wParam, L
                     const int yPosRelative = Raw->data.mouse.lLastY;
                     StandardIO::OnRawMouseMove(xPosRelative, yPosRelative);
                 }
-                else if (Raw->header.dwType == RIM_TYPEKEYBOARD)
-                {
-                    OutputDebugStringA("TEST");
-                }
+                else if (Raw->header.dwType == RIM_TYPEKEYBOARD){}
             }
         }
         break;

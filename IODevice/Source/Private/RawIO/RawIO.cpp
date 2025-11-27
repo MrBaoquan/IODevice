@@ -108,7 +108,17 @@ void IOToolkit::RawIO::DispatchAxisEvent(std::vector<short> InAxis)
 {
     for (uint8 index = 0;index < InAxis.size();++index)
     {
-        InputAxis(GetAxisKey(index), InAxis[index]/MaxAxisValue, 0.f, deviceID, 1);
+        InputAxis(GetAxisKey(index), InAxis[index], 0.f, deviceID, 1);
+    }
+}
+
+void IOToolkit::RawIO::DispatchAxisEvent(std::vector<int32_t> InAxis)
+{
+    for (uint8 index = 0;index < InAxis.size();++index)
+    {
+        // 使用 int32_t，根据实际需求进行处理
+        // 可以直接使用整数值，或者按需转换
+        InputAxis(GetAxisKey(index), static_cast<float>(InAxis[index]), 0.f, deviceID, 1);
     }
 }
 
@@ -119,7 +129,7 @@ IOToolkit::InputEvent IOToolkit::RawIO::GetChannelEvent(ButtonState& chState)
     if (bPressed)
     {
         double currentTime = GetTickCount() / 1000.0;
-        if (chState.status != chState.lastStatus)   // �����¼�
+        if (chState.status != chState.lastStatus)   // �����¼�
         {
             FinalInputEvent = IE_Pressed;
             chState.lastRepeatTime = currentTime;
@@ -143,7 +153,7 @@ IOToolkit::InputEvent IOToolkit::RawIO::GetChannelEvent(ButtonState& chState)
             }
         }
     }
-    else if (chState.status != chState.lastStatus) // �����¼�
+    else if (chState.status != chState.lastStatus) // �����¼�
     {
         FinalInputEvent = IE_Released;
     }

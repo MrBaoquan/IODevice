@@ -22,7 +22,7 @@ struct IOType
 
 const uint8 InvalidDeviceID = static_cast<uint8>(255);
 const uint8 MaxIOCount = static_cast<uint8>(255);
-const float MaxAxisValue = 1000.f;
+// const float MaxAxisValue = 1000.f;
 
 struct DeviceProperties
 {

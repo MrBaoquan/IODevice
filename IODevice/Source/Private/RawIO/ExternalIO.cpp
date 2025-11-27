@@ -21,7 +21,7 @@ void IOToolkit::ExternalIO::Tick(float DeltaSeconds)
 {
     if (!bValid) { return; }
 
-	// 分发按键输入事件
+	// Dispatch button input events
     if (inputCount > 0)
     {
         if(GetDeviceDI(DIStatus))
@@ -30,16 +30,28 @@ void IOToolkit::ExternalIO::Tick(float DeltaSeconds)
         }
     }
     
-	// 分发轴输入事件
+	// Dispatch axis input events
     if (axisCount > 0)
     {
-        if (GetDeviceAD(ADStatus)) 
+        if (externalDll.HasGetDeviceAD_INT())
         {
-            DispatchAxisEvent(ADStatus);
+            // V2: Use new int32_t interface
+            if (GetDeviceAD(ADStatusInt)) 
+            {
+                DispatchAxisEvent(ADStatusInt);
+            }
+        }
+        else
+        {
+            // V1: Use legacy short interface
+            if (GetDeviceAD(ADStatus)) 
+            {
+                DispatchAxisEvent(ADStatus);
+            }
         }
     }
 
-	// 获取输入通道值
+	// Get input channel values
     if (outputCount > 0)
     {
 		this->DOImmediate();
@@ -48,7 +60,7 @@ void IOToolkit::ExternalIO::Tick(float DeltaSeconds)
 }
 
 /**
- * Note: 仅针对核心主逻辑  并非用户层/业务层尾帧
+ * Note: Only for core main logic, not for user/business layer frame end
  */
 void IOToolkit::ExternalIO::OnFrameEnd()
 {
@@ -133,6 +145,19 @@ int IOToolkit::ExternalIO::GetDeviceAD(std::vector<short>& OutADStatus)
     return retCode;
 }
 
+int IOToolkit::ExternalIO::GetDeviceAD(std::vector<int32_t>& OutADStatus)
+{
+    static int32_t exADStatus[MaxIOCount];
+	std::copy(OutADStatus.begin(), OutADStatus.end(), exADStatus);
+
+    int retCode = externalDll.GetDeviceAD_INT(deviceIndex, exADStatus);
+    for (size_t index = 0;index < OutADStatus.size();index++) 
+    {
+        OutADStatus[index] = exADStatus[index];
+    }
+    return retCode;
+}
+
 int IOToolkit::ExternalIO::GetDO(std::vector<float>& OutDOStatus)
 {
     static short exDoStatus[MaxIOCount];
@@ -192,7 +217,7 @@ int IOToolkit::ExternalIO::SetDO(const char* InOAction, float val, bool bIgnoreM
 	if (!bValid) { return 0; }
 	if (!OActionMappings.count(InOAction)) { return 0; }
 	/**
-	 * 设置输出的原始值 用于GetDO(OAction) 取值
+	 * Set the raw output value for GetDO(OAction) retrieval
 	 */
 	const std::vector<FOutputActionKey>& _keys = OActionMappings.at(InOAction);
 	if (!rawDOStatus.count(InOAction)) {
@@ -203,7 +228,7 @@ int IOToolkit::ExternalIO::SetDO(const char* InOAction, float val, bool bIgnoreM
 	}
 
 	/**
-	 * 根据原始值输入计算实际输出值
+	 * Calculate actual output value based on raw input
 	 */
 	for (auto& _actionKey : _keys)
 	{
@@ -274,9 +299,10 @@ void IOToolkit::ExternalIO::Constructor()
     DIStatus = std::vector<BYTE>(inputCount, 0);
 	DOStatus = std::vector<float>(outputCount, 0);
     ADStatus = std::vector<short>(axisCount, 0);
+    ADStatusInt = std::vector<int32_t>(axisCount, 0);
 
     channelsState = std::vector<ButtonState>(inputCount);
-	// 基本变量初始化完成后 再初始化父类
+	// Initialize base class after basic variables are initialized
 	__super::Constructor();
     bValid = externalDll.OpenDevice(deviceIndex)==1;
 }

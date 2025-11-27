@@ -75,7 +75,8 @@ public:
     };
 protected:
     void DispatchButtonEvent(std::vector<BYTE> DIStatus, std::vector<ButtonState>& channelsState);
-    void DispatchAxisEvent(std::vector<short> InAxis);
+    void DispatchAxisEvent(std::vector<short> InAxis);       // V1: 老版本 (short)
+    void DispatchAxisEvent(std::vector<int32_t> InAxis);     // V2: 新版本 (int32_t)
 
     InputEvent GetChannelEvent(ButtonState& chState);
 

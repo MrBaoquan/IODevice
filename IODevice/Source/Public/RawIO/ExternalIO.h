@@ -13,11 +13,11 @@
 
 struct __declspec(dllimport) DeviceInfo
 {
-    /** 输入通道数量 */
+    /** Digital input channel count */
     BYTE InputCount = 16;
-    /** 输出通道数量 */
+    /** Digital output channel count */
     BYTE OutputCount = 16;
-    /** 模拟量输入通道数量 */
+    /** Analog input channel count */
     BYTE AxisCount = 0;
 };
 
@@ -34,8 +34,21 @@ class IOUIDLL :public PDLL
     DECLARE_FUNCTION2(int, SetDeviceDO, uint8, short*)
     DECLARE_FUNCTION2(int, GetDeviceDO, uint8, short*)
     DECLARE_FUNCTION2(int, GetDeviceDI, uint8, BYTE*)
-    DECLARE_FUNCTION2(int, GetDeviceAD, uint8, short*)
+    DECLARE_FUNCTION2(int, GetDeviceAD, uint8, short*)          // V1: Legacy interface (short)
+    DECLARE_FUNCTION2(int, GetDeviceAD_INT, uint8, int32_t*)    // V2: New interface (int32_t)
     DECLARE_FUNCTION3(int, RefreshStreamingData, uint8, BYTE*, unsigned int)
+
+public:
+    // Check if new version GetDeviceAD_INT is supported
+    bool HasGetDeviceAD_INT()
+    {
+        if (0 == m_isGetDeviceAD_INT && m_dllHandle)
+        {
+            m_GetDeviceAD_INT = (TYPE_GetDeviceAD_INT)GetProcAddress(m_dllHandle, "GetDeviceAD_INT");
+            m_isGetDeviceAD_INT = (m_GetDeviceAD_INT != NULL) ? FUNC_LOADED : -1;
+        }
+        return m_isGetDeviceAD_INT == FUNC_LOADED && m_GetDeviceAD_INT != NULL;
+    }
 };
 
 class ExternalIO : public CustomIOBase
@@ -76,7 +89,8 @@ private:
 
     int GetDeviceDI(std::vector<BYTE>& OutDIStatus);
 
-    int GetDeviceAD(std::vector<short>& OutADStatus);
+    int GetDeviceAD(std::vector<short>& OutADStatus);      // V1: Legacy implementation
+    int GetDeviceAD(std::vector<int32_t>& OutADStatus);    // V2: New implementation
 
     int ConvertFKeyToChannel(const FKey& InKey);
 private:
@@ -85,10 +99,11 @@ private:
     IOUIDLL externalDll;
     std::vector<float> DOStatus;
 	/**
-	 *	用于保存用户设置的原始输出值
+	 *	Used to store raw output values not set by user
 	 */
 	std::map<std::string, float> rawDOStatus;
-    std::vector<short> ADStatus;
+    std::vector<short> ADStatus;        // V1: Legacy version uses this
+    std::vector<int32_t> ADStatusInt;   // V2: New version uses this
 	std::map<std::string, std::vector<FOutputActionKey>> OActionMappings;
 };
 

@@ -23,34 +23,35 @@ public:
     static HINSTANCE dllInstance;
 
 	/**
-	 * Core IOToolkit ¹¤¾ßÊÇ·ñÒÑ±»¼ÓÔØ
+	 * Core IOToolkit ï¿½ï¿½ï¿½ï¿½ï¿½Ç·ï¿½ï¿½Ñ±ï¿½ï¿½ï¿½ï¿½ï¿½
 	 */
 	static bool bLoaded;
 	/**
-	 * dll ¹¹Ôì
+	 * dll ï¿½ï¿½ï¿½ï¿½
 	 */
     static int Constructor();
 	/**
-	 * dll Îö¹¹
+	 * dll ï¿½ï¿½ï¿½ï¿½
 	 */
 	static int Destructor();
 
 	/**
-	 * ÔËÐÐÊ±¼ÓÔØ
+	 * ï¿½ï¿½ï¿½ï¿½Ê±ï¿½ï¿½ï¿½ï¿½
 	 */
 	static int DyLoad();
 	/**
-	 * ÔËÐÐÊ±Ð¶ÔØ
+	 * ï¿½ï¿½ï¿½ï¿½Ê±Ð¶ï¿½ï¿½
 	 */
 	static int DyUnload();
 
     static void RegisterRawInput();
+    static void UnregisterRawInput();
     static bool SuccessResult(int code);
 
 	/**
-	 * ³ÌÐòÍË³öÊ±Ö´ÐÐ
+	 * Í³Ò»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ô´
 	 */
-    static void PreShutdown();
+    static void Cleanup();
     static int SetWindowsHook();
     static void UnHookWindow();
     static LRESULT CALLBACK OnMessageProc(int code, WPARAM wParam, LPARAM lParam);

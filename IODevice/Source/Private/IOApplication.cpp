@@ -80,8 +80,9 @@ BOOL WINAPI DllMain(
 		}
         break;
     case DLL_PROCESS_DETACH:
-        // UnHookWindow 已经在 DyUnload() 中调用，这里不需要再次调用
-        // 如果在这里调用，说明进程异常退出（DyUnload 未被调用），此时也无需清理
+        if (IOApplication::bLoaded) {
+            IOApplication::Cleanup();
+        }
         break;
     case DLL_THREAD_ATTACH:
         break;
@@ -117,49 +118,34 @@ int IOToolkit::IOApplication::Destructor()
 int IOToolkit::IOApplication::DyLoad()
 {
 	if (IOApplication::bLoaded) {
-		IOLog::Instance().Warning(std::string("------------------------------  IOToolkit is alreay loaded  ------------------------------\n"));
+		IOLog::Instance().Warning(std::string("------------------------------  IOToolkit is already loaded  ------------------------------\n"));
 		return -1;
 	}
 
 	IOLog::Instance().Log(std::string("------------------------------  IOToolkit Loading...  ------------------------------"));
-    IOApplication::mainWindows.clear();
-
-    IOToolkit::IOApplication::mainWindows.clear();
-    IOApplication::RegisterRawInput();
-	IOApplication::SetWindowsHook();
+    
+    mainWindows.clear();
+    RegisterRawInput();
+	
+	if (SetWindowsHook() != SuccessCode) {
+		IOLog::Instance().Warning("Failed to set windows hook");
+		return ErrorCode;
+	}
 
 	/** Device initializtion */
 	IODevices::Initialize();
 	PlayerInput::Instance().Initialize();
-	IOApplication::bLoaded = true;
+	
+	bLoaded = true;
 	IOLog::Instance().Log(std::string("------------------------------  IOToolkit Loaded  ------------------------------"));
-	return 0;
+	return SuccessCode;
 }
 
 
 int IOToolkit::IOApplication::DyUnload()
 {
-	if (!IOApplication::bLoaded) {
-		IOLog::Instance().Warning(std::string("------------------------------  IOToolkit is alreay unloaded  ------------------------------\n"));
-		return -1;
-	}
-	
-	// 【关键修复】先移除Windows hooks，阻止新的窗口消息进入
-	// 这必须在 IODevices::UnInitialize() 之前执行，确保设备清理时不会有hook消息干扰
-	IOApplication::UnHookWindow();
-	
-	// 等待一小段时间，让已经在处理的消息完成
-	Sleep(50);
-	
-	// 然后才清理设备（包括 COMBOKEYS 的 UninstallRawInput）
-	IODevices::UnInitialize();
-	PlayerInput::Instance().UnInitialize();
-    
-    IOToolkit::IOApplication::mainWindows.clear();
-    IOApplication::bLoaded = false;
-	
-    IOLog::Instance().Log(std::string("------------------------------  IOToolkit has been unloaded  ------------------------------\n"));
-	return 0;
+	Cleanup();
+	return SuccessCode;
 }
 
 void IOToolkit::IOApplication::RegisterRawInput()
@@ -198,9 +184,52 @@ bool IOToolkit::IOApplication::SuccessResult(int code)
     return code == SuccessCode;
 }
 
-void IOToolkit::IOApplication::PreShutdown()
+void IOToolkit::IOApplication::Cleanup()
 {
-	IOApplication::DyUnload();
+    if (!bLoaded) {
+        return;  // Already cleaned up
+    }
+    
+    IOLog::Instance().Log("IOToolkit cleanup started...");
+    
+    // 1. Unhook first to stop receiving new messages
+    UnHookWindow();
+    
+    // 2. Unregister raw input devices
+    UnregisterRawInput();
+    
+    // 3. Clean up devices and input system
+    IODevices::UnInitialize();
+    PlayerInput::Instance().UnInitialize();
+    
+    // 4. Clear window list
+    mainWindows.clear();
+    
+    // 5. Mark as unloaded
+    bLoaded = false;
+    
+    IOLog::Instance().Log("IOToolkit cleanup completed.");
+}
+
+void IOToolkit::IOApplication::UnregisterRawInput()
+{
+#ifndef HID_USAGE_PAGE_GENERIC
+#define HID_USAGE_PAGE_GENERIC         ((USHORT) 0x01)
+#endif
+#ifndef HID_USAGE_GENERIC_MOUSE
+#define HID_USAGE_GENERIC_MOUSE        ((USHORT) 0x02)
+#endif
+
+    RAWINPUTDEVICE Rid[1];
+    Rid[0].usUsagePage = HID_USAGE_PAGE_GENERIC;
+    Rid[0].usUsage = HID_USAGE_GENERIC_MOUSE;
+    Rid[0].dwFlags = RIDEV_REMOVE;
+    Rid[0].hwndTarget = nullptr;
+    
+    if (RegisterRawInputDevices(Rid, 1, sizeof(Rid[0])) == FALSE)
+    {
+        IOLog::Instance().Warning("Unregister raw input devices failed.");
+    }
 }
 
 int IOToolkit::IOApplication::SetWindowsHook()
@@ -293,11 +322,14 @@ LRESULT CALLBACK IOToolkit::IOApplication::CallWndProc(_In_ int nCode, _In_ WPAR
 	{
 	case WM_CLOSE:
 		IOLog::Instance().Log("Detected window close event.");
-		IOApplication::PreShutdown();
+		// Let DLL_PROCESS_DETACH handle the cleanup
 		break;
 	case WM_QUERYENDSESSION:
 		IOLog::Instance().Log("Detected system shutdown event.");
-		IOApplication::PreShutdown();
+		// Proactively cleanup on system shutdown
+		if (bLoaded) {
+			Cleanup();
+		}
 		break;
 	default:
 		break;

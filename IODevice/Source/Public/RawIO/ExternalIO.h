@@ -5,6 +5,7 @@
 
 #pragma once
 #include <vector>
+#include <mutex>
 #include "CustomIOBase.h"
 #include "PlayerInput.h"
 #include "PDLL.h"
@@ -96,6 +97,7 @@ private:
 private:
     bool bValid;
     bool bDOChanged = false;
+    mutable std::mutex tickMutex;  // Protects concurrent access between Tick() and Destroy()
     IOUIDLL externalDll;
     std::vector<float> DOStatus;
 	/**

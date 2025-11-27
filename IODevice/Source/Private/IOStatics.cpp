@@ -98,9 +98,17 @@ int IOToolkit::IODevices::Initialize()
 int IOToolkit::IODevices::UnInitialize()
 {
 	UInputSettings::Instance().Uninitialize();
+	
+	// Destroy each device with exception protection
 	for (auto& device : devices) {
-		device.second.Destroy();
+		try {
+			device.second.Destroy();
+		}
+		catch (...) {
+			// Ignore exceptions during device cleanup to prevent cascade failures
+		}
 	}
+	
 	devices.clear();
 	return 0;
 }

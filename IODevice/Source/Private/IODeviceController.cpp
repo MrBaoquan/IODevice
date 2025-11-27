@@ -64,6 +64,9 @@ const float IOToolkit::IODeviceController::GetDeltaSeconds() const
 /** Application tick entry. */
 void IOToolkit::IODeviceController::Update()
 {
+    // Early return if IOToolkit is not loaded (during shutdown)
+    if (!IOApplication::bLoaded) return;
+    
     static float minDelta = 0.02f;
     static unsigned long lastTime = GetTickCount();
     

@@ -24,7 +24,7 @@ void IOToolkit::IODeviceDetails::Initialize()
 
 void IOToolkit::IODeviceDetails::Tick(float DeltaSeconds)
 {
-    if (rawIO)
+    if (rawIO && rawIO->Valid())
     {
         rawIO->Tick(DeltaSeconds);
     }
@@ -34,7 +34,12 @@ void IOToolkit::IODeviceDetails::Destroy()
 {
 	if (rawIO)
 	{
-		rawIO->Destroy();
+		try {
+			rawIO->Destroy();
+		}
+		catch (...) {
+			// Ignore exceptions during rawIO cleanup
+		}
 	}
 	this->ClearBinding();
 }

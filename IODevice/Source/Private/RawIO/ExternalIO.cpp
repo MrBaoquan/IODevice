@@ -21,6 +21,12 @@ void IOToolkit::ExternalIO::Tick(float DeltaSeconds)
 {
     if (!bValid) { return; }
 
+	// Protect against concurrent Destroy()
+	std::lock_guard<std::mutex> lock(tickMutex);
+	
+	// Double-check after acquiring lock
+	if (!bValid) { return; }
+
 	// Dispatch button input events
     if (inputCount > 0)
     {
@@ -69,9 +75,30 @@ void IOToolkit::ExternalIO::OnFrameEnd()
 
 void IOToolkit::ExternalIO::Destroy()
 {
-	if (bValid)
+	if (!bValid) return;
+	
+	// Mark as invalid atomically to prevent new Tick() calls
+	bValid = false;
+	
+	// Use mutex to ensure no Tick() is in progress
+	std::lock_guard<std::mutex> lock(tickMutex);
+	
+	try
 	{
+		// Close device in external DLL
 		externalDll.CloseDevice(deviceIndex);
+		IOLog::Instance().Log("External device closed successfully");
+	}
+	catch (const std::exception& e)
+	{
+		// Log the exception for debugging
+		IOLog::Instance().Warning(std::string("Exception during CloseDevice: ") + e.what());
+	}
+	catch (...)
+	{
+		// Ignore unknown exceptions during cleanup
+		// This is critical for some devices (e.g., COMBOKEYS) which may fail during cleanup
+		IOLog::Instance().Warning("Unknown exception during CloseDevice cleanup");
 	}
 }
 

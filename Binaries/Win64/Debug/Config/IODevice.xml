@@ -6,7 +6,7 @@
 
 <IORoot>
 
-	<Device Name="ExtDev" Type="External" DllName="modbus" Index="1">
+	<Device Name="ExtDev" Type="External" DllName="debugger" Index="1">
 
 		<Action Name="Start" Label="开始互动">
 			<Key Name="Button_00" />

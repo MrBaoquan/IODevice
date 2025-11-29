@@ -88,11 +88,11 @@
 							
 							<TextBlock Grid.Column="0" Text="{Binding Name}" HorizontalAlignment="Stretch"  VerticalAlignment="Center" />
 							<TextBlock Grid.Column="1" Text="{Binding Value, StringFormat='{}{0:F2}'}" HorizontalAlignment="Stretch" VerticalAlignment="Center"
-									IsVisible="{Binding $parent[UserControl].DataContext.ShowKeyValue}"
+									IsVisible="{Binding $parent[UserControl].DataContext.ShowKeyValue, FallbackValue=False}"
 							/>
 
 							<Button Grid.Column="2" Padding="8 0" Background="Transparent" Command="{Binding ToggleDOCommand}"  HorizontalAlignment="Center"
-									IsVisible="{Binding $parent[UserControl].DataContext.ShowBtn}"
+									IsVisible="{Binding $parent[UserControl].DataContext.ShowBtn, FallbackValue=False}"
 							>
 								<Panel VerticalAlignment="Center">
 									<iconPacks:PackIconIonicons IsVisible="{Binding Active}" Kind="RadioButtonOniOS"/>

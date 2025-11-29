@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<EventForwardConfig xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <ProtocolGroups>
+    <ProtocolGroup Id="6551bc35-abe2-4c39-89c9-4023f9928d18" GroupName="新建协议组" ProtocolType="NetIO" TargetIP="127.0.0.1" TargetPort="20001" SerialPort="COM1" BaudRate="9600" DataBits="8" Parity="None" StopBits="1" Description="协议组描述" IsExpanded="true">
+      <Mappings>
+        <Mapping SourceDevice="ExtDev" SourceKey="Button_00" TargetKey="Button_00" IsEnabled="true" Description="新建映射" />
+        <Mapping SourceDevice="ExtDev" SourceKey="Button_01" TargetKey="Button_01" IsEnabled="true" Description="新建映射" />
+      </Mappings>
+    </ProtocolGroup>
+  </ProtocolGroups>
+</EventForwardConfig>

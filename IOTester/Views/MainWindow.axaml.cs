@@ -15,15 +15,17 @@ namespace IOTester.Views
     {
         public MainWindow()
         {
-            this.WhenActivated(disposeables =>{
-                ViewModel.OnTabChangedCommand.Subscribe(_ =>
-                {
-                    this.InvalidateMeasure();
-                    this.InvalidateArrange();
-                }).DisposeWith(disposeables);
+            this.WhenActivated(disposeables =>
+            {
+                ViewModel.OnTabChangedCommand
+                    .Subscribe(_ =>
+                    {
+                        this.InvalidateMeasure();
+                        this.InvalidateArrange();
+                    })
+                    .DisposeWith(disposeables);
             });
             InitializeComponent();
-
 
             //this.ref_TabControl.DataContextChanged += (e, sender) =>
             //{
@@ -31,7 +33,7 @@ namespace IOTester.Views
             //};
             // AvaloniaXamlLoader.Load(this);
 
-            // this.FindControl<IONodeView>("ionode").ViewModel = new IONodeViewModel { Title = "¸É!!!!" };
+            // this.FindControl<IONodeView>("ionode").ViewModel = new IONodeViewModel { Title = "ï¿½ï¿½!!!!" };
         }
     }
 }

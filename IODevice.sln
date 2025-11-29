@@ -15,9 +15,6 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IODevice_CSharp_Wrapper", "IODevice_CSharp_Wrapper\IODevice_CSharp_Wrapper.csproj", "{7E937156-D2E6-4C7B-BD97-757F9412DFFD}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IOTester", "IOTester\IOTester.csproj", "{E71236AC-B2AB-4175-AD1E-506469AB58B9}"
-	ProjectSection(ProjectDependencies) = postProject
-		{A2CD8B83-0E81-4FDD-8377-4E3ADC0598B8} = {A2CD8B83-0E81-4FDD-8377-4E3ADC0598B8}
-	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DNHper", "DNHper\DNHper.csproj", "{3E89D72B-77E9-4F33-970A-C7A9D033CF9F}"
 EndProject

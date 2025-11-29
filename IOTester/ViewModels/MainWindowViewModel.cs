@@ -2,6 +2,7 @@
 using DynamicData;
 using IOTester.Models;
 using IOTester.Views;
+using IOTester.Services;
 using IOToolkit;
 using MsBox.Avalonia;
 using MsBox.Avalonia.Enums;
@@ -18,24 +19,20 @@ using System.Reactive.Linq;
 
 namespace IOTester.ViewModels
 {
-
     public class MainWindowViewModel : ViewModelBase, IActivatableViewModel
     {
         public ViewModelActivator Activator { get; private set; } = new ViewModelActivator();
-        
+
         public string AppRoot => AppDomain.CurrentDomain.BaseDirectory;
 
         private readonly SourceList<Device> _devListSource = new SourceList<Device>();
-        public ReadOnlyObservableCollection<Device> Devices { get;  }
+        public ReadOnlyObservableCollection<Device> Devices { get; }
 
         private bool isStarted = false;
         public bool IsStared
         {
             get => isStarted;
-            set
-            {
-                this.RaiseAndSetIfChanged(ref isStarted, value);
-            }
+            set { this.RaiseAndSetIfChanged(ref isStarted, value); }
         }
 
         public ReactiveCommand<Unit, Device> OnTabChangedCommand { get; }
@@ -43,26 +40,26 @@ namespace IOTester.ViewModels
         public ReactiveCommand<Unit, Unit> OpenCloseDeviceCommand { get; }
         public ReactiveCommand<Unit, Unit> ViewIOLogCommand { get; }
         public ReactiveCommand<Unit, Unit> EditIOConfigCommand { get; }
+        public ReactiveCommand<Unit, Unit> OpenEventForwardConfigCommand { get; }
 
         private Device selectedIODevcie;
         public Device SelectedIODevcie
         {
             get => selectedIODevcie;
-            set
-            {
-                this.RaiseAndSetIfChanged(ref selectedIODevcie, value);
-            }
+            set { this.RaiseAndSetIfChanged(ref selectedIODevcie, value); }
         }
 
-        public ObservableCollection<Action> tempList { get; set; } = new ObservableCollection<Action>();
+        public ObservableCollection<Action> tempList { get; set; } =
+            new ObservableCollection<Action>();
 
         public async void Load()
         {
-            var _errorMsg = IORoot.Instance.SetConfig(Path.Combine(AppRoot, "Config\\IODevice.xml")).Load();
+            var _errorMsg = IORoot.Instance
+                .SetConfig(Path.Combine(AppRoot, "Config\\IODevice.xml"))
+                .Load();
             if (_errorMsg != string.Empty)
             {
-                var box = MessageBoxManager
-                    .GetMessageBoxStandard("提示", _errorMsg,ButtonEnum.Ok);
+                var box = MessageBoxManager.GetMessageBoxStandard("提示", _errorMsg, ButtonEnum.Ok);
 
                 var result = await box.ShowAsync();
             }
@@ -72,7 +69,12 @@ namespace IOTester.ViewModels
             {
                 _source.Clear();
 
-                _source.AddRange(IORoot.Instance.Devices.Where(_dev=>_dev.Type!="Standard").GroupBy(io=>io.Name).Select(g=>g.First()));
+                _source.AddRange(
+                    IORoot.Instance.Devices
+                        .Where(_dev => _dev.Type != "Standard")
+                        .GroupBy(io => io.Name)
+                        .Select(g => g.First())
+                );
             });
 
             IODeviceController.Load();
@@ -80,7 +82,6 @@ namespace IOTester.ViewModels
 
         public MainWindowViewModel()
         {
-
             OnTabChangedCommand = ReactiveCommand.Create(() =>
             {
                 return SelectedIODevcie;
@@ -95,6 +96,10 @@ namespace IOTester.ViewModels
                 else
                 {
                     Load();
+                    // 重新加载并启动事件转发服务
+                    var configPath = Path.Combine(AppRoot, "Config", "EvtMapping.xml");
+                    EventForwardingService.Instance.LoadConfig(configPath);
+                    EventForwardingService.Instance.Start();
                 }
                 IsStared = !IsStared;
                 Devices.ToList().ForEach(_ => _.Update());
@@ -112,46 +117,67 @@ namespace IOTester.ViewModels
                 EditorLauncher.OpenWithPreferredEditor(_configPath);
             });
 
+            OpenEventForwardConfigCommand = ReactiveCommand.Create(() =>
+            {
+                var window = new EventForwardConfigWindow
+                {
+                    ViewModel = new EventForwardConfigViewModel()
+                };
+                window.Show();
+            });
+
             _devListSource
                 .Connect()
                 // .AutoRefresh()
                 .ObserveOn(RxApp.MainThreadScheduler)
                 .Bind(out var readOnlyDevList)
                 .Subscribe();
-            
+
             Devices = readOnlyDevList;
-         
+
             this.WhenAnyValue(_ => _.SelectedIODevcie)
                 .Subscribe(_ =>
                 {
-                    if (_ == null) return;
+                    if (_ == null)
+                        return;
                     _.TriggerUIUpdate();
                     OnTabChangedCommand.Execute().Subscribe();
                 });
-            
-            this.WhenActivated((CompositeDisposable disposables) =>
-            {
-                Load();
 
-                IsStared = true;
-                Devices.ToList().ForEach(_ => _.Update());
-
-                var _tickHandler = Observable.Interval(TimeSpan.FromMilliseconds(40))
-                    .ObserveOn(RxApp.MainThreadScheduler)
-                    .Subscribe(_ =>
+            this.WhenActivated(
+                (CompositeDisposable disposables) =>
                 {
-                    IODeviceController.Update();
-                    if (IsStared == false) return;
-                    SelectedIODevcie?.Update();
-                });
+                    Load();
 
-                Disposable.Create(() => 
-                {
-                    _tickHandler.Dispose();
-                    IODeviceController.Unload();
-                    Debug.WriteLine("Dispose");
-                }).DisposeWith(disposables);
-            });
+                    IsStared = true;
+                    Devices.ToList().ForEach(_ => _.Update());
+
+                    // 加载并启动事件转发服务
+                    var configPath = Path.Combine(AppRoot, "Config", "EvtMapping.xml");
+                    EventForwardingService.Instance.LoadConfig(configPath);
+                    EventForwardingService.Instance.Start();
+
+                    var _tickHandler = Observable
+                        .Interval(TimeSpan.FromMilliseconds(40))
+                        .ObserveOn(RxApp.MainThreadScheduler)
+                        .Subscribe(_ =>
+                        {
+                            IODeviceController.Update();
+                            if (IsStared == false)
+                                return;
+                            SelectedIODevcie?.Update();
+                        });
+
+                    Disposable
+                        .Create(() =>
+                        {
+                            _tickHandler.Dispose();
+                            IODeviceController.Unload();
+                            Debug.WriteLine("Dispose");
+                        })
+                        .DisposeWith(disposables);
+                }
+            );
         }
     }
 }

@@ -60,139 +60,119 @@ public class Device : ViewModelBase
     }
 
     private bool isValid = false;
+
     [XmlIgnore]
     public bool IsValid
     {
         get => isValid;
-        set
-        {
-            this.RaiseAndSetIfChanged(ref isValid, value);
-        }
+        set { this.RaiseAndSetIfChanged(ref isValid, value); }
     }
-
 
     [XmlIgnore]
     public string Title => $"{DllName}-{Index}";
 
     private readonly SourceList<Key> diKeySource = new SourceList<Key>();
+
     [XmlIgnore]
     public ReadOnlyObservableCollection<Key> DIKeys { get; }
 
     private readonly SourceList<Key> doKeySource = new SourceList<Key>();
+
     [XmlIgnore]
     public ReadOnlyObservableCollection<Key> DOKeys { get; }
 
     private readonly SourceList<Key> adKeySource = new SourceList<Key>();
+
     [XmlIgnore]
-    public ReadOnlyObservableCollection<Key> ADKeys { get;  }
+    public ReadOnlyObservableCollection<Key> ADKeys { get; }
 
     private int selectedDICountIndex = 1;
+
     [XmlIgnore]
     public int SelectedDICountIndex
     {
         get => selectedDICountIndex;
-        set
-        {
-            this.RaiseAndSetIfChanged(ref selectedDICountIndex, value);
-        }
+        set { this.RaiseAndSetIfChanged(ref selectedDICountIndex, value); }
     }
 
     private int selectedDOCountIndex = 1;
+
     [XmlIgnore]
     public int SelectedDOCountIndex
     {
         get => selectedDOCountIndex;
-        set
-        {
-            this.RaiseAndSetIfChanged(ref selectedDOCountIndex, value);
-        }
+        set { this.RaiseAndSetIfChanged(ref selectedDOCountIndex, value); }
     }
 
     private bool hasConfig = false;
+
     [XmlIgnore]
-    public bool HasConfig { 
-        get => hasConfig; 
-        set 
-        {
-            this.RaiseAndSetIfChanged(ref hasConfig, value);
-        } 
+    public bool HasConfig
+    {
+        get => hasConfig;
+        set { this.RaiseAndSetIfChanged(ref hasConfig, value); }
     }
 
     private int selectedADCountIndex = 0;
+
     [XmlIgnore]
     public int SelectedADCountIndex
     {
         get => selectedADCountIndex;
-        set
-        {
-            this.RaiseAndSetIfChanged(ref selectedADCountIndex, value);
-        }
+        set { this.RaiseAndSetIfChanged(ref selectedADCountIndex, value); }
     }
 
     private int offsetDIIndex = 0;
+
     [XmlIgnore]
     public int OffsetDIIndex
     {
         get => offsetDIIndex;
-        set
-        {
-            this.RaiseAndSetIfChanged(ref offsetDIIndex, value);
-        }
+        set { this.RaiseAndSetIfChanged(ref offsetDIIndex, value); }
     }
 
-
     private int offsetDIMaxIndex = 0;
+
     [XmlIgnore]
     public int OffsetDIMaxIndex
     {
         get => offsetDIMaxIndex;
-        set
-        {
-            this.RaiseAndSetIfChanged(ref offsetDIMaxIndex, value);
-        }
+        set { this.RaiseAndSetIfChanged(ref offsetDIMaxIndex, value); }
     }
 
     private int offsetADIndex = 0;
+
     [XmlIgnore]
     public int OffsetADIndex
     {
-        get=> offsetADIndex;
-        set
-        {
-            this.RaiseAndSetIfChanged(ref offsetADIndex, value);
-        }
+        get => offsetADIndex;
+        set { this.RaiseAndSetIfChanged(ref offsetADIndex, value); }
     }
 
     private int offsetADMaxIndex = 0;
+
     [XmlIgnore]
     public int OffsetADMaxIndex
     {
-        get=>offsetADMaxIndex;
-        set
-        {
-            this.RaiseAndSetIfChanged(ref offsetADMaxIndex, value);
-        }
+        get => offsetADMaxIndex;
+        set { this.RaiseAndSetIfChanged(ref offsetADMaxIndex, value); }
     }
 
     private int offsetDOIndex = 0;
+
     [XmlIgnore]
     public int OffsetDOIndex
     {
         get => offsetDOIndex;
-        set
-        {
-            this.RaiseAndSetIfChanged(ref offsetDOIndex, value);
-        }
+        set { this.RaiseAndSetIfChanged(ref offsetDOIndex, value); }
     }
     private int offsetDOMaxIndex = 247;
+
     [XmlAttribute]
     public int OffsetDOMaxIndex
     {
         get => offsetDOMaxIndex;
-        set
-        {
-            this.RaiseAndSetIfChanged(ref offsetDOMaxIndex, value);
-        }
+        set { this.RaiseAndSetIfChanged(ref offsetDOMaxIndex, value); }
     }
 
     [XmlIgnore]
@@ -214,14 +194,17 @@ public class Device : ViewModelBase
     public List<Action> Actions { get; set; } = new List<Action>();
 
     private readonly SourceList<Action> actionSource = new SourceList<Action>();
+
     [XmlIgnore]
     public ReadOnlyObservableCollection<Action> ActionList { get; }
 
     private readonly SourceList<OAction> oactionSource = new SourceList<OAction>();
+
     [XmlIgnore]
     public ReadOnlyObservableCollection<OAction> OActionList { get; }
 
     private readonly SourceList<Axis> axisSource = new SourceList<Axis>();
+
     [XmlIgnore]
     public ReadOnlyObservableCollection<Axis> AxisList { get; }
 
@@ -264,39 +247,43 @@ public class Device : ViewModelBase
         return _axis;
     }
 
-
-    List<int> channels = new List<int> {8, 16, 32, 64, 128, 256 };
+    List<int> channels = new List<int> { 8, 16, 32, 64, 128, 256 };
 
     [XmlIgnore]
-    public ReactiveCommand<Unit,Unit> EditConfigCommand { get; }
+    public ReactiveCommand<Unit, Unit> EditConfigCommand { get; }
 
     [XmlIgnore]
     public string AppRoot => AppDomain.CurrentDomain.BaseDirectory;
 
     private bool diExpand = true;
+
     [XmlAttribute]
     public bool DIExpand
     {
         get => diExpand;
-        set=>this.RaiseAndSetIfChanged(ref diExpand, value);
+        set => this.RaiseAndSetIfChanged(ref diExpand, value);
     }
 
     private bool adExpand = true;
-    [XmlAttribute] public bool ADExpand
+
+    [XmlAttribute]
+    public bool ADExpand
     {
-        get=> adExpand;
-        set=>this.RaiseAndSetIfChanged(ref adExpand, value);
+        get => adExpand;
+        set => this.RaiseAndSetIfChanged(ref adExpand, value);
     }
 
     private bool doExpand = true;
+
     [XmlAttribute]
     public bool DOExpand
     {
         get => doExpand;
-        set=>this.RaiseAndSetIfChanged(ref doExpand, value);
+        set => this.RaiseAndSetIfChanged(ref doExpand, value);
     }
 
     private bool allOn = false;
+
     [XmlIgnore]
     public bool AllOn
     {
@@ -304,42 +291,40 @@ public class Device : ViewModelBase
         set { this.RaiseAndSetIfChanged(ref allOn, value); }
     }
     private string toggleAllDOText = "全开";
+
     [XmlIgnore]
     public string ToggleAllDOText
     {
-        get=>toggleAllDOText;
-        set{
-            this.RaiseAndSetIfChanged(ref  toggleAllDOText, value);
-        }
+        get => toggleAllDOText;
+        set { this.RaiseAndSetIfChanged(ref toggleAllDOText, value); }
     }
 
     [XmlIgnore]
-    public ReactiveCommand<Unit,Unit> ToggleAllDOCommand { get; }
+    public ReactiveCommand<Unit, Unit> ToggleAllDOCommand { get; }
 
     private string columnLayout = "*,2,*";
     public string ColumnLayout
     {
         get => columnLayout;
-        set
-        {
-            this.RaiseAndSetIfChanged(ref columnLayout, value);
-        }
+        set { this.RaiseAndSetIfChanged(ref columnLayout, value); }
     }
 
     private bool userIOFullscreen = false;
+
     [XmlIgnore]
     public bool UserIOFullscreen
     {
         get => userIOFullscreen;
-        set => this.RaiseAndSetIfChanged(ref  userIOFullscreen, value);
+        set => this.RaiseAndSetIfChanged(ref userIOFullscreen, value);
     }
 
     private bool standardIOFullscreen = false;
+
     [XmlIgnore]
     public bool StandardIOFullscreen
     {
-        get=> standardIOFullscreen;
-        set=> this.RaiseAndSetIfChanged(ref standardIOFullscreen, value);
+        get => standardIOFullscreen;
+        set => this.RaiseAndSetIfChanged(ref standardIOFullscreen, value);
     }
 
     private GridLength customWidth = new GridLength(1, GridUnitType.Star);
@@ -353,7 +338,7 @@ public class Device : ViewModelBase
     private GridLength standardWidth = new GridLength(1, GridUnitType.Star);
     public GridLength StandardWidth
     {
-        get=> standardWidth;
+        get => standardWidth;
         set { this.RaiseAndSetIfChanged(ref standardWidth, value); }
     }
 
@@ -367,44 +352,47 @@ public class Device : ViewModelBase
             .Subscribe();
         ActionList = readonlyActionList;
 
-        oactionSource.Connect()
+        oactionSource
+            .Connect()
             .AutoRefresh()
             .ObserveOn(RxApp.MainThreadScheduler)
             .Bind(out var readOnlyOActionList)
             .Subscribe();
         OActionList = readOnlyOActionList;
 
-        axisSource.Connect()
+        axisSource
+            .Connect()
             .AutoRefresh()
             .ObserveOn(RxApp.MainThreadScheduler)
             .Bind(out var readonlyAxisList)
             .Subscribe();
         AxisList = readonlyAxisList;
 
-
-        diKeySource.Connect()
-          .AutoRefresh()
-          .ObserveOn(RxApp.MainThreadScheduler)
-          .Bind(out var readonlyDIKeyList)
-          .Subscribe();
+        diKeySource
+            .Connect()
+            .AutoRefresh()
+            .ObserveOn(RxApp.MainThreadScheduler)
+            .Bind(out var readonlyDIKeyList)
+            .Subscribe();
         DIKeys = readonlyDIKeyList;
 
-        doKeySource.Connect()
+        doKeySource
+            .Connect()
             .AutoRefresh()
             .ObserveOn(RxApp.MainThreadScheduler)
             .Bind(out var readonlyDOKeyList)
             .Subscribe();
         DOKeys = readonlyDOKeyList;
 
-
-        adKeySource.Connect()
+        adKeySource
+            .Connect()
             .AutoRefresh()
             .ObserveOn(RxApp.MainThreadScheduler)
             .Bind(out var readonlyADKeyList)
             .Subscribe();
         ADKeys = readonlyADKeyList;
 
-        this.WhenAnyValue(x => x.SelectedDICountIndex, x=>x.OffsetDIIndex)
+        this.WhenAnyValue(x => x.SelectedDICountIndex, x => x.OffsetDIIndex)
             .Subscribe(item =>
             {
                 var (_idx, _offset) = item;
@@ -416,67 +404,78 @@ public class Device : ViewModelBase
                     OffsetDIIndex = _diOffsetMax;
                 }
 
-                var _newDIKeys = Enumerable.Range(_offset, channels[_idx]).Select(_id => new Key { Name = $"Button_{_id:D2}" });
+                var _newDIKeys = Enumerable
+                    .Range(_offset, channels[_idx])
+                    .Select(_id => new Key { Name = $"Button_{_id:D2}" });
                 diKeySource.Edit(_source =>
                 {
-                    if (_source == null) return;
+                    if (_source == null)
+                        return;
                     _source.Clear();
                     _source.AddRange(_newDIKeys);
                 });
             });
         SelectedDICountIndex = 1;
 
-        this.WhenAnyValue(x => x.SelectedADCountIndex, x=>x.OffsetADIndex)
+        this.WhenAnyValue(x => x.SelectedADCountIndex, x => x.OffsetADIndex)
             .Subscribe(item =>
             {
                 var (_idx, _offset) = item;
                 var _adOffsetMax = 256 - channels[_idx];
                 OffsetADMaxIndex = _adOffsetMax;
-                if (_offset > _adOffsetMax) {
+                if (_offset > _adOffsetMax)
+                {
                     _offset = _adOffsetMax;
                     OffsetADIndex = _adOffsetMax;
                 }
 
-                var _newADKeys = Enumerable.Range(_offset, channels[_idx]).Select(_id => new Key { Name = $"Axis_{_id:D2}" });
+                var _newADKeys = Enumerable
+                    .Range(_offset, channels[_idx])
+                    .Select(_id => new Key { Name = $"Axis_{_id:D2}" });
                 adKeySource.Edit(_source =>
                 {
-                    if (_source == null) return;
+                    if (_source == null)
+                        return;
                     _source.Clear();
                     _source.AddRange(_newADKeys);
                 });
-            
             });
         SelectedADCountIndex = 0;
 
-        
-        this.WhenAnyValue(x => x.SelectedDOCountIndex, x=>x.OffsetDOIndex).Subscribe(item =>
-        {
-            var (_idx, _offset) = item;
-
-            var _doOffsetMax = 256 - channels[_idx];
-            OffsetDOMaxIndex = _doOffsetMax;
-            if(_offset > _doOffsetMax)
+        this.WhenAnyValue(x => x.SelectedDOCountIndex, x => x.OffsetDOIndex)
+            .Subscribe(item =>
             {
-                _offset = _doOffsetMax;
-                OffsetDOIndex = _doOffsetMax;
-            }
+                var (_idx, _offset) = item;
 
-            var _newDOKeys = Enumerable.Range(_offset, channels[_idx]).Select(_id => new Key { Name = $"OAxis_{_id:D2}" });
-            doKeySource.Edit(_source =>
-            {
-                _source.Clear();
-                _source.AddRange(_newDOKeys);
+                var _doOffsetMax = 256 - channels[_idx];
+                OffsetDOMaxIndex = _doOffsetMax;
+                if (_offset > _doOffsetMax)
+                {
+                    _offset = _doOffsetMax;
+                    OffsetDOIndex = _doOffsetMax;
+                }
+
+                var _newDOKeys = Enumerable
+                    .Range(_offset, channels[_idx])
+                    .Select(_id => new Key { Name = $"OAxis_{_id:D2}" });
+                doKeySource.Edit(_source =>
+                {
+                    _source.Clear();
+                    _source.AddRange(_newDOKeys);
+                });
+                rebindDOEvents();
             });
-            rebindDOEvents();
-        });
         SelectedDOCountIndex = 1;
-
 
         EditConfigCommand = ReactiveCommand.Create(() =>
         {
             var _configDir = Path.Combine(AppRoot, "ExternalLibraries/Config", DllName);
-            var _configPath = new List<string> { "config.ini", "config.xml" }.Select(_ => Path.Combine(_configDir, _)).Where(_ => File.Exists(_)).FirstOrDefault();
-            if (string.IsNullOrEmpty(_configPath)) return;
+            var _configPath = new List<string> { "config.ini", "config.xml" }
+                .Select(_ => Path.Combine(_configDir, _))
+                .Where(_ => File.Exists(_))
+                .FirstOrDefault();
+            if (string.IsNullOrEmpty(_configPath))
+                return;
             EditorLauncher.OpenWithPreferredEditor(_configPath);
         });
 
@@ -484,11 +483,13 @@ public class Device : ViewModelBase
         {
             AllOn = !AllOn;
             ToggleAllDOText = AllOn ? "全关" : "全开";
-            Enumerable.Range(OffsetDOIndex, channels[SelectedDOCountIndex]).ForEach(_idx =>
-            {
-                IOToolkit.Key _oKey = $"OAxis_{_idx:D2}";
-                this.devcie.SetDO(_oKey, AllOn ? 1 : 0);
-            });
+            Enumerable
+                .Range(OffsetDOIndex, channels[SelectedDOCountIndex])
+                .ForEach(_idx =>
+                {
+                    IOToolkit.Key _oKey = $"OAxis_{_idx:D2}";
+                    this.devcie.SetDO(_oKey, AllOn ? 1 : 0);
+                });
         });
 
         this.WhenAnyValue(x => x.UserIOFullscreen)
@@ -518,24 +519,27 @@ public class Device : ViewModelBase
         {
             StandardWidth = new GridLength(1, GridUnitType.Star);
             CustomWidth = new GridLength(0);
-        }else if (UserIOFullscreen)
+        }
+        else if (UserIOFullscreen)
         {
             StandardWidth = new GridLength(0);
-            CustomWidth = new GridLength(1,GridUnitType.Star);
+            CustomWidth = new GridLength(1, GridUnitType.Star);
         }
         else
         {
             Random random = new Random();
-            StandardWidth = new GridLength(1+random.Next(1, 4) / 1000f, GridUnitType.Star);
-            CustomWidth = new GridLength(1+random.Next(1, 4) / 1000f, GridUnitType.Star);
+            StandardWidth = new GridLength(1 + random.Next(1, 4) / 1000f, GridUnitType.Star);
+            CustomWidth = new GridLength(1 + random.Next(1, 4) / 1000f, GridUnitType.Star);
         }
     }
 
     IDisposable doKeyHandler = null;
+
     private void rebindDOEvents()
     {
         doKeyHandler?.Dispose();
-        doKeyHandler = DOKeys.Select(_key => _key.OnToggleDO)
+        doKeyHandler = DOKeys
+            .Select(_key => _key.OnToggleDO)
             .Merge()
             .ObserveOn(RxApp.MainThreadScheduler)
             .Subscribe(_param =>
@@ -547,6 +551,7 @@ public class Device : ViewModelBase
     }
 
     IODevice devcie;
+
     public void AfterDeserialization()
     {
         var _configDir = Path.Combine(AppRoot, "ExternalLibraries/Config", DllName);
@@ -559,50 +564,56 @@ public class Device : ViewModelBase
 
         TriggerUIUpdate();
 
-        OActions.Select(_ => _.OnToggleDO).Merge().Subscribe(_params =>
-        {
-            var (OAction, Target) = _params;
-            this.devcie.SetDO(OAction, Target ? 1 : 0);
-            Debug.WriteLine($"{this.devcie.ID} SetDO {OAction} {Target}");
-        });
+        OActions
+            .Select(_ => _.OnToggleDO)
+            .Merge()
+            .Subscribe(_params =>
+            {
+                var (OAction, Target) = _params;
+                this.devcie.SetDO(OAction, Target ? 1 : 0);
+                Debug.WriteLine($"{this.devcie.ID} SetDO {OAction} {Target}");
+            });
 
         OActions
-            .Select(_ => _.Keys).SelectMany(x => x)
+            .Select(_ => _.Keys)
+            .SelectMany(x => x)
             .Select(_key => _key.OnToggleDO)
             .Merge()
             .Subscribe(_params =>
-        {
-            var (KeyName, KeyValue) = _params;
-            IOToolkit.Key _doKey = KeyName;
-            this.devcie.SetDO(_doKey, KeyValue);
-            Debug.WriteLine($"SetDO {this.devcie.ID} {_doKey} {KeyValue}");
-        });
+            {
+                var (KeyName, KeyValue) = _params;
+                IOToolkit.Key _doKey = KeyName;
+                this.devcie.SetDO(_doKey, KeyValue);
+                Debug.WriteLine($"SetDO {this.devcie.ID} {_doKey} {KeyValue}");
+            });
     }
 
     public void TriggerUIUpdate()
     {
         actionSource.Edit(_source =>
         {
-            if (_source == null) return;
+            if (_source == null)
+                return;
             _source.Clear();
             _source.AddRange(Actions);
         });
 
         oactionSource.Edit(_source =>
         {
-            if (_source == null) return;
+            if (_source == null)
+                return;
             _source.Clear();
             _source.AddRange(OActions);
         });
 
         axisSource.Edit(_source =>
         {
-            if (_source == null) return;
+            if (_source == null)
+                return;
             _source.Clear();
             _source.AddRange(Axes);
         });
 
-        
         diKeySource.Edit(_source =>
         {
             var _keys = _source.ToList();
@@ -635,17 +646,17 @@ public class Device : ViewModelBase
         //        ADExpand = !ADExpand;
         //        DOExpand = !DOExpand;
         //    });
-        
     }
 
     public void Update()
     {
-        if(this.devcie == null)
+        if (this.devcie == null)
         {
             this.devcie = IODeviceController.GetIODevice(Name);
         }
         IsValid = this.devcie.IsValid();
-        if (IsValid == false) return;
+        if (IsValid == false)
+            return;
 
         Actions.ForEach(_action =>
         {
@@ -657,22 +668,27 @@ public class Device : ViewModelBase
             });
         });
 
+        DIKeys
+            .ToList()
+            .ForEach(_key =>
+            {
+                _key.Value = this.devcie.GetKey(_key.Name) ? 1 : 0;
+            });
 
-        DIKeys.ToList().ForEach(_key =>
-        {
-            _key.Value = this.devcie.GetKey(_key.Name) ? 1 : 0;
-        });
+        ADKeys
+            .ToList()
+            .ForEach(_key =>
+            {
+                _key.Value = this.devcie.GetAxisKey(_key.Name);
+            });
 
-        ADKeys.ToList().ForEach(_key =>
-        {
-            _key.Value = this.devcie.GetAxisKey(_key.Name);
-        });
-
-        DOKeys.ToList().ForEach(_key =>
-        {
-            IOToolkit.Key doKey = _key.Name;
-            _key.Value = this.devcie.GetDO(doKey);
-        });
+        DOKeys
+            .ToList()
+            .ForEach(_key =>
+            {
+                IOToolkit.Key doKey = _key.Name;
+                _key.Value = this.devcie.GetDO(doKey);
+            });
 
         Axes.ForEach(_axis =>
         {
@@ -699,8 +715,9 @@ public class Device : ViewModelBase
 public class Key : ReactiveObject
 {
     private string name;
+
     [XmlAttribute("Name"), DefaultValueAttribute("")]
-    public string Name 
+    public string Name
     {
         get => name;
         set { this.RaiseAndSetIfChanged(ref name, value); }
@@ -714,25 +731,26 @@ public class Key : ReactiveObject
     }
 
     private readonly ObservableAsPropertyHelper<bool> active;
-    
+
     [XmlIgnore]
-    public bool Active=>active.Value;
+    public bool Active => active.Value;
     public ReactiveCommand<Unit, bool> ToggleDOCommand { get; }
 
-    public Subject<(string Name, float Value)> OnToggleDO = new Subject<(string Name, float Value)>();
+    public Subject<(string Name, float Value)> OnToggleDO =
+        new Subject<(string Name, float Value)>();
 
     public Key()
     {
         ToggleDOCommand = ReactiveCommand.Create(() =>
         {
             var _targetValue = this.Value == 0 ? 1f * Scale : 0f;
-            _targetValue = this.Invert == "True" ? 0:_targetValue;
+            _targetValue = this.Invert == "True" ? 0 : _targetValue;
 
             OnToggleDO.OnNext((Name, _targetValue));
             return true;
         });
-        active = this.WhenAnyValue(x => x.Value,x=>x.Invert)
-            .Select(x=>x.Item1!=0&&x.Item2=="False" || x.Item1==0 && x.Item2=="True")
+        active = this.WhenAnyValue(x => x.Value, x => x.Invert)
+            .Select(x => x.Item1 != 0 && x.Item2 == "False" || x.Item1 == 0 && x.Item2 == "True")
             .ToProperty(this, x => x.Active);
     }
 
@@ -770,34 +788,27 @@ public class Key : ReactiveObject
 public class IONodeBase : ReactiveObject
 {
     private string name;
+
     [XmlAttribute("Name")]
     public string Name
     {
         get => name;
-        set
-        {
-            this.RaiseAndSetIfChanged(ref name, value);
-        }
+        set { this.RaiseAndSetIfChanged(ref name, value); }
     }
 
     private string label;
+
     [XmlAttribute("Label")]
     public string Label
     {
         get => label;
-        set
-        {
-            this.RaiseAndSetIfChanged(ref label, value);
-        }
+        set { this.RaiseAndSetIfChanged(ref label, value); }
     }
 
     [XmlIgnore]
     public string DeviceLabel
     {
-        get
-        {
-            return this.label ?? this.Name;
-        }
+        get { return this.label ?? this.Name; }
     }
 
     [XmlElement("Key")]
@@ -805,7 +816,7 @@ public class IONodeBase : ReactiveObject
 
     public ObservableCollection<Key> KeyList { get; set; } = new ObservableCollection<Key>();
 
-    public bool ShowKeyValue=>this is Axis || this is OAction;
+    public bool ShowKeyValue => this is Axis || this is OAction;
     public bool ShowBtn => this is OAction;
     public bool ShowNodeValue => this is Axis;
 
@@ -831,8 +842,11 @@ public class IONodeBase : ReactiveObject
         }
         return _key;
     }
+
     public ReactiveCommand<Unit, bool> ToggleDOCommand { get; }
-    public Subject<(string OAction, bool Target)> OnToggleDO { get; set; } = new Subject<(string OAction, bool Target)>();
+    public Subject<(string OAction, bool Target)> OnToggleDO { get; set; } =
+        new Subject<(string OAction, bool Target)>();
+
     public IONodeBase()
     {
         // 页面设计模拟数据
@@ -840,9 +854,11 @@ public class IONodeBase : ReactiveObject
 
         var _normalKeys = Keys.Where(_ => _.InvertEvent == "False");
         active = _normalKeys
-            .Select(_ => _.WhenAnyValue(key => key.Active)).Merge()
-          .Select(_active => _normalKeys.Any(key => key.Active))
-          .StartWith(_normalKeys.Any(key => key.Active)).ToProperty(this, vm => vm.Active);
+            .Select(_ => _.WhenAnyValue(key => key.Active))
+            .Merge()
+            .Select(_active => _normalKeys.Any(key => key.Active))
+            .StartWith(_normalKeys.Any(key => key.Active))
+            .ToProperty(this, vm => vm.Active);
 
         ToggleDOCommand = ReactiveCommand.Create(() =>
         {
@@ -850,12 +866,11 @@ public class IONodeBase : ReactiveObject
             //if (Active) {
             //    _target = 0;
             //}
-            OnToggleDO.OnNext((Name,_target == 1));
+            OnToggleDO.OnNext((Name, _target == 1));
             // this.Keys.ForEach(_key => _key.Value = _target);
             // this.Value = _target;
             return true;
         });
-
     }
 
     public void AfterDeserialization()
@@ -863,9 +878,11 @@ public class IONodeBase : ReactiveObject
         KeyList = new ObservableCollection<Key>(Keys);
         var _normalKeys = Keys.Where(_ => _.InvertEvent == "False");
         active = _normalKeys
-            .Select(_ => _.WhenAnyValue(key => key.Active)).Merge()
-          .Select(_active => _normalKeys.Any(key => key.Active))
-          .StartWith(_normalKeys.Any(key => key.Active)).ToProperty(this, vm => vm.Active);
+            .Select(_ => _.WhenAnyValue(key => key.Active))
+            .Merge()
+            .Select(_active => _normalKeys.Any(key => key.Active))
+            .StartWith(_normalKeys.Any(key => key.Active))
+            .ToProperty(this, vm => vm.Active);
     }
 }
 

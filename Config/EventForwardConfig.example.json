@@ -1,0 +1,87 @@
+{
+  "ProtocolGroups": [
+    {
+      "Id": "group-netio-1",
+      "GroupName": "NetIO组-服务器A",
+      "ProtocolType": "NetIO",
+      "TargetIP": "192.168.1.100",
+      "TargetPort": 8080,
+      "SerialPort": "COM1",
+      "BaudRate": 9600,
+      "DataBits": 8,
+      "Parity": "None",
+      "StopBits": 1,
+      "Description": "连接到服务器A的NetIO协议组",
+      "IsExpanded": true,
+      "Mappings": [
+        {
+          "SourceDevice": "Keyboard",
+          "SourceKey": "KeyA",
+          "TargetKey": "KeyB",
+          "IsEnabled": true,
+          "Description": "键盘KeyA映射到KeyB"
+        },
+        {
+          "SourceDevice": "Keyboard",
+          "SourceKey": "KeyC",
+          "TargetKey": "KeyD",
+          "IsEnabled": true,
+          "Description": "键盘KeyC映射到KeyD"
+        },
+        {
+          "SourceDevice": "Keyboard",
+          "SourceKey": "KeyE",
+          "TargetKey": "KeyF",
+          "IsEnabled": true,
+          "Description": "键盘KeyE映射到KeyF"
+        }
+      ]
+    },
+    {
+      "Id": "group-netio-2",
+      "GroupName": "NetIO组-服务器B",
+      "ProtocolType": "NetIO",
+      "TargetIP": "192.168.1.200",
+      "TargetPort": 9000,
+      "SerialPort": "COM1",
+      "BaudRate": 9600,
+      "DataBits": 8,
+      "Parity": "None",
+      "StopBits": 1,
+      "Description": "连接到服务器B的NetIO协议组",
+      "IsExpanded": false,
+      "Mappings": [
+        {
+          "SourceDevice": "Mouse",
+          "SourceKey": "LeftClick",
+          "TargetKey": "Fire",
+          "IsEnabled": false,
+          "Description": "鼠标左键映射到Fire（已禁用）"
+        }
+      ]
+    },
+    {
+      "Id": "group-modbus-1",
+      "GroupName": "Modbus-RTU组-COM3",
+      "ProtocolType": "Modbus-RTU",
+      "TargetIP": "127.0.0.1",
+      "TargetPort": 8080,
+      "SerialPort": "COM3",
+      "BaudRate": 19200,
+      "DataBits": 8,
+      "Parity": "None",
+      "StopBits": 1,
+      "Description": "通过COM3端口的Modbus-RTU协议组",
+      "IsExpanded": true,
+      "Mappings": [
+        {
+          "SourceDevice": "Gamepad",
+          "SourceKey": "ButtonA",
+          "TargetKey": "StartButton",
+          "IsEnabled": true,
+          "Description": "游戏手柄ButtonA映射到StartButton"
+        }
+      ]
+    }
+  ]
+}

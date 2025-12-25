@@ -1,7 +1,7 @@
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Markup.Xaml;
-using Avalonia.ReactiveUI;
+using ReactiveUI.Avalonia;
 using IOTester.ViewModels;
 using ReactiveUI;
 
@@ -13,9 +13,10 @@ public partial class IODeviceView : ReactiveUserControl<Device>
     {
         InitializeComponent();
 
-        this.WhenActivated(disposeables => {
+        this.WhenActivated(disposeables =>
+        {
             //var _flyout = this.Resources["MySharedFlyout"] as Flyout;
-            
+
             //_flyout.ShowAt(this.DORepeater.Children[1]);
         });
     }

@@ -7,17 +7,6 @@ namespace IOTester.Models
     /// </summary>
     public class ActionKeyMapping : ReactiveObject
     {
-        private string sourceDevice = string.Empty;
-
-        /// <summary>
-        /// 源设备名称
-        /// </summary>
-        public string SourceDevice
-        {
-            get => sourceDevice;
-            set => this.RaiseAndSetIfChanged(ref sourceDevice, value);
-        }
-
         private string sourceKey = string.Empty;
 
         /// <summary>
@@ -71,6 +60,41 @@ namespace IOTester.Models
         {
             get => description;
             set => this.RaiseAndSetIfChanged(ref description, value);
+        }
+
+        // ===== 自定义模式字段 =====
+
+        private string dataFormat = "ASCII"; // ASCII 或 HEX
+
+        /// <summary>
+        /// 数据格式：ASCII 或 HEX
+        /// </summary>
+        public string DataFormat
+        {
+            get => dataFormat;
+            set => this.RaiseAndSetIfChanged(ref dataFormat, value);
+        }
+
+        private string pressedData = string.Empty;
+
+        /// <summary>
+        /// Pressed事件的原始数据（用于自定义模式）
+        /// </summary>
+        public string PressedData
+        {
+            get => pressedData;
+            set => this.RaiseAndSetIfChanged(ref pressedData, value);
+        }
+
+        private string releasedData = string.Empty;
+
+        /// <summary>
+        /// Released事件的原始数据（用于自定义模式）
+        /// </summary>
+        public string ReleasedData
+        {
+            get => releasedData;
+            set => this.RaiseAndSetIfChanged(ref releasedData, value);
         }
     }
 }

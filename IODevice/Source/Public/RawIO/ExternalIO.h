@@ -72,6 +72,11 @@ public:
 	virtual int SetDOOff(const char* InOAction) override;
 	virtual int DOImmediate() override;
 
+	/**
+	 * 设置 OAction Key 的属性 (Scale, InvertEvent)
+	 */
+	virtual int SetOKProps(const char* oactionName, const char* keyName, float scale, bool invertEvent) override;
+
     virtual int GetDO(float* OutDOStatus) override;
     virtual float GetDO(const FKey InKey) override;
 	virtual float GetDO(const char* InOAction) override;

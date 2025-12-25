@@ -101,4 +101,33 @@ namespace IOTester.Converters
             throw new NotImplementedException();
         }
     }
+
+    public class StringNotEqualsConverter : IMultiValueConverter
+    {
+        public object? Convert(
+            System.Collections.Generic.IList<object?> values,
+            Type targetType,
+            object? parameter,
+            CultureInfo culture
+        )
+        {
+            if (values == null || values.Count < 2)
+                return false;
+
+            var value1 = values[0]?.ToString();
+            var value2 = values[1]?.ToString();
+
+            return value1 != value2 && !string.IsNullOrEmpty(value1);
+        }
+
+        public object?[] ConvertBack(
+            object? value,
+            Type[] targetTypes,
+            object? parameter,
+            CultureInfo culture
+        )
+        {
+            throw new NotImplementedException();
+        }
+    }
 }

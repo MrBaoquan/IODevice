@@ -44,6 +44,7 @@ public:
     void ClearBinding();
 
     void BindKey(const FKey& InKey, InputEvent InEvent, InputActionHandlerSignature delegate);
+    void BindKey(const FKey& InKey, InputEvent InEvent, InputActionHandlerWithKeySignature delegate);
     void BindAxis(const std::string axisName,FInputAxisHandlerSignature delegate);
     void BindAxisKey(const FKey AxisKey, FInputAxisHandlerSignature delegate);
     void BindAction(std::string ActionName, const InputEvent KeyEvent,InputActionHandlerSignature delegate);
@@ -55,6 +56,10 @@ public:
 	int SetDOOn(const char* InOAction);
 	int SetDOOff(const char* InOAction);
 	int DOImmediate();
+
+	int SetAKProps(const char* axisName, const char* keyName, float scale);
+	int SetOKProps(const char* oactionName, const char* keyName, float scale, bool invertEvent);
+	int SetPKProps(const char* keyName, float offset, float scale, float minValue, float maxValue, float deadZone, float sensitivity, float exponent, bool invert, bool invertEvent);
 
     int GetDO(float* OutDOStatus);
 	float GetDO(const FKey& InKey);
@@ -68,6 +73,7 @@ public:
     
     float GetAxis(const char* AxisName);
     float GetAxisKey(const FKey& InKey);
+    float GetRawKeyValue(const FKey& InKey);
 
     float GetKeyDownDuration(const FKey& InKey);
     

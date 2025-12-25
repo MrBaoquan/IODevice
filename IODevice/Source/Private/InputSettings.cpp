@@ -113,9 +113,11 @@ int IOToolkit::UInputSettings::Initialize()
                     }
                     FInputKeyProperties keyProperty;
 
-                    
-					keyProperty.PreOffset = GetNodeValue(Key->first_attribute("PreOffset") ? Key->first_attribute("PreOffset")->value() : "", 0.f);
-					keyProperty.PreScale = GetNodeValue(Key->first_attribute("PreScale") ? Key->first_attribute("PreScale")->value() : "", 1.f);
+                    // 兼容旧版 PreOffset/PreScale 和新版 Offset/Scale
+                    auto offsetAttr = Key->first_attribute("Offset") ? Key->first_attribute("Offset") : Key->first_attribute("PreOffset");
+                    auto scaleAttr = Key->first_attribute("Scale") ? Key->first_attribute("Scale") : Key->first_attribute("PreScale");
+					keyProperty.Offset = GetNodeValue(offsetAttr ? offsetAttr->value() : "", 0.f);
+					keyProperty.Scale = GetNodeValue(scaleAttr ? scaleAttr->value() : "", 1.f);
 					keyProperty.DeadZone = GetNodeValue(Key->first_attribute("DeadZone") ? Key->first_attribute("DeadZone")->value() : "", 0.f);
 					keyProperty.bInvert = std::string(Key->first_attribute("Invert") ? Key->first_attribute("Invert")->value() : std::string("")) == "True" ? true : false;
                     keyProperty.bInvertEvent = std::string(Key->first_attribute("InvertEvent") ? Key->first_attribute("InvertEvent")->value() : std::string("")) == "True" ? true : false;

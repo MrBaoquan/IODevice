@@ -14,14 +14,14 @@ namespace IOToolkit
 struct FInputKeyProperties
 {
 	/**
-	 * 预偏移值 在死区前
+	 * 鍋忕Щ鍊硷紝鐢ㄤ簬鏍″噯闆剁偣
 	 */
-	float PreOffset;
+	float Offset;
 
 	/**
-	 * 预缩放值 在死区前
+	 * 缂╂斁鍊硷紝鐢ㄤ簬鏄犲皠杈撳叆鑼冨洿
 	 */
-	float PreScale;
+	float Scale;
 
     /** What the dead zone of the axis is.  For control axes such as analog sticks. */
     float DeadZone;
@@ -41,8 +41,8 @@ struct FInputKeyProperties
 	float Max;
 
     FInputKeyProperties()
-        : PreScale(1.f)
-		, PreOffset(0.f)
+        : Offset(0.f)
+		, Scale(1.f)
 		, DeadZone(0.2f)
         , Sensitivity(1.f)
         , Exponent(1.f)

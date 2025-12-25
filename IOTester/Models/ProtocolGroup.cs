@@ -25,6 +25,14 @@ namespace IOTester.Models
         private string _parity = "None";
         private int _stopBits = 1;
 
+        // 自定义协议配置
+        private string _customProtocolType = "TCP-Client"; // TCP-Client, TCP-Server, UDP, Serial
+        private bool _isCustomMode = false;
+
+        // 源设备配置
+        private string _sourceDevice = string.Empty;
+        private string _targetDevice = string.Empty;
+
         private string _description = string.Empty;
 
         /// <summary>
@@ -48,8 +56,8 @@ namespace IOTester.Models
         /// <summary>
         /// 此协议组下的所有映射配置
         /// </summary>
-        public ObservableCollection<ActionKeyMapping> Mappings { get; } =
-            new ObservableCollection<ActionKeyMapping>();
+        public ObservableCollection<MappingDto> Mappings { get; } =
+            new ObservableCollection<MappingDto>();
 
         /// <summary>
         /// 协议组名称
@@ -61,12 +69,17 @@ namespace IOTester.Models
         }
 
         /// <summary>
-        /// 协议类型：NetIO 或 Modbus-RTU
+        /// 协议类型：NetIO 或 Modbus-RTU 或 Custom
         /// </summary>
         public string ProtocolType
         {
             get => _protocolType;
-            set => this.RaiseAndSetIfChanged(ref _protocolType, value);
+            set
+            {
+                this.RaiseAndSetIfChanged(ref _protocolType, value);
+                // 自动设置IsCustomMode
+                IsCustomMode = value == "Custom";
+            }
         }
 
         // ===== NetIO 协议参数 =====
@@ -143,6 +156,44 @@ namespace IOTester.Models
         {
             get => _description;
             set => this.RaiseAndSetIfChanged(ref _description, value);
+        }
+
+        // ===== 自定义协议参数 =====
+
+        /// <summary>
+        /// 是否为自定义模式
+        /// </summary>
+        public bool IsCustomMode
+        {
+            get => _isCustomMode;
+            set => this.RaiseAndSetIfChanged(ref _isCustomMode, value);
+        }
+
+        /// <summary>
+        /// 自定义协议类型：TCP-Client, TCP-Server, UDP, Serial
+        /// </summary>
+        public string CustomProtocolType
+        {
+            get => _customProtocolType;
+            set => this.RaiseAndSetIfChanged(ref _customProtocolType, value);
+        }
+
+        /// <summary>
+        /// 源设备名称
+        /// </summary>
+        public string SourceDevice
+        {
+            get => _sourceDevice;
+            set => this.RaiseAndSetIfChanged(ref _sourceDevice, value);
+        }
+
+        /// <summary>
+        /// 目标设备名称（设备直出）
+        /// </summary>
+        public string TargetDevice
+        {
+            get => _targetDevice;
+            set => this.RaiseAndSetIfChanged(ref _targetDevice, value);
         }
     }
 }

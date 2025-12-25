@@ -1,4 +1,4 @@
-/** Copyright (c) mrma617@gmail.com
+ï»¿/** Copyright (c) mrma617@gmail.com
  *  Author: MrBaoquan
  *  CreateTime: 2018-6-27 9:00
  */
@@ -17,15 +17,19 @@ class IOAPI IODevice
 {
 public:
 	/**
-	 * °ó¶¨°´¼ü»Øµ÷
+	 * ç»‘å®šæŒ‰é”®å›è°ƒ
 	 */
+	void BindKey(const FKey& key, InputEvent KeyEvent, std::function<void(FKey)> keyDelegate);
 	void BindKey(const FKey& key, InputEvent KeyEvent, std::function<void(void)> keyDelegate);
+
+    template<class UserClass>
+    void BindKey(const FKey& Key, InputEvent KeyEvent, UserClass* Object, void(UserClass::*Method)(FKey));
 
     template<class UserClass>
     void BindKey(const FKey& Key, InputEvent KeyEvent, UserClass* Object, void(UserClass::*Method)());
 
 	/**
-	 * °ó¶¨Öá»Øµ÷
+	 * ç»‘å®šè½´å›è°ƒ
 	 */
 	void BindAxis(const char* axisName, std::function<void(float)> axisDelegate);
 
@@ -34,7 +38,7 @@ public:
 
 
 	/**
-	 * °ó¶¨¼üÖá»Øµ÷
+	 * ç»‘å®šé”®è½´å›è°ƒ
 	 */
 	void BindAxisKey(const FKey& key, std::function<void(float)> axisDelegate);
 
@@ -42,7 +46,7 @@ public:
     void BindAxisKey(const FKey AxisKey, UserClass* Object, void(UserClass::*Method)(float));
 
 	/**
-	 * °ó¶¨¶¯×÷»Øµ÷
+	 * ç»‘å®šåŠ¨ä½œå›è°ƒ
 	 */
 	void BindAction(const char* actionName, InputEvent KeyEvent, std::function<void(FKey)> actionDelegate);
 
@@ -61,93 +65,135 @@ public:
     void BindAction(const char* actionName, InputEvent KeyEvent, UserClass* Object, void(UserClass::*Method)(VarTypes...), VarTypes... args);
     
     /**
-     * ÉèÖÃÉè±¸Êä³ö×´Ì¬
-     * @param InDOStatus: Éè±¸ËùÓĞÍ¨µÀµÄÖµ
-     * @return: ³É¹¦·µ»Ø1 Ê§°Ü·µ»Ø0
+     * è®¾ç½®è®¾å¤‡è¾“å‡ºçŠ¶æ€
+     * @param InDOStatus: è®¾å¤‡æ‰€æœ‰é€šé“çš„å€¼
+     * @return: æˆåŠŸè¿”å›1 å¤±è´¥è¿”å›0
      */
     int SetDO(float* InDOStatus);
 
     /**
-     * ÉèÖÃÉè±¸µ¥¸ö¼üµÄÊä³ö×´Ì¬
-     * @param InKey: ĞèÒªÉèÖÃµÄ°´¼ü
-     * @param InValue: ÒªÉèÖÃµÄÖµ
-     * @return: ³É¹¦·µ»Ø1 Ê§°Ü·µ»Ø0
+     * è®¾ç½®è®¾å¤‡å•ä¸ªé”®çš„è¾“å‡ºçŠ¶æ€
+     * @param InKey: éœ€è¦è®¾ç½®çš„æŒ‰é”®
+     * @param InValue: è¦è®¾ç½®çš„å€¼
+     * @return: æˆåŠŸè¿”å›1 å¤±è´¥è¿”å›0
      */
     int SetDO(const FKey& InKey, float InValue);
 
 	/**
-	 * @param InOAction: Êä³ö¶¯×÷Ãû³Æ
-	 * @param InValue: ÉèÖÃµÄÖµ
-	 * @return: ³É¹¦·µ»Ø1 Ê§°Ü·µ»Ø0
+	 * @param InOAction: è¾“å‡ºåŠ¨ä½œåç§°
+	 * @param InValue: è®¾ç½®çš„å€¼
+	 * @return: æˆåŠŸè¿”å›1 å¤±è´¥è¿”å›0
 	 */
 	int SetDO(const char* InOAction, float InValue, bool bIngoreMassage=false);
 	int SetDOOn(const char* InOAction);
 	int SetDOOff(const char* InOAction);
 	int DOImmediate();
     /**
-     * »ñÈ¡Éè±¸Êä³ö×´Ì¬
-     * @param OutDOStatus: Êä³ö²ÎÊı,Éè±¸ËùÓĞÍ¨µÀµÄÖµ
-     * @return: ³É¹¦·µ»Ø1 Ê§°Ü·µ»Ø0
+     * è·å–è®¾å¤‡è¾“å‡ºçŠ¶æ€
+     * @param OutDOStatus: è¾“å‡ºå‚æ•°,è®¾å¤‡æ‰€æœ‰é€šé“çš„å€¼
+     * @return: æˆåŠŸè¿”å›1 å¤±è´¥è¿”å›0
      */
     int GetDO(float* OutDOStatus);
 
     /**
-     * »ñÈ¡Éè±¸Ö¸¶¨°´¼üÊä³ö×´Ì¬
-     * @param InKey: ĞèÒª»ñÈ¡µÄ°´¼ü
-     * @return: ¸ßµçÆ½·µ»Ø1 µÍµçÆ½·µ»Ø0
+     * è·å–è®¾å¤‡æŒ‡å®šæŒ‰é”®è¾“å‡ºçŠ¶æ€
+     * @param InKey: éœ€è¦è·å–çš„æŒ‰é”®
+     * @return: é«˜ç”µå¹³è¿”å›1 ä½ç”µå¹³è¿”å›0
      */
 	float GetDO(const FKey& InKey);
 	float GetDO(const char* InOAction);
 
     /**
-     * Ë¢ĞÂÉè±¸×Ô¶¨ÒåÊı¾İÁ÷
-     * @param StreamingData Êı¾İÁ÷»º³åÇø
-     * @param DataSize  Êı¾İ»º³åÇø´óĞ¡
+     * åˆ·æ–°è®¾å¤‡è‡ªå®šä¹‰æ•°æ®æµ
+     * @param StreamingData æ•°æ®æµç¼“å†²åŒº
+     * @param DataSize  æ•°æ®ç¼“å†²åŒºå¤§å°
      */
     int RefreshStreamingData(BYTE* StreamingData, unsigned int DataSize);
   
     /**
-     * »ñÈ¡Éè±¸Ö¸¶¨°´¼ü×´Ì¬
-     * @param InKey: Ö¸¶¨Òª²éÑ¯µÄ°´¼ü
-     * @return: °´¼ü±»°´ÏÂ·µ»Øtrue, ·ñÔò·µ»Øfalse
+     * è·å–è®¾å¤‡æŒ‡å®šæŒ‰é”®çŠ¶æ€
+     * @param InKey: æŒ‡å®šè¦æŸ¥è¯¢çš„æŒ‰é”®
+     * @return: æŒ‰é”®è¢«æŒ‰ä¸‹è¿”å›true, å¦åˆ™è¿”å›false
      */
     bool GetKey(const FKey& InKey);
 
     /**
-     * »ñÈ¡Éè±¸Ö¸¶¨°´¼ü×´Ì¬
-     * @param InKey: Ö¸¶¨Òª±»²éÑ¯µÄ°´¼ü
-     * @return: °´¼üÓÉÊÍ·Å×´Ì¬±»°´ÏÂÊ±£¬¸ÃÖ¡·µ»Øtrue, ·ñÔò·µ»Øfalse
+     * è·å–è®¾å¤‡æŒ‡å®šæŒ‰é”®çŠ¶æ€
+     * @param InKey: æŒ‡å®šè¦è¢«æŸ¥è¯¢çš„æŒ‰é”®
+     * @return: æŒ‰é”®ç”±é‡Šæ”¾çŠ¶æ€è¢«æŒ‰ä¸‹æ—¶ï¼Œè¯¥å¸§è¿”å›true, å¦åˆ™è¿”å›false
      */
     bool GetKeyDown(const FKey& InKey);
 
     /**
-    * »ñÈ¡Éè±¸Ö¸¶¨°´¼ü×´Ì¬
-    * @param InKey: Ö¸¶¨Òª±»²éÑ¯µÄ°´¼ü
-    * @return: °´¼üÓÉ°´ÏÂ×´Ì¬±»ÊÍ·ÅÊ±£¬¸ÃÖ¡·µ»Øtrue, ·ñÔò·µ»Øfalse
+    * è·å–è®¾å¤‡æŒ‡å®šæŒ‰é”®çŠ¶æ€
+    * @param InKey: æŒ‡å®šè¦è¢«æŸ¥è¯¢çš„æŒ‰é”®
+    * @return: æŒ‰é”®ç”±æŒ‰ä¸‹çŠ¶æ€è¢«é‡Šæ”¾æ—¶ï¼Œè¯¥å¸§è¿”å›true, å¦åˆ™è¿”å›false
     */
     bool GetKeyUp(const FKey& InKey);
 
     /**
-     * »ñÈ¡Éè±¸Ö¸¶¨AxisµÄÖµ
-     * @param AxisName: ÅäÖÃÎÄ¼şÖĞAxis½ÚµãµÄÃû³Æ
-     * @return: ·µ»Ø¸ÃAxis½Úµã¾­¹ı¼ÆËãºóµÄÖµ
+     * è·å–è®¾å¤‡æŒ‡å®šAxisçš„å€¼
+     * @param AxisName: é…ç½®æ–‡ä»¶ä¸­AxisèŠ‚ç‚¹çš„åç§°
+     * @return: è¿”å›è¯¥AxisèŠ‚ç‚¹ç»è¿‡è®¡ç®—åçš„å€¼
      */
     float GetAxis(const char* AxisName);
 
     /**
-    * »ñÈ¡Éè±¸Ö¸¶¨AxisKeyµÄÖµ
-    * @param InKey: Ö¸¶¨Òª±»²éÑ¯µÄ°´¼ü
-    * @return: ·µ»Ø¸ÃAxis½Úµã¾­¹ı¼ÆËãºóµÄÖµ
+    * è·å–è®¾å¤‡æŒ‡å®šAxisKeyçš„å€¼
+    * @param InKey: æŒ‡å®šè¦è¢«æŸ¥è¯¢çš„æŒ‰é”®
+    * @return: è¿”å›è¯¥AxisèŠ‚ç‚¹ç»è¿‡è®¡ç®—åçš„å€¼
     */
     float GetAxisKey(const FKey& InKey);
 
     /**
-     * »ñÈ¡Ö¸¶¨°´¼ü°´ÏÂµÄ³ÖĞøÊ±¼ä
-     * @return: Èç¹û¸Ã°´¼ü±»°´ÏÂÔò·µ»Ø°´ÏÂµÄ³ÖĞøÊ±¼ä£¬Ã»ÓĞ±»°´ÏÂÔò·µ»Ø0.0
+    * è·å–è®¾å¤‡æŒ‡å®šKeyçš„åŸå§‹å€¼ï¼ˆæœªç»å¤„ç†ï¼‰
+    * @param InKey: æŒ‡å®šè¦è¿›è¡ŒæŸ¥è¯¢çš„æŒ‰é”®
+    * @return: è¿”å›è¯¥Keyçš„åŸå§‹è¾“å…¥å€¼
+    */
+    float GetRawKeyValue(const FKey& InKey);
+
+    /**
+     * è·å–æŒ‡å®šæŒ‰é”®æŒ‰ä¸‹çš„æŒç»­æ—¶é—´
+     * @return: å¦‚æœè¯¥æŒ‰é”®è¢«æŒ‰ä¸‹åˆ™è¿”å›æŒ‰ä¸‹çš„æŒç»­æ—¶é—´ï¼Œæ²¡æœ‰è¢«æŒ‰ä¸‹åˆ™è¿”å›0.0
      */
     float GetKeyDownDuration(const FKey& InKey);
 
-    /** Çå³ı¸ÃÉè±¸°ó¶¨µÄËùÓĞ»Øµ÷º¯Êı */
+    /**
+     * è®¾ç½®AxisKeyå±æ€§
+     * @param axisName: Axisåç§°
+     * @param keyName: Keyåç§°
+     * @param scale: ç¼©æ”¾å€¼
+     * @return: æˆåŠŸè¿”å›1ï¼Œå¤±è´¥è¿”å›0
+     */
+    int SetAKProps(const char* axisName, const char* keyName, float scale);
+
+    /**
+     * è®¾ç½®OutputActionå±æ€§
+     * @param oactionName: OutputActionåç§°
+     * @param keyName: Keyåç§°
+     * @param scale: ç¼©æ”¾å€¼
+     * @param invertEvent: æ˜¯å¦åè½¬äº‹ä»¶
+     * @return: æˆåŠŸè¿”å›1ï¼Œå¤±è´¥è¿”å›0
+     */
+    int SetOKProps(const char* oactionName, const char* keyName, float scale, bool invertEvent);
+
+    /**
+     * è®¾ç½®PropertyKeyå±æ€§
+     * @param keyName: Keyåç§°
+     * @param offset: åç§»å€¼ï¼ˆæ ¡å‡†é›¶ç‚¹ï¼‰
+     * @param scale: ç¼©æ”¾ç³»æ•°ï¼ˆæ˜ å°„è¾“å…¥èŒƒå›´ï¼‰
+     * @param minValue: æœ€å°å€¼
+     * @param maxValue: æœ€å¤§å€¼
+     * @param deadZone: æ­»åŒº
+     * @param sensitivity: çµæ•åº¦
+     * @param exponent: æŒ‡æ•°æ›²çº¿
+     * @param invert: æ˜¯å¦åè½¬æ•°å€¼
+     * @param invertEvent: æ˜¯å¦åè½¬äº‹ä»¶
+     * @return: æˆåŠŸè¿”å›1ï¼Œå¤±è´¥è¿”å›0
+     */
+    int SetPKProps(const char* keyName, float offset, float scale, float minValue, float maxValue, float deadZone, float sensitivity, float exponent, bool invert, bool invertEvent);
+
+    /** æ¸…é™¤è¯¥è®¾å¤‡ç»‘å®šçš„æ‰€æœ‰å›è°ƒå‡½æ•° */
     void ClearBindings();
 
     const char* Name();

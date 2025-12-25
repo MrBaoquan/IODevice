@@ -1,4 +1,4 @@
-/** Copyright (c) mrma617@gmail.com
+﻿/** Copyright (c) mrma617@gmail.com
  *  Author: MrBaoquan
  *  CreateTime: 2018-6-27 9:00
  */
@@ -126,12 +126,12 @@ int IOToolkit::IOApplication::DyLoad()
     
     mainWindows.clear();
     RegisterRawInput();
-	
+    
 	if (SetWindowsHook() != SuccessCode) {
 		IOLog::Instance().Warning("Failed to set windows hook");
 		return ErrorCode;
 	}
-
+    
 	/** Device initializtion */
 	IODevices::Initialize();
 	PlayerInput::Instance().Initialize();

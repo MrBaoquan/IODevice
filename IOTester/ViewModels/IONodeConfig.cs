@@ -3,6 +3,7 @@ using System.ComponentModel;
 using System.Linq;
 using System;
 using System.IO;
+using System.Windows.Input;
 using System.Xml;
 using System.Xml.Serialization;
 using DNHper;
@@ -17,6 +18,7 @@ using System.Reactive.Subjects;
 using DynamicData;
 using DynamicData.Binding;
 using IOTester.Models;
+using IOTester.Services;
 
 namespace IOTester.ViewModels;
 
@@ -168,7 +170,7 @@ public class Device : ViewModelBase
     }
     private int offsetDOMaxIndex = 247;
 
-    [XmlAttribute]
+    [XmlIgnore]
     public int OffsetDOMaxIndex
     {
         get => offsetDOMaxIndex;
@@ -257,7 +259,7 @@ public class Device : ViewModelBase
 
     private bool diExpand = true;
 
-    [XmlAttribute]
+    [XmlIgnore]
     public bool DIExpand
     {
         get => diExpand;
@@ -266,7 +268,7 @@ public class Device : ViewModelBase
 
     private bool adExpand = true;
 
-    [XmlAttribute]
+    [XmlIgnore]
     public bool ADExpand
     {
         get => adExpand;
@@ -275,7 +277,7 @@ public class Device : ViewModelBase
 
     private bool doExpand = true;
 
-    [XmlAttribute]
+    [XmlIgnore]
     public bool DOExpand
     {
         get => doExpand;
@@ -303,6 +305,8 @@ public class Device : ViewModelBase
     public ReactiveCommand<Unit, Unit> ToggleAllDOCommand { get; }
 
     private string columnLayout = "*,2,*";
+
+    [XmlIgnore]
     public string ColumnLayout
     {
         get => columnLayout;
@@ -329,6 +333,7 @@ public class Device : ViewModelBase
 
     private GridLength customWidth = new GridLength(1, GridUnitType.Star);
 
+    [XmlIgnore]
     public GridLength CustomWidth
     {
         get => customWidth;
@@ -336,17 +341,244 @@ public class Device : ViewModelBase
     }
 
     private GridLength standardWidth = new GridLength(1, GridUnitType.Star);
+
+    [XmlIgnore]
     public GridLength StandardWidth
     {
         get => standardWidth;
         set { this.RaiseAndSetIfChanged(ref standardWidth, value); }
     }
 
+    private bool _isEditMode = false;
+
+    [XmlIgnore]
+    public bool IsEditMode
+    {
+        get => _isEditMode;
+        set => this.RaiseAndSetIfChanged(ref _isEditMode, value);
+    }
+
+    private bool _isActionExpanded = true;
+
+    [XmlIgnore]
+    public bool IsActionExpanded
+    {
+        get => _isActionExpanded;
+        set => this.RaiseAndSetIfChanged(ref _isActionExpanded, value);
+    }
+
+    private bool _isAxisExpanded = true;
+
+    [XmlIgnore]
+    public bool IsAxisExpanded
+    {
+        get => _isAxisExpanded;
+        set => this.RaiseAndSetIfChanged(ref _isAxisExpanded, value);
+    }
+
+    private bool _isOActionExpanded = true;
+
+    [XmlIgnore]
+    public bool IsOActionExpanded
+    {
+        get => _isOActionExpanded;
+        set => this.RaiseAndSetIfChanged(ref _isOActionExpanded, value);
+    }
+
+    // 添加/清空 Action 命令
+    [XmlIgnore]
+    public ICommand AddActionCommand =>
+        ReactiveCommand.CreateFromTask(async () =>
+        {
+            var newAction = new Action
+            {
+                Name = $"Action_{Actions.Count:D2}",
+                Label = $"新Action_{Actions.Count + 1}",
+                Keys = new List<Key>
+                {
+                    new Key { Name = $"Button_{0:D2}", InvertEvent = "False" }
+                }
+            };
+            newAction.AfterDeserialization(); // 初始化 KeyList
+            newAction.DeleteNodeCommand = DeleteActionCommand; // 设置删除命令
+            newAction.IsEditMode = this.IsEditMode; // 继承编辑模式状态
+            newAction.ShowRecordBtn = true; // 在编辑窗口中始终显示录制按钮
+
+            // 弹出编辑窗口确认
+            var editWindow = new Views.IONodeEditWindow();
+            editWindow.SetNode(newAction, this, true);
+            await editWindow.ShowDialog(
+                Avalonia.Application.Current?.ApplicationLifetime
+                    is Avalonia.Controls.ApplicationLifetimes.IClassicDesktopStyleApplicationLifetime desktop
+                    ? desktop.MainWindow
+                    : null
+            );
+
+            // 只有确认后才添加到列表
+            if (editWindow.IsConfirmed)
+            {
+                Actions.Add(newAction);
+                actionSource.Add(newAction);
+                IORoot.Instance.Save();
+            }
+        });
+
+    [XmlIgnore]
+    public ICommand ClearActionCommand =>
+        ReactiveCommand.Create(() =>
+        {
+            Actions.Clear();
+            actionSource.Clear();
+        });
+
+    [XmlIgnore]
+    public ReactiveCommand<Action, Unit> DeleteActionCommand =>
+        ReactiveCommand.Create<Action>(action =>
+        {
+            if (action != null)
+            {
+                Actions.Remove(action);
+                actionSource.Remove(action);
+                IORoot.Instance.Save();
+            }
+        });
+
+    // 添加/清空 Axis 命令
+    [XmlIgnore]
+    public ICommand AddAxisCommand =>
+        ReactiveCommand.CreateFromTask(async () =>
+        {
+            var newAxis = new Axis
+            {
+                Name = $"Axis_{Axes.Count:D2}",
+                Label = $"新Axis_{Axes.Count + 1}",
+                Keys = new List<Key>
+                {
+                    new Key { Name = $"Axis_{0:D2}", InvertEvent = "False" }
+                }
+            };
+            newAxis.AfterDeserialization(); // 初始化 KeyList
+            newAxis.DeleteNodeCommand = DeleteAxisCommand; // 设置删除命令
+            newAxis.IsEditMode = this.IsEditMode; // 继承编辑模式状态
+
+            // 弹出编辑窗口确认
+            var editWindow = new Views.IONodeEditWindow();
+            editWindow.SetNode(newAxis, this, true);
+            await editWindow.ShowDialog(
+                Avalonia.Application.Current?.ApplicationLifetime
+                    is Avalonia.Controls.ApplicationLifetimes.IClassicDesktopStyleApplicationLifetime desktop
+                    ? desktop.MainWindow
+                    : null
+            );
+
+            // 只有确认后才添加到列表
+            if (editWindow.IsConfirmed)
+            {
+                Axes.Add(newAxis);
+                axisSource.Add(newAxis);
+                IORoot.Instance.Save();
+            }
+        });
+
+    [XmlIgnore]
+    public ICommand ClearAxisCommand =>
+        ReactiveCommand.Create(() =>
+        {
+            Axes.Clear();
+            axisSource.Clear();
+        });
+
+    [XmlIgnore]
+    public ReactiveCommand<Axis, Unit> DeleteAxisCommand =>
+        ReactiveCommand.Create<Axis>(axis =>
+        {
+            if (axis != null)
+            {
+                Axes.Remove(axis);
+                axisSource.Remove(axis);
+                IORoot.Instance.Save();
+            }
+        });
+
+    // 添加/清空 OAction 命令
+    [XmlIgnore]
+    public ICommand AddOActionCommand =>
+        ReactiveCommand.CreateFromTask(async () =>
+        {
+            var newOAction = new OAction
+            {
+                Name = $"OAction_{OActions.Count:D2}",
+                Label = $"新OAction_{OActions.Count + 1}",
+                Keys = new List<Key>
+                {
+                    new Key { Name = $"OAxis_{0:D2}", InvertEvent = "False" }
+                }
+            };
+            newOAction.AfterDeserialization(); // 初始化 KeyList
+            newOAction.DeleteNodeCommand = DeleteOActionCommand; // 设置删除命令
+            newOAction.IsEditMode = this.IsEditMode; // 继承编辑模式状态
+
+            // 弹出编辑窗口确认
+            var editWindow = new Views.IONodeEditWindow();
+            editWindow.SetNode(newOAction, this, true);
+            await editWindow.ShowDialog(
+                Avalonia.Application.Current?.ApplicationLifetime
+                    is Avalonia.Controls.ApplicationLifetimes.IClassicDesktopStyleApplicationLifetime desktop
+                    ? desktop.MainWindow
+                    : null
+            );
+
+            // 只有确认后才添加到列表
+            if (editWindow.IsConfirmed)
+            {
+                OActions.Add(newOAction);
+                oactionSource.Add(newOAction);
+                IORoot.Instance.Save();
+            }
+        });
+
+    [XmlIgnore]
+    public ICommand ClearOActionCommand =>
+        ReactiveCommand.Create(() =>
+        {
+            OActions.Clear();
+            oactionSource.Clear();
+        });
+
+    [XmlIgnore]
+    public ReactiveCommand<OAction, Unit> DeleteOActionCommand =>
+        ReactiveCommand.Create<OAction>(oaction =>
+        {
+            if (oaction != null)
+            {
+                OActions.Remove(oaction);
+                oactionSource.Remove(oaction);
+                IORoot.Instance.Save();
+            }
+        });
+
+    [XmlIgnore]
+    public ICommand EditDevicePropertiesCommand =>
+        ReactiveCommand.CreateFromTask(async () =>
+        {
+            var window = new Views.DevicePropertiesWindow();
+            window.SetDevice(this);
+            // Get the main window from application lifetime
+            var mainWindow = Avalonia.Application.Current?.ApplicationLifetime
+                is Avalonia.Controls.ApplicationLifetimes.IClassicDesktopStyleApplicationLifetime desktop
+                ? desktop.MainWindow
+                : null;
+            if (mainWindow != null)
+            {
+                await window.ShowDialog(mainWindow);
+            }
+        });
+
     public Device()
     {
         actionSource
             .Connect()
-            .AutoRefresh()
+            // .AutoRefresh() 移除：只在集合变化时刷新，不监听每个属性变化
             .ObserveOn(RxApp.MainThreadScheduler)
             .Bind(out var readonlyActionList)
             .Subscribe();
@@ -354,7 +586,7 @@ public class Device : ViewModelBase
 
         oactionSource
             .Connect()
-            .AutoRefresh()
+            // .AutoRefresh() 移除：只在集合变化时刷新，不监听每个属性变化
             .ObserveOn(RxApp.MainThreadScheduler)
             .Bind(out var readOnlyOActionList)
             .Subscribe();
@@ -362,7 +594,7 @@ public class Device : ViewModelBase
 
         axisSource
             .Connect()
-            .AutoRefresh()
+            // .AutoRefresh() 移除：只在集合变化时刷新，不监听每个属性变化
             .ObserveOn(RxApp.MainThreadScheduler)
             .Bind(out var readonlyAxisList)
             .Subscribe();
@@ -370,7 +602,7 @@ public class Device : ViewModelBase
 
         diKeySource
             .Connect()
-            .AutoRefresh()
+            // .AutoRefresh() 移除：只在集合变化时刷新，不监听每个属性变化
             .ObserveOn(RxApp.MainThreadScheduler)
             .Bind(out var readonlyDIKeyList)
             .Subscribe();
@@ -378,7 +610,7 @@ public class Device : ViewModelBase
 
         doKeySource
             .Connect()
-            .AutoRefresh()
+            // .AutoRefresh() 移除：只在集合变化时刷新，不监听每个属性变化
             .ObserveOn(RxApp.MainThreadScheduler)
             .Bind(out var readonlyDOKeyList)
             .Subscribe();
@@ -386,7 +618,7 @@ public class Device : ViewModelBase
 
         adKeySource
             .Connect()
-            .AutoRefresh()
+            // .AutoRefresh() 移除：只在集合变化时刷新，不监听每个属性变化
             .ObserveOn(RxApp.MainThreadScheduler)
             .Bind(out var readonlyADKeyList)
             .Subscribe();
@@ -534,6 +766,7 @@ public class Device : ViewModelBase
     }
 
     IDisposable doKeyHandler = null;
+    private bool _propsInitialized = false; // 标记是否已同步属性到 IODevice
 
     private void rebindDOEvents()
     {
@@ -558,9 +791,80 @@ public class Device : ViewModelBase
         var _configDirExists = Directory.Exists(_configDir);
         this.HasConfig = _configDirExists;
 
-        Axes.ForEach(_axis => _axis.AfterDeserialization());
-        Actions.ForEach(_action => _action.AfterDeserialization());
-        OActions.ForEach(_oaction => _oaction.AfterDeserialization());
+        // 初始化 Properties
+        if (Properties != null)
+        {
+            Properties.AfterDeserialization();
+
+            // 监听 PropertyKeys 的删除事件，恢复 IODevice 默认配置
+            if (Properties.KeyList != null)
+            {
+                Properties.KeyList.CollectionChanged += (sender, e) =>
+                {
+                    if (
+                        e.Action
+                            == System.Collections.Specialized.NotifyCollectionChangedAction.Remove
+                        && e.OldItems != null
+                    )
+                    {
+                        foreach (Key removedKey in e.OldItems)
+                        {
+                            try
+                            {
+                                if (this.devcie != null && this.devcie.IsValid())
+                                {
+                                    // 恢复为默认值
+                                    this.devcie.SetPKProps(
+                                        removedKey.Name,
+                                        0.0f, // Offset
+                                        1.0f, // Scale
+                                        -3.40282e+38f, // Min (-FLT_MAX)
+                                        3.40282e+38f, // Max (FLT_MAX)
+                                        0.0f, // DeadZone
+                                        1.0f, // Sensitivity
+                                        1.0f, // Exponent
+                                        false, // Invert
+                                        false // InvertEvent
+                                    );
+                                    Debug.WriteLine(
+                                        $"[PropertyKey Removed] {Name}.{removedKey.Name} 已恢复默认配置"
+                                    );
+                                }
+                            }
+                            catch (System.Exception ex)
+                            {
+                                Debug.WriteLine($"恢复默认配置失败: {ex.Message}");
+                            }
+                        }
+                    }
+                };
+            }
+        }
+
+        Axes.ForEach(_axis =>
+        {
+            _axis.AfterDeserialization();
+            _axis.DeleteNodeCommand = DeleteAxisCommand;
+        });
+        Actions.ForEach(_action =>
+        {
+            _action.AfterDeserialization();
+            _action.DeleteNodeCommand = DeleteActionCommand;
+        });
+        OActions.ForEach(_oaction =>
+        {
+            _oaction.AfterDeserialization();
+            _oaction.DeleteNodeCommand = DeleteOActionCommand;
+        });
+
+        // 监听 IsEditMode 变化并同步到所有 IONode
+        this.WhenAnyValue(x => x.IsEditMode)
+            .Subscribe(isEditMode =>
+            {
+                Actions.ForEach(a => a.IsEditMode = isEditMode);
+                Axes.ForEach(a => a.IsEditMode = isEditMode);
+                OActions.ForEach(o => o.IsEditMode = isEditMode);
+            });
 
         TriggerUIUpdate();
 
@@ -648,6 +952,66 @@ public class Device : ViewModelBase
         //    });
     }
 
+    /// <summary>
+    /// 同步所有 OAction 的 Key 属性（Scale, InvertEvent）到 IODevice
+    /// </summary>
+    private void SyncOActionPropsToIODevice()
+    {
+        if (this.devcie == null || !this.devcie.IsValid())
+            return;
+
+        try
+        {
+            foreach (var oaction in OActions)
+            {
+                foreach (var key in oaction.Keys)
+                {
+                    this.devcie.SetOKProps(oaction.Name, key.Name, key.Scale, key.InvertEventBool);
+                }
+            }
+        }
+        catch (System.Exception ex)
+        {
+            Debug.WriteLine($"SyncOActionPropsToIODevice error: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// 同步 Properties 中的所有全局按键配置到 IODevice
+    /// </summary>
+    private void SyncPropertyKeysToIODevice()
+    {
+        if (this.devcie == null || !this.devcie.IsValid())
+            return;
+
+        if (Properties?.KeyList == null || Properties.KeyList.Count == 0)
+            return;
+
+        try
+        {
+            foreach (var key in Properties.KeyList)
+            {
+                this.devcie.SetPKProps(
+                    key.Name,
+                    key.Offset,
+                    key.Scale,
+                    key.Min,
+                    key.Max,
+                    key.DeadZone,
+                    key.Sensitivity,
+                    key.Exponent,
+                    key.InvertBool,
+                    key.InvertEventBool
+                );
+                Debug.WriteLine($"[SyncPropertyKeys] {Name}.{key.Name} synced to IODevice");
+            }
+        }
+        catch (System.Exception ex)
+        {
+            Debug.WriteLine($"SyncPropertyKeysToIODevice error: {ex.Message}");
+        }
+    }
+
     public void Update()
     {
         if (this.devcie == null)
@@ -658,13 +1022,22 @@ public class Device : ViewModelBase
         if (IsValid == false)
             return;
 
+        // 首次设备有效时，同步 OAction 的 Scale 和 InvertEvent 属性到 IODevice
+        if (!_propsInitialized)
+        {
+            _propsInitialized = true;
+            SyncOActionPropsToIODevice();
+            // SyncPropertyKeysToIODevice(); // 移除：IODevice 会从配置文件自动加载 Properties
+        }
+
+        // 只在值变化时更新，减少不必要的属性通知
         Actions.ForEach(_action =>
         {
             _action.Keys.ForEach(_key =>
             {
-                //Debug.WriteLine(Name + " " + _key.Name);
-                _key.Value = this.devcie.GetKey(_key.Name) ? 1 : 0;
-                // Debug.WriteLine($"{this.devcie.ID} di {_key.Name} is:{_key.Value}");
+                var newValue = this.devcie.GetKey(_key.Name) ? 1f : 0f;
+                if (Math.Abs(_key.Value - newValue) > float.Epsilon)
+                    _key.Value = newValue;
             });
         });
 
@@ -672,14 +1045,18 @@ public class Device : ViewModelBase
             .ToList()
             .ForEach(_key =>
             {
-                _key.Value = this.devcie.GetKey(_key.Name) ? 1 : 0;
+                var newValue = this.devcie.GetKey(_key.Name) ? 1f : 0f;
+                if (Math.Abs(_key.Value - newValue) > float.Epsilon)
+                    _key.Value = newValue;
             });
 
         ADKeys
             .ToList()
             .ForEach(_key =>
             {
-                _key.Value = this.devcie.GetAxisKey(_key.Name);
+                var newValue = this.devcie.GetRawKeyValue(_key.Name);
+                if (Math.Abs(_key.Value - newValue) > float.Epsilon)
+                    _key.Value = newValue;
             });
 
         DOKeys
@@ -687,26 +1064,37 @@ public class Device : ViewModelBase
             .ForEach(_key =>
             {
                 IOToolkit.Key doKey = _key.Name;
-                _key.Value = this.devcie.GetDO(doKey);
+                var newValue = this.devcie.GetDO(doKey);
+                if (Math.Abs(_key.Value - newValue) > float.Epsilon)
+                    _key.Value = newValue;
             });
 
         Axes.ForEach(_axis =>
         {
-            _axis.Value = this.devcie.GetAxis(_axis.Name);
+            var newAxisValue = this.devcie.GetAxis(_axis.Name);
+            if (Math.Abs(_axis.Value - newAxisValue) > float.Epsilon)
+                _axis.Value = newAxisValue;
+
             _axis.Keys.ForEach(_key =>
             {
-                _key.Value = this.devcie.GetAxisKey(_key.Name);
+                var newValue = this.devcie.GetAxisKey(_key.Name);
+                if (Math.Abs(_key.Value - newValue) > float.Epsilon)
+                    _key.Value = newValue;
             });
         });
 
         OActions.ForEach(_oaction =>
         {
-            _oaction.Value = this.devcie.GetDO(_oaction.Name);
-            // Debug.WriteLine(_oaction.Value);
+            var newOActionValue = this.devcie.GetDO(_oaction.Name);
+            if (Math.Abs(_oaction.Value - newOActionValue) > float.Epsilon)
+                _oaction.Value = newOActionValue;
+
             _oaction.Keys.ForEach(_key =>
             {
                 IOToolkit.Key _ioKey = _key.Name;
-                _key.Value = this.devcie.GetDO(_ioKey);
+                var newValue = this.devcie.GetDO(_ioKey);
+                if (Math.Abs(_key.Value - newValue) > float.Epsilon)
+                    _key.Value = newValue;
             });
         });
     }
@@ -724,18 +1112,50 @@ public class Key : ReactiveObject
     }
 
     private float _value = 0f;
+
+    [XmlIgnore]
     public float Value
     {
         get => _value;
         set => this.RaiseAndSetIfChanged(ref _value, value);
     }
 
+    private bool _isEditing = false;
+
+    [XmlIgnore]
+    public bool IsEditing
+    {
+        get => _isEditing;
+        set => this.RaiseAndSetIfChanged(ref _isEditing, value);
+    }
+
+    private bool _isContextMenuOpen = false;
+
+    [XmlIgnore]
+    public bool IsContextMenuOpen
+    {
+        get => _isContextMenuOpen;
+        set => this.RaiseAndSetIfChanged(ref _isContextMenuOpen, value);
+    }
+
+    private bool _isNewKey = false;
+
+    [XmlIgnore]
+    public bool IsNewKey
+    {
+        get => _isNewKey;
+        set => this.RaiseAndSetIfChanged(ref _isNewKey, value);
+    }
+
     private readonly ObservableAsPropertyHelper<bool> active;
 
     [XmlIgnore]
     public bool Active => active.Value;
+
+    [XmlIgnore]
     public ReactiveCommand<Unit, bool> ToggleDOCommand { get; }
 
+    [XmlIgnore]
     public Subject<(string Name, float Value)> OnToggleDO =
         new Subject<(string Name, float Value)>();
 
@@ -743,8 +1163,8 @@ public class Key : ReactiveObject
     {
         ToggleDOCommand = ReactiveCommand.Create(() =>
         {
-            var _targetValue = this.Value == 0 ? 1f * Scale : 0f;
-            _targetValue = this.Invert == "True" ? 0 : _targetValue;
+            // 只发送 0/1 原始值，Scale 和 InvertEvent 由 IODevice 端处理
+            var _targetValue = this.Value == 0 ? 1f : 0f;
 
             OnToggleDO.OnNext((Name, _targetValue));
             return true;
@@ -754,35 +1174,146 @@ public class Key : ReactiveObject
             .ToProperty(this, x => x.Active);
     }
 
-    [XmlAttribute("PreOffset"), DefaultValueAttribute(0)]
-    public float PreOffset { get; set; } = 1;
+    private float _offset = 0;
 
-    [XmlAttribute("PreScale"), DefaultValueAttribute(1)]
-    public float PreScale { get; set; } = 1;
+    [XmlAttribute("Offset"), DefaultValueAttribute(0f)]
+    public float Offset
+    {
+        get => _offset;
+        set => this.RaiseAndSetIfChanged(ref _offset, value);
+    }
 
-    [XmlAttribute("Min"), DefaultValueAttribute(int.MinValue)]
-    public int Min { get; set; } = int.MinValue;
+    private float _scale = 1;
 
-    [XmlAttribute("Max"), DefaultValueAttribute(int.MaxValue)]
-    public int Max { get; set; } = int.MaxValue;
+    [XmlAttribute("Scale"), DefaultValueAttribute(1f)]
+    public float Scale
+    {
+        get => _scale;
+        set => this.RaiseAndSetIfChanged(ref _scale, value);
+    }
 
-    [XmlAttribute("DeadZone"), DefaultValueAttribute(0)]
-    public float DeadZone { get; set; } = 0;
+    private float _min = -3.40282e+38f; // 默认无限制 (-FLT_MAX)
 
-    [XmlAttribute("Sensitivity"), DefaultValueAttribute(1)]
-    public float Sensitivity { get; set; } = 1;
+    [XmlAttribute("Min"), DefaultValueAttribute(-3.40282e+38f)]
+    public float Min
+    {
+        get => _min;
+        set => this.RaiseAndSetIfChanged(ref _min, value);
+    }
 
-    [XmlAttribute("Exponent"), DefaultValueAttribute(1)]
-    public float Exponent { get; set; } = 1;
+    private float _max = 3.40282e+38f; // 默认无限制 (FLT_MAX)
+
+    [XmlAttribute("Max"), DefaultValueAttribute(3.40282e+38f)]
+    public float Max
+    {
+        get => _max;
+        set => this.RaiseAndSetIfChanged(ref _max, value);
+    }
+
+    /// <summary>
+    /// Min 是否为无限制(对应 C++ 的 -FLT_MAX)
+    /// </summary>
+    [XmlIgnore]
+    public bool IsMinUnlimited
+    {
+        get => Min <= -3.40282e+38f; // 接近 -FLT_MAX
+        set => Min = value ? -3.40282e+38f : 0f;
+    }
+
+    /// <summary>
+    /// Max 是否为无限制(对应 C++ 的 FLT_MAX)
+    /// </summary>
+    [XmlIgnore]
+    public bool IsMaxUnlimited
+    {
+        get => Max >= 3.40282e+38f; // 接近 FLT_MAX
+        set => Max = value ? 3.40282e+38f : 5f;
+    }
+
+    private float _deadZone = 0;
+
+    [XmlAttribute("DeadZone"), DefaultValueAttribute(0f)]
+    public float DeadZone
+    {
+        get => _deadZone;
+        set => this.RaiseAndSetIfChanged(ref _deadZone, value);
+    }
+
+    private float _sensitivity = 1;
+
+    [XmlAttribute("Sensitivity"), DefaultValueAttribute(1f)]
+    public float Sensitivity
+    {
+        get => _sensitivity;
+        set => this.RaiseAndSetIfChanged(ref _sensitivity, value);
+    }
+
+    private float _exponent = 1;
+
+    [XmlAttribute("Exponent"), DefaultValueAttribute(1f)]
+    public float Exponent
+    {
+        get => _exponent;
+        set => this.RaiseAndSetIfChanged(ref _exponent, value);
+    }
+
+    private string _invert = "False";
 
     [XmlAttribute("Invert"), DefaultValueAttribute("False")]
-    public string Invert { get; set; } = "False";
+    public string Invert
+    {
+        get => _invert;
+        set => this.RaiseAndSetIfChanged(ref _invert, value);
+    }
 
-    [XmlAttribute("InvertEvent"), DefaultValueAttribute(false)]
-    public string InvertEvent { get; set; } = "False";
+    private string _invertEvent = "False";
 
-    [XmlAttribute("Scale"), DefaultValueAttribute(1)]
-    public float Scale { get; set; } = 1;
+    [XmlAttribute("InvertEvent"), DefaultValueAttribute("False")]
+    public string InvertEvent
+    {
+        get => _invertEvent;
+        set => this.RaiseAndSetIfChanged(ref _invertEvent, value);
+    }
+
+    [XmlIgnore]
+    public bool InvertEventBool
+    {
+        get => InvertEvent == "True";
+        set => InvertEvent = value ? "True" : "False";
+    }
+
+    [XmlIgnore]
+    public bool InvertBool
+    {
+        get => Invert == "True";
+        set => Invert = value ? "True" : "False";
+    }
+
+    /// <summary>
+    /// Scale 不为默认值 1 时返回 true，用于 UI 显示
+    /// </summary>
+    [XmlIgnore]
+    public bool HasCustomScale => Scale != 1;
+
+    /// <summary>
+    /// 创建 Key 的副本
+    /// </summary>
+    public Key Clone()
+    {
+        return new Key
+        {
+            Name = this.Name,
+            Offset = this.Offset,
+            Scale = this.Scale,
+            Min = this.Min,
+            Max = this.Max,
+            DeadZone = this.DeadZone,
+            Sensitivity = this.Sensitivity,
+            Exponent = this.Exponent,
+            Invert = this.Invert,
+            InvertEvent = this.InvertEvent
+        };
+    }
 }
 
 public class IONodeBase : ReactiveObject
@@ -808,21 +1339,43 @@ public class IONodeBase : ReactiveObject
     [XmlIgnore]
     public string DeviceLabel
     {
-        get { return this.label ?? this.Name; }
+        get { return string.IsNullOrWhiteSpace(this.label) ? this.Name : this.label; }
     }
 
     [XmlElement("Key")]
     public List<Key> Keys { get; set; } = new List<Key>();
 
+    [XmlIgnore]
     public ObservableCollection<Key> KeyList { get; set; } = new ObservableCollection<Key>();
 
+    [XmlIgnore]
     public bool ShowKeyValue => this is Axis || this is OAction;
+
+    [XmlIgnore]
     public bool ShowBtn => this is OAction;
+
+    [XmlIgnore]
     public bool ShowNodeValue => this is Axis;
 
+    [XmlIgnore]
+    public bool ShowRecordBtn { get; set; }
+
+    [XmlIgnore]
+    public string ChannelTypeName =>
+        this switch
+        {
+            IOTester.ViewModels.Action => "开关量输入",
+            Axis => "模拟量输入",
+            OAction => "输出通道",
+            _ => "通道"
+        };
+
     private ObservableAsPropertyHelper<bool> active;
+    private IDisposable activeSubscription;
 
     private float _value = 0f;
+
+    [XmlIgnore]
     public float Value
     {
         get => _value;
@@ -830,7 +1383,7 @@ public class IONodeBase : ReactiveObject
     }
 
     [XmlIgnore]
-    public bool Active => active.Value;
+    public bool Active => active?.Value ?? false;
 
     public Key FirstOrCreate(string keyName)
     {
@@ -843,22 +1396,152 @@ public class IONodeBase : ReactiveObject
         return _key;
     }
 
+    private bool _isEditMode = false;
+
+    [XmlIgnore]
+    public bool IsEditMode
+    {
+        get => _isEditMode;
+        set => this.RaiseAndSetIfChanged(ref _isEditMode, value);
+    }
+
+    private bool _isRecording = false;
+
+    [XmlIgnore]
+    public bool IsRecording
+    {
+        get => _isRecording;
+        set => this.RaiseAndSetIfChanged(ref _isRecording, value);
+    }
+
+    [XmlIgnore]
+    public string RecordingToolTip => IsRecording ? "停止录制" : "录制按键";
+
+    [XmlIgnore]
+    public string WindowTitle
+    {
+        get
+        {
+            var nodeType = this switch
+            {
+                IOTester.ViewModels.Action => "Action 输入",
+                Axis => "Axis 输入",
+                OAction => "OAction 输出",
+                _ => "节点"
+            };
+            return $"编辑节点 - {nodeType}";
+        }
+    }
+
+    /// <summary>
+    /// 创建节点的深拷贝副本（用于编辑时避免实时同步）
+    /// </summary>
+    public virtual IONodeBase Clone()
+    {
+        IONodeBase clone = this switch
+        {
+            IOTester.ViewModels.Action => new IOTester.ViewModels.Action(),
+            Axis => new Axis(),
+            OAction => new OAction(),
+            _ => new Properties()
+        };
+
+        clone.Name = this.Name;
+        clone.Label = this.Label;
+        clone.IsEditMode = this.IsEditMode;
+        clone.IsRecording = this.IsRecording;
+        clone.DeleteNodeCommand = this.DeleteNodeCommand;
+
+        // 深拷贝 Keys 列表
+        foreach (var key in this.Keys)
+        {
+            var clonedKey = key.Clone();
+            clone.Keys.Add(clonedKey);
+            clone.KeyList.Add(clonedKey);
+        }
+
+        clone.RebuildActiveSubscription();
+        return clone;
+    }
+
+    /// <summary>
+    /// 从另一个节点复制数据（用于保存时同步回原对象）
+    /// </summary>
+    public virtual void CopyFrom(IONodeBase source)
+    {
+        this.Name = source.Name;
+        this.Label = source.Label;
+
+        // 清空并复制 Keys
+        this.Keys.Clear();
+        this.KeyList.Clear();
+
+        foreach (var key in source.Keys)
+        {
+            var clonedKey = key.Clone();
+            this.Keys.Add(clonedKey);
+            this.KeyList.Add(clonedKey);
+        }
+
+        this.RebuildActiveSubscription();
+    }
+
+    [XmlIgnore]
     public ReactiveCommand<Unit, bool> ToggleDOCommand { get; }
+
+    [XmlIgnore]
+    public ReactiveCommand<Unit, Unit> AddKeyCommand { get; }
+
+    [XmlIgnore]
+    public ReactiveCommand<Key, Unit> DeleteKeyCommand { get; }
+
+    [XmlIgnore]
+    public ReactiveCommand<Key, Unit> EditKeyCommand { get; }
+
+    [XmlIgnore]
+    public ReactiveCommand<Unit, Unit> RecordKeyCommand { get; }
+
+    [XmlIgnore]
+    public ICommand? DeleteNodeCommand { get; set; }
+
+    [XmlIgnore]
     public Subject<(string OAction, bool Target)> OnToggleDO { get; set; } =
         new Subject<(string OAction, bool Target)>();
+
+    [XmlIgnore]
+    public Subject<Key> OnEditKey { get; set; } = new Subject<Key>();
+
+    public void RebuildActiveSubscription()
+    {
+        // 释放旧的订阅
+        activeSubscription?.Dispose();
+        active?.Dispose();
+
+        var _normalKeys = Keys.Where(_ => _.InvertEvent == "False").ToList();
+
+        if (_normalKeys.Any())
+        {
+            active = _normalKeys
+                .Select(_ => _.WhenAnyValue(key => key.Active))
+                .Merge()
+                .Select(_active => _normalKeys.Any(key => key.Active))
+                .StartWith(_normalKeys.Any(key => key.Active))
+                .ToProperty(this, vm => vm.Active);
+        }
+        else
+        {
+            // 如果没有normal keys，创建一个始终为false的observable
+            active = Observable.Return(false).ToProperty(this, vm => vm.Active);
+        }
+    }
 
     public IONodeBase()
     {
         // 页面设计模拟数据
         //Keys = Enumerable.Range(0, 2).Select(_ => new Key { Name = "B" }).ToList();
 
-        var _normalKeys = Keys.Where(_ => _.InvertEvent == "False");
-        active = _normalKeys
-            .Select(_ => _.WhenAnyValue(key => key.Active))
-            .Merge()
-            .Select(_active => _normalKeys.Any(key => key.Active))
-            .StartWith(_normalKeys.Any(key => key.Active))
-            .ToProperty(this, vm => vm.Active);
+        // 初始化active订阅
+        RebuildActiveSubscription();
 
         ToggleDOCommand = ReactiveCommand.Create(() =>
         {
@@ -871,18 +1554,82 @@ public class IONodeBase : ReactiveObject
             // this.Value = _target;
             return true;
         });
+
+        // 添加Key命令（运行时也可用）
+        AddKeyCommand = ReactiveCommand.Create(() =>
+        {
+            // 根据节点类型生成默认键名
+            var prefix = this switch
+            {
+                Action => "Button",
+                Axis => "Axis",
+                OAction => "OAxis",
+                _ => "Axis"
+            };
+            var existingKeyNames = Keys.Select(k => k.Name);
+            var newKey = new Key
+            {
+                Name = KeyNameValidator.GenerateUniqueKeyName(prefix, existingKeyNames),
+                InvertEvent = "False",
+                IsNewKey = true // 标记为新增的Key
+            };
+            Keys.Add(newKey);
+            KeyList.Add(newKey);
+
+            // 重建active订阅以包含新Key
+            RebuildActiveSubscription();
+
+            // 添加后自动进入编辑状态
+            OnEditKey.OnNext(newKey);
+        });
+
+        // 删除Key命令（运行时也可用）
+        DeleteKeyCommand = ReactiveCommand.Create<Key>(key =>
+        {
+            if (key != null)
+            {
+                Keys.Remove(key);
+                KeyList.Remove(key);
+
+                // 重建active订阅
+                RebuildActiveSubscription();
+
+                // 保存配置到文件
+                IORoot.Instance.Save();
+            }
+        });
+
+        // 编辑Key命令（运行时也可用）
+        EditKeyCommand = ReactiveCommand.Create<Key>(key =>
+        {
+            if (key != null)
+            {
+                OnEditKey.OnNext(key);
+            }
+        });
+
+        // 录制Key命令（仅编辑模式且为Action节点时可用）
+        RecordKeyCommand = ReactiveCommand.Create(() =>
+        {
+            IsRecording = !IsRecording;
+            this.RaisePropertyChanged(nameof(RecordingToolTip));
+        });
     }
 
     public void AfterDeserialization()
     {
+        // 去除重复的 Key（按名称，保留第一个）
+        var uniqueKeys = Keys.GroupBy(k => k.Name).Select(g => g.First()).ToList();
+
+        if (uniqueKeys.Count < Keys.Count)
+        {
+            Keys = uniqueKeys;
+        }
+
         KeyList = new ObservableCollection<Key>(Keys);
-        var _normalKeys = Keys.Where(_ => _.InvertEvent == "False");
-        active = _normalKeys
-            .Select(_ => _.WhenAnyValue(key => key.Active))
-            .Merge()
-            .Select(_active => _normalKeys.Any(key => key.Active))
-            .StartWith(_normalKeys.Any(key => key.Active))
-            .ToProperty(this, vm => vm.Active);
+
+        // 重建active订阅
+        RebuildActiveSubscription();
     }
 }
 

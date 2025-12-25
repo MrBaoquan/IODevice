@@ -8,6 +8,13 @@
 #include "CoreTypes.inl"
 #include "IOApplication.h"
 
+void IOToolkit::IODevice::BindKey(const FKey& key, InputEvent KeyEvent, std::function<void(FKey)> keyDelegate)
+{
+    if (!IOApplication::bLoaded) return;
+    IODeviceDetails& deviceDetails = IODevices::GetDeviceDetail(deviceID);
+    deviceDetails.BindKey(key, KeyEvent, keyDelegate);
+}
+
 void IOToolkit::IODevice::BindKey(const FKey& key, InputEvent KeyEvent, std::function<void(void)> keyDelegate)
 {
     if (!IOApplication::bLoaded) return;
@@ -157,6 +164,13 @@ float IOToolkit::IODevice::GetAxisKey(const FKey& InKey)
     return deviceDetails.GetAxisKey(InKey);
 }
 
+float IOToolkit::IODevice::GetRawKeyValue(const FKey& InKey)
+{
+    if (!IOApplication::bLoaded) return 0.0f;
+    IODeviceDetails& deviceDetails = IODevices::GetDeviceDetail(deviceID);
+    return deviceDetails.GetRawKeyValue(InKey);
+}
+
 float IOToolkit::IODevice::GetKeyDownDuration(const FKey& InKey)
 {
     if (!IOApplication::bLoaded) return 0.0f;
@@ -213,6 +227,27 @@ const IOToolkit::uint8 IOToolkit::IODevice::GetID() const
 const bool IOToolkit::IODevice::operator==(const IODevice& rhs)
 {
     return deviceID == rhs.deviceID;
+}
+
+int IOToolkit::IODevice::SetAKProps(const char* axisName, const char* keyName, float scale)
+{
+    if (!IOApplication::bLoaded) return 0;
+    IODeviceDetails& deviceDetails = IODevices::GetDeviceDetail(deviceID);
+    return deviceDetails.SetAKProps(axisName, keyName, scale);
+}
+
+int IOToolkit::IODevice::SetOKProps(const char* oactionName, const char* keyName, float scale, bool invertEvent)
+{
+    if (!IOApplication::bLoaded) return 0;
+    IODeviceDetails& deviceDetails = IODevices::GetDeviceDetail(deviceID);
+    return deviceDetails.SetOKProps(oactionName, keyName, scale, invertEvent);
+}
+
+int IOToolkit::IODevice::SetPKProps(const char* keyName, float offset, float scale, float minValue, float maxValue, float deadZone, float sensitivity, float exponent, bool invert, bool invertEvent)
+{
+    if (!IOApplication::bLoaded) return 0;
+    IODeviceDetails& deviceDetails = IODevices::GetDeviceDetail(deviceID);
+    return deviceDetails.SetPKProps(keyName, offset, scale, minValue, maxValue, deadZone, sensitivity, exponent, invert, invertEvent);
 }
 
 void IOToolkit::IODevice::BindAction(const char* actionName, InputEvent KeyEvent, std::function<void(FKey)> actionDelegate)

@@ -14,28 +14,117 @@
 	</Design.DataContext>
 
 	<UserControl.Styles>
-
+		<!-- Key列表项的基础样式 -->
+		<Style Selector="Border.key-item">
+			<Setter Property="Cursor" Value="Hand" />
+			<Setter Property="Transitions">
+				<Transitions>
+					<BrushTransition Property="Background" Duration="0:0:0.15" />
+				</Transitions>
+			</Setter>
+		</Style>
+		
+		<!-- 非active状态下的hover效果 - 通过优先级控制 -->
+		<Style Selector="Border.key-item:pointerover">
+			<Setter Property="Background" Value="#e5e7eb" />
+		</Style>
+		
+		<Style Selector="Border.key-item.editing:pointerover">
+			<Setter Property="Background" Value="#d1fae5" />
+		</Style>
+		
+		<Style Selector="Border.key-item.contextmenu:pointerover">
+			<Setter Property="Background" Value="#dbeafe" />
+		</Style>
+		
+		<!-- 节点标题行的基础样式 -->
+		<Style Selector="Border.node-header">
+			<Setter Property="Cursor" Value="Hand" />
+			<Setter Property="Background" Value="Transparent" />
+			<Setter Property="Transitions">
+				<Transitions>
+					<BrushTransition Property="Background" Duration="0:0:0.15" />
+				</Transitions>
+			</Setter>
+		</Style>
+		
+		<!-- 非active/recording状态下的hover效果 -->
+		<Style Selector="Border.node-header:pointerover">
+			<Setter Property="Background" Value="#f3f4f6" />
+		</Style>
 	</UserControl.Styles>
 
-	<Border BorderThickness="1" CornerRadius="6" Background="WhiteSmoke" Margin="8 4">
+	<Border BorderThickness="1" CornerRadius="6" Background="WhiteSmoke" Margin="8 4" MinWidth="234">
 		<StackPanel Orientation="Vertical" HorizontalAlignment="Stretch" Classes="active">
 			<StackPanel.Styles>
 
-				<Style Selector="Grid TextBlock">
+				<Style Selector="DockPanel TextBlock">
 					<Setter Property="Foreground" Value="Black" />
-					<Setter Property="Padding" Value="8 4" />
 				</Style>
 				
-				<Style Selector="Grid.active">
+				<!-- DockPanel默认透明背景，确保能响应hover -->
+				<Style Selector="DockPanel">
+					<Setter Property="Background" Value="Transparent" />
+				</Style>
+				
+				<Style Selector="DockPanel.active">
 					<Setter Property="Background" Value="#059669" />
 				</Style>
+				
+				<!-- 确保active状态的DockPanel背景不被Border的hover覆盖 -->
+				<Style Selector="Border.key-item:pointerover > DockPanel.active">
+					<Setter Property="Background" Value="#059669" />
+				</Style>
+				
+				<Style Selector="Border.node-header:pointerover > DockPanel.active">
+					<Setter Property="Background" Value="#059669" />
+				</Style>
+				
+				<!-- 确保recording状态的DockPanel背景不被Border的hover覆盖 -->
+				<Style Selector="Border.node-header:pointerover > DockPanel.recording">
+					<Setter Property="Background" Value="#fef3c7" />
+				</Style>
 
-				<Style Selector="Grid.active TextBlock">
+				<Style Selector="Border.editing">
+					<Setter Property="Background" Value="#d1fae5" />
+					<Setter Property="BorderBrush" Value="#10b981" />
+					<Setter Property="BorderThickness" Value="2" />
+				</Style>
+
+				<Style Selector="Border.contextmenu">
+					<Setter Property="Background" Value="#dbeafe" />
+					<Setter Property="BorderBrush" Value="#3b82f6" />
+					<Setter Property="BorderThickness" Value="2" />
+				</Style>
+
+				<Style Selector="DockPanel.recording">
+					<Setter Property="Background" Value="#fef3c7" />
+				</Style>
+
+				<Style Selector="DockPanel.recording TextBlock">
+					<Setter Property="Foreground" Value="#92400e" />
+				</Style>
+
+				<Style Selector="DockPanel.recording iconPacks|PackIconIonicons">
+					<Setter Property="Foreground" Value="#dc2626" />
+				</Style>
+
+				<Style Selector="DockPanel.active TextBlock">
 					<Setter Property="Foreground" Value="White" />
 				</Style>
 				
-				<Style Selector="Grid.active iconPacks|PackIconIonicons">
+				<!-- 录制状态下的文字颜色优先级更高，覆盖active的白色 -->
+				<Style Selector="DockPanel.active.recording TextBlock">
+					<Setter Property="Foreground" Value="#92400e" />
+				</Style>
+				
+				<Style Selector="DockPanel.active iconPacks|PackIconIonicons">
 					<Setter Property="Foreground" Value="White" />
+				</Style>
+				
+				<!-- 录制状态下的图标颜色 -->
+				<Style Selector="DockPanel.active.recording iconPacks|PackIconIonicons">
+					<Setter Property="Foreground" Value="#dc2626" />
 				</Style>
 
 				<Style Selector="ToggleButton iconPacks|PackIconIonicons.icon-on">
@@ -49,60 +138,130 @@
 				<Style Selector="Button">
 					<Setter Property="Background" Value="Transparent"/>
 				</Style>
+				
+				<Style Selector="DockPanel.active Button">
+					<Setter Property="Background" Value="#059669"/>
+				</Style>
 	
 			</StackPanel.Styles>
 			
 			<!-- 节点名称 -->
-			<Border BorderThickness="0,0,0,1" BorderBrush="DarkGray">
-				<Grid Classes.active="{Binding Active}" Margin="0 0 5 0">
-					<Grid.ColumnDefinitions>
-						<ColumnDefinition Width="100"/>
-						<ColumnDefinition Width="*"/>
-						<ColumnDefinition Width="40"/>
-					</Grid.ColumnDefinitions>
-					<TextBlock Grid.Column="0" Text="{Binding DeviceLabel}" Padding="8 10 8 4" FontSize="16" HorizontalAlignment="Stretch" />
-					<TextBlock Grid.Column="1" Text="{Binding Value, StringFormat='{}{0:F2}'}" HorizontalAlignment="Stretch" VerticalAlignment="Center"
-									IsVisible="{Binding ShowNodeValue}"
-							/>
-					<Button Grid.Column="2" Padding="8 0" HorizontalAlignment="Center" Background="Transparent" Command="{Binding ToggleDOCommand}"
-									IsVisible="{Binding ShowBtn}"
-							>
-						<Panel VerticalAlignment="Center" HorizontalAlignment="Center">
-							<iconPacks:PackIconIonicons IsVisible="{Binding Active}" Kind="RadioButtonOniOS"/>
-							<iconPacks:PackIconIonicons IsVisible="{Binding !Active}" Kind="RadioButtonOffiOS"/>
-						</Panel>
-					</Button>
-				</Grid>
+			<Border BorderThickness="0,0,0,1" BorderBrush="DarkGray" Classes="node-header">
+				<DockPanel Classes.active="{Binding Active}" Classes.recording="{Binding IsRecording}" LastChildFill="True">
+					<!-- 右侧按钮区域（先放置，DockPanel 会先处理） -->
+					<StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center" Margin="4 0">
+						<!-- Axis/OAction 显示数值 -->
+						<TextBlock Text="{Binding Value, StringFormat='{}{0:F2}'}"
+								   VerticalAlignment="Center"
+								   Width="70"
+								   TextAlignment="Right"
+								   Margin="0 0 4 0"
+								   IsVisible="{Binding ShowNodeValue}"/>
+						<!-- OAction 显示 DO 切换按钮 -->
+						<Button Padding="2" HorizontalAlignment="Center" VerticalAlignment="Center" Background="Transparent" 
+								Command="{Binding ToggleDOCommand}"
+								Width="24"
+								IsVisible="{Binding ShowBtn}">
+							<Panel>
+								<iconPacks:PackIconIonicons IsVisible="{Binding Active}" Kind="RadioButtonOniOS"/>
+								<iconPacks:PackIconIonicons IsVisible="{Binding !Active}" Kind="RadioButtonOffiOS"/>
+							</Panel>
+						</Button>
+						<!-- Action 显示录制按钮 -->
+						<Button Padding="2" HorizontalAlignment="Center" VerticalAlignment="Center" Background="Transparent" 
+								Name="RecordKeyButton"
+								Width="24"
+								IsVisible="{Binding ShowRecordBtn}"
+								ToolTip.Tip="{Binding RecordingToolTip}">
+							<Panel>
+								<Ellipse IsVisible="{Binding IsRecording}" Width="16" Height="16" Fill="#dc2626" />
+								<Ellipse IsVisible="{Binding !IsRecording}" Width="16" Height="16" Stroke="#6b7280" StrokeThickness="2" />
+							</Panel>
+						</Button>
+						<!-- 编辑按钮 -->
+						<Button Padding="2" HorizontalAlignment="Center" VerticalAlignment="Center" Background="Transparent"
+								Name="EditNodeButton"
+								Width="24"
+								IsVisible="{Binding IsEditMode}"
+								ToolTip.Tip="编辑此节点">
+							<iconPacks:PackIconIonicons Kind="CreateiOS" Width="16" Height="16" Foreground="#3b82f6"/>
+						</Button>
+					</StackPanel>
+					<!-- 名称填充剩余空间 -->
+					<TextBlock Text="{Binding DeviceLabel}" 
+							   Padding="8 8 4 8" 
+							   FontSize="14" 
+							   VerticalAlignment="Center"
+							   TextTrimming="CharacterEllipsis"
+							   ToolTip.Tip="{Binding DeviceLabel}" />
+				</DockPanel>
 			</Border>
 
 			<!-- 节点按键列表 -->
-			<ItemsRepeater ItemsSource="{Binding Keys}">
+			<ItemsRepeater ItemsSource="{Binding KeyList}">
 				<ItemsRepeater.ItemTemplate>
 					<DataTemplate>
-						<Grid Margin="5 2" Classes.active="{Binding Active}" VerticalAlignment="Center" >
-							<Grid.ColumnDefinitions>
-								<ColumnDefinition Width="100"/>
-								<ColumnDefinition Width="*"/>
-								<ColumnDefinition Width="40"/>
-							</Grid.ColumnDefinitions>
+						<Border Margin="5 2" 
+								CornerRadius="3"
+								Classes="key-item"
+								Classes.editing="{Binding IsEditing}">
 							
-							<TextBlock Grid.Column="0" Text="{Binding Name}" HorizontalAlignment="Stretch"  VerticalAlignment="Center" />
-							<TextBlock Grid.Column="1" Text="{Binding Value, StringFormat='{}{0:F2}'}" HorizontalAlignment="Stretch" VerticalAlignment="Center"
-									IsVisible="{Binding $parent[UserControl].DataContext.ShowKeyValue, FallbackValue=False}"
-							/>
-
-							<Button Grid.Column="2" Padding="8 0" Background="Transparent" Command="{Binding ToggleDOCommand}"  HorizontalAlignment="Center"
-									IsVisible="{Binding $parent[UserControl].DataContext.ShowBtn, FallbackValue=False}"
-							>
-								<Panel VerticalAlignment="Center">
-									<iconPacks:PackIconIonicons IsVisible="{Binding Active}" Kind="RadioButtonOniOS"/>
-									<iconPacks:PackIconIonicons IsVisible="{Binding !Active}" Kind="RadioButtonOffiOS"/>
-								</Panel>
-							</Button>
-						</Grid>
+							<DockPanel Classes.active="{Binding Active}" LastChildFill="True">
+								<!-- 右侧区域 -->
+								<StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center" Margin="4 0">
+									<!-- Axis/OAction 显示数值 -->
+									<TextBlock Text="{Binding Value, StringFormat='{}{0:F2}'}" 
+											   VerticalAlignment="Center"
+											   Width="70"
+											   TextAlignment="Right"
+											   Margin="0 0 4 0"
+											   IsVisible="{Binding $parent[UserControl].DataContext.ShowKeyValue, FallbackValue=False}"/>
+									<!-- OAction 显示 DO 切换按钮 -->
+									<Button Padding="2" Background="Transparent" Command="{Binding ToggleDOCommand}" 
+											HorizontalAlignment="Center" VerticalAlignment="Center"
+											Width="24"
+											IsVisible="{Binding $parent[UserControl].DataContext.ShowBtn, FallbackValue=False}">
+										<Panel>
+											<iconPacks:PackIconIonicons IsVisible="{Binding Active}" Kind="RadioButtonOniOS"/>
+											<iconPacks:PackIconIonicons IsVisible="{Binding !Active}" Kind="RadioButtonOffiOS"/>
+										</Panel>
+									</Button>
+								</StackPanel>
+								<!-- 左侧：名称 + Scale/InvertEvent 标识 -->
+								<StackPanel Orientation="Horizontal" VerticalAlignment="Center" Spacing="6">
+									<TextBlock Text="{Binding Name}" VerticalAlignment="Center" Padding="8 4 0 4" />
+									<!-- Axis/OAction: Scale 不为 1 时显示缩放值 -->
+									<Border Background="#e0e7ff" CornerRadius="4" Padding="6 2" VerticalAlignment="Center"
+											IsVisible="{Binding HasCustomScale}"
+											ToolTip.Tip="缩放系数">
+										<TextBlock Text="{Binding Scale, StringFormat='×{0:G}'}" 
+												   FontSize="11" Foreground="#4338ca" VerticalAlignment="Center"/>
+									</Border>
+									<!-- OAction: InvertEvent 为 True 时显示反转标识 -->
+									<Border Background="#fef3c7" CornerRadius="4" Padding="6 2" VerticalAlignment="Center"
+											IsVisible="{Binding InvertEventBool}"
+											ToolTip.Tip="事件反转">
+										<TextBlock Text="反转" FontSize="11" Foreground="#92400e" VerticalAlignment="Center"/>
+									</Border>
+								</StackPanel>
+							</DockPanel>
+						</Border>
 					</DataTemplate>
 				</ItemsRepeater.ItemTemplate>
 			</ItemsRepeater>
+			
+			<!-- 当没有Key时显示提示 -->
+			<Border IsVisible="{Binding !KeyList.Count}" 
+					Margin="5 2" 
+					CornerRadius="3"
+					Background="#fef3c7">
+				<TextBlock Text="{Binding ChannelTypeName, StringFormat='请添加{0}'}"
+						   FontSize="12"
+						   Foreground="#92400e"
+						   VerticalAlignment="Center"
+						   Padding="8 4"
+						   MinHeight="28"/>
+			</Border>
 	
 		</StackPanel>
 	</Border>

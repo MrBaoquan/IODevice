@@ -12,6 +12,9 @@
 
 using namespace IOToolkit;
 
+// Initialize static mutex
+std::recursive_mutex IODeviceController::controllerMutex;
+
 /** Application main entry. */
 IODeviceController::IODeviceController()
 {
@@ -47,6 +50,9 @@ int IOToolkit::IODeviceController::Load()
 
 int IOToolkit::IODeviceController::Unload()
 {
+    // Lock mutex to ensure Update is not running before unloading
+    std::lock_guard<std::recursive_mutex> lock(controllerMutex);
+    
     IOApplication::DyUnload();
 	return 0;
 }
@@ -64,6 +70,10 @@ const float IOToolkit::IODeviceController::GetDeltaSeconds() const
 /** Application tick entry. */
 void IOToolkit::IODeviceController::Update()
 {
+    // Try to acquire lock, if cannot acquire (Unload/ClearBindings is running), skip this tick
+    std::unique_lock<std::recursive_mutex> lock(controllerMutex, std::try_to_lock);
+    if (!lock.owns_lock()) return;
+    
     // Early return if IOToolkit is not loaded (during shutdown)
     if (!IOApplication::bLoaded) return;
     
@@ -95,6 +105,9 @@ void IOToolkit::IODeviceController::Update()
 
 void IOToolkit::IODeviceController::ClearBindings()
 {
+    // Lock mutex to ensure Update is not running
+    std::lock_guard<std::recursive_mutex> lock(controllerMutex);
+    
     for (auto& deviceIt : IODevices::GetDevcies())
     {
         deviceIt.second.ClearBinding();

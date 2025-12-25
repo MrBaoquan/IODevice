@@ -57,6 +57,13 @@ private:
 };
 
 template<class UserClass>
+void IOToolkit::IODevice::BindKey(const FKey& Key, InputEvent KeyEvent, UserClass* Object, void(UserClass::*Method)(FKey))
+{
+    std::function<void(FKey)> FuncRef = std::bind(Method, Object, std::placeholders::_1);
+    this->BindKey(Key, KeyEvent, FuncRef);
+}
+
+template<class UserClass>
 void IOToolkit::IODevice::BindKey(const FKey& Key, InputEvent KeyEvent, UserClass* Object, void(UserClass::*Method)())
 {
     this->BindKey(Key,KeyEvent,std::bind(Method, Object));

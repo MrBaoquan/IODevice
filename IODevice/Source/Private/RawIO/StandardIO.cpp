@@ -301,7 +301,7 @@ IOToolkit::FKey IOToolkit::StandardIO::TranslateMouseButtonToKey(const EMouseBut
 
 void IOToolkit::StandardIO::Build()
 {
-    ImmDisableIME(0);
+    // ImmDisableIME(0);  // 注释掉：这会禁用输入法，导致Avalonia TextBox无法输入中文
 }
 
 void IOToolkit::StandardIO::OnKeyDown(uint32 keyCode, uint32 charCode, bool isRepeat/*=false*/)

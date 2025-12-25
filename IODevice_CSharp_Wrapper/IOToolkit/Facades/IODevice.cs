@@ -42,7 +42,7 @@ namespace IOToolkit
         {
             return IONativeWrapper.IsValid(this.ID);
         }
-        
+
         /// <summary>
         /// 绑定一个Key的事件
         /// </summary>
@@ -50,28 +50,101 @@ namespace IOToolkit
         /// <param name="InEvent">事件类型</param>
         /// <param name="InHandler">事件响应回调</param>
         public void BindKey(Key InKey, InputEvent InEvent, Action InHandler)
-        {   
+        {
             NativeActionSignature _proxy = new NativeActionSignature(() =>
             {
                 InHandler();
             });
             delegateRefs.Add(_proxy);
-            IONativeWrapper.BindKey(this.ID, InKey,(int)InEvent, _proxy);
+            IONativeWrapper.BindKey(this.ID, InKey, (int)InEvent, _proxy);
+        }
+
+        /// <summary>
+        /// 绑定一个Key的事件 回调携带Key参数
+        /// </summary>
+        /// <param name="InKey">需要绑定的按键</param>
+        /// <param name="InEvent">事件类型</param>
+        /// <param name="InHandler">事件响应回调</param>
+        public void BindKey(Key InKey, InputEvent InEvent, Action<Key> InHandler)
+        {
+            NativeActionWithKeySignature _proxy = new NativeActionWithKeySignature(
+                (string _key) =>
+                {
+                    InHandler(_key);
+                }
+            );
+            delegateRefs.Add(_proxy);
+            IONativeWrapper.BindKeyWithKey(this.ID, InKey, (int)InEvent, _proxy);
         }
 
         public void BindKey<T1>(Key InKey, InputEvent InEvent, Action<T1> InHandler, T1 _param1)
         {
-            BindKey(InKey, InEvent, () =>InHandler.Invoke(_param1));
+            BindKey(InKey, InEvent, () => InHandler.Invoke(_param1));
         }
 
-        public void BindKey<T1, T2>(Key InKey, InputEvent InEvent, Action<T1, T2> InHandler, T1 _param1, T2 _param2)
+        /// <summary>
+        /// 绑定Key事件 回调携带Key及1个自定义参数
+        /// </summary>
+        public void BindKey<T1>(
+            Key InKey,
+            InputEvent InEvent,
+            Action<Key, T1> InHandler,
+            T1 _param1
+        )
+        {
+            BindKey(InKey, InEvent, (Key key) => InHandler.Invoke(key, _param1));
+        }
+
+        public void BindKey<T1, T2>(
+            Key InKey,
+            InputEvent InEvent,
+            Action<T1, T2> InHandler,
+            T1 _param1,
+            T2 _param2
+        )
         {
             BindKey(InKey, InEvent, () => InHandler.Invoke(_param1, _param2));
         }
 
-        public void BindKey<T1, T2, T3>(Key InKey, InputEvent InEvent, Action<T1, T2, T3> InHandler, T1 _param1, T2 _param2, T3 _param3)
+        /// <summary>
+        /// 绑定Key事件 回调携带Key及2个自定义参数
+        /// </summary>
+        public void BindKey<T1, T2>(
+            Key InKey,
+            InputEvent InEvent,
+            Action<Key, T1, T2> InHandler,
+            T1 _param1,
+            T2 _param2
+        )
+        {
+            BindKey(InKey, InEvent, (Key key) => InHandler.Invoke(key, _param1, _param2));
+        }
+
+        public void BindKey<T1, T2, T3>(
+            Key InKey,
+            InputEvent InEvent,
+            Action<T1, T2, T3> InHandler,
+            T1 _param1,
+            T2 _param2,
+            T3 _param3
+        )
         {
             BindKey(InKey, InEvent, () => InHandler.Invoke(_param1, _param2, _param3));
+        }
+
+        /// <summary>
+        /// 绑定Key事件 回调携带Key及3个自定义参数
+        /// </summary>
+        public void BindKey<T1, T2, T3>(
+            Key InKey,
+            InputEvent InEvent,
+            Action<Key, T1, T2, T3> InHandler,
+            T1 _param1,
+            T2 _param2,
+            T3 _param3
+        )
+        {
+            BindKey(InKey, InEvent, (Key key) => InHandler.Invoke(key, _param1, _param2, _param3));
         }
 
         /// <summary>
@@ -81,12 +154,14 @@ namespace IOToolkit
         /// <param name="InEvent">事件类型</param>
         /// <param name="InHandler">事件响应回调</param>
 
-        public void BindAction(string InActionName,InputEvent InEvent, Action InHandler)
+        public void BindAction(string InActionName, InputEvent InEvent, Action InHandler)
         {
-            NativeActionWithKeySignature _proxy = new NativeActionWithKeySignature((string InKey) =>
-            {
-                InHandler();
-            });
+            NativeActionWithKeySignature _proxy = new NativeActionWithKeySignature(
+                (string InKey) =>
+                {
+                    InHandler();
+                }
+            );
             delegateRefs.Add(_proxy);
             IONativeWrapper.BindAction(this.ID, InActionName, (int)InEvent, _proxy);
         }
@@ -97,14 +172,16 @@ namespace IOToolkit
         /// <param name="InActionName">Action名称</param>
         /// <param name="InEvent">事件类型</param>
         /// <param name="InHandler">事件响应回调</param>
-        public void BindAction(string InActionName,InputEvent InEvent, Action<Key> InHandler)
+        public void BindAction(string InActionName, InputEvent InEvent, Action<Key> InHandler)
         {
-            NativeActionWithKeySignature _proxy = new NativeActionWithKeySignature((string InKey) =>
-            {
-                InHandler(InKey);
-            });
+            NativeActionWithKeySignature _proxy = new NativeActionWithKeySignature(
+                (string InKey) =>
+                {
+                    InHandler(InKey);
+                }
+            );
             delegateRefs.Add(_proxy);
-            IONativeWrapper.BindAction(this.ID, InActionName, (int)InEvent,_proxy);
+            IONativeWrapper.BindAction(this.ID, InActionName, (int)InEvent, _proxy);
         }
 
         /// <summary>
@@ -116,15 +193,23 @@ namespace IOToolkit
         /// <param name="InHandler">事件响应回调</param>
         /// <param name="_param1">自定义参数</param>
 
-        public void BindAction<T1>(string InActionName, InputEvent InEvent, Action<T1> InHandler, T1 _param1)
+        public void BindAction<T1>(
+            string InActionName,
+            InputEvent InEvent,
+            Action<T1> InHandler,
+            T1 _param1
+        )
         {
-            NativeActionWithKeySignature _proxy = new NativeActionWithKeySignature((string InKey) =>
-            {
-                InHandler(_param1);
-            });
+            NativeActionWithKeySignature _proxy = new NativeActionWithKeySignature(
+                (string InKey) =>
+                {
+                    InHandler(_param1);
+                }
+            );
             delegateRefs.Add(_proxy);
             IONativeWrapper.BindAction(this.ID, InActionName, (int)InEvent, _proxy);
         }
+
         /// <summary>
         /// 绑定Action事件 回调携带Key及1个自定义参数
         /// </summary>
@@ -133,15 +218,23 @@ namespace IOToolkit
         /// <param name="InEvent">事件类型</param>
         /// <param name="InHandler">事件响应回调</param>
         /// <param name="_param1">自定义参数</param>
-        public void BindAction<T1>(string InActionName, InputEvent InEvent, Action<Key,T1> InHandler, T1 _param1)
+        public void BindAction<T1>(
+            string InActionName,
+            InputEvent InEvent,
+            Action<Key, T1> InHandler,
+            T1 _param1
+        )
         {
-            NativeActionWithKeySignature _proxy = new NativeActionWithKeySignature((string InKey) =>
-            {
-                InHandler(InKey, _param1);
-            });
+            NativeActionWithKeySignature _proxy = new NativeActionWithKeySignature(
+                (string InKey) =>
+                {
+                    InHandler(InKey, _param1);
+                }
+            );
             delegateRefs.Add(_proxy);
             IONativeWrapper.BindAction(this.ID, InActionName, (int)InEvent, _proxy);
         }
+
         /// <summary>
         /// 绑定Action事件, 回调携带2个自定义参数
         /// </summary>
@@ -152,14 +245,22 @@ namespace IOToolkit
         /// <param name="InHandler"></param>
         /// <param name="_param1"></param>
         /// <param name="_param2"></param>
-        public void BindAction<T1,T2>(string InActionName, InputEvent InEvent, Action<T1,T2> InHandler, T1 _param1, T2 _param2)
+        public void BindAction<T1, T2>(
+            string InActionName,
+            InputEvent InEvent,
+            Action<T1, T2> InHandler,
+            T1 _param1,
+            T2 _param2
+        )
         {
-            NativeActionWithKeySignature _proxy = new NativeActionWithKeySignature((string InKey) =>
-            {
-                InHandler(_param1, _param2);
-            });
+            NativeActionWithKeySignature _proxy = new NativeActionWithKeySignature(
+                (string InKey) =>
+                {
+                    InHandler(_param1, _param2);
+                }
+            );
             delegateRefs.Add(_proxy);
-            IONativeWrapper.BindAction(this.ID, InActionName, (int)InEvent,_proxy);
+            IONativeWrapper.BindAction(this.ID, InActionName, (int)InEvent, _proxy);
         }
 
         /// <summary>
@@ -172,12 +273,20 @@ namespace IOToolkit
         /// <param name="InHandler"></param>
         /// <param name="_param1"></param>
         /// <param name="_param2"></param>
-        public void BindAction<T1,T2>(string InActionName, InputEvent InEvent, Action<Key, T1, T2> InHandler, T1 _param1, T2 _param2)
+        public void BindAction<T1, T2>(
+            string InActionName,
+            InputEvent InEvent,
+            Action<Key, T1, T2> InHandler,
+            T1 _param1,
+            T2 _param2
+        )
         {
-            NativeActionWithKeySignature _proxy = new NativeActionWithKeySignature((string InKey) =>
-            {
-                InHandler(InKey, _param1, _param2);
-            });
+            NativeActionWithKeySignature _proxy = new NativeActionWithKeySignature(
+                (string InKey) =>
+                {
+                    InHandler(InKey, _param1, _param2);
+                }
+            );
             delegateRefs.Add(_proxy);
             IONativeWrapper.BindAction(this.ID, InActionName, (int)InEvent, _proxy);
         }
@@ -194,12 +303,21 @@ namespace IOToolkit
         /// <param name="_param1"></param>
         /// <param name="_param2"></param>
         /// <param name="_param3"></param>
-        public void BindAction<T1, T2, T3>(string InActionName, InputEvent InEvent, Action<T1, T2, T3> InHandler, T1 _param1, T2 _param2, T3 _param3)
+        public void BindAction<T1, T2, T3>(
+            string InActionName,
+            InputEvent InEvent,
+            Action<T1, T2, T3> InHandler,
+            T1 _param1,
+            T2 _param2,
+            T3 _param3
+        )
         {
-            NativeActionWithKeySignature _proxy = new NativeActionWithKeySignature((string InKey) =>
-            {
-                InHandler(_param1, _param2, _param3);
-            });
+            NativeActionWithKeySignature _proxy = new NativeActionWithKeySignature(
+                (string InKey) =>
+                {
+                    InHandler(_param1, _param2, _param3);
+                }
+            );
             delegateRefs.Add(_proxy);
             IONativeWrapper.BindAction(this.ID, InActionName, (int)InEvent, _proxy);
         }
@@ -216,12 +334,21 @@ namespace IOToolkit
         /// <param name="_param1"></param>
         /// <param name="_param2"></param>
         /// <param name="_param3"></param>
-        public void BindAction<T1, T2, T3>(string InActionName, InputEvent InEvent, Action<Key, T1, T2, T3> InHandler, T1 _param1, T2 _param2, T3 _param3)
+        public void BindAction<T1, T2, T3>(
+            string InActionName,
+            InputEvent InEvent,
+            Action<Key, T1, T2, T3> InHandler,
+            T1 _param1,
+            T2 _param2,
+            T3 _param3
+        )
         {
-            NativeActionWithKeySignature _proxy = new NativeActionWithKeySignature((string InKey) =>
-            {
-                InHandler(InKey, _param1, _param2, _param3);
-            });
+            NativeActionWithKeySignature _proxy = new NativeActionWithKeySignature(
+                (string InKey) =>
+                {
+                    InHandler(InKey, _param1, _param2, _param3);
+                }
+            );
             delegateRefs.Add(_proxy);
             IONativeWrapper.BindAction(this.ID, InActionName, (int)InEvent, _proxy);
         }
@@ -233,20 +360,24 @@ namespace IOToolkit
         /// <param name="InHandler">事件响应回调</param>
         public void BindAxis(string InAxisName, Action<float> InHandler)
         {
-            NativeAxisSignature _proxy = new NativeAxisSignature((float InVal) =>
-            {
-                InHandler(InVal);
-            });
+            NativeAxisSignature _proxy = new NativeAxisSignature(
+                (float InVal) =>
+                {
+                    InHandler(InVal);
+                }
+            );
             delegateRefs.Add(_proxy);
             IONativeWrapper.BindAxis(this.ID, InAxisName, _proxy);
         }
 
         public void BindAxisKey(Key InKey, Action<float> InHandler)
         {
-            NativeAxisSignature _proxy = new NativeAxisSignature((float InVal) =>
-            {
-                InHandler(InVal);
-            });
+            NativeAxisSignature _proxy = new NativeAxisSignature(
+                (float InVal) =>
+                {
+                    InHandler(InVal);
+                }
+            );
             delegateRefs.Add(_proxy);
             IONativeWrapper.BindAxisKey(this.ID, InKey, _proxy);
         }
@@ -283,7 +414,11 @@ namespace IOToolkit
 
         public int RefreshStreamingData(byte[] StreamingData)
         {
-            return IONativeWrapper.RefreshStreamingData(this.ID, StreamingData, (UInt32)StreamingData.Length);
+            return IONativeWrapper.RefreshStreamingData(
+                this.ID,
+                StreamingData,
+                (UInt32)StreamingData.Length
+            );
         }
 
         /// <summary>
@@ -314,7 +449,7 @@ namespace IOToolkit
         /// <param name="InVal"></param>
         /// <param name="bIgnoreMassage"></param>
         /// <returns></returns>
-        public int SetDO(string OAction, float InVal, bool bIgnoreMassage=false)
+        public int SetDO(string OAction, float InVal, bool bIgnoreMassage = false)
         {
             return IONativeWrapper.SetDOAction(this.ID, OAction, InVal, bIgnoreMassage);
         }
@@ -399,6 +534,16 @@ namespace IOToolkit
         }
 
         /// <summary>
+        /// 获取键的原始值（未经处理）
+        /// </summary>
+        /// <param name="InKey"></param>
+        /// <returns></returns>
+        public float GetRawKeyValue(Key InKey)
+        {
+            return IONativeWrapper.GetRawKeyValue(this.ID, InKey);
+        }
+
+        /// <summary>
         /// 获取一个键被按下的时长
         /// </summary>
         /// <param name="InKey"></param>
@@ -416,11 +561,77 @@ namespace IOToolkit
             IONativeWrapper.ClearBindings(this.ID);
         }
 
+        /// <summary>
+        /// 设置 Axis Key 的属性 (Scale)
+        /// </summary>
+        /// <param name="axisName">Axis 名称</param>
+        /// <param name="keyName">Key 名称</param>
+        /// <param name="scale">缩放系数</param>
+        /// <returns>成功返回1 失败返回0</returns>
+        public int SetAKProps(string axisName, string keyName, float scale)
+        {
+            return IONativeWrapper.SetAKProps(this.ID, axisName, keyName, scale);
+        }
+
+        /// <summary>
+        /// 设置 OAction Key 的属性 (Scale, InvertEvent)
+        /// </summary>
+        /// <param name="oactionName">OAction 名称</param>
+        /// <param name="keyName">Key 名称</param>
+        /// <param name="scale">缩放系数</param>
+        /// <param name="invertEvent">是否反转事件</param>
+        /// <returns>成功返回1 失败返回0</returns>
+        public int SetOKProps(string oactionName, string keyName, float scale, bool invertEvent)
+        {
+            return IONativeWrapper.SetOKProps(this.ID, oactionName, keyName, scale, invertEvent);
+        }
+
+        /// <summary>
+        /// 设置 Property Key 的属性
+        /// </summary>
+        /// <param name="keyName">Key 名称</param>
+        /// <param name="preOffset">预偏移值</param>
+        /// <param name="preScale">预缩放系数</param>
+        /// <param name="minValue">最小值</param>
+        /// <param name="maxValue">最大值</param>
+        /// <param name="deadZone">死区</param>
+        /// <param name="sensitivity">灵敏度</param>
+        /// <param name="exponent">指数曲线</param>
+        /// <param name="invert">是否反转数值</param>
+        /// <param name="invertEvent">是否反转事件</param>
+        /// <returns>成功返回1 失败返回0</returns>
+        public int SetPKProps(
+            string keyName,
+            float offset,
+            float scale,
+            float minValue,
+            float maxValue,
+            float deadZone,
+            float sensitivity,
+            float exponent,
+            bool invert,
+            bool invertEvent
+        )
+        {
+            return IONativeWrapper.SetPKProps(
+                this.ID,
+                keyName,
+                offset,
+                scale,
+                minValue,
+                maxValue,
+                deadZone,
+                sensitivity,
+                exponent,
+                invert,
+                invertEvent
+            );
+        }
+
         //  ------------- Properties -------------
         public string ID;
 
         // 引用回调函数,防止被GC
         private List<Delegate> delegateRefs = new List<Delegate>();
-
     }
 }

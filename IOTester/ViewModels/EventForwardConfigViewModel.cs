@@ -1,5 +1,6 @@
 using Avalonia.Controls;
 using DynamicData;
+using IOTester.Extensions;
 using IOTester.Models;
 using ReactiveUI;
 using System;
@@ -9,6 +10,7 @@ using System.Reactive.Linq;
 using System.Linq;
 using System.Collections.Generic;
 using System.IO;
+using System.IO.Ports;
 using System.Text.Json;
 using IOToolkit;
 using System.Xml.Serialization;
@@ -27,6 +29,9 @@ namespace IOTester.ViewModels
             new SourceList<ProtocolGroup>();
         public ReadOnlyObservableCollection<ProtocolGroup> ProtocolGroups { get; }
 
+        // 标志：是否正在从映射选择中设置协议组
+        private bool _isSettingProtocolGroupFromMapping = false;
+
         private ProtocolGroup? selectedProtocolGroup;
         public ProtocolGroup? SelectedProtocolGroup
         {
@@ -37,11 +42,14 @@ namespace IOTester.ViewModels
 
                 if (value != null)
                 {
-                    // 选中协议组时，自动显示协议组配置面板
-                    IsGroupPanelVisible = true;
-
-                    // 切换协议组时，清除映射选择（这将自动隐藏映射配置面板）
-                    SelectedMapping = null;
+                    // 只有在用户主动选择协议组时才显示配置面板
+                    // 如果是因为选择映射而自动设置的，则不显示
+                    if (!_isSettingProtocolGroupFromMapping)
+                    {
+                        IsGroupPanelVisible = true;
+                        // 切换协议组时，清除映射选择
+                        SelectedMapping = null;
+                    }
                 }
                 else
                 {
@@ -52,8 +60,8 @@ namespace IOTester.ViewModels
         }
 
         // 当前选中的映射
-        private ActionKeyMapping? selectedMapping;
-        public ActionKeyMapping? SelectedMapping
+        private MappingDto? selectedMapping;
+        public MappingDto? SelectedMapping
         {
             get => selectedMapping;
             set
@@ -62,15 +70,19 @@ namespace IOTester.ViewModels
 
                 if (value != null)
                 {
-                    // 选中映射时，自动显示映射配置面板
-                    IsEditPanelVisible = true;
-                    // 同时隐藏协议组配置面板，避免重叠或混淆
-                    IsGroupPanelVisible = false;
-                }
-                else
-                {
-                    // 未选中映射时，隐藏映射配置面板
-                    IsEditPanelVisible = false;
+                    // 自动找到该映射所属的协议组并选中
+                    var parentGroup = ProtocolGroups.FirstOrDefault(
+                        g => g.Mappings.Contains(value)
+                    );
+                    if (parentGroup != null && SelectedProtocolGroup != parentGroup)
+                    {
+                        // 设置标志，表示这是从映射选择触发的
+                        _isSettingProtocolGroupFromMapping = true;
+                        SelectedProtocolGroup = parentGroup;
+                        _isSettingProtocolGroupFromMapping = false;
+                    }
+
+                    // 注意：不再自动显示编辑面板，只有通过右键编辑命令才显示
                 }
             }
         }
@@ -95,21 +107,23 @@ namespace IOTester.ViewModels
 
         // 可用的协议列表
         public ObservableCollection<string> AvailableProtocols { get; } =
-            new ObservableCollection<string> { "NetIO", "Modbus-RTU" };
+            new ObservableCollection<string> { "NetIO", "Modbus-RTU", "Custom", "DirectOutput" };
 
-        // 可用的串口列表
+        // 可用的自定义协议类型列表
+        public ObservableCollection<string> AvailableCustomProtocols { get; } =
+            new ObservableCollection<string> { "TCP-Client", "TCP-Server", "UDP", "Serial" };
+
+        // 可用的数据格式列表
+        public ObservableCollection<string> AvailableDataFormats { get; } =
+            new ObservableCollection<string> { "ASCII", "HEX" };
+
+        // 可用的映射类型列表
+        public ObservableCollection<string> AvailableMappingTypes { get; } =
+            new ObservableCollection<string> { "开关量", "模拟量" };
+
+        // 可用的串口列表（动态获取）
         public ObservableCollection<string> AvailablePorts { get; } =
-            new ObservableCollection<string>
-            {
-                "COM1",
-                "COM2",
-                "COM3",
-                "COM4",
-                "COM5",
-                "COM6",
-                "COM7",
-                "COM8"
-            };
+            new ObservableCollection<string>();
 
         // 可用的波特率列表
         public ObservableCollection<int> AvailableBaudRates { get; } =
@@ -124,8 +138,8 @@ namespace IOTester.ViewModels
             new ObservableCollection<string> { "None", "Odd", "Even", "Mark", "Space" };
 
         // 可用的停止位列表
-        public ObservableCollection<string> AvailableStopBits { get; } =
-            new ObservableCollection<string> { "None", "One", "Two", "OnePointFive" };
+        public ObservableCollection<int> AvailableStopBits { get; } =
+            new ObservableCollection<int> { 1, 2 };
 
         private bool isGroupPanelVisible = false;
         public bool IsGroupPanelVisible
@@ -153,11 +167,19 @@ namespace IOTester.ViewModels
         // 上下文菜单命令
         public ReactiveCommand<ProtocolGroup, Unit> AddMappingToGroupCommand { get; }
         public ReactiveCommand<ProtocolGroup, Unit> DeleteSpecificProtocolGroupCommand { get; }
-        public ReactiveCommand<ActionKeyMapping, Unit> DeleteSpecificMappingCommand { get; }
-        public ReactiveCommand<ActionKeyMapping, Unit> MoveMappingUpCommand { get; }
-        public ReactiveCommand<ActionKeyMapping, Unit> MoveMappingDownCommand { get; }
-        public ReactiveCommand<ActionKeyMapping, Unit> EditMappingCommand { get; }
+        public ReactiveCommand<ProtocolGroup, Unit> ClearMappingsCommand { get; }
+        public ReactiveCommand<ProtocolGroup, Unit> DeduplicateMappingsCommand { get; }
+        public ReactiveCommand<MappingDto, Unit> DeleteSpecificMappingCommand { get; }
+        public ReactiveCommand<MappingDto, Unit> MoveMappingUpCommand { get; }
+        public ReactiveCommand<MappingDto, Unit> MoveMappingDownCommand { get; }
+        public ReactiveCommand<MappingDto, Unit> EditMappingCommand { get; }
         public ReactiveCommand<ProtocolGroup, Unit> EditProtocolGroupCommand { get; }
+
+        // 批量范围映射命令
+        public ReactiveCommand<Unit, Unit> AddRangeMappingCommand { get; }
+
+        // 刷新COM口命令
+        public ReactiveCommand<Unit, Unit> RefreshComPortsCommand { get; }
 
         public EventForwardConfigViewModel()
         {
@@ -170,6 +192,9 @@ namespace IOTester.ViewModels
 
             // 加载可用设备列表
             LoadAvailableDevices();
+
+            // 刷新可用COM口列表
+            RefreshAvailablePorts();
 
             // 绑定协议组数据源
             _protocolGroupsSource
@@ -187,13 +212,13 @@ namespace IOTester.ViewModels
                 {
                     if (SelectedProtocolGroup != null)
                     {
-                        var newMapping = new ActionKeyMapping
+                        var newMapping = new MappingDto
                         {
-                            SourceDevice = AvailableDevices.FirstOrDefault() ?? "",
                             SourceKey = "Button_01",
                             TargetKey = "Button_01",
                             IsEnabled = true,
-                            Description = "新建映射"
+                            Description = "新建映射",
+                            Type = "开关量"
                         };
                         SelectedProtocolGroup.Mappings.Add(newMapping);
                         SelectedMapping = newMapping;
@@ -297,7 +322,7 @@ namespace IOTester.ViewModels
             // 关闭编辑面板命令
             CloseEditPanelCommand = ReactiveCommand.Create(() =>
             {
-                SelectedMapping = null;
+                IsEditPanelVisible = false;
             });
 
             // 添加协议组命令
@@ -309,7 +334,9 @@ namespace IOTester.ViewModels
                     ProtocolType = "NetIO",
                     TargetIP = "127.0.0.1",
                     TargetPort = 8000,
-                    Description = "协议组描述"
+                    Description = "协议组描述",
+                    IsCustomMode = false,
+                    SourceDevice = AvailableDevices.FirstOrDefault() ?? ""
                 };
                 _protocolGroupsSource.Add(newGroup);
                 SelectedProtocolGroup = newGroup;
@@ -320,7 +347,10 @@ namespace IOTester.ViewModels
             {
                 if (group != null)
                 {
+                    // 设置标志，防止自动显示配置面板
+                    _isSettingProtocolGroupFromMapping = true;
                     SelectedProtocolGroup = group;
+                    _isSettingProtocolGroupFromMapping = false;
                 }
             });
 
@@ -369,13 +399,13 @@ namespace IOTester.ViewModels
             {
                 if (group != null)
                 {
-                    var newMapping = new ActionKeyMapping
+                    var newMapping = new MappingDto
                     {
-                        SourceDevice = AvailableDevices.FirstOrDefault() ?? "",
                         SourceKey = "Button_01",
                         TargetKey = "Button_01",
                         IsEnabled = true,
-                        Description = "新建映射"
+                        Description = "新建映射",
+                        Type = "开关量"
                     };
                     group.Mappings.Add(newMapping);
                     group.IsExpanded = true;
@@ -400,7 +430,7 @@ namespace IOTester.ViewModels
             });
 
             // 3. 删除指定映射
-            DeleteSpecificMappingCommand = ReactiveCommand.Create<ActionKeyMapping>(mapping =>
+            DeleteSpecificMappingCommand = ReactiveCommand.Create<MappingDto>(mapping =>
             {
                 if (mapping != null)
                 {
@@ -420,7 +450,7 @@ namespace IOTester.ViewModels
             });
 
             // 4. 上移指定映射
-            MoveMappingUpCommand = ReactiveCommand.Create<ActionKeyMapping>(mapping =>
+            MoveMappingUpCommand = ReactiveCommand.Create<MappingDto>(mapping =>
             {
                 if (mapping != null)
                 {
@@ -439,7 +469,7 @@ namespace IOTester.ViewModels
             });
 
             // 5. 下移指定映射
-            MoveMappingDownCommand = ReactiveCommand.Create<ActionKeyMapping>(mapping =>
+            MoveMappingDownCommand = ReactiveCommand.Create<MappingDto>(mapping =>
             {
                 if (mapping != null)
                 {
@@ -458,7 +488,7 @@ namespace IOTester.ViewModels
             });
 
             // 6. 编辑指定映射
-            EditMappingCommand = ReactiveCommand.Create<ActionKeyMapping>(mapping =>
+            EditMappingCommand = ReactiveCommand.Create<MappingDto>(mapping =>
             {
                 if (mapping != null)
                 {
@@ -470,6 +500,10 @@ namespace IOTester.ViewModels
                     {
                         SelectedProtocolGroup = parentGroup;
                         SelectedMapping = mapping;
+
+                        // 显示编辑面板，隐藏协议组配置面板
+                        IsEditPanelVisible = true;
+                        IsGroupPanelVisible = false;
                     }
                 }
             });
@@ -485,47 +519,165 @@ namespace IOTester.ViewModels
                 }
             });
 
+            // 8. 清空协议组所有映射
+            ClearMappingsCommand = ReactiveCommand.Create<ProtocolGroup>(group =>
+            {
+                if (group != null && group.Mappings.Count > 0)
+                {
+                    group.Mappings.Clear();
+                    if (SelectedMapping != null && SelectedProtocolGroup == group)
+                    {
+                        SelectedMapping = null;
+                    }
+                }
+            });
+
+            // 9. 映射键去重
+            DeduplicateMappingsCommand = ReactiveCommand.Create<ProtocolGroup>(group =>
+            {
+                if (group != null && group.Mappings.Count > 0)
+                {
+                    // 根据SourceKey去重，保留第一个
+                    var uniqueMappings = group.Mappings
+                        .GroupBy(m => m.SourceKey)
+                        .Select(g => g.First())
+                        .ToList();
+
+                    if (uniqueMappings.Count < group.Mappings.Count)
+                    {
+                        group.Mappings.Clear();
+                        foreach (var mapping in uniqueMappings)
+                        {
+                            group.Mappings.Add(mapping);
+                        }
+
+                        // 如果当前选中的映射被删除了，清除选择
+                        if (SelectedMapping != null && !uniqueMappings.Contains(SelectedMapping))
+                        {
+                            SelectedMapping = null;
+                        }
+                    }
+                }
+            });
+
+            // 10. 批量范围映射命令
+            var canAddRangeMapping = this.WhenAnyValue(x => x.SelectedProtocolGroup)
+                .Select(x => x != null);
+            AddRangeMappingCommand = ReactiveCommand.CreateFromTask(
+                async () =>
+                {
+                    if (SelectedProtocolGroup != null)
+                    {
+                        await ShowRangeMappingDialog();
+                    }
+                },
+                canAddRangeMapping
+            );
+
+            // 11. 刷新COM口命令
+            RefreshComPortsCommand = ReactiveCommand.Create(() =>
+            {
+                RefreshAvailablePorts();
+            });
+
             // 自动加载配置
             LoadConfig();
+        }
+
+        private async System.Threading.Tasks.Task ShowRangeMappingDialog()
+        {
+            var dialog = new Views.RangeMappingDialog
+            {
+                DataContext = new RangeMappingDialogViewModel(
+                    SelectedProtocolGroup?.ProtocolType ?? "NetIO"
+                )
+            };
+
+            var viewModel = (RangeMappingDialogViewModel)dialog.DataContext;
+
+            // 获取当前事件转发配置窗口
+            var ownerWindow = Avalonia.Application.Current?.ApplicationLifetime
+                is Avalonia.Controls.ApplicationLifetimes.IClassicDesktopStyleApplicationLifetime desktop
+                ? desktop.Windows.OfType<Views.EventForwardConfigWindow>().FirstOrDefault()
+                : null;
+
+            // 订阅确认命令
+            bool confirmed = false;
+            viewModel.ConfirmCommand.Subscribe(_ =>
+            {
+                confirmed = true;
+                dialog.Close();
+            });
+
+            viewModel.CancelCommand.Subscribe(_ =>
+            {
+                confirmed = false;
+                dialog.Close();
+            });
+
+            if (ownerWindow != null)
+            {
+                await dialog.ShowDialog(ownerWindow);
+            }
+            else
+            {
+                // 如果找不到事件转发窗口，使用主窗口
+                var mainWindow = (
+                    Avalonia.Application.Current?.ApplicationLifetime
+                    as Avalonia.Controls.ApplicationLifetimes.IClassicDesktopStyleApplicationLifetime
+                )?.MainWindow;
+                await dialog.ShowDialog(
+                    mainWindow ?? throw new InvalidOperationException("无法获取窗口")
+                );
+            }
+
+            // 如果用户确认，生成范围映射
+            if (confirmed && SelectedProtocolGroup != null)
+            {
+                GenerateRangeMappings(viewModel);
+            }
+        }
+
+        private void GenerateRangeMappings(RangeMappingDialogViewModel config)
+        {
+            if (SelectedProtocolGroup == null)
+                return;
+
+            // 计算映射数量
+            int sourceCount = config.SourceEndChannel - config.SourceStartChannel + 1;
+            int targetCount = config.TargetEndChannel - config.TargetStartChannel + 1;
+
+            // 使用较小的数量作为生成数量
+            int count = Math.Min(sourceCount, targetCount);
+
+            for (int i = 0; i < count; i++)
+            {
+                int sourceChannel = config.SourceStartChannel + i;
+                int targetChannel = config.TargetStartChannel + i;
+
+                var mapping = new MappingDto
+                {
+                    SourceKey = $"{config.SourceKeyPrefix}{sourceChannel:00}",
+                    TargetKey = $"{config.TargetKeyPrefix}{targetChannel:00}",
+                    IsEnabled = config.IsEnabled,
+                    Description = string.IsNullOrWhiteSpace(config.Description)
+                        ? $"范围映射: {sourceChannel} -> {targetChannel}"
+                        : config.Description,
+                    Type = config.MappingType == "模拟量" ? "Analog" : "Digital"
+                };
+
+                SelectedProtocolGroup.Mappings.Add(mapping);
+            }
+
+            // 展开协议组以显示新添加的映射
+            SelectedProtocolGroup.IsExpanded = true;
         }
 
         private void SaveConfig()
         {
             var configDto = new EventForwardConfigDto
             {
-                ProtocolGroups = _protocolGroupsSource.Items
-                    .Select(
-                        g =>
-                            new ProtocolGroupDto
-                            {
-                                Id = g.Id,
-                                GroupName = g.GroupName,
-                                ProtocolType = g.ProtocolType,
-                                TargetIP = g.TargetIP,
-                                TargetPort = g.TargetPort,
-                                SerialPort = g.SerialPort,
-                                BaudRate = g.BaudRate,
-                                DataBits = g.DataBits,
-                                Parity = g.Parity,
-                                StopBits = g.StopBits,
-                                Description = g.Description,
-                                IsExpanded = g.IsExpanded,
-                                Mappings = g.Mappings
-                                    .Select(
-                                        m =>
-                                            new MappingDto
-                                            {
-                                                SourceDevice = m.SourceDevice,
-                                                SourceKey = m.SourceKey,
-                                                TargetKey = m.TargetKey,
-                                                IsEnabled = m.IsEnabled,
-                                                Description = m.Description
-                                            }
-                                    )
-                                    .ToList()
-                            }
-                    )
-                    .ToList()
+                ProtocolGroups = _protocolGroupsSource.Items.ToDtoList()
             };
 
             var directory = Path.GetDirectoryName(ConfigFilePath);
@@ -558,37 +710,8 @@ namespace IOTester.ViewModels
                         return;
 
                     _protocolGroupsSource.Clear();
-                    foreach (var groupDto in configDto.ProtocolGroups)
+                    foreach (var group in configDto.ProtocolGroups.ToModelList())
                     {
-                        var group = new ProtocolGroup
-                        {
-                            Id = groupDto.Id,
-                            GroupName = groupDto.GroupName,
-                            ProtocolType = groupDto.ProtocolType,
-                            TargetIP = groupDto.TargetIP,
-                            TargetPort = groupDto.TargetPort,
-                            SerialPort = groupDto.SerialPort,
-                            BaudRate = groupDto.BaudRate,
-                            DataBits = groupDto.DataBits,
-                            Parity = groupDto.Parity,
-                            StopBits = groupDto.StopBits,
-                            Description = groupDto.Description,
-                            IsExpanded = groupDto.IsExpanded
-                        };
-
-                        foreach (var mappingDto in groupDto.Mappings)
-                        {
-                            var mapping = new ActionKeyMapping
-                            {
-                                SourceDevice = mappingDto.SourceDevice,
-                                SourceKey = mappingDto.SourceKey,
-                                TargetKey = mappingDto.TargetKey,
-                                IsEnabled = mappingDto.IsEnabled,
-                                Description = mappingDto.Description
-                            };
-                            group.Mappings.Add(mapping);
-                        }
-
                         _protocolGroupsSource.Add(group);
                     }
                 }
@@ -631,6 +754,54 @@ namespace IOTester.ViewModels
                 if (AvailableDevices.Count == 0)
                 {
                     AvailableDevices.Add("默认设备");
+                }
+            }
+        }
+
+        /// <summary>
+        /// 刷新系统可用的COM口列表
+        /// </summary>
+        private void RefreshAvailablePorts()
+        {
+            try
+            {
+                AvailablePorts.Clear();
+
+                // 获取系统中所有可用的串口
+                string[] portNames = SerialPort.GetPortNames();
+
+                if (portNames.Length > 0)
+                {
+                    // 排序串口名称（COM1, COM2, COM3...）
+                    var sortedPorts = portNames
+                        .OrderBy(p =>
+                        {
+                            // 尝试提取数字部分进行数值排序
+                            if (p.StartsWith("COM") && int.TryParse(p.Substring(3), out int num))
+                                return num;
+                            return int.MaxValue;
+                        })
+                        .ToList();
+
+                    foreach (var port in sortedPorts)
+                    {
+                        AvailablePorts.Add(port);
+                    }
+                }
+                else
+                {
+                    // 如果没有检测到串口，添加提示信息
+                    AvailablePorts.Add("未检测到串口");
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Failed to refresh COM ports: {ex.Message}");
+                // 出错时添加默认COM口
+                if (AvailablePorts.Count == 0)
+                {
+                    AvailablePorts.Add("COM1");
+                    AvailablePorts.Add("COM3");
                 }
             }
         }

@@ -12,6 +12,31 @@
     <Application.Styles>
         <FluentTheme />
 		<StyleInclude Source="avares://IconPacks.Avalonia.Ionicons/Ionicons.axaml" />
+		
+		<!-- 全局字体设置，支持中文 -->
+		<Style Selector="Window">
+			<Setter Property="FontFamily" Value="Microsoft YaHei UI,Segoe UI,微软雅黑,宋体,Arial,sans-serif" />
+		</Style>
+		<Style Selector="TextBox">
+			<Setter Property="FontFamily" Value="Microsoft YaHei UI,Segoe UI,微软雅黑,宋体,Arial,sans-serif" />
+		</Style>
+		
+		<!-- 文本按钮样式 -->
+		<Style Selector="Button.text-button">
+			<Setter Property="Background" Value="Transparent" />
+			<Setter Property="BorderThickness" Value="1" />
+			<Setter Property="BorderBrush" Value="#94a3b8" />
+			<Setter Property="Foreground" Value="#475569" />
+			<Setter Property="CornerRadius" Value="4" />
+		</Style>
+		<Style Selector="Button.text-button:pointerover">
+			<Setter Property="Background" Value="#f1f5f9" />
+			<Setter Property="BorderBrush" Value="#64748b" />
+			<Setter Property="Foreground" Value="#1e293b" />
+		</Style>
+		<Style Selector="Button.text-button:pressed">
+			<Setter Property="Background" Value="#e2e8f0" />
+		</Style>
     </Application.Styles>
 
 	<Application.Resources>

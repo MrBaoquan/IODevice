@@ -342,3 +342,26 @@ bool IOToolkit::ExternalIO::IsValidChannel(int InChannel, int InMaxNumber)
     }
     return true;
 }
+
+int IOToolkit::ExternalIO::SetOKProps(const char* oactionName, const char* keyName, float scale, bool invertEvent)
+{
+    if (!bValid) { return 0; }
+    if (!OActionMappings.count(oactionName)) { return 0; }
+
+    FKey targetKey(keyName);
+    bool found = false;
+
+    std::vector<FOutputActionKey>& keys = OActionMappings.at(oactionName);
+    for (auto& actionKey : keys)
+    {
+        if (actionKey.Key == targetKey)
+        {
+            actionKey.Scale = scale;
+            actionKey.InvertEvent = invertEvent;
+            found = true;
+            break;
+        }
+    }
+
+    return found ? 1 : 0;
+}

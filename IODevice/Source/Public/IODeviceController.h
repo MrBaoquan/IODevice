@@ -5,6 +5,7 @@
 
 #pragma once
 
+#include <mutex>
 #include "IODevice.h"
 
 namespace IOToolkit
@@ -20,6 +21,9 @@ public:
     const float GetDeltaSeconds() const;
     void Update();
     void ClearBindings();
+    
+    // Mutex to protect concurrent access between Update and Unload/ClearBindings
+    static std::recursive_mutex controllerMutex;
 
 private:
     IODeviceController();

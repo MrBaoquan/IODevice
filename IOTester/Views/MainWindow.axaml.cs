@@ -1,6 +1,6 @@
 using Avalonia.Controls;
 using Avalonia.Markup.Xaml;
-using Avalonia.ReactiveUI;
+using ReactiveUI.Avalonia;
 using IOTester.Controls;
 using IOTester.ViewModels;
 using ReactiveUI;
@@ -17,15 +17,22 @@ namespace IOTester.Views
         {
             this.WhenActivated(disposeables =>
             {
-                ViewModel.OnTabChangedCommand
-                    .Subscribe(_ =>
+                disposeables.Add(
+                    ViewModel.OnTabChangedCommand.Subscribe(_ =>
                     {
                         this.InvalidateMeasure();
                         this.InvalidateArrange();
                     })
-                    .DisposeWith(disposeables);
+                );
             });
             InitializeComponent();
+
+            // 设置帮助菜单点击事件
+            var helpMenuItem = this.FindControl<MenuItem>("HelpReferenceMenuItem");
+            if (helpMenuItem != null)
+            {
+                helpMenuItem.Click += HelpReferenceMenuItem_Click;
+            }
 
             //this.ref_TabControl.DataContextChanged += (e, sender) =>
             //{
@@ -34,6 +41,15 @@ namespace IOTester.Views
             // AvaloniaXamlLoader.Load(this);
 
             // this.FindControl<IONodeView>("ionode").ViewModel = new IONodeViewModel { Title = "��!!!!" };
+        }
+
+        private void HelpReferenceMenuItem_Click(
+            object? sender,
+            Avalonia.Interactivity.RoutedEventArgs e
+        )
+        {
+            var helpWindow = new HelpWindow();
+            helpWindow.ShowDialog(this);
         }
     }
 }

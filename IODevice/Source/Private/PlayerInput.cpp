@@ -35,6 +35,7 @@ void IOToolkit::PlayerInput::Initialize()
 
 void IOToolkit::PlayerInput::UnInitialize()
 {
+	// Note: This is called from IOApplication::Cleanup which is protected by IODeviceController::controllerMutex
 	KeyStateMaps.clear();
 	ActionKeyMaps.clear();
 	AxisKeyMaps.clear();
@@ -42,12 +43,21 @@ void IOToolkit::PlayerInput::UnInitialize()
 
 void IOToolkit::PlayerInput::Tick(float DeltaSeconds)
 {
+    // Note: This is called from IODeviceController::Update which is protected by IODeviceController::controllerMutex
+    // Early return if data has been cleared
+    if (KeyStateMaps.empty()) return;
+    
     ProcessInputStack();
 }
 
 void IOToolkit::PlayerInput::InputKey(FKey& InKey, InputEvent KeyEvent,const uint8 deviceID, float AmountDepressed)
 {
-    if (KeyStateMaps.size() <= 0) return;
+    // Lock controller mutex to protect KeyStateMaps access (may be called from Windows message handler)
+    std::lock_guard<std::recursive_mutex> lock(IODeviceController::controllerMutex);
+    
+    // Validate state after acquiring lock
+    if (KeyStateMaps.size() <= 0 || deviceID >= KeyStateMaps.size()) return;
+    
     std::map<FKey, FKeyState, LessKey>& KeyStateMap = KeyStateMaps[deviceID];
     KeyStateMap.try_emplace(InKey);
     FKeyState& keyState = KeyStateMap[InKey];
@@ -92,7 +102,11 @@ void IOToolkit::PlayerInput::InputKey(FKey& InKey, InputEvent KeyEvent,const uin
 void IOToolkit::PlayerInput::InputAxis(FKey Key, float Delta, float DeltaTime, uint8 deviceID, int32 NumSamples)
 {
     if (NumSamples <= 0) { return; }
-    if (KeyStateMaps.size() <= 0) return;
+    
+    // Lock controller mutex to protect KeyStateMaps access (may be called from Windows message handler)
+    std::lock_guard<std::recursive_mutex> lock(IODeviceController::controllerMutex);
+    
+    if (KeyStateMaps.size() <= 0 || deviceID >= KeyStateMaps.size()) return;
     std::map<FKey, FKeyState, LessKey>& KeyStateMap = KeyStateMaps[deviceID];
 	
     KeyStateMap.try_emplace(Key);
@@ -125,6 +139,7 @@ void IOToolkit::PlayerInput::InputAxis(FKey Key, float Delta, float DeltaTime, u
 
 const float IOToolkit::PlayerInput::GetKeyDownTime(const FKey& InKey, uint8 deviceID)
 {
+    if (deviceID >= KeyStateMaps.size()) return 0.f;
     const std::map<FKey, FKeyState, LessKey>& KeyStateMap = KeyStateMaps[deviceID];
     bool bPressed = IsPressed(InKey, deviceID);
     if (KeyStateMap.count(InKey)&&bPressed)
@@ -138,6 +153,7 @@ const float IOToolkit::PlayerInput::GetKeyDownTime(const FKey& InKey, uint8 devi
 
 float IOToolkit::PlayerInput::GetKeyValue(FKey InKey, uint8 deviceID) const
 {
+    if (deviceID >= KeyStateMaps.size()) return 0.f;
     const std::map<FKey, FKeyState, LessKey>& KeyStateMap = KeyStateMaps[deviceID];
     if (InKey == EKeys::AnyKey)
     {
@@ -153,6 +169,10 @@ float IOToolkit::PlayerInput::GetKeyValue(FKey InKey, uint8 deviceID) const
 
 void IOToolkit::PlayerInput::ProcessInputStack()
 {
+    // Note: This function is called from Tick() which already holds the mutex lock
+    // Early return if data has been cleared
+    if (KeyStateMaps.empty()) return;
+    
     // Copy standard KeyStateMap to Others
     if (KeyStateMaps.size() > 1)
     {
@@ -222,7 +242,6 @@ void IOToolkit::PlayerInput::ProcessInputStack()
     deviceID = 0;
     for (auto& deviceIt : IODevices::GetDevcies())
     {
-        
         IODeviceDetails& deviceDetails = deviceIt.second;
         deviceID = deviceDetails.GetDevice().GetID();
         for (int32 ActionIndex = 0;ActionIndex < deviceDetails.GetNumActionBindings();++ActionIndex)
@@ -340,6 +359,7 @@ void IOToolkit::PlayerInput::ProcessInputStack()
 
 const IOToolkit::FKeyState IOToolkit::PlayerInput::GetKeyState(const FKey& InKey, uint8 deviceID) const
 {
+    if (deviceID >= KeyStateMaps.size()) return FKeyState();
     const std::map<FKey, FKeyState, LessKey>& KeyStateMap = KeyStateMaps[deviceID];
 
     if (InKey == EKeys::AnyKey)
@@ -383,6 +403,9 @@ void IOToolkit::PlayerInput::ProcessAllKeys(FKey Inkey, FKeyState* KeyState, uin
 
 void IOToolkit::PlayerInput::GetChordForKey(const FInputKeyBinding& KeyBinding, std::vector<struct FDelegateDispatchDetails>& FoundChords, std::set<FKey,LessKey>& KeysToConsume, uint8 deviceID)
 {
+    // Note: This function is called from ProcessInputStack which holds the mutex lock
+    if (deviceID >= KeyStateMaps.size()) return;
+    
     bool bConsumeInput = false;
     std::map<FKey, FKeyState, LessKey>& KeyStateMap = KeyStateMaps[deviceID];
     if (KeyBinding.Chord.Key == EKeys::AnyKey)
@@ -434,6 +457,7 @@ void IOToolkit::PlayerInput::GetChordForKey(const FInputKeyBinding& KeyBinding, 
 
 bool IOToolkit::PlayerInput::KeyEventOccurred(FKey Key, InputEvent Event, std::vector<uint32>& InEventIndices, uint8 deviceID) const
 {
+    if (deviceID >= KeyStateMaps.size()) return false;
     const std::map<FKey, FKeyState, LessKey>& KeyStateMap = KeyStateMaps[deviceID];
     if(KeyStateMap.size()>0)
     {
@@ -454,6 +478,7 @@ bool IOToolkit::PlayerInput::KeyEventOccurred(FKey Key, InputEvent Event, std::v
 
 bool IOToolkit::PlayerInput::IsKeyConsumed(FKey InKey, uint8 deviceID) const
 {
+    if (deviceID >= KeyStateMaps.size()) return false;
     const std::map<FKey, FKeyState, LessKey>& KeyStateMap = KeyStateMaps[deviceID];
     if (InKey == EKeys::AnyKey)
     {
@@ -507,24 +532,39 @@ void IOToolkit::PlayerInput::FinishProcessingPlayerInput()
 
 float IOToolkit::PlayerInput::MassageKeyRawInput(FKey Key, float RawValue, uint8 deviceID)
 {
+    if (deviceID >= KeyStateMaps.size() || deviceID >= KeysProperties.size()) return RawValue;
     float NewVal = RawValue;
     std::map<FKey, FKeyState, LessKey>& KeyStateMap = KeyStateMaps[deviceID];
     std::map<FKey, FInputKeyProperties, LessKey>& KeyProperties = KeysProperties[deviceID];
     if (KeyProperties.count(Key))
     {
         FInputKeyProperties const* const KeyProps = &KeyProperties.at(Key);
-		NewVal += KeyProps->PreOffset;
-		NewVal *= KeyProps->PreScale;
-        if (NewVal > 0)
+		NewVal += KeyProps->Offset;
+		NewVal *= KeyProps->Scale;
+        
+        
+        float deadZoneDenom = 1.f - KeyProps->DeadZone;
+        if (deadZoneDenom > 0.001f)
         {
-            NewVal = max(0.f, NewVal - KeyProps->DeadZone) / (1.f - KeyProps->DeadZone);
-        }else
-        {
-            NewVal = -max(0.f, -NewVal - KeyProps->DeadZone) / (1.f - KeyProps->DeadZone);
+            if (NewVal > 0)
+            {
+                NewVal = max(0.f, NewVal - KeyProps->DeadZone) / deadZoneDenom;
+            }
+            else
+            {
+                NewVal = -max(0.f, -NewVal - KeyProps->DeadZone) / deadZoneDenom;
+            }
         }
+        else
+        {
+            NewVal = 0.f; 
+        }
+        
+        
         if (KeyProps->Exponent != 1.f)
         {
-            NewVal = std::sin(NewVal)*std::powf(std::abs(NewVal), KeyProps->Exponent);
+            float sign = NewVal >= 0.f ? 1.f : -1.f;
+            NewVal = sign * std::powf(std::abs(NewVal), KeyProps->Exponent);
         }
         NewVal *= KeyProps->Sensitivity;
 
@@ -558,6 +598,8 @@ float IOToolkit::PlayerInput::MassageKeyRawInput(FKey Key, float RawValue, uint8
 
 void IOToolkit::PlayerInput::GetChordsForAction(const FInputActionBinding& ActionBinding, uint8 deviceID, std::vector<struct FDelegateDispatchDetails>& FoundChords, std::set<FKey,LessKey>& KeysToConsume)
 {
+    // Note: This function is called from ProcessInputStack which holds the mutex lock
+    if (deviceID >= KeyStateMaps.size() || deviceID >= ActionKeyMaps.size()) return;
     ConditionalBuildKeyMappings();
 
     std::map<FKey, FKeyState, LessKey>& KeyStateMap = KeyStateMaps[deviceID];
@@ -658,6 +700,16 @@ float IOToolkit::PlayerInput::DetermineAxisValue(const FInputAxisBinding& AxisBi
 
 void IOToolkit::PlayerInput::ConditionalBuildKeyMappings_Internal()
 {
+    // 清空旧的缓存数据
+    for (auto& actionMap : ActionKeyMaps)
+    {
+        actionMap.clear();
+    }
+    for (auto& axisMap : AxisKeyMaps)
+    {
+        axisMap.clear();
+    }
+
     struct
     {
         void Build(const std::vector<std::vector<FInputActionKeyMapping>>& InMappings, std::vector<std::map<std::string, FActionKeyDetails>>& InKeyMap)
@@ -665,6 +717,10 @@ void IOToolkit::PlayerInput::ConditionalBuildKeyMappings_Internal()
             int deviceIndex = 0;
             for (const std::vector<FInputActionKeyMapping>& Mappings : InMappings)
             {
+                if (deviceIndex >= static_cast<int>(InKeyMap.size()))
+                {
+                    break;
+                }
                 std::map<std::string, FActionKeyDetails>& KeyMap = InKeyMap[deviceIndex++];
                 for (const FInputActionKeyMapping& ActionMapping : Mappings)
                 {
@@ -687,7 +743,11 @@ void IOToolkit::PlayerInput::ConditionalBuildKeyMappings_Internal()
             int deviceIndex = 0;
             for (const std::vector<FInputAxisKeyMapping>& Mappings : InMappings)
             {
-                std::map<std::string, FAxisKeyDetails>& AxisMap = InAxisMap[deviceIndex++];
+                if (deviceIndex >= static_cast<int>(InAxisMap.size()))
+                {
+                    break;
+                }
+                std::map<std::string, FAxisKeyDetails>& AxisMap = InAxisMap[deviceIndex];
                 for (const FInputAxisKeyMapping& AxisMapping : Mappings)
                 {
                     bool bAdd = true;
@@ -707,12 +767,15 @@ void IOToolkit::PlayerInput::ConditionalBuildKeyMappings_Internal()
                         KeyDetails.KeyMappings.push_back(AxisMapping);
                     }
                 }
+                deviceIndex++;
             }
         }
     } AxisMappingsUtility;
 
     AxisMappingsUtility.Build(AxisMappings, AxisKeyMaps);
 
+    // 内存屏障，确保所有写入完成后再设置 bKeyMapsBuilt
+    MemoryBarrier();
     bKeyMapsBuilt = true;
 }
 
@@ -824,6 +887,25 @@ float IOToolkit::PlayerInput::GetAxisKey(const FKey& InKey, uint8 deviceID)
     return GetKeyValue(InKey, deviceID);
 }
 
+float IOToolkit::PlayerInput::GetRawKeyValue(const FKey& InKey, uint8 deviceID) const
+{
+    if (deviceID >= KeyStateMaps.size()) return 0.f;
+    const std::map<FKey, FKeyState, LessKey>& KeyStateMap = KeyStateMaps[deviceID];
+    
+    if (InKey == EKeys::AnyKey)
+    {
+        return 0.f;
+    }
+    
+    if (!KeyStateMap.count(InKey))
+    {
+        return 0.f;
+    }
+    
+    const FKeyState* const KeyState = &KeyStateMap.at(InKey);
+    return KeyState ? KeyState->RawValue.X : 0.f;
+}
+
 bool IOToolkit::PlayerInput::IsPressed(const FKey& InKey, uint8 deviceID) const
 {
     const FKeyState keyState = GetKeyState(InKey, deviceID);
@@ -849,3 +931,68 @@ bool IOToolkit::PlayerInput::IsCmdPressed() const
 {
     return IsPressed(EKeys::LeftCommand,0) || IsPressed(EKeys::RightCommand,0);
 }
+
+int IOToolkit::PlayerInput::SetAKProps(const char* axisName, const char* keyName, float scale, uint8 deviceID)
+{
+    if (deviceID >= AxisMappings.size())
+    {
+        return 0;
+    }
+
+    FKey targetKey(keyName);
+    bool found = false;
+
+    // 修改 AxisMappings 中的 Scale
+    for (auto& axisMapping : AxisMappings[deviceID])
+    {
+        if (axisMapping.AxisName == axisName && axisMapping.Key == targetKey)
+        {
+            axisMapping.Scale = scale;
+            found = true;
+            break;
+        }
+    }
+
+    if (!found)
+    {
+        return 0;
+    }
+
+    // 直接强制重建 KeyMaps 以应用更改（不依赖条件检查）
+    bKeyMapsBuilt = false;
+    ConditionalBuildKeyMappings_Internal();
+
+    return 1;
+}
+
+int IOToolkit::PlayerInput::SetPKProps(const char* keyName, float offset, float scale, float minValue, float maxValue, float deadZone, float sensitivity, float exponent, bool invert, bool invertEvent, uint8 deviceID)
+{
+    if (deviceID >= KeysProperties.size())
+    {
+        return 0;
+    }
+
+    FKey targetKey(keyName);
+    std::map<FKey, FInputKeyProperties, LessKey>& KeyProperties = KeysProperties[deviceID];
+    
+    
+    if (!KeyProperties.count(targetKey))
+    {
+        KeyProperties[targetKey] = FInputKeyProperties();
+    }
+
+    
+    FInputKeyProperties& props = KeyProperties[targetKey];
+    props.Offset = offset;
+    props.Scale = scale;
+    props.Min = minValue;
+    props.Max = maxValue;
+    props.DeadZone = deadZone;
+    props.Sensitivity = sensitivity;
+    props.Exponent = exponent;
+    props.bInvert = invert;
+    props.bInvertEvent = invertEvent;
+
+    return 1;
+}
+

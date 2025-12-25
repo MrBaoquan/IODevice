@@ -1,8 +1,15 @@
 using System.Collections.Generic;
 using System.Xml.Serialization;
+using ReactiveUI;
 
 namespace IOTester.Models
 {
+    public enum MappingType
+    {
+        Digital,
+        Analog
+    }
+
     [XmlRoot("EventForwardConfig")]
     public class EventForwardConfigDto
     {
@@ -49,26 +56,95 @@ namespace IOTester.Models
         [XmlAttribute]
         public bool IsExpanded { get; set; } = true;
 
+        [XmlAttribute]
+        public bool IsCustomMode { get; set; } = false;
+
+        [XmlAttribute]
+        public string CustomProtocolType { get; set; } = "TCP-Client";
+
+        [XmlAttribute]
+        public string SourceDevice { get; set; } = "";
+
+        [XmlAttribute]
+        public string TargetDevice { get; set; } = "";
+
         [XmlArray("Mappings")]
         [XmlArrayItem("Mapping")]
         public List<MappingDto> Mappings { get; set; } = new List<MappingDto>();
     }
 
-    public class MappingDto
+    public class MappingDto : ReactiveObject
     {
-        [XmlAttribute]
-        public string SourceDevice { get; set; } = "";
+        private string _sourceKey = "";
+        private string _targetKey = "";
+        private bool _isEnabled = true;
+        private string _description = "";
+        private string _dataFormat = "ASCII";
+        private string _pressedData = "";
+        private string _releasedData = "";
+        private string _type = "Digital";
 
         [XmlAttribute]
-        public string SourceKey { get; set; } = "";
+        public string SourceKey
+        {
+            get => _sourceKey;
+            set => this.RaiseAndSetIfChanged(ref _sourceKey, value);
+        }
 
         [XmlAttribute]
-        public string TargetKey { get; set; } = "";
+        public string TargetKey
+        {
+            get => _targetKey;
+            set => this.RaiseAndSetIfChanged(ref _targetKey, value);
+        }
 
         [XmlAttribute]
-        public bool IsEnabled { get; set; } = true;
+        public bool IsEnabled
+        {
+            get => _isEnabled;
+            set => this.RaiseAndSetIfChanged(ref _isEnabled, value);
+        }
 
         [XmlAttribute]
-        public string Description { get; set; } = "";
+        public string Description
+        {
+            get => _description;
+            set => this.RaiseAndSetIfChanged(ref _description, value);
+        }
+
+        [XmlAttribute]
+        public string DataFormat
+        {
+            get => _dataFormat;
+            set => this.RaiseAndSetIfChanged(ref _dataFormat, value);
+        }
+
+        [XmlAttribute]
+        public string PressedData
+        {
+            get => _pressedData;
+            set => this.RaiseAndSetIfChanged(ref _pressedData, value);
+        }
+
+        [XmlAttribute]
+        public string ReleasedData
+        {
+            get => _releasedData;
+            set => this.RaiseAndSetIfChanged(ref _releasedData, value);
+        }
+
+        [XmlAttribute]
+        public string Type
+        {
+            get => _type;
+            set => this.RaiseAndSetIfChanged(ref _type, value);
+        }
+
+        [XmlIgnore]
+        public MappingType MappingType
+        {
+            get => Type == "Analog" ? MappingType.Analog : MappingType.Digital;
+            set => Type = value == MappingType.Analog ? "Analog" : "Digital";
+        }
     }
 }

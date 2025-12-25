@@ -84,6 +84,30 @@ void IOToolkit::IODeviceDetails::BindKey(const FKey& InKey, InputEvent InEvent,I
     KeyBindings.push_back(KB);
 }
 
+void IOToolkit::IODeviceDetails::BindKey(const FKey& InKey, InputEvent InEvent, InputActionHandlerWithKeySignature delegate)
+{
+    if (!ValidDevcie(std::string(" [BindKey] ") + InKey.GetName()))
+    {
+        return;
+    }
+    if (StaticKeys::ValidKey(InKey))
+    {
+        std::string msg = std::string("Bind delegate for key ") + InKey.GetName() + " succeed. device name: " + getName();
+        IOLog::Instance().Log(msg);
+    }
+    else
+    {
+        std::string msg = std::string("Bind delegate for key ") + InKey.GetName() + " failed. because it is invalid. device name: " + getName();
+        IOLog::Instance().Warning(msg);
+        return;
+    }
+
+    FInputKeyBinding KB(FInputChord(InKey, false, false, false, false), InEvent);
+   
+    KB.KeyDelegate.BindDelegate(delegate);
+    KeyBindings.push_back(KB);
+}
+
 void IOToolkit::IODeviceDetails::BindAxis(const std::string axisName, FInputAxisHandlerSignature delegate)
 {
     if (!ValidDevcie(std::string(" [BindAxis] ") + axisName))
@@ -335,6 +359,16 @@ float IOToolkit::IODeviceDetails::GetAxisKey(const FKey& InKey)
     return PlayerInput::Instance().GetAxisKey(InKey, device.GetID());
 }
 
+float IOToolkit::IODeviceDetails::GetRawKeyValue(const FKey& InKey)
+{
+    if (!ValidDevcie(std::string(" [GetRawKeyValue] ") + InKey.GetName()))
+    {
+        return -1;
+    }
+
+    return PlayerInput::Instance().GetRawKeyValue(InKey, device.GetID());
+}
+
 float IOToolkit::IODeviceDetails::GetKeyDownDuration(const FKey& InKey)
 {
     if (!ValidDevcie(std::string(" [GetKeyDownDuration] ") + InKey.GetName()))
@@ -435,3 +469,48 @@ bool IOToolkit::IODeviceDetails::ValidDevcie(std::string customMsg)
     IOLog::Instance().Warning(msg);
     return false;
 }
+
+int IOToolkit::IODeviceDetails::SetAKProps(const char* axisName, const char* keyName, float scale)
+{
+    if (!ValidDevcie(std::string(" [SetAKProps] ") + axisName))
+    {
+        return -1;
+    }
+
+    if (!UInputSettings::Instance().HasAxis(device.GetID(), axisName))
+    {
+        std::string msg = std::string("Try to resolve [SetAKProps] ") + axisName + " failed, because can not find matched axis name in config files. device name: " + getName();
+        IOLog::Instance().Warning(msg);
+        return -1;
+    }
+
+    return PlayerInput::Instance().SetAKProps(axisName, keyName, scale, device.GetID());
+}
+
+int IOToolkit::IODeviceDetails::SetOKProps(const char* oactionName, const char* keyName, float scale, bool invertEvent)
+{
+    if (!ValidDevcie(std::string(" [SetOKProps] ") + oactionName))
+    {
+        return -1;
+    }
+
+    if (!UInputSettings::Instance().HasOAction(device.GetID(), oactionName))
+    {
+        std::string msg = std::string("Try to resolve [SetOKProps] ") + oactionName + " failed, because can not find matched oaction name in config files. device name: " + getName();
+        IOLog::Instance().Warning(msg);
+        return -1;
+    }
+
+    return rawIO ? rawIO->SetOKProps(oactionName, keyName, scale, invertEvent) : -1;
+}
+
+int IOToolkit::IODeviceDetails::SetPKProps(const char* keyName, float offset, float scale, float minValue, float maxValue, float deadZone, float sensitivity, float exponent, bool invert, bool invertEvent)
+{
+    if (!ValidDevcie(std::string(" [SetPKProps] ") + keyName))
+    {
+        return -1;
+    }
+
+    return PlayerInput::Instance().SetPKProps(keyName, offset, scale, minValue, maxValue, deadZone, sensitivity, exponent, invert, invertEvent, device.GetID());
+}
+

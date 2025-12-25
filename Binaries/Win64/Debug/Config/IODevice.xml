@@ -1,41 +1,37 @@
-<!--
-  Copyright (c) mrma617@gmail.com
-  Author: MrBaoquan
-  CreateTime: 2018-5-16 9:10
--->
-
+<?xml version="1.0" encoding="utf-8"?>
 <IORoot>
-
-	<Device Name="ExtDev" Type="External" DllName="debugger" Index="1">
-
-		<Action Name="Start" Label="开始互动">
-			<Key Name="Button_00" />
-			<Key Name="S" />
-		</Action>
-
-		<Action Name="Fire" Label="开火">
-			<Key Name="Button_01" />
-			<Key Name="F" />
-		</Action>
-
-		<Axis Name="MoveX" Label="左右移动">
-			<Key Name="Axis_00" Scale="10" />
-			<Key Name="Right" Scale="10" />
-			<Key Name="Left" Scale="-10" />
-		</Axis>
-
-		<Axis Name="MoveY" Label="前后移动">
-			<Key Name="Axis_01" Scale="10" />
-			<Key Name="Up" Scale="10" />
-			<Key Name="Down" Scale="-10" />
-		</Axis>
-
-		<OAction Name="Light" Label="氛围灯">
-			<Key Name="OAxis_00" Scale="10" InvertEvent="False" />
-			<Key Name="OAxis_02" Scale="5" InvertEvent="False" />
-		</OAction>
-
-	</Device>
-	<Device Name="ExtDev0" Type="External" DllName="ioui" Index="1" />
-
+  <Device Name="ExtDev" Type="External" DllName="debugger" Index="1">
+    <Properties />
+    <Action Name="Fire" Label="互动游戏开火状态AAA" />
+    <Action Name="Action_02" Label="新Action_3">
+      <Key Name="Button_00" />
+      <Key Name="CapsLock" />
+      <Key Name="A" />
+      <Key Name="Button_02" />
+      <Key Name="Button_03" />
+    </Action>
+    <Action Name="Action_02" Label="">
+      <Key Name="Button_01" />
+      <Key Name="B" />
+      <Key Name="C" />
+    </Action>
+    <Axis Name="MoveX" Label="左右移动">
+      <Key Name="Right" Scale="10" />
+      <Key Name="Left" Scale="-10" />
+      <Key Name="Axis_04" />
+      <Key Name="Axis_00" />
+    </Axis>
+    <Axis Name="MoveY" Label="前后移动">
+      <Key Name="Axis_01" Scale="10" />
+      <Key Name="Up" />
+      <Key Name="Down" Scale="-10" />
+    </Axis>
+    <OAction Name="Light" Label="氛围灯">
+      <Key Name="OAxis_00" Scale="100" />
+      <Key Name="OAxis_02" Scale="10" />
+    </OAction>
+  </Device>
+  <Device Name="ExtDev0" Type="External" DllName="ioui" Index="1">
+    <Properties />
+  </Device>
 </IORoot>

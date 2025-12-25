@@ -1,0 +1,366 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d" d:DesignWidth="500" d:DesignHeight="450"
+        x:Class="IOTester.Views.PropertyKeyEditDialog"
+        Title="编辑全局按键配置"
+        Width="500"
+        Height="600"
+        MaxHeight="700"
+        CanResize="True"
+        WindowStartupLocation="CenterOwner">
+
+    <Window.Styles>
+        <Style Selector="TextBlock.label">
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="Foreground" Value="#4b5563"/>
+            <Setter Property="Margin" Value="0,0,0,4"/>
+        </Style>
+    </Window.Styles>
+
+    <DockPanel>
+        <!-- 底部按钮栏 -->
+        <DockPanel DockPanel.Dock="Bottom" Margin="16,12" LastChildFill="False">
+            <Button Content="重置" Name="ResetButton" Width="100" Padding="12,8" DockPanel.Dock="Left"/>
+            <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="12">
+                <Button Content="取消" Name="CancelButton" Width="100" Padding="12,8"/>
+                <Button Content="确定" Name="OkButton" Width="100" Padding="12,8" Background="#3b82f6" Foreground="White"/>
+            </StackPanel>
+        </DockPanel>
+
+        <!-- 固定的实时预览面板 -->
+        <Border DockPanel.Dock="Bottom" 
+                BorderBrush="#e5e7eb" 
+                BorderThickness="0,1,0,0" 
+                Padding="20,12,20,16"
+                Background="#f9fafb">
+            <Grid ColumnDefinitions="Auto,*,Auto,*" RowDefinitions="Auto,Auto" ColumnSpacing="20" RowSpacing="8">
+                <TextBlock Grid.Column="0" Grid.Row="0" Grid.ColumnSpan="4" 
+                           Text="📊 实时预览" 
+                           FontSize="13" 
+                           FontWeight="SemiBold" 
+                           Foreground="#374151" 
+                           Margin="0,0,0,8"/>
+                
+                <!-- 原始值 -->
+                <TextBlock Grid.Column="0" Grid.Row="1" 
+                           Text="原始值:" 
+                           FontSize="12" 
+                           Foreground="#6b7280" 
+                           VerticalAlignment="Center"/>
+                <Border Grid.Column="1" Grid.Row="1" 
+                        Background="#dbeafe" 
+                        CornerRadius="4" 
+                        Padding="12,6">
+                    <TextBlock Name="RawValueText" 
+                               Text="0.000" 
+                               FontFamily="Consolas" 
+                               FontSize="16" 
+                               FontWeight="Bold" 
+                               Foreground="#1e40af" 
+                               HorizontalAlignment="Center"/>
+                </Border>
+                
+                <!-- 处理值 -->
+                <TextBlock Grid.Column="2" Grid.Row="1" 
+                           Text="处理值:" 
+                           FontSize="12" 
+                           Foreground="#6b7280" 
+                           VerticalAlignment="Center"/>
+                <Border Grid.Column="3" Grid.Row="1" 
+                        Background="#d1fae5" 
+                        CornerRadius="4" 
+                        Padding="12,6">
+                    <TextBlock Name="ProcessedValueText" 
+                               Text="0.000" 
+                               FontFamily="Consolas" 
+                               FontSize="16" 
+                               FontWeight="Bold" 
+                               Foreground="#065f46" 
+                               HorizontalAlignment="Center"/>
+                </Border>
+            </Grid>
+        </Border>
+
+        <!-- 可滚动的表单区域 -->
+        <ScrollViewer>
+            <StackPanel Margin="20" Spacing="16">
+                <!-- 按键名称 -->
+                <StackPanel Spacing="8">
+                    <TextBlock Classes="label" Text="按键名称 *"/>
+                    <TextBox Name="KeyNameTextBox" 
+                             Watermark="例如：Axis_00, Button_00"
+                             FontSize="14"
+                             Height="36"/>
+                </StackPanel>
+
+                <!-- 自动校准面板（可折叠） -->
+                <Border Name="CalibrationPanel" 
+                        BorderBrush="#d1d5db" 
+                        BorderThickness="1" 
+                        CornerRadius="8" 
+                        Background="#fefce8">
+                    <StackPanel>
+                        <!-- 折叠头部 -->
+                        <Button Name="CalibrationToggleButton" 
+                                HorizontalAlignment="Stretch"
+                                HorizontalContentAlignment="Left"
+                                Background="Transparent"
+                                BorderThickness="0"
+                                Padding="12,10">
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <TextBlock Name="CalibrationToggleIcon" Text="▶" FontSize="10" VerticalAlignment="Center"/>
+                                <TextBlock Text="🔧 自动校准助手" FontWeight="SemiBold" FontSize="13" Foreground="#92400e"/>
+                                <TextBlock Text="（点击展开）" FontSize="11" Foreground="#a16207" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </Button>
+                        
+                        <!-- 折叠内容 -->
+                        <StackPanel Name="CalibrationContent" IsVisible="False" Margin="12,0,12,12" Spacing="12">
+                            <Separator Background="#fde68a" Height="1" Margin="0,0,0,4"/>
+                            
+                            <!-- 说明文字 -->
+                            <TextBlock Text="将设备调至最小/最大位置，分别点击采集按钮，系统将自动计算 Offset 和 Scale 参数" 
+                                       FontSize="11" 
+                                       Foreground="#92400e" 
+                                       TextWrapping="Wrap"/>
+                            
+                            <!-- 当前实时原始值 -->
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <TextBlock Text="当前原始值:" FontSize="12" Foreground="#78716c" VerticalAlignment="Center"/>
+                                <Border Background="#fef3c7" CornerRadius="4" Padding="12,4">
+                                    <TextBlock Name="CalibrationRawValueText" 
+                                               Text="0.0000" 
+                                               FontFamily="Consolas" 
+                                               FontSize="14" 
+                                               FontWeight="Bold" 
+                                               Foreground="#92400e"/>
+                                </Border>
+                            </StackPanel>
+                            
+                            <!-- 最小值/最大值采集 -->
+                            <Grid ColumnDefinitions="*,16,*" RowDefinitions="Auto,Auto">
+                                <!-- 最小值 -->
+                                <Border Grid.Column="0" Grid.Row="0" 
+                                        Background="#fef9c3" 
+                                        CornerRadius="6" 
+                                        Padding="10" 
+                                        BorderBrush="#fde047" 
+                                        BorderThickness="1">
+                                    <StackPanel Spacing="6">
+                                        <TextBlock Text="📉 最小值" FontWeight="SemiBold" FontSize="12" Foreground="#854d0e"/>
+                                        <StackPanel Orientation="Horizontal" Spacing="6">
+                                            <TextBlock Text="已采集:" FontSize="11" Foreground="#a16207" VerticalAlignment="Center"/>
+                                            <TextBlock Name="CapturedMinValueText" 
+                                                       Text="未采集" 
+                                                       FontFamily="Consolas" 
+                                                       FontSize="12" 
+                                                       Foreground="#78716c"
+                                                       VerticalAlignment="Center"/>
+                                        </StackPanel>
+                                        <Button Name="CaptureMinButton" 
+                                                Content="采集当前值" 
+                                                HorizontalAlignment="Stretch"
+                                                Padding="8,6"
+                                                Background="#eab308"
+                                                Foreground="White"/>
+                                    </StackPanel>
+                                </Border>
+                                
+                                <!-- 最大值 -->
+                                <Border Grid.Column="2" Grid.Row="0" 
+                                        Background="#fef9c3" 
+                                        CornerRadius="6" 
+                                        Padding="10" 
+                                        BorderBrush="#fde047" 
+                                        BorderThickness="1">
+                                    <StackPanel Spacing="6">
+                                        <TextBlock Text="📈 最大值" FontWeight="SemiBold" FontSize="12" Foreground="#854d0e"/>
+                                        <StackPanel Orientation="Horizontal" Spacing="6">
+                                            <TextBlock Text="已采集:" FontSize="11" Foreground="#a16207" VerticalAlignment="Center"/>
+                                            <TextBlock Name="CapturedMaxValueText" 
+                                                       Text="未采集" 
+                                                       FontFamily="Consolas" 
+                                                       FontSize="12" 
+                                                       Foreground="#78716c"
+                                                       VerticalAlignment="Center"/>
+                                        </StackPanel>
+                                        <Button Name="CaptureMaxButton" 
+                                                Content="采集当前值" 
+                                                HorizontalAlignment="Stretch"
+                                                Padding="8,6"
+                                                Background="#eab308"
+                                                Foreground="White"/>
+                                    </StackPanel>
+                                </Border>
+                            </Grid>
+                            
+                            <!-- 目标范围 -->
+                            <StackPanel Spacing="4">
+                                <TextBlock Text="目标输出范围" FontSize="12" Foreground="#78716c"/>
+                                <Grid ColumnDefinitions="*,Auto,*" ColumnSpacing="8">
+                                    <NumericUpDown Name="TargetMinNumeric" 
+                                                   Grid.Column="0"
+                                                   Value="-1" 
+                                                   Increment="0.1" 
+                                                   FormatString="0.0"
+                                                   Height="32"/>
+                                    <TextBlock Grid.Column="1" Text="至" VerticalAlignment="Center" Foreground="#78716c"/>
+                                    <NumericUpDown Name="TargetMaxNumeric" 
+                                                   Grid.Column="2"
+                                                   Value="1" 
+                                                   Increment="0.1" 
+                                                   FormatString="0.0"
+                                                   Height="32"/>
+                                </Grid>
+                            </StackPanel>
+                            
+                            <!-- 计算结果预览 -->
+                            <Border Name="CalibrationResultPanel" 
+                                    IsVisible="False"
+                                    Background="#ecfdf5" 
+                                    CornerRadius="6" 
+                                    Padding="10" 
+                                    BorderBrush="#6ee7b7" 
+                                    BorderThickness="1">
+                                <StackPanel Spacing="6">
+                                    <TextBlock Text="✅ 计算结果" FontWeight="SemiBold" FontSize="12" Foreground="#065f46"/>
+                                    <Grid ColumnDefinitions="Auto,*,Auto,*" ColumnSpacing="12">
+                                        <TextBlock Grid.Column="0" Text="Offset:" FontSize="11" Foreground="#047857" VerticalAlignment="Center"/>
+                                        <TextBlock Name="CalculatedOffsetText" 
+                                                   Grid.Column="1"
+                                                   Text="0.0" 
+                                                   FontFamily="Consolas" 
+                                                   FontSize="12" 
+                                                   FontWeight="Bold" 
+                                                   Foreground="#065f46"/>
+                                        <TextBlock Grid.Column="2" Text="Scale:" FontSize="11" Foreground="#047857" VerticalAlignment="Center"/>
+                                        <TextBlock Name="CalculatedScaleText" 
+                                                   Grid.Column="3"
+                                                   Text="1.0" 
+                                                   FontFamily="Consolas" 
+                                                   FontSize="12" 
+                                                   FontWeight="Bold" 
+                                                   Foreground="#065f46"/>
+                                    </Grid>
+                                </StackPanel>
+                            </Border>
+                            
+                            <!-- 操作按钮 -->
+                            <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
+                                <Button Name="CalibrationResetButton" 
+                                        Content="重置采集" 
+                                        Padding="12,6"
+                                        Background="#f3f4f6"
+                                        Foreground="#374151"/>
+                                <Button Name="ApplyCalibrationButton" 
+                                        Content="应用计算结果" 
+                                        Padding="12,6"
+                                        Background="#10b981"
+                                        Foreground="White"
+                                        IsEnabled="False"/>
+                            </StackPanel>
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+
+                <!-- Offset -->
+                <StackPanel Spacing="8">
+                    <TextBlock Classes="label" Text="Offset（偏移值）"/>
+                    <TextBlock Text="原始值会先加上此偏移值 cur += Offset，用于校准零点" FontSize="11" Foreground="#9ca3af" Margin="0,-4,0,4"/>
+                    <NumericUpDown Name="OffsetNumeric"
+                                  Value="0"
+                                  Increment="0.1"
+                                  FormatString="0.0"
+                                  Height="36"/>
+                </StackPanel>
+
+                <!-- Scale -->
+                <StackPanel Spacing="8">
+                    <TextBlock Classes="label" Text="Scale（缩放系数）"/>
+                    <TextBlock Text="偏移后的值会乘以此缩放值 cur *= Scale，用于映射输入范围" FontSize="11" Foreground="#9ca3af" Margin="0,-4,0,4"/>
+                    <NumericUpDown Name="ScaleNumeric"
+                                  Value="1"
+                                  Increment="0.1"
+                                  FormatString="0.0"
+                                  Height="36"/>
+                </StackPanel>
+
+                <!-- DeadZone -->
+                <StackPanel Spacing="8">
+                    <TextBlock Classes="label" Text="DeadZone（死区）"/>
+                    <TextBlock Text="无效值区间，低于此值会被忽略（范围 0-1）" FontSize="11" Foreground="#9ca3af" Margin="0,-4,0,4"/>
+                    <NumericUpDown Name="DeadZoneNumeric"
+                                  Value="0"
+                                  Minimum="0"
+                                  Maximum="0.99"
+                                  Increment="0.01"
+                                  FormatString="0.00"
+                                  Height="36"/>
+                </StackPanel>
+
+                <!-- Exponent -->
+                <StackPanel Spacing="8">
+                    <TextBlock Classes="label" Text="Exponent（指数曲线）"/>
+                    <TextBlock Text="用于非线性响应，公式: sign(x) × |x|^Exponent（1=线性，&gt;1=中心精细边缘激进，&lt;1=相反）" FontSize="11" Foreground="#9ca3af" Margin="0,-4,0,4"/>
+                    <NumericUpDown Name="ExponentNumeric"
+                                  Value="1"
+                                  Minimum="0.1"
+                                  Maximum="5"
+                                  Increment="0.1"
+                                  FormatString="0.0"
+                                  Height="36"/>
+                </StackPanel>
+
+                <!-- Sensitivity -->
+                <StackPanel Spacing="8">
+                    <TextBlock Classes="label" Text="Sensitivity（灵敏度）"/>
+                    <TextBlock Text="最终缩放值 cur *= Sensitivity" FontSize="11" Foreground="#9ca3af" Margin="0,-4,0,4"/>
+                    <NumericUpDown Name="SensitivityNumeric"
+                                  Value="1"
+                                  Increment="0.1"
+                                  FormatString="0.0"
+                                  Height="36"/>
+                </StackPanel>
+
+                <!-- Min / Max -->
+                <Grid ColumnDefinitions="*,16,*">
+                    <StackPanel Grid.Column="0" Spacing="8">
+                        <TextBlock Classes="label" Text="Min（最小值）"/>
+                        <NumericUpDown Name="MinNumeric"
+                                      Value="0"
+                                      Increment="0.1"
+                                      FormatString="0.0"
+                                      Height="36"/>
+                        <CheckBox Name="MinUnlimitedCheckBox" Content="无限制（-∞）" Margin="0,4,0,0"/>
+                    </StackPanel>
+
+                    <StackPanel Grid.Column="2" Spacing="8">
+                        <TextBlock Classes="label" Text="Max（最大值）"/>
+                        <NumericUpDown Name="MaxNumeric"
+                                      Value="5"
+                                      Increment="0.1"
+                                      FormatString="0.0"
+                                      Height="36"/>
+                        <CheckBox Name="MaxUnlimitedCheckBox" Content="无限制（+∞）" Margin="0,4,0,0"/>
+                    </StackPanel>
+                </Grid>
+
+                <!-- Invert -->
+                <StackPanel Spacing="8">
+                    <TextBlock Classes="label" Text="Invert（数值反转）"/>
+                    <CheckBox Name="InvertCheckBox" Content="反转输出值（乘以 -1）"/>
+                    <TextBlock Text="在所有处理完成后反转数值" FontSize="11" Foreground="#9ca3af" Margin="24,4,0,0"/>
+                </StackPanel>
+
+                <!-- InvertEvent -->
+                <StackPanel Spacing="8">
+                    <TextBlock Classes="label" Text="InvertEvent（事件反转）"/>
+                    <CheckBox Name="InvertEventCheckBox" Content="反转 IE_Pressed 和 IE_Released 事件"/>
+                    <TextBlock Text="适用于 Type=External 的设备，针对 Action 输入" FontSize="11" Foreground="#9ca3af" Margin="24,4,0,0"/>
+                </StackPanel>
+            </StackPanel>
+        </ScrollViewer>
+    </DockPanel>
+</Window>

@@ -1,0 +1,218 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:vm="using:IOTester.ViewModels"
+        xmlns:iconPacks="https://github.com/MahApps/IconPacks.Avalonia"
+        xmlns:converters="using:IOTester.Converters"
+        mc:Ignorable="d" d:DesignWidth="700" d:DesignHeight="600"
+        x:Class="IOTester.Views.DevicePropertiesWindow"
+        x:DataType="vm:Device"
+        Title="设备配置"
+        Width="700" Height="600"
+        CanResize="True"
+        WindowStartupLocation="CenterOwner">
+
+    <Window.Resources>
+        <converters:MinMaxDisplayConverter x:Key="MinMaxDisplayConverter"/>
+    </Window.Resources>
+
+    <Window.Styles>
+        <Style Selector="TextBlock.section-title">
+            <Setter Property="FontSize" Value="16"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Foreground" Value="#1f2937"/>
+        </Style>
+
+        <Style Selector="TextBlock.label">
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="Foreground" Value="#4b5563"/>
+            <Setter Property="Margin" Value="0,0,0,4"/>
+        </Style>
+
+        <Style Selector="Border.section-border">
+            <Setter Property="BorderBrush" Value="#e5e7eb"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="CornerRadius" Value="6"/>
+            <Setter Property="Padding" Value="16"/>
+            <Setter Property="Margin" Value="0,0,0,8"/>
+        </Style>
+    </Window.Styles>
+
+    <DockPanel>
+        <!-- 底部按钮栏 -->
+        <Border DockPanel.Dock="Bottom" BorderBrush="#e5e7eb" BorderThickness="0,1,0,0" Padding="16,12" Background="#f9fafb">
+            <StackPanel Orientation="Horizontal" Spacing="12" HorizontalAlignment="Right">
+                <Button Content="取消" 
+                        Name="CancelButton"
+                        Width="100" 
+                        Padding="12,8"
+                        Background="#e5e7eb"
+                        Foreground="#374151"
+                        HorizontalContentAlignment="Center"
+                        VerticalContentAlignment="Center"/>
+                <Button Content="保存" 
+                        Name="SaveButton"
+                        Width="100" 
+                        Padding="12,8"
+                        Background="#3b82f6"
+                        Foreground="White"
+                        HorizontalContentAlignment="Center"
+                        VerticalContentAlignment="Center"/>
+            </StackPanel>
+        </Border>
+
+        <!-- 主内容区 -->
+        <ScrollViewer>
+            <StackPanel Margin="24,20,24,16" Spacing="20">
+                <!-- 设备基本信息 -->
+                <Border Classes="section-border">
+                    <StackPanel Spacing="12">
+                        <TextBlock Classes="section-title" Text="设备基本信息"/>
+                        
+                        <StackPanel Spacing="8">
+                            <TextBlock Classes="label" Text="设备名称"/>
+                            <TextBox Text="{Binding Name}" 
+                                     IsReadOnly="True"
+                                     Background="#f3f4f6"
+                                     FontSize="14"
+                                     Height="36"/>
+                        </StackPanel>
+
+                        <StackPanel Spacing="8">
+                            <TextBlock Classes="label" Text="设备类型"/>
+                            <TextBox Text="{Binding Type}" 
+                                     IsReadOnly="True"
+                                     Background="#f3f4f6"
+                                     FontSize="14"
+                                     Height="36"/>
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+
+                <!-- 全局按键配置 -->
+                <Border Classes="section-border">
+                    <StackPanel Spacing="12">
+                        <StackPanel Orientation="Horizontal" Spacing="12">
+                            <TextBlock Classes="section-title" Text="全局按键配置 (Properties)"/>
+                            <TextBlock Text="（所有Action/Axis/OAction下的Key继承这些配置）" 
+                                      FontSize="12" 
+                                      Foreground="#9ca3af"
+                                      VerticalAlignment="Center"/>
+                        </StackPanel>
+
+                        <StackPanel Orientation="Horizontal" Spacing="12" HorizontalAlignment="Right">
+                            <Button Content="+ 添加按键" 
+                                    Name="AddPropertyKeyButton"
+                                    Background="#3b82f6"
+                                    Foreground="White"
+                                    Padding="12,6"
+                                    FontSize="13"/>
+                            <Button Content="清空" 
+                                    Name="ClearPropertyKeysButton"
+                                    Background="#ef4444"
+                                    Foreground="White"
+                                    Padding="12,6"
+                                    FontSize="13"/>
+                        </StackPanel>
+
+                        <!-- 按键列表 -->
+                        <ItemsControl ItemsSource="{Binding Properties.KeyList}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Border BorderBrush="#e5e7eb" 
+                                           BorderThickness="1" 
+                                           CornerRadius="4" 
+                                           Padding="12"
+                                           Margin="0,0,0,8"
+                                           Background="#fafafa">
+                                        <StackPanel Spacing="8">
+                                            <!-- 按键名称行 -->
+                                            <Grid ColumnDefinitions="Auto,*,Auto,Auto">
+                                                <TextBlock Grid.Column="0" 
+                                                          Text="{Binding Name}" 
+                                                          FontWeight="SemiBold"
+                                                          FontSize="14"
+                                                          VerticalAlignment="Center"/>
+                                                <Button Grid.Column="2"
+                                                       Name="EditPropertyKeyButton"
+                                                       Background="Transparent"
+                                                       Padding="6"
+                                                       Margin="0,0,4,0"
+                                                       ToolTip.Tip="编辑按键配置">
+                                                    <iconPacks:PackIconIonicons Kind="CreateiOS" Width="16" Height="16"/>
+                                                </Button>
+                                                <Button Grid.Column="3"
+                                                       Name="DeletePropertyKeyButton"
+                                                       Background="Transparent"
+                                                       Padding="6"
+                                                       ToolTip.Tip="删除按键">
+                                                    <iconPacks:PackIconIonicons Kind="TrashiOS" Width="16" Height="16" Foreground="#ef4444"/>
+                                                </Button>
+                                            </Grid>
+
+                                            <!-- 配置参数展示 -->
+                                            <Grid ColumnDefinitions="*,*,*" RowDefinitions="Auto,Auto" ColumnSpacing="8" RowSpacing="4">
+                                                <!-- Row 0 -->
+                                                <StackPanel Grid.Column="0" Grid.Row="0">
+                                                    <TextBlock Text="Offset" FontSize="11" Foreground="#6b7280"/>
+                                                    <TextBlock Text="{Binding Offset}" FontSize="12"/>
+                                                </StackPanel>
+                                                <StackPanel Grid.Column="1" Grid.Row="0">
+                                                    <TextBlock Text="Scale" FontSize="11" Foreground="#6b7280"/>
+                                                    <TextBlock Text="{Binding Scale}" FontSize="12"/>
+                                                </StackPanel>
+                                                <StackPanel Grid.Column="2" Grid.Row="0">
+                                                    <TextBlock Text="Min" FontSize="11" Foreground="#6b7280"/>
+                                                    <TextBlock Text="{Binding Min, Converter={StaticResource MinMaxDisplayConverter}, ConverterParameter=min}" FontSize="12"/>
+                                                </StackPanel>
+
+                                                <!-- Row 1 -->
+                                                <StackPanel Grid.Column="0" Grid.Row="1">
+                                                    <TextBlock Text="Max" FontSize="11" Foreground="#6b7280"/>
+                                                    <TextBlock Text="{Binding Max, Converter={StaticResource MinMaxDisplayConverter}, ConverterParameter=max}" FontSize="12"/>
+                                                </StackPanel>
+                                                <StackPanel Grid.Column="1" Grid.Row="1">
+                                                    <TextBlock Text="DeadZone" FontSize="11" Foreground="#6b7280"/>
+                                                    <TextBlock Text="{Binding DeadZone}" FontSize="12"/>
+                                                </StackPanel>
+                                                <StackPanel Grid.Column="2" Grid.Row="1">
+                                                    <TextBlock Text="Sensitivity" FontSize="11" Foreground="#6b7280"/>
+                                                    <TextBlock Text="{Binding Sensitivity}" FontSize="12"/>
+                                                </StackPanel>
+                                            </Grid>
+                                        </StackPanel>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+
+                        <!-- 空状态提示 -->
+                        <Border BorderBrush="#e5e7eb" 
+                               BorderThickness="1" 
+                               CornerRadius="4" 
+                               Padding="32"
+                               Background="#f9fafb"
+                               IsVisible="{Binding !Properties.KeyList.Count}">
+                            <StackPanel Spacing="8" HorizontalAlignment="Center">
+                                <iconPacks:PackIconIonicons Kind="KeyiOS" 
+                                                           Width="32" 
+                                                           Height="32" 
+                                                           Foreground="#9ca3af"
+                                                           HorizontalAlignment="Center"/>
+                                <TextBlock Text="暂无全局按键配置" 
+                                          Foreground="#9ca3af" 
+                                          HorizontalAlignment="Center"/>
+                                <TextBlock Text="点击 添加按键 开始配置" 
+                                          Foreground="#d1d5db" 
+                                          FontSize="12"
+                                          HorizontalAlignment="Center"/>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+        </ScrollViewer>
+    </DockPanel>
+</Window>

@@ -21,6 +21,9 @@
         <converters:BoolToColorConverter x:Key="BoolToColorConverter"/>
         <converters:BoolToTextConverter x:Key="BoolToTextConverter"/>
         <converters:StringEqualsConverter x:Key="StringEqualsConverter"/>
+        <converters:StringNotEqualsConverter x:Key="StringNotEqualsConverter"/>
+        <converters:ProtocolTypeDisplayConverter x:Key="ProtocolTypeDisplayConverter"/>
+        <converters:MappingTypeDisplayConverter x:Key="MappingTypeDisplayConverter"/>
     </Window.Resources>
 
     <Window.Styles>
@@ -63,10 +66,7 @@
 
         <!-- 底部状态栏 -->
         <Border DockPanel.Dock="Bottom" BorderBrush="#e5e7eb" BorderThickness="0,1,0,0" Padding="12,8" Background="#f9fafb">
-            <StackPanel Orientation="Horizontal" Spacing="16">
-                <TextBlock Text="配置文件路径:" VerticalAlignment="Center" Foreground="#6b7280"/>
-                <TextBlock Text="{Binding ConfigFilePath}" VerticalAlignment="Center" FontFamily="Consolas" FontSize="11"/>
-                <TextBlock Text="|" VerticalAlignment="Center" Foreground="#d1d5db"/>
+            <StackPanel Orientation="Horizontal" Spacing="16" HorizontalAlignment="Right">
                 <TextBlock VerticalAlignment="Center" Foreground="#6b7280">
                     <Run Text="协议组数:"/>
                     <Run Text="{Binding ProtocolGroups.Count}" FontWeight="Bold"/>
@@ -152,7 +152,17 @@
                                                     <MenuItem Header="添加映射" 
                                                               Command="{Binding $parent[ListBox].DataContext.AddMappingToGroupCommand}"
                                                               CommandParameter="{Binding}"/>
+                                                    <MenuItem Header="批量添加范围映射" 
+                                                              Command="{Binding $parent[ListBox].DataContext.AddRangeMappingCommand}"/>
                                                     <Separator/>
+                                                    <MenuItem Header="映射键去重" 
+                                                              Command="{Binding $parent[ListBox].DataContext.DeduplicateMappingsCommand}"
+                                                              CommandParameter="{Binding}"
+                                                              Foreground="#06b6d4"/>
+                                                    <MenuItem Header="清空所有映射" 
+                                                              Command="{Binding $parent[ListBox].DataContext.ClearMappingsCommand}"
+                                                              CommandParameter="{Binding}"
+                                                              Foreground="#f59e0b"/>
                                                     <MenuItem Header="删除协议组" 
                                                               Command="{Binding $parent[ListBox].DataContext.DeleteSpecificProtocolGroupCommand}"
                                                               CommandParameter="{Binding}"
@@ -184,8 +194,8 @@
                                                 <StackPanel Grid.Column="1" Spacing="2">
                                                     <TextBlock Text="{Binding GroupName}" FontWeight="Bold" FontSize="13"/>
                                                     <StackPanel Orientation="Horizontal" Spacing="8">
-                                                        <TextBlock Text="{Binding ProtocolType}" FontSize="11" Foreground="#6b7280"/>
-                                                        <TextBlock Text="{Binding Mappings.Count, StringFormat='({0} 个映射)'}" 
+                                                        <TextBlock Text="{Binding ProtocolType, Converter={StaticResource ProtocolTypeDisplayConverter}}" FontSize="11" Foreground="#6b7280"/>
+                                                        <TextBlock Text="{Binding Mappings.Count, StringFormat='({0} 个映射)'}"
                                                                    FontSize="11" Foreground="#9ca3af"/>
                                                     </StackPanel>
                                                 </StackPanel>
@@ -259,7 +269,35 @@
                                                             </Grid.ColumnDefinitions>
                                                             
                                                             <StackPanel Grid.Column="0" Spacing="4">
-                                                                <TextBlock Text="{Binding SourceDevice}" FontSize="10" Foreground="#6b7280"/>
+                                                                <StackPanel Orientation="Horizontal" Spacing="6">
+                                                                    <TextBlock Text="{Binding $parent[ListBox].((vm:EventForwardConfigViewModel)DataContext).SelectedProtocolGroup.SourceDevice}" FontSize="10" Foreground="#6b7280"/>
+                                                                    <!-- 模拟量徽章 -->
+                                                                    <Border Background="#8b5cf6" 
+                                                                            CornerRadius="3" 
+                                                                            Padding="4,1"
+                                                                            VerticalAlignment="Center">
+                                                                        <Border.IsVisible>
+                                                                            <MultiBinding Converter="{StaticResource StringEqualsConverter}">
+                                                                                <Binding Path="Type" Mode="OneWay"/>
+                                                                                <Binding Source="Analog"/>
+                                                                            </MultiBinding>
+                                                                        </Border.IsVisible>
+                                                                        <TextBlock Text="模拟" FontSize="9" Foreground="White" FontWeight="Bold"/>
+                                                                    </Border>
+                                                                    <!-- 开关量徽章 -->
+                                                                    <Border Background="#10b981" 
+                                                                            CornerRadius="3" 
+                                                                            Padding="4,1"
+                                                                            VerticalAlignment="Center">
+                                                                        <Border.IsVisible>
+                                                                            <MultiBinding Converter="{StaticResource StringEqualsConverter}">
+                                                                                <Binding Path="Type" Mode="OneWay"/>
+                                                                                <Binding Source="Digital"/>
+                                                                            </MultiBinding>
+                                                                        </Border.IsVisible>
+                                                                        <TextBlock Text="开关" FontSize="9" Foreground="White" FontWeight="Bold"/>
+                                                                    </Border>
+                                                                </StackPanel>
                                                                 <StackPanel Orientation="Horizontal" Spacing="8">
                                                                     <TextBlock Text="{Binding SourceKey}" FontWeight="SemiBold" FontSize="12"/>
                                                                     <TextBlock Text="→" Foreground="#9ca3af"/>
@@ -350,8 +388,64 @@
                                 <ComboBox ItemsSource="{Binding AvailableProtocols}"
                                           SelectedItem="{Binding SelectedProtocolGroup.ProtocolType}"
                                           FontSize="13"
-                                          HorizontalAlignment="Stretch"/>
+                                          HorizontalAlignment="Stretch">
+                                    <ComboBox.ItemTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Text="{Binding Converter={StaticResource ProtocolTypeDisplayConverter}}" FontSize="13"/>
+                                        </DataTemplate>
+                                    </ComboBox.ItemTemplate>
+                                </ComboBox>
                                 <TextBlock Text="选择此协议组使用的通信协议" 
+                                           FontSize="11" 
+                                           Foreground="#9ca3af" 
+                                           Margin="4,0,0,0"/>
+                            </StackPanel>
+
+                            <!-- 源设备选择 -->
+                            <StackPanel Spacing="6">
+                                <TextBlock Classes="header" Text="源设备" Foreground="#374151"/>
+                                <ComboBox ItemsSource="{Binding AvailableDevices}"
+                                          SelectedItem="{Binding SelectedProtocolGroup.SourceDevice}"
+                                          FontSize="13"
+                                          HorizontalAlignment="Stretch">
+                                    <ComboBox.ItemTemplate>
+                                        <DataTemplate>
+                                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                                <iconPacks:PackIconIonicons Kind="SettingsiOS" Width="14" Height="14" VerticalAlignment="Center"/>
+                                                <TextBlock Text="{Binding}" FontSize="13"/>
+                                            </StackPanel>
+                                        </DataTemplate>
+                                    </ComboBox.ItemTemplate>
+                                </ComboBox>
+                                <TextBlock Text="选择接收键值输入的源设备，该协议组下所有映射将从此设备接收输入" 
+                                           FontSize="11" 
+                                           Foreground="#9ca3af" 
+                                           Margin="4,0,0,0"/>
+                            </StackPanel>
+
+                            <!-- 目标设备选择 (设备直出) -->
+                            <StackPanel Spacing="6">
+                                <StackPanel.IsVisible>
+                                    <MultiBinding Converter="{StaticResource StringEqualsConverter}">
+                                        <Binding Path="SelectedProtocolGroup.ProtocolType"/>
+                                        <Binding Source="DirectOutput"/>
+                                    </MultiBinding>
+                                </StackPanel.IsVisible>
+                                <TextBlock Classes="header" Text="目标设备" Foreground="#374151"/>
+                                <ComboBox ItemsSource="{Binding AvailableDevices}"
+                                          SelectedItem="{Binding SelectedProtocolGroup.TargetDevice}"
+                                          FontSize="13"
+                                          HorizontalAlignment="Stretch">
+                                    <ComboBox.ItemTemplate>
+                                        <DataTemplate>
+                                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                                <iconPacks:PackIconIonicons Kind="SettingsiOS" Width="14" Height="14" VerticalAlignment="Center"/>
+                                                <TextBlock Text="{Binding}" FontSize="13"/>
+                                            </StackPanel>
+                                        </DataTemplate>
+                                    </ComboBox.ItemTemplate>
+                                </ComboBox>
+                                <TextBlock Text="选择接收输出的目标设备，将源设备的输入直接输出到此设备" 
                                            FontSize="11" 
                                            Foreground="#9ca3af" 
                                            Margin="4,0,0,0"/>
@@ -398,11 +492,30 @@
                                 <TextBlock Classes="header" Text="Modbus-RTU 配置" Foreground="#374151"/>
                                 
                                 <StackPanel Spacing="6">
-                                    <TextBlock Text="串口号" FontSize="12" Foreground="#6b7280"/>
-                                    <ComboBox ItemsSource="{Binding AvailablePorts}"
-                                              SelectedItem="{Binding SelectedProtocolGroup.SerialPort}"
-                                              FontSize="13"
-                                              HorizontalAlignment="Stretch"/>
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+                                        <StackPanel Grid.Column="0" Spacing="6">
+                                            <TextBlock Text="串口号" FontSize="12" Foreground="#6b7280"/>
+                                            <ComboBox ItemsSource="{Binding AvailablePorts}"
+                                                      SelectedItem="{Binding SelectedProtocolGroup.SerialPort}"
+                                                      FontSize="13"
+                                                      HorizontalAlignment="Stretch"/>
+                                        </StackPanel>
+                                        <Button Grid.Column="1" 
+                                                VerticalAlignment="Bottom"
+                                                Margin="8,0,0,0"
+                                                Command="{Binding RefreshComPortsCommand}"
+                                                ToolTip.Tip="刷新COM口列表"
+                                                Padding="8"
+                                                Background="Transparent"
+                                                BorderThickness="1"
+                                                BorderBrush="#d1d5db">
+                                            <iconPacks:PackIconIonicons Kind="RefreshiOS" Width="16" Height="16"/>
+                                        </Button>
+                                    </Grid>
                                 </StackPanel>
                                 
                                 <StackPanel Spacing="6">
@@ -436,6 +549,134 @@
                                               FontSize="13"
                                               HorizontalAlignment="Stretch"/>
                                 </StackPanel>
+                            </StackPanel>
+
+                            <!-- Custom 自定义协议配置 -->
+                            <StackPanel Spacing="6">
+                                <StackPanel.IsVisible>
+                                    <MultiBinding Converter="{StaticResource StringEqualsConverter}">
+                                        <Binding Path="SelectedProtocolGroup.ProtocolType"/>
+                                        <Binding Source="Custom"/>
+                                    </MultiBinding>
+                                </StackPanel.IsVisible>
+                                
+                                <TextBlock Classes="header" Text="自定义协议配置" Foreground="#374151"/>
+                                <TextBlock Text="配置自定义数据转发协议" 
+                                           FontSize="11" 
+                                           Foreground="#9ca3af" 
+                                           Margin="0,0,0,12"/>
+                                
+                                <StackPanel Spacing="6" Margin="0,0,0,0">
+                                    <TextBlock Text="协议类型" FontSize="12" Foreground="#6b7280"/>
+                                    <ComboBox ItemsSource="{Binding AvailableCustomProtocols}"
+                                              SelectedItem="{Binding SelectedProtocolGroup.CustomProtocolType}"
+                                              FontSize="13"
+                                              HorizontalAlignment="Stretch"/>
+                                    <TextBlock Text="选择用于数据转发的协议类型" 
+                                               FontSize="11" 
+                                               Foreground="#9ca3af" 
+                                               Margin="4,0,0,0"/>
+                                </StackPanel>
+                                
+                                <!-- TCP/UDP 配置 -->
+                                <StackPanel Spacing="6" Margin="0,8,0,0">
+                                    <StackPanel.IsVisible>
+                                        <MultiBinding Converter="{StaticResource StringNotEqualsConverter}">
+                                            <Binding Path="SelectedProtocolGroup.CustomProtocolType"/>
+                                            <Binding Source="Serial"/>
+                                        </MultiBinding>
+                                    </StackPanel.IsVisible>
+                                    
+                                    <TextBlock Text="IP地址" FontSize="12" Foreground="#6b7280"/>
+                                    <TextBox Text="{Binding SelectedProtocolGroup.TargetIP}" 
+                                             Watermark="例如: 192.168.1.100"
+                                             FontSize="13"/>
+                                    
+                                    <TextBlock Text="端口" FontSize="12" Foreground="#6b7280" Margin="0,8,0,0"/>
+                                    <NumericUpDown Value="{Binding SelectedProtocolGroup.TargetPort}" 
+                                                   Minimum="1" 
+                                                   Maximum="65535"
+                                                   Increment="1"
+                                                   FontSize="13"
+                                                   HorizontalAlignment="Stretch"/>
+                                </StackPanel>
+                                
+                                <!-- 串口配置 -->
+                                <StackPanel Spacing="6" Margin="0,8,0,0">
+                                    <StackPanel.IsVisible>
+                                        <MultiBinding Converter="{StaticResource StringEqualsConverter}">
+                                            <Binding Path="SelectedProtocolGroup.CustomProtocolType"/>
+                                            <Binding Source="Serial"/>
+                                        </MultiBinding>
+                                    </StackPanel.IsVisible>
+                                    
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+                                        <StackPanel Grid.Column="0" Spacing="6">
+                                            <TextBlock Text="串口号" FontSize="12" Foreground="#6b7280"/>
+                                            <ComboBox ItemsSource="{Binding AvailablePorts}"
+                                                      SelectedItem="{Binding SelectedProtocolGroup.SerialPort}"
+                                                      FontSize="13"
+                                                      HorizontalAlignment="Stretch"/>
+                                        </StackPanel>
+                                        <Button Grid.Column="1" 
+                                                VerticalAlignment="Bottom"
+                                                Margin="8,0,0,0"
+                                                Command="{Binding RefreshComPortsCommand}"
+                                                ToolTip.Tip="刷新COM口列表"
+                                                Padding="8"
+                                                Background="Transparent"
+                                                BorderThickness="1"
+                                                BorderBrush="#d1d5db">
+                                            <iconPacks:PackIconIonicons Kind="RefreshiOS" Width="16" Height="16"/>
+                                        </Button>
+                                    </Grid>
+                                    
+                                    <TextBlock Text="波特率" FontSize="12" Foreground="#6b7280" Margin="0,8,0,0"/>
+                                    <ComboBox ItemsSource="{Binding AvailableBaudRates}"
+                                              SelectedItem="{Binding SelectedProtocolGroup.BaudRate}"
+                                              FontSize="13"
+                                              HorizontalAlignment="Stretch"/>
+                                    
+                                    <TextBlock Text="数据位" FontSize="12" Foreground="#6b7280" Margin="0,8,0,0"/>
+                                    <ComboBox ItemsSource="{Binding AvailableDataBits}"
+                                              SelectedItem="{Binding SelectedProtocolGroup.DataBits}"
+                                              FontSize="13"
+                                              HorizontalAlignment="Stretch"/>
+                                    
+                                    <TextBlock Text="校验位" FontSize="12" Foreground="#6b7280" Margin="0,8,0,0"/>
+                                    <ComboBox ItemsSource="{Binding AvailableParities}"
+                                              SelectedItem="{Binding SelectedProtocolGroup.Parity}"
+                                              FontSize="13"
+                                              HorizontalAlignment="Stretch"/>
+                                    
+                                    <TextBlock Text="停止位" FontSize="12" Foreground="#6b7280" Margin="0,8,0,0"/>
+                                    <ComboBox ItemsSource="{Binding AvailableStopBits}"
+                                              SelectedItem="{Binding SelectedProtocolGroup.StopBits}"
+                                              FontSize="13"
+                                              HorizontalAlignment="Stretch"/>
+                                </StackPanel>
+                                
+                                <Border Background="#fef3c7" 
+                                        BorderBrush="#fbbf24" 
+                                        BorderThickness="1" 
+                                        CornerRadius="4" 
+                                        Padding="10"
+                                        Margin="0,8,0,0">
+                                    <StackPanel Spacing="4">
+                                        <StackPanel Orientation="Horizontal" Spacing="6">
+                                            <iconPacks:PackIconIonicons Kind="InformationCircleiOS" Width="16" Height="16" Foreground="#d97706"/>
+                                            <TextBlock Text="自定义模式说明" FontWeight="Bold" FontSize="12" Foreground="#92400e"/>
+                                        </StackPanel>
+                                        <TextBlock Text="在自定义模式下，映射配置中的'目标Key'将被隐藏。使用'Pressed数据'和'Released数据'字段分别配置按下和释放时要转发的内容。" 
+                                                   FontSize="11" 
+                                                   Foreground="#92400e"
+                                                   TextWrapping="Wrap"/>
+                                    </StackPanel>
+                                </Border>
                             </StackPanel>
 
                             <!-- 说明 -->
@@ -505,26 +746,16 @@
                     <!-- 编辑表单 -->
                     <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
                         <StackPanel Margin="16" Spacing="16">
-                            <!-- 源设备选择 -->
+                            <!-- 映射类型选择 -->
                             <StackPanel Spacing="6">
-                                <TextBlock Classes="header" Text="源设备" Foreground="#374151"/>
-                                <ComboBox ItemsSource="{Binding AvailableDevices}"
-                                          SelectedItem="{Binding SelectedMapping.SourceDevice}"
+                                <TextBlock Classes="header" Text="映射类型" Foreground="#374151"/>
+                                <ComboBox ItemsSource="{Binding AvailableMappingTypes}"
+                                          SelectedItem="{Binding SelectedMapping.Type, Converter={StaticResource MappingTypeDisplayConverter}}"
                                           FontSize="13"
-                                          HorizontalAlignment="Stretch">
-                                    <ComboBox.ItemTemplate>
-                                        <DataTemplate>
-                                            <StackPanel Orientation="Horizontal" Spacing="8">
-                                                <iconPacks:PackIconIonicons Kind="SettingsiOS" Width="14" Height="14" VerticalAlignment="Center"/>
-                                                <TextBlock Text="{Binding}" FontSize="13"/>
-                                            </StackPanel>
-                                        </DataTemplate>
-                                    </ComboBox.ItemTemplate>
-                                </ComboBox>
-                                <TextBlock Text="选择接收键值输入的源设备" 
-                                           FontSize="11" 
-                                           Foreground="#9ca3af" 
-                                           Margin="4,0,0,0"/>
+                                          HorizontalAlignment="Stretch"/>
+                                <TextBlock FontSize="11" Foreground="#9ca3af" Margin="4,0,0,0" TextWrapping="Wrap">
+                                    <Run Text="开关量: 数字量（按键按下/释放） | 模拟量: 连续变化的数值（摇杆轴）"/>
+                                </TextBlock>
                             </StackPanel>
 
                             <!-- 源Key 输入 -->
@@ -539,8 +770,8 @@
                                            Margin="4,0,0,0"/>
                             </StackPanel>
 
-                            <!-- 目标Key 输入 -->
-                            <StackPanel Spacing="6">
+                            <!-- 目标Key 输入 (非自定义模式) -->
+                            <StackPanel Spacing="6" IsVisible="{Binding SelectedProtocolGroup.IsCustomMode, Converter={x:Static BoolConverters.Not}}">
                                 <TextBlock Classes="header" Text="目标Key (转发的键值)" Foreground="#374151"/>
                                 <TextBox Text="{Binding SelectedMapping.TargetKey}" 
                                          Watermark="请输入目标Key"
@@ -551,7 +782,62 @@
                                            Margin="4,0,0,0"/>
                             </StackPanel>
 
-
+                            <!-- 自定义模式字段 -->
+                            <StackPanel Spacing="6" IsVisible="{Binding SelectedProtocolGroup.IsCustomMode}">
+                                <Border Background="#e0f2fe" 
+                                        BorderBrush="#0ea5e9" 
+                                        BorderThickness="1" 
+                                        CornerRadius="4" 
+                                        Padding="10"
+                                        Margin="0,0,0,8">
+                                    <StackPanel Spacing="4">
+                                        <StackPanel Orientation="Horizontal" Spacing="6">
+                                            <iconPacks:PackIconIonicons Kind="FlashiOS" Width="16" Height="16" Foreground="#0369a1"/>
+                                            <TextBlock Text="自定义模式已启用" FontWeight="Bold" FontSize="12" Foreground="#0c4a6e"/>
+                                        </StackPanel>
+                                        <TextBlock Text="在自定义模式下，将使用下方配置的数据作为转发内容。Pressed和Released事件可以发送不同的数据。" 
+                                                   FontSize="11" 
+                                                   Foreground="#0c4a6e"
+                                                   TextWrapping="Wrap"/>
+                                    </StackPanel>
+                                </Border>
+                                
+                                <TextBlock Classes="header" Text="数据格式" Foreground="#374151"/>
+                                <ComboBox ItemsSource="{Binding AvailableDataFormats}"
+                                          SelectedItem="{Binding SelectedMapping.DataFormat}"
+                                          FontSize="13"
+                                          HorizontalAlignment="Stretch"/>
+                                <TextBlock Text="选择数据的格式：ASCII 文本或 HEX 十六进制" 
+                                           FontSize="11" 
+                                           Foreground="#9ca3af" 
+                                           Margin="4,0,0,0"/>
+                                
+                                <TextBlock Classes="header" Text="Pressed 事件数据" Foreground="#374151" Margin="0,12,0,0"/>
+                                <TextBox Text="{Binding SelectedMapping.PressedData}" 
+                                         Watermark="按下时发送的数据（为空则不发送）"
+                                         AcceptsReturn="True"
+                                         TextWrapping="Wrap"
+                                         Height="60"
+                                         FontFamily="Consolas"
+                                         FontSize="13"/>
+                                <TextBlock FontSize="11" Foreground="#9ca3af" Margin="4,0,0,0" TextWrapping="Wrap">
+                                    <Run Text="按键按下时发送此数据，留空则不发送"/>
+                                </TextBlock>
+                                
+                                <TextBlock Classes="header" Text="Released 事件数据" Foreground="#374151" Margin="0,12,0,0"/>
+                                <TextBox Text="{Binding SelectedMapping.ReleasedData}" 
+                                         Watermark="释放时发送的数据（为空则不发送）"
+                                         AcceptsReturn="True"
+                                         TextWrapping="Wrap"
+                                         Height="60"
+                                         FontFamily="Consolas"
+                                         FontSize="13"/>
+                                <TextBlock FontSize="11" Foreground="#9ca3af" Margin="4,0,0,0" TextWrapping="Wrap">
+                                    <Run Text="按键释放时发送此数据，留空则不发送"/>
+                                    <LineBreak/>
+                                    <Run Text="💡 提示 - ASCII格式：直接输入文本 | HEX格式：空格分隔，例：48 65 6C 6C 6F"/>
+                                </TextBlock>
+                            </StackPanel>
 
                             <!-- 是否启用 -->
                             <StackPanel Spacing="6">
@@ -594,7 +880,7 @@
                                     <StackPanel Spacing="4">
                                         <TextBlock FontFamily="Consolas" FontSize="12" Foreground="#1e3a8a">
                                             <Run Text="源设备: "/>
-                                            <Run Text="{Binding SelectedMapping.SourceDevice, Mode=OneWay}" FontWeight="Bold"/>
+                                            <Run Text="{Binding SelectedProtocolGroup.SourceDevice, Mode=OneWay}" FontWeight="Bold"/>
                                             <Run Text=" | 源Key: "/>
                                             <Run Text="{Binding SelectedMapping.SourceKey, Mode=OneWay}" FontWeight="Bold"/>
                                         </TextBlock>

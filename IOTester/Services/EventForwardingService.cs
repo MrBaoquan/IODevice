@@ -1,38 +1,81 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Net.Sockets;
-using System.Text;
-using System.Text.RegularExpressions;
-using System.Text.Json;
 using System.Xml.Serialization;
 using IOTester.Models;
+using IOTester.Services.Senders;
 using IOToolkit;
 
 namespace IOTester.Services
 {
+    /// <summary>
+    /// 事件转发服务，负责协调事件绑定和转发
+    /// 职责：加载配置、绑定设备事件、协调各协议发送器
+    /// </summary>
     public class EventForwardingService
     {
         private static EventForwardingService? _instance;
         public static EventForwardingService Instance => _instance ??= new EventForwardingService();
 
+        // 配置
         private List<ProtocolGroupDto>? _config;
-        private readonly Dictionary<string, UdpClient> _udpClients =
-            new Dictionary<string, UdpClient>();
 
+        // 组件
+        private readonly ConnectionManager _connectionManager;
+        private readonly AnalogValueProcessor _analogProcessor;
+
+        // 协议发送器
+        private readonly Dictionary<string, IProtocolSender> _senders = new();
+
+        // 自定义协议子发送器
+        private readonly Dictionary<string, IProtocolSender> _customSenders = new();
+
+        // DirectOutput 模拟量值去重
+        private readonly ConcurrentDictionary<string, float> _lastDirectOutputValues = new();
+
+        private EventForwardingService()
+        {
+            _connectionManager = new ConnectionManager();
+            _analogProcessor = new AnalogValueProcessor();
+            InitializeSenders();
+        }
+
+        private void InitializeSenders()
+        {
+            // 主协议发送器
+            _senders["NetIO"] = new NetIOSender(_connectionManager);
+            _senders["Modbus-RTU"] = new ModbusSender(_connectionManager);
+
+            // 自定义协议子发送器
+            _customSenders["TCP-Client"] = new TcpClientSender(_connectionManager);
+            _customSenders["TCP-Server"] = new TcpServerSender(_connectionManager);
+            _customSenders["UDP"] = new UdpSender(_connectionManager);
+            _customSenders["Serial"] = new SerialSender(_connectionManager);
+        }
+
+        /// <summary>
+        /// 根据协议类型获取发送器
+        /// </summary>
+        private IProtocolSender? GetSender(ProtocolGroupDto group)
+        {
+            if (group.ProtocolType == "Custom" && group.IsCustomMode)
+            {
+                return _customSenders.TryGetValue(group.CustomProtocolType, out var sender)
+                    ? sender
+                    : null;
+            }
+
+            return _senders.TryGetValue(group.ProtocolType, out var s) ? s : null;
+        }
+
+        /// <summary>
+        /// 加载配置文件
+        /// </summary>
         public void LoadConfig(string configPath)
         {
-            lock (_udpClients)
-            {
-                // 清理旧的 UDP 客户端
-                foreach (var client in _udpClients.Values)
-                {
-                    client.Close();
-                    client.Dispose();
-                }
-                _udpClients.Clear();
-            }
+            _connectionManager.CleanupAll();
 
             try
             {
@@ -43,12 +86,10 @@ namespace IOTester.Services
                 }
 
                 var serializer = new XmlSerializer(typeof(EventForwardConfigDto));
-                using (var reader = new StreamReader(configPath))
-                {
-                    var root = (EventForwardConfigDto?)serializer.Deserialize(reader);
-                    _config = root?.ProtocolGroups;
-                    Debug.WriteLine($"Loaded {_config?.Count ?? 0} protocol groups.");
-                }
+                using var reader = new StreamReader(configPath);
+                var root = (EventForwardConfigDto?)serializer.Deserialize(reader);
+                _config = root?.ProtocolGroups;
+                Debug.WriteLine($"Loaded {_config?.Count ?? 0} protocol groups.");
             }
             catch (Exception ex)
             {
@@ -56,132 +97,228 @@ namespace IOTester.Services
             }
         }
 
+        /// <summary>
+        /// 启动事件转发
+        /// </summary>
         public void Start()
         {
             if (_config == null)
                 return;
 
+            // 初始化模拟量处理器
+            _analogProcessor.Initialize(
+                _config,
+                protocolType =>
+                {
+                    // 根据协议类型返回发送器（用于模拟量）
+                    if (protocolType == "Custom")
+                        return null; // Custom 需要特殊处理
+                    return _senders.TryGetValue(protocolType, out var s) ? s : null;
+                }
+            );
+
             foreach (var group in _config)
             {
-                if (group.Mappings == null)
+                BindGroup(group);
+            }
+
+            // 启动模拟量轮询，使用可配置的刷新率
+            var analogInterval = IOTesterSettings.Instance.AnalogProcessorIntervalMs;
+            _analogProcessor.StartPolling(analogInterval);
+        }
+
+        /// <summary>
+        /// 绑定协议组的所有映射
+        /// </summary>
+        private void BindGroup(ProtocolGroupDto group)
+        {
+            if (group.Mappings == null || string.IsNullOrEmpty(group.SourceDevice))
+                return;
+
+            var ioDev = IODeviceController.GetIODevice(group.SourceDevice);
+            if (ioDev == null)
+            {
+                Debug.WriteLine($"Device not found: {group.SourceDevice}");
+                return;
+            }
+
+            // 设备直出模式
+            IODevice? targetDev = null;
+            if (group.ProtocolType == "DirectOutput" && !string.IsNullOrEmpty(group.TargetDevice))
+            {
+                targetDev = IODeviceController.GetIODevice(group.TargetDevice);
+                if (targetDev == null)
+                {
+                    Debug.WriteLine($"Target device not found: {group.TargetDevice}");
+                    return;
+                }
+            }
+
+            foreach (var mapping in group.Mappings)
+            {
+                if (!mapping.IsEnabled)
                     continue;
 
-                foreach (var mapping in group.Mappings)
+                try
                 {
-                    if (!mapping.IsEnabled)
-                        continue;
-                    if (string.IsNullOrEmpty(mapping.SourceDevice))
-                        continue;
-
-                    try
+                    if (group.ProtocolType == "DirectOutput" && targetDev != null)
                     {
-                        var ioDev = IODeviceController.GetIODevice(mapping.SourceDevice);
-                        if (ioDev == null)
-                        {
-                            Debug.WriteLine($"Device not found: {mapping.SourceDevice}");
-                            continue;
-                        }
-
-                        // Bind Pressed Event
-                        ioDev.BindKey(
-                            mapping.SourceKey,
-                            InputEvent.IE_Pressed,
-                            () => HandleForwarding(group, mapping, "Pressed")
-                        );
-
-                        // Bind Released Event
-                        ioDev.BindKey(
-                            mapping.SourceKey,
-                            InputEvent.IE_Released,
-                            () => HandleForwarding(group, mapping, "Released")
-                        );
-
-                        Debug.WriteLine(
-                            $"Bound {mapping.SourceDevice}.{mapping.SourceKey} -> {mapping.TargetKey}"
-                        );
+                        BindDirectOutput(ioDev, targetDev, group, mapping);
                     }
-                    catch (Exception ex)
+                    else
                     {
-                        Debug.WriteLine($"Error binding key {mapping.SourceKey}: {ex.Message}");
+                        BindProtocolForwarding(ioDev, group, mapping);
                     }
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine($"Error binding key {mapping.SourceKey}: {ex.Message}");
                 }
             }
         }
 
-        private void HandleForwarding(ProtocolGroupDto group, MappingDto mapping, string eventType)
+        /// <summary>
+        /// 绑定设备直出模式
+        /// </summary>
+        private void BindDirectOutput(
+            IODevice sourceDev,
+            IODevice targetDev,
+            ProtocolGroupDto group,
+            MappingDto mapping
+        )
         {
-            try
+            var outputKey = ConvertToOutputKey(mapping.TargetKey);
+
+            if (mapping.MappingType == MappingType.Digital)
             {
-                if (group.ProtocolType == "NetIO")
-                {
-                    SendNetIO(group, mapping, eventType);
-                }
-                else if (group.ProtocolType == "Modbus-RTU")
-                {
-                    SendModbus(group, mapping, eventType);
-                }
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"Forwarding error: {ex.Message}");
-            }
-        }
-
-        private void SendNetIO(ProtocolGroupDto group, MappingDto mapping, string eventType)
-        {
-            try
-            {
-                // 解析通道号 (支持 Button_xx, Axis_xxx 等格式，提取 _ 后面的数字并转为整数)
-                string channel = mapping.TargetKey ?? "";
-                var match = Regex.Match(channel, @"_(\d+)$");
-                if (match.Success && int.TryParse(match.Groups[1].Value, out int channelId))
-                {
-                    channel = channelId.ToString();
-                }
-
-                // 确定值 (Pressed -> "1", Released -> "0")
-                string value = eventType == "Pressed" ? "1" : "0";
-
-                // 构建JSON: {"evt":"SetDI","data":{"通道号":"值"}}
-                // 使用 Dictionary 构建 data 对象
-                var dataDict = new Dictionary<string, string> { { channel, value } };
-
-                var payload = new { evt = "SetDI", data = dataDict };
-
-                string jsonMessage = JsonSerializer.Serialize(payload);
-                var data = Encoding.UTF8.GetBytes(jsonMessage);
-
-                string key = $"{group.TargetIP}:{group.TargetPort}";
-                UdpClient? udpClient;
-
-                lock (_udpClients)
-                {
-                    if (!_udpClients.TryGetValue(key, out udpClient))
-                    {
-                        udpClient = new UdpClient();
-                        _udpClients[key] = udpClient;
-                    }
-                }
-
-                lock (udpClient)
-                {
-                    udpClient.Send(data, data.Length, group.TargetIP, group.TargetPort);
-                }
+                // 数字量
+                sourceDev.BindKey(
+                    mapping.SourceKey,
+                    InputEvent.IE_Pressed,
+                    () => targetDev.SetDO(outputKey, 1)
+                );
+                sourceDev.BindKey(
+                    mapping.SourceKey,
+                    InputEvent.IE_Released,
+                    () => targetDev.SetDO(outputKey, 0)
+                );
 
                 Debug.WriteLine(
-                    $"[NetIO] Sent '{jsonMessage}' to {group.TargetIP}:{group.TargetPort}"
+                    $"[DirectOutput] Bound Digital {group.SourceDevice}.{mapping.SourceKey} -> {group.TargetDevice}.{outputKey}"
                 );
             }
-            catch (Exception ex)
+            else
             {
-                Debug.WriteLine($"[NetIO] Error sending: {ex.Message}");
+                // 模拟量（带去重）
+                var deduplicationKey = $"{group.Id}:{outputKey}";
+                var capturedTargetDev = targetDev;
+
+                sourceDev.BindAxisKey(
+                    mapping.SourceKey,
+                    value =>
+                    {
+                        if (
+                            !_lastDirectOutputValues.TryGetValue(
+                                deduplicationKey,
+                                out var lastValue
+                            )
+                            || Math.Abs(lastValue - value) > float.Epsilon
+                        )
+                        {
+                            _lastDirectOutputValues[deduplicationKey] = value;
+                            capturedTargetDev.SetDO(outputKey, value);
+                        }
+                    }
+                );
+
+                Debug.WriteLine(
+                    $"[DirectOutput] Bound Analog {group.SourceDevice}.{mapping.SourceKey} -> {group.TargetDevice}.{outputKey}"
+                );
             }
         }
 
-        private void SendModbus(ProtocolGroupDto group, MappingDto mapping, string eventType)
+        /// <summary>
+        /// 绑定协议转发模式
+        /// </summary>
+        private void BindProtocolForwarding(
+            IODevice ioDev,
+            ProtocolGroupDto group,
+            MappingDto mapping
+        )
         {
-            // Placeholder for Modbus implementation
-            Debug.WriteLine($"[Modbus] {mapping.TargetKey} {eventType} via {group.SerialPort}");
+            if (mapping.MappingType == MappingType.Digital)
+            {
+                // 数字量
+                var sender = GetSender(group);
+                if (sender == null)
+                {
+                    Debug.WriteLine($"No sender found for protocol: {group.ProtocolType}");
+                    return;
+                }
+
+                ioDev.BindKey(
+                    mapping.SourceKey,
+                    InputEvent.IE_Pressed,
+                    () => sender.SendDigital(group, mapping, "Pressed")
+                );
+                ioDev.BindKey(
+                    mapping.SourceKey,
+                    InputEvent.IE_Released,
+                    () => sender.SendDigital(group, mapping, "Released")
+                );
+
+                Debug.WriteLine(
+                    $"Bound Digital {group.SourceDevice}.{mapping.SourceKey} -> {mapping.TargetKey}"
+                );
+            }
+            else
+            {
+                // 模拟量
+                var groupId = group.Id;
+                var targetKey = mapping.TargetKey;
+                _analogProcessor.MarkHasAnalogMappings();
+
+                ioDev.BindAxisKey(
+                    mapping.SourceKey,
+                    value =>
+                    {
+                        _analogProcessor.UpdateValue(groupId, targetKey, value);
+                    }
+                );
+
+                Debug.WriteLine(
+                    $"Bound Analog {group.SourceDevice}.{mapping.SourceKey} -> {mapping.TargetKey}"
+                );
+            }
+        }
+
+        /// <summary>
+        /// 将输入Key转换为输出Key格式
+        /// 规则：将 xx_yy 格式转换为 OAxis_yy
+        /// </summary>
+        private static Key ConvertToOutputKey(string inputKey)
+        {
+            if (string.IsNullOrEmpty(inputKey))
+                return inputKey;
+
+            int underscoreIndex = inputKey.IndexOf('_');
+            if (underscoreIndex > 0 && underscoreIndex < inputKey.Length - 1)
+            {
+                string suffix = inputKey.Substring(underscoreIndex + 1);
+                return $"OAxis_{suffix}";
+            }
+
+            return inputKey;
+        }
+
+        /// <summary>
+        /// 停止事件转发
+        /// </summary>
+        public void Stop()
+        {
+            _analogProcessor.Clear();
+            _lastDirectOutputValues.Clear();
+            _connectionManager.CleanupAll();
         }
     }
 }

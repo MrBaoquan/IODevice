@@ -159,6 +159,35 @@ public:
 
     float GetAxis(const char* AxisName, uint8 deviceID);
     float GetAxisKey(const FKey& InKey, uint8 deviceID);
+    
+    /** @return raw value of the InKey from FKeyState.RawValue.X */
+    float GetRawKeyValue(const FKey& InKey, uint8 deviceID) const;
+
+    /**
+     * 设置 Axis Key 的属性 (Scale)
+     * @param axisName: Axis 名称
+     * @param keyName: Key 名称
+     * @param scale: 缩放系数
+     * @return: 成功返回1 失败返回0
+     */
+    int SetAKProps(const char* axisName, const char* keyName, float scale, uint8 deviceID);
+
+    /**
+     * 设置 Property Key 的属性
+     * @param keyName: Key 名称
+     * @param offset: 偏移值（校准零点）
+     * @param scale: 缩放系数（映射输入范围）
+     * @param minValue: 最小值
+     * @param maxValue: 最大值
+     * @param deadZone: 死区
+     * @param sensitivity: 灵敏度
+     * @param exponent: 指数曲线
+     * @param invert: 是否反转数值
+     * @param invertEvent: 是否反转事件
+     * @param deviceID: 设备ID
+     * @return: 成功返回1 失败返回0
+     */
+    int SetPKProps(const char* keyName, float offset, float scale, float minValue, float maxValue, float deadZone, float sensitivity, float exponent, bool invert, bool invertEvent, uint8 deviceID = 0);
 
     /** @return true if InKey is currently held */
     bool IsPressed(const FKey& InKey, uint8 deviceID) const;
@@ -270,7 +299,7 @@ private:
     /** Map of Axis Name to details about the keys mapped to that axis */
     std::vector<std::map<std::string, FAxisKeyDetails>> AxisKeyMaps;
 
-    uint8 bKeyMapsBuilt : 1;
+    volatile bool bKeyMapsBuilt = false;
 
 private:
     PlayerInput() {};

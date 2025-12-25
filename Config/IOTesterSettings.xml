@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- IOTester 应用程序配置 -->
+<IOTesterSettings UIRefreshIntervalMs="100" AnalogProcessorIntervalMs="100">
+
+    <!-- 
+    配置说明：
+    
+    UIRefreshIntervalMs: UI 刷新间隔（毫秒）
+        - 40ms (25fps):  流畅实时显示，CPU占用高
+        - 100ms (10fps): 推荐值，平衡性能和流畅度
+        - 200ms (5fps):  省电模式，适合慢速监控
+        范围：40-500ms
+    
+    AnalogProcessorIntervalMs: 模拟量处理器刷新间隔（毫秒）
+        - 50ms:  高频率模拟量采样
+        - 100ms: 推荐值，适合大多数场景
+        - 200ms: 低频率监控
+        范围：50-500ms
+    -->
+
+</IOTesterSettings>

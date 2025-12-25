@@ -37,6 +37,16 @@ public:
 	virtual int SetDOOff(const char* InOAction);
 	virtual int DOImmediate();
 
+	/**
+	 * 设置 OAction Key 的属性 (Scale, InvertEvent)
+	 * @param oactionName: OAction 名称
+	 * @param keyName: Key 名称
+	 * @param scale: 缩放系数
+	 * @param invertEvent: 是否反转事件
+	 * @return: 成功返回1 失败返回0
+	 */
+	virtual int SetOKProps(const char* oactionName, const char* keyName, float scale, bool invertEvent);
+
     virtual int GetDO(float* OutDOStatus);
     virtual float GetDO(const FKey InKey);
 	virtual float GetDO(const char* InOAction);
@@ -75,8 +85,8 @@ public:
     };
 protected:
     void DispatchButtonEvent(std::vector<BYTE> DIStatus, std::vector<ButtonState>& channelsState);
-    void DispatchAxisEvent(std::vector<short> InAxis);       // V1: �ϰ汾 (short)
-    void DispatchAxisEvent(std::vector<int32_t> InAxis);     // V2: �°汾 (int32_t)
+    void DispatchAxisEvent(std::vector<short> InAxis);       // V1: �ϰ汾 (short)
+    void DispatchAxisEvent(std::vector<int32_t> InAxis);     // V2: �°汾 (int32_t)
 
     InputEvent GetChannelEvent(ButtonState& chState);
 

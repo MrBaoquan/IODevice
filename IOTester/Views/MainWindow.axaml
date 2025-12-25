@@ -49,9 +49,17 @@
 				<MenuItem Header="事件转发配置(_F)" Command="{Binding OpenEventForwardConfigCommand}" />
 			</MenuItem>
 			<MenuItem Header="视图(_V)">
+				<MenuItem Header="{Binding EditModeMenuText}" Command="{Binding ToggleEditModeCommand}">
+					<MenuItem.Icon>
+						<CheckBox IsChecked="{Binding IsEditMode}" IsHitTestVisible="False" />
+					</MenuItem.Icon>
+				</MenuItem>
+				<Separator />
 				<MenuItem Header="查看日志(_L)" Command="{Binding ViewIOLogCommand}" />
 			</MenuItem>
 			<MenuItem Header="帮助(_H)">
+				<MenuItem Header="参考信息(_R)" Name="HelpReferenceMenuItem" />
+				<Separator />
 				<MenuItem Header="关于(_A)" />
 			</MenuItem>
 		</Menu>

@@ -229,19 +229,32 @@ float IOToolkit::RawIO::MassageKeyInput(FKey InKey, float InRawValue)
 	if (KeyProperties.count(InKey))
 	{
 		FInputKeyProperties const* const KeyProps = &KeyProperties.at(InKey);
-		NewVal += KeyProps->PreOffset;
-		NewVal *= KeyProps->PreScale;
-		if (NewVal > 0)
+		NewVal += KeyProps->Offset;
+		NewVal *= KeyProps->Scale;
+
+		
+		float deadZoneDenom = 1.f - KeyProps->DeadZone;
+		if (deadZoneDenom > 0.001f)
 		{
-			NewVal = max(0.f, NewVal - KeyProps->DeadZone) / (1.f - KeyProps->DeadZone);
+			if (NewVal > 0)
+			{
+				NewVal = max(0.f, NewVal - KeyProps->DeadZone) / deadZoneDenom;
+			}
+			else
+			{
+				NewVal = -max(0.f, -NewVal - KeyProps->DeadZone) / deadZoneDenom;
+			}
 		}
 		else
 		{
-			NewVal = -max(0.f, -NewVal - KeyProps->DeadZone) / (1.f - KeyProps->DeadZone);
+			NewVal = 0.f; // 死区过大，直接输出0
 		}
+
+		// 指数曲线处理，修正公式：sign(x) * pow(|x|, exponent)
 		if (KeyProps->Exponent != 1.f)
 		{
-			NewVal = std::sin(NewVal)*std::powf(std::abs(NewVal), KeyProps->Exponent);
+			float sign = NewVal >= 0.f ? 1.f : -1.f;
+			NewVal = sign * std::powf(std::abs(NewVal), KeyProps->Exponent);
 		}
 		NewVal *= KeyProps->Sensitivity;
 
@@ -255,3 +268,8 @@ float IOToolkit::RawIO::MassageKeyInput(FKey InKey, float InRawValue)
 	return NewVal;
 }
 
+int IOToolkit::RawIO::SetOKProps(const char* oactionName, const char* keyName, float scale, bool invertEvent)
+{
+	// 默认实现返回 0，由子类重写
+	return 0;
+}

@@ -69,6 +69,18 @@ IOCAPI int __stdcall SetIOLogDir(BSTR InLogDir)
 }
 
 
+IOCAPI int __stdcall BindKeyWithKey(BSTR InDeviceName, BSTR InKeyName, int InKeyEvent, InputActionWithKeySignature InHandler)
+{
+	int _result = -1;
+	std::string _keyName = BSTR2String(InKeyName);
+	dh::IODevice& _device = getIODevice(InDeviceName);
+	_device.BindKey(_keyName.c_str(), (dh::InputEvent)InKeyEvent, [InHandler](dh::FKey InKey)
+	{
+		InHandler(string2BSTR(InKey.GetName()));
+	});
+	return _result;
+}
+
 IOCAPI int __stdcall BindKey(BSTR InDeviceName, BSTR InKeyName, int InKeyEvent, InputActionSignature InHandler)
 {
 	int _result = -1;
@@ -89,7 +101,7 @@ IOCAPI int __stdcall BindAxisKey(BSTR InDeviceName, BSTR InAxisName, InputAxisSi
 
 
 /**
-* °ó¶¨Action
+* ï¿½ï¿½Action
 */
 IOCAPI int __stdcall BindAction(BSTR InDeviceName, BSTR InActionName, int InKeyEvent, InputActionWithKeySignature InHandler)
 {
@@ -177,7 +189,7 @@ IOCAPI int __stdcall DOImmediate(BSTR InDeviceName)
 }
 
 /**
-* loop ¼ì²â
+* loop ï¿½ï¿½ï¿½
 */
 IOCAPI void __stdcall Query()
 {
@@ -227,6 +239,12 @@ IOCAPI float __stdcall GetAxisKey(BSTR InDeviceName, BSTR InKey)
 	return _device.GetAxisKey(BSTR2String(InKey).c_str());
 }
 
+IOCAPI float __stdcall GetRawKeyValue(BSTR InDeviceName, BSTR InKey)
+{
+	dh::IODevice& _device = getIODevice(InDeviceName);
+	return _device.GetRawKeyValue(BSTR2String(InKey).c_str());
+}
+
 IOCAPI float __stdcall GetKeyDownDuration(BSTR InDeviceName, BSTR InKey)
 {
 	dh::IODevice& _device = getIODevice(InDeviceName);
@@ -261,5 +279,23 @@ IOCAPI bool __stdcall IsValid(BSTR InDeviceName)
 {
 	dh::IODevice& _device = getIODevice(InDeviceName);
 	return _device.IsValid();
+}
+
+IOCAPI int __stdcall SetAKProps(BSTR InDeviceName, BSTR InAxisName, BSTR InKeyName, float InScale)
+{
+	dh::IODevice& _device = getIODevice(InDeviceName);
+	return _device.SetAKProps(BSTR2String(InAxisName).c_str(), BSTR2String(InKeyName).c_str(), InScale);
+}
+
+IOCAPI int __stdcall SetOKProps(BSTR InDeviceName, BSTR InOActionName, BSTR InKeyName, float InScale, bool InInvertEvent)
+{
+	dh::IODevice& _device = getIODevice(InDeviceName);
+	return _device.SetOKProps(BSTR2String(InOActionName).c_str(), BSTR2String(InKeyName).c_str(), InScale, InInvertEvent);
+}
+
+IOCAPI int __stdcall SetPKProps(BSTR InDeviceName, BSTR InKeyName, float InOffset, float InScale, float InMinValue, float InMaxValue, float InDeadZone, float InSensitivity, float InExponent, bool InInvert, bool InInvertEvent)
+{
+	dh::IODevice& _device = getIODevice(InDeviceName);
+	return _device.SetPKProps(BSTR2String(InKeyName).c_str(), InOffset, InScale, InMinValue, InMaxValue, InDeadZone, InSensitivity, InExponent, InInvert, InInvertEvent);
 }
 

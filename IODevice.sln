@@ -18,6 +18,12 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IOTester", "IOTester\IOTest
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DNHper", "DNHper\DNHper.csproj", "{3E89D72B-77E9-4F33-970A-C7A9D033CF9F}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Authorization", "Authorization", "{B1A2C3D4-E5F6-7890-ABCD-EF1234567890}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "LicHper", "C:\Users\Administrator\source\repos\DaemonApps\LicHper\LicHper.vcxproj", "{2392531D-4F21-4531-9CD4-58F7DA8BA618}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AuthAssistant", "C:\Users\Administrator\source\repos\DaemonApps\AuthAssistant\AuthAssistant.csproj", "{222426D6-022A-4F2B-8E3B-C552E8535442}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -96,9 +102,35 @@ Global
 		{3E89D72B-77E9-4F33-970A-C7A9D033CF9F}.Release|x64.Build.0 = Release|Any CPU
 		{3E89D72B-77E9-4F33-970A-C7A9D033CF9F}.Release|x86.ActiveCfg = Release|Any CPU
 		{3E89D72B-77E9-4F33-970A-C7A9D033CF9F}.Release|x86.Build.0 = Release|Any CPU
+		{2392531D-4F21-4531-9CD4-58F7DA8BA618}.Debug|Any CPU.ActiveCfg = Debug|Win32
+		{2392531D-4F21-4531-9CD4-58F7DA8BA618}.Debug|x64.ActiveCfg = Debug|x64
+		{2392531D-4F21-4531-9CD4-58F7DA8BA618}.Debug|x64.Build.0 = Debug|x64
+		{2392531D-4F21-4531-9CD4-58F7DA8BA618}.Debug|x86.ActiveCfg = Debug|Win32
+		{2392531D-4F21-4531-9CD4-58F7DA8BA618}.Debug|x86.Build.0 = Debug|Win32
+		{2392531D-4F21-4531-9CD4-58F7DA8BA618}.Release|Any CPU.ActiveCfg = Release|Win32
+		{2392531D-4F21-4531-9CD4-58F7DA8BA618}.Release|x64.ActiveCfg = Release|x64
+		{2392531D-4F21-4531-9CD4-58F7DA8BA618}.Release|x64.Build.0 = Release|x64
+		{2392531D-4F21-4531-9CD4-58F7DA8BA618}.Release|x86.ActiveCfg = Release|Win32
+		{2392531D-4F21-4531-9CD4-58F7DA8BA618}.Release|x86.Build.0 = Release|Win32
+		{222426D6-022A-4F2B-8E3B-C552E8535442}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{222426D6-022A-4F2B-8E3B-C552E8535442}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{222426D6-022A-4F2B-8E3B-C552E8535442}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{222426D6-022A-4F2B-8E3B-C552E8535442}.Debug|x64.Build.0 = Debug|Any CPU
+		{222426D6-022A-4F2B-8E3B-C552E8535442}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{222426D6-022A-4F2B-8E3B-C552E8535442}.Debug|x86.Build.0 = Debug|Any CPU
+		{222426D6-022A-4F2B-8E3B-C552E8535442}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{222426D6-022A-4F2B-8E3B-C552E8535442}.Release|Any CPU.Build.0 = Release|Any CPU
+		{222426D6-022A-4F2B-8E3B-C552E8535442}.Release|x64.ActiveCfg = Release|Any CPU
+		{222426D6-022A-4F2B-8E3B-C552E8535442}.Release|x64.Build.0 = Release|Any CPU
+		{222426D6-022A-4F2B-8E3B-C552E8535442}.Release|x86.ActiveCfg = Release|Any CPU
+		{222426D6-022A-4F2B-8E3B-C552E8535442}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{2392531D-4F21-4531-9CD4-58F7DA8BA618} = {B1A2C3D4-E5F6-7890-ABCD-EF1234567890}
+		{222426D6-022A-4F2B-8E3B-C552E8535442} = {B1A2C3D4-E5F6-7890-ABCD-EF1234567890}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {A2724339-AD4F-4D41-98ED-949A6BAA1261}

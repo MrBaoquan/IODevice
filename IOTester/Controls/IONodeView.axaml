@@ -52,6 +52,65 @@
 		<Style Selector="Border.node-header:pointerover">
 			<Setter Property="Background" Value="#f3f4f6" />
 		</Style>
+		
+		<!-- 录制按钮样式 -->
+		<Style Selector="Button.node-action-btn">
+			<Setter Property="Background" Value="Transparent" />
+			<Setter Property="BorderThickness" Value="0" />
+			<Setter Property="Padding" Value="4" />
+			<Setter Property="CornerRadius" Value="4" />
+			<Setter Property="Cursor" Value="Hand" />
+			<Setter Property="Opacity" Value="0.8" />
+			<Setter Property="HorizontalContentAlignment" Value="Center" />
+			<Setter Property="VerticalContentAlignment" Value="Center" />
+			<Setter Property="Transitions">
+				<Transitions>
+					<DoubleTransition Property="Opacity" Duration="0:0:0.15" />
+				</Transitions>
+			</Setter>
+		</Style>
+		<Style Selector="Button.node-action-btn:pointerover">
+			<Setter Property="Opacity" Value="1" />
+		</Style>
+		
+		<!-- 录制呼吸动画 - 只用透明度实现 -->
+		<Style Selector="Ellipse.recording-indicator">
+			<Style.Animations>
+				<Animation Duration="0:0:0.8" IterationCount="Infinite" PlaybackDirection="Alternate" Easing="SineEaseInOut">
+					<KeyFrame Cue="0%">
+						<Setter Property="Opacity" Value="1" />
+					</KeyFrame>
+					<KeyFrame Cue="100%">
+						<Setter Property="Opacity" Value="0.4" />
+					</KeyFrame>
+				</Animation>
+			</Style.Animations>
+		</Style>
+		
+		<!-- 编辑按钮样式 -->
+		<Style Selector="Button.node-edit-btn">
+			<Setter Property="Background" Value="Transparent" />
+			<Setter Property="BorderThickness" Value="0" />
+			<Setter Property="Padding" Value="4" />
+			<Setter Property="CornerRadius" Value="4" />
+			<Setter Property="Cursor" Value="Hand" />
+			<Setter Property="Opacity" Value="0.7" />
+			<Setter Property="HorizontalContentAlignment" Value="Center" />
+			<Setter Property="VerticalContentAlignment" Value="Center" />
+			<Setter Property="Transitions">
+				<Transitions>
+					<DoubleTransition Property="Opacity" Duration="0:0:0.15" />
+					<BrushTransition Property="Background" Duration="0:0:0.15" />
+				</Transitions>
+			</Setter>
+		</Style>
+		<Style Selector="Button.node-edit-btn:pointerover">
+			<Setter Property="Opacity" Value="1" />
+			<Setter Property="Background" Value="#eff6ff" />
+		</Style>
+		<Style Selector="Button.node-edit-btn:pressed">
+			<Setter Property="Background" Value="#dbeafe" />
+		</Style>
 	</UserControl.Styles>
 
 	<Border BorderThickness="1" CornerRadius="6" Background="WhiteSmoke" Margin="8 4" MinWidth="234">
@@ -168,23 +227,29 @@
 							</Panel>
 						</Button>
 						<!-- Action 显示录制按钮 -->
-						<Button Padding="2" HorizontalAlignment="Center" VerticalAlignment="Center" Background="Transparent" 
+						<Button Classes="node-action-btn"
 								Name="RecordKeyButton"
-								Width="24"
+								Width="28" Height="28"
 								IsVisible="{Binding ShowRecordBtn}"
 								ToolTip.Tip="{Binding RecordingToolTip}">
-							<Panel>
-								<Ellipse IsVisible="{Binding IsRecording}" Width="16" Height="16" Fill="#dc2626" />
-								<Ellipse IsVisible="{Binding !IsRecording}" Width="16" Height="16" Stroke="#6b7280" StrokeThickness="2" />
+							<Panel HorizontalAlignment="Center" VerticalAlignment="Center">
+								<Ellipse Classes="recording-indicator" IsVisible="{Binding IsRecording}" 
+										 Width="14" Height="14" Fill="#dc2626" 
+										 RenderTransformOrigin="0.5,0.5"/>
+								<Ellipse IsVisible="{Binding !IsRecording}" Width="14" Height="14" 
+										 Stroke="#9ca3af" StrokeThickness="2" />
 							</Panel>
 						</Button>
 						<!-- 编辑按钮 -->
-						<Button Padding="2" HorizontalAlignment="Center" VerticalAlignment="Center" Background="Transparent"
+						<Button Classes="node-edit-btn"
 								Name="EditNodeButton"
-								Width="24"
+								Width="28" Height="28"
 								IsVisible="{Binding IsEditMode}"
 								ToolTip.Tip="编辑此节点">
-							<iconPacks:PackIconIonicons Kind="CreateiOS" Width="16" Height="16" Foreground="#3b82f6"/>
+							<Panel HorizontalAlignment="Center" VerticalAlignment="Center">
+								<iconPacks:PackIconIonicons Kind="SettingsiOS" Width="14" Height="14" Foreground="#3b82f6"
+															HorizontalAlignment="Center" VerticalAlignment="Center"/>
+							</Panel>
 						</Button>
 					</StackPanel>
 					<!-- 名称填充剩余空间 -->

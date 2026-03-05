@@ -1,0 +1,27 @@
+{
+  "dllName": "PCI2394",
+  "displayName": "PCI2394",
+  "version": "1.0",
+  "category": "PCI板卡",
+  "sections": [
+    {
+      "name": "other",
+      "title": "\u5176\u4ED6\u914D\u7F6E",
+      "collapsed": true,
+      "fields": [
+        {
+          "key": "lCNTMode",
+          "label": "lCNTMode",
+          "type": "text",
+          "required": false
+        },
+        {
+          "key": "maxDelta",
+          "label": "maxDelta",
+          "type": "text",
+          "required": false
+        }
+      ]
+    }
+  ]
+}

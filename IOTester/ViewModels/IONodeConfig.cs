@@ -70,8 +70,114 @@ public class Device : ViewModelBase
         set { this.RaiseAndSetIfChanged(ref isValid, value); }
     }
 
+    /// <summary>
+    /// 获取设备的友好显示名称
+    /// 格式: DisplayName-Index 或 DllName-Index
+    /// </summary>
     [XmlIgnore]
-    public string Title => $"{DllName}-{Index}";
+    public string Title
+    {
+        get
+        {
+            try
+            {
+                var schema = Services.DeviceSchemaService.Instance.LoadSchema(DllName);
+                if (schema != null)
+                {
+                    var displayName = !string.IsNullOrEmpty(schema.DisplayName)
+                        ? schema.DisplayName
+                        : DllName;
+                    return $"{displayName}-{Index}";
+                }
+            }
+            catch
+            {
+                // 如果加载schema失败，使用默认格式
+            }
+            return $"{DllName}-{Index}";
+        }
+    }
+
+    private string _configSummaryText = string.Empty;
+
+    /// <summary>
+    /// 配置摘要文本，用于在设备界面顶部显示
+    /// </summary>
+    [XmlIgnore]
+    public string ConfigSummaryText
+    {
+        get => _configSummaryText;
+        set => this.RaiseAndSetIfChanged(ref _configSummaryText, value);
+    }
+
+    /// <summary>
+    /// 更新配置摘要文本
+    /// </summary>
+    public void UpdateConfigSummary()
+    {
+        try
+        {
+            var summaryParts = new List<string>();
+            var schema = Services.DeviceSchemaService.Instance.LoadSchema(DllName);
+            if (schema?.Sections != null)
+            {
+                var iniService = Services.IniConfigService.Instance;
+                var deviceSection = iniService.ReadSection(DllName, $"device_{Index}");
+
+                foreach (var section in schema.Sections)
+                {
+                    foreach (var field in section.Fields)
+                    {
+                        if (field.ShowInSummary)
+                        {
+                            var key = field.Key;
+                            string? value = null;
+
+                            // 从对应的section读取值
+                            if (!string.IsNullOrEmpty(section.IniSection))
+                            {
+                                var sectionData = iniService.ReadSection(
+                                    DllName,
+                                    section.IniSection
+                                );
+                                sectionData?.TryGetValue(key, out value);
+                            }
+                            else
+                            {
+                                deviceSection?.TryGetValue(key, out value);
+                            }
+
+                            if (!string.IsNullOrEmpty(value))
+                            {
+                                // 如果有选项，显示选项的label
+                                var displayValue = value;
+                                if (field.Options != null)
+                                {
+                                    var option = field.Options.FirstOrDefault(
+                                        o =>
+                                            o.Value.Equals(
+                                                value,
+                                                StringComparison.OrdinalIgnoreCase
+                                            )
+                                    );
+                                    if (option != null)
+                                    {
+                                        displayValue = option.Label;
+                                    }
+                                }
+                                summaryParts.Add($"{field.Label}: {displayValue}");
+                            }
+                        }
+                    }
+                }
+            }
+            ConfigSummaryText = string.Join("  |  ", summaryParts);
+        }
+        catch
+        {
+            ConfigSummaryText = string.Empty;
+        }
+    }
 
     private readonly SourceList<Key> diKeySource = new SourceList<Key>();
 
@@ -180,14 +286,57 @@ public class Device : ViewModelBase
     [XmlIgnore]
     public string TestText => string.Join("-", Actions.Select(_ => _.Name));
 
+    private string _type = "External";
+
     [XmlAttribute("Type")]
-    public string Type { get; set; } = "External";
+    public string Type
+    {
+        get => _type;
+        set => this.RaiseAndSetIfChanged(ref _type, value);
+    }
+
+    private string _dllName = "";
 
     [XmlAttribute("DllName")]
-    public string DllName { get; set; } = "";
+    public string DllName
+    {
+        get => _dllName;
+        set => this.RaiseAndSetIfChanged(ref _dllName, value);
+    }
+
+    private int _index;
 
     [XmlAttribute("Index")]
-    public int Index { get; set; }
+    public int Index
+    {
+        get => _index;
+        set => this.RaiseAndSetIfChanged(ref _index, value);
+    }
+
+    /// <summary>
+    /// 是否为 External 类型设备
+    /// </summary>
+    [XmlIgnore]
+    public bool IsExternalType =>
+        Type?.Equals("External", StringComparison.OrdinalIgnoreCase) == true;
+
+    /// <summary>
+    /// 可选的设备类型列表
+    /// </summary>
+    [XmlIgnore]
+    public static List<string> AvailableTypes => new() { "Joystick", "External" };
+
+    /// <summary>
+    /// 可选的 DllName 列表（External 类型设备）
+    /// </summary>
+    [XmlIgnore]
+    public static List<string> AvailableDllNames => new() { "MODBUS", "SNAP7", "IOHUB" };
+
+    /// <summary>
+    /// 可选的设备索引列表 (0-8)
+    /// </summary>
+    [XmlIgnore]
+    public static List<int> AvailableIndexes => new() { 0, 1, 2, 3, 4, 5, 6, 7, 8 };
 
     [XmlElement("Properties")]
     public Properties Properties { get; set; } = new Properties();
@@ -303,6 +452,18 @@ public class Device : ViewModelBase
 
     [XmlIgnore]
     public ReactiveCommand<Unit, Unit> ToggleAllDOCommand { get; }
+
+    /// <summary>
+    /// 打开 DO 输出测试窗口
+    /// </summary>
+    [XmlIgnore]
+    public ICommand OpenDOTestCommand { get; }
+
+    /// <summary>
+    /// 打开 OAction 输出测试窗口
+    /// </summary>
+    [XmlIgnore]
+    public ICommand OpenOActionTestCommand { get; }
 
     private string columnLayout = "*,2,*";
 
@@ -724,6 +885,50 @@ public class Device : ViewModelBase
                 });
         });
 
+        // 初始化 DO 输出测试命令
+        OpenDOTestCommand = ReactiveCommand.CreateFromTask(async () =>
+        {
+            var keys = DOKeys.ToList();
+            if (keys.Count == 0)
+                return;
+
+            var vm = new OutputTestViewModel(this, keys, "DO 输出测试");
+            var window = new Views.OutputTestWindow();
+            window.SetViewModel(vm);
+
+            var mainWindow = Avalonia.Application.Current?.ApplicationLifetime
+                is Avalonia.Controls.ApplicationLifetimes.IClassicDesktopStyleApplicationLifetime desktop
+                ? desktop.MainWindow
+                : null;
+
+            if (mainWindow != null)
+            {
+                await window.ShowDialog(mainWindow);
+            }
+        });
+
+        // 初始化 OAction 输出测试命令
+        OpenOActionTestCommand = ReactiveCommand.CreateFromTask(async () =>
+        {
+            var keys = OActions.SelectMany(o => o.Keys).ToList();
+            if (keys.Count == 0)
+                return;
+
+            var vm = new OutputTestViewModel(this, keys, "OAction 输出测试");
+            var window = new Views.OutputTestWindow();
+            window.SetViewModel(vm);
+
+            var mainWindow = Avalonia.Application.Current?.ApplicationLifetime
+                is Avalonia.Controls.ApplicationLifetimes.IClassicDesktopStyleApplicationLifetime desktop
+                ? desktop.MainWindow
+                : null;
+
+            if (mainWindow != null)
+            {
+                await window.ShowDialog(mainWindow);
+            }
+        });
+
         this.WhenAnyValue(x => x.UserIOFullscreen)
             .Subscribe(_fullScreen =>
             {
@@ -867,6 +1072,9 @@ public class Device : ViewModelBase
             });
 
         TriggerUIUpdate();
+
+        // 更新配置摘要
+        UpdateConfigSummary();
 
         OActions
             .Select(_ => _.OnToggleDO)

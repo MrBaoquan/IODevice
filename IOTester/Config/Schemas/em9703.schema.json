@@ -1,0 +1,27 @@
+{
+  "dllName": "EM9703",
+  "displayName": "EM9703",
+  "version": "1.0",
+  "category": "PCI板卡",
+  "sections": [
+    {
+      "name": "connection",
+      "title": "\u8FDE\u63A5\u914D\u7F6E",
+      "collapsed": false,
+      "fields": [
+        {
+          "key": "IP",
+          "label": "IP\u5730\u5740",
+          "type": "text",
+          "required": false
+        },
+        {
+          "key": "Port",
+          "label": "\u7AEF\u53E3/\u4E32\u53E3\u53F7",
+          "type": "number",
+          "required": false
+        }
+      ]
+    }
+  ]
+}

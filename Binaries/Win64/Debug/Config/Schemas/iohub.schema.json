@@ -1,0 +1,277 @@
+{
+  "dllName": "IOHUB",
+  "displayName": "IOHub-桥接设备",
+  "version": "1.0",
+  "category": "通讯协议",
+  "starred": true,
+  "sections": [
+    {
+      "name": "protocol",
+      "title": "协议配置",
+      "collapsed": false,
+      "fields": [
+        {
+          "key": "protocol",
+          "label": "协议URI",
+          "type": "text",
+          "required": true,
+          "placeholder": "tcp://192.168.1.100:8080",
+          "showInSummary": true,
+          "description": "协议格式:\n• TCP: tcp://IP:端口\n• UDP: udp://IP:端口\n• 串口: serial:///COM1?baudrate=115200"
+        }
+      ]
+    },
+    {
+      "name": "frame",
+      "title": "帧格式配置",
+      "collapsed": false,
+      "fields": [
+        {
+          "key": "frame_header",
+          "label": "帧头",
+          "type": "hex",
+          "default": "FE",
+          "showInSummary": true,
+          "description": "数据帧头标识字节"
+        },
+        {
+          "key": "frame_tail",
+          "label": "帧尾",
+          "type": "hex",
+          "default": "FF",
+          "showInSummary": true,
+          "description": "数据帧尾标识字节"
+        },
+        {
+          "key": "frame_length",
+          "label": "帧长度",
+          "type": "number",
+          "min": 1,
+          "default": "4",
+          "showInSummary": true,
+          "description": "固定帧长度（字节数）"
+        },
+        {
+          "key": "channel_index",
+          "label": "通道索引位置",
+          "type": "number",
+          "min": 0,
+          "default": "1",
+          "showInSummary": true,
+          "description": "通道号在帧中的字节位置（从0开始）"
+        },
+        {
+          "key": "value_index",
+          "label": "值索引位置",
+          "type": "number",
+          "min": 0,
+          "default": "2",
+          "showInSummary": true,
+          "description": "数据值在帧中的字节位置（从0开始）"
+        },
+        {
+          "key": "channel_offset",
+          "label": "通道偏移",
+          "type": "number",
+          "default": "0",
+          "description": "通道号偏移量"
+        }
+      ]
+    },
+    {
+      "name": "values",
+      "title": "值编码配置",
+      "collapsed": false,
+      "fields": [
+        {
+          "key": "output_value_on_code",
+          "label": "输出高电平编码",
+          "type": "hex",
+          "default": "01",
+          "description": "DO输出开启时发送的值"
+        },
+        {
+          "key": "output_value_off_code",
+          "label": "输出低电平编码",
+          "type": "hex",
+          "default": "00",
+          "description": "DO输出关闭时发送的值"
+        },
+        {
+          "key": "input_value_on_code",
+          "label": "输入高电平编码",
+          "type": "hex",
+          "default": "01",
+          "description": "DI输入高电平识别值"
+        },
+        {
+          "key": "input_value_off_code",
+          "label": "输入低电平编码",
+          "type": "hex",
+          "default": "00",
+          "description": "DI输入低电平识别值"
+        }
+      ]
+    },
+    {
+      "name": "advanced",
+      "title": "高级设置",
+      "collapsed": true,
+      "fields": [
+        {
+          "key": "data_format",
+          "label": "数据格式",
+          "type": "select",
+          "default": "auto",
+          "options": [
+            { "value": "auto", "label": "自动检测" },
+            { "value": "ascii", "label": "ASCII文本" },
+            { "value": "hex", "label": "十六进制" }
+          ]
+        },
+        {
+          "key": "write_wait_ms",
+          "label": "写入等待(ms)",
+          "type": "number",
+          "min": 0,
+          "default": "0",
+          "description": "每次写入后的等待时间"
+        },
+        {
+          "key": "input_hold_ms",
+          "label": "输入保持(ms)",
+          "type": "number",
+          "min": 0,
+          "default": "1000",
+          "description": "输入信号保持时间"
+        },
+        {
+          "key": "max_buffer_size",
+          "label": "缓冲区大小",
+          "type": "number",
+          "min": 256,
+          "default": "4096",
+          "description": "接收缓冲区大小（字节）"
+        },
+        {
+          "key": "output_hold",
+          "label": "输出状态保持",
+          "type": "boolean",
+          "default": "false",
+          "description": "是否保持输出状态"
+        }
+      ]
+    },
+    {
+      "name": "input_mapping",
+      "title": "输入映射",
+      "collapsed": false,
+      "iniSection": "InputMapping",
+      "fields": [
+        {
+          "key": "input_map",
+          "label": "输入通道映射",
+          "type": "array",
+          "arrayKeyPrefix": "",
+          "arrayItemFormat": "数据内容（ASCII或HEX）",
+          "placeholder": "OPEN 或 0xFE01FF",
+          "description": "格式: 通道号=数据\n通道号从0开始\n支持ASCII字符串或HEX字节序列"
+        }
+      ]
+    },
+    {
+      "name": "output_mapping",
+      "title": "输出映射",
+      "collapsed": false,
+      "iniSection": "OutputMapping",
+      "fields": [
+        {
+          "key": "output_map",
+          "label": "输出通道映射",
+          "type": "array",
+          "arrayKeyPrefix": "",
+          "arrayItemFormat": "命令数据（ASCII或HEX）",
+          "placeholder": "CMD_OPEN 或 0xFE0501FF",
+          "description": "格式: 通道号=命令\n未配置的通道使用标准帧格式"
+        }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "展研 SERIAL-IOFE",
+      "description": "展研标准IO协议 (帧头FE,帧尾FF)",
+      "group": "串口IO模块",
+      "hideSections": ["input_mapping", "output_mapping"],
+      "values": {
+        "protocol": "serial:///COM10?baudrate=115200&databits=8&stopbits=1&parity=none",
+        "frame_header": "FE",
+        "frame_tail": "FF",
+        "frame_length": "4",
+        "channel_index": "1",
+        "value_index": "2",
+        "channel_offset": "0",
+        "output_value_on_code": "01",
+        "output_value_off_code": "00",
+        "output_hold": "true"
+      }
+    },
+    {
+      "name": "淘达电子 SERIAL-TDDZ",
+      "description": "淘达电子IO协议 (帧头AA,帧尾55,通道从1开始)",
+      "group": "串口IO模块",
+      "hideSections": ["input_mapping", "output_mapping"],
+      "values": {
+        "protocol": "serial:///COM10?baudrate=57600&databits=8&stopbits=1&parity=none",
+        "frame_header": "AA",
+        "frame_tail": "55",
+        "frame_length": "4",
+        "channel_index": "1",
+        "value_index": "2",
+        "channel_offset": "1",
+        "output_value_on_code": "01",
+        "output_value_off_code": "02",
+        "output_hold": "true"
+      }
+    },
+    {
+      "name": "TCP 客户端",
+      "description": "TCP客户端连接模式",
+      "group": "网络",
+      "values": {
+        "protocol": "tcp://192.168.1.100:8080?reconnect=3000&keepalive=true",
+        "frame_header": "FE",
+        "frame_tail": "FF",
+        "frame_length": "4",
+        "channel_index": "1",
+        "value_index": "2"
+      }
+    },
+    {
+      "name": "TCP 服务器",
+      "description": "TCP服务器监听模式",
+      "group": "网络",
+      "values": {
+        "protocol": "tcp-server://0.0.0.0:8080?keepalive=true",
+        "frame_header": "FE",
+        "frame_tail": "FF",
+        "frame_length": "4",
+        "channel_index": "1",
+        "value_index": "2"
+      }
+    },
+    {
+      "name": "UDP 通信",
+      "description": "UDP数据报模式",
+      "group": "网络",
+      "values": {
+        "protocol": "udp://192.168.1.100:9000?localport=5000",
+        "frame_header": "FE",
+        "frame_tail": "FF",
+        "frame_length": "4",
+        "channel_index": "1",
+        "value_index": "2"
+      }
+    }
+  ]
+}

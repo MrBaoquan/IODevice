@@ -1,8 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <IORoot>
-  <Device Name="ExtDev" Type="External" DllName="debugger" Index="1">
+  <Device Name="ExtDev" Type="External" DllName="DEBUGGER" Index="1">
     <Properties />
-    <Action Name="Fire" Label="互动游戏开火状态AAA" />
+    <Action Name="Fire" Label="互动游戏开火状态AAA">
+      <Key Name="A" />
+      <Key Name="Button_03" />
+      <Key Name="C" />
+      <Key Name="B" />
+    </Action>
     <Action Name="Action_02" Label="新Action_3">
       <Key Name="Button_00" />
       <Key Name="CapsLock" />
@@ -31,7 +36,7 @@
       <Key Name="OAxis_02" Scale="10" />
     </OAction>
   </Device>
-  <Device Name="ExtDev0" Type="External" DllName="ioui" Index="1">
+  <Device Name="Device_2" Type="External" DllName="MP-NJQK" Index="0">
     <Properties />
   </Device>
 </IORoot>

@@ -92,21 +92,53 @@
 	<DockPanel>
 		<Border DockPanel.Dock="Top" BorderBrush="#e5e7eb" BorderThickness="0 0 0 0" Padding="0 0 0 0">
 			<StackPanel>
-				<Separator Background="#e2e8f0" HorizontalAlignment="Stretch" Margin="0 0 0 8" />
-				<Grid ColumnDefinitions="24,*,24">
+				<Separator Background="#e2e8f0" HorizontalAlignment="Stretch" Margin="0 0 0 0" />
+				<!-- 配置摘要区域 -->
+				<Border Background="#f8fafc" 
+						BorderBrush="#e2e8f0" 
+						BorderThickness="0 0 0 1" 
+						Padding="16 10"
+						IsVisible="{Binding ConfigSummaryText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+					<Grid ColumnDefinitions="Auto,*,Auto" VerticalAlignment="Center">
+						<StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+							<iconPacks:PackIconIonicons Kind="InformationCircleiOS" Width="14" Height="14" Foreground="#64748b" Margin="0 0 8 0" VerticalAlignment="Center"/>
+							<TextBlock Text="配置摘要" FontSize="12" FontWeight="Medium" Foreground="#475569" Margin="0 0 16 0" VerticalAlignment="Center"/>
+						</StackPanel>
+						<TextBlock Grid.Column="1" 
+								   Text="{Binding ConfigSummaryText}" 
+								   Foreground="#64748b"
+								   FontSize="12"
+								   VerticalAlignment="Center"
+								   TextTrimming="CharacterEllipsis"
+								   ToolTip.Tip="{Binding ConfigSummaryText}"/>
+						<Button Grid.Column="2" 
+								Classes="img-btn" 
+								ToolTip.Tip="设备配置" 
+								Command="{Binding EditDevicePropertiesCommand}" 
+								Width="24" Height="24" 
+								Padding="0"
+								Margin="12 0 0 0"
+								VerticalAlignment="Center"
+								HorizontalContentAlignment="Center"
+								VerticalContentAlignment="Center">
+							<iconPacks:PackIconIonicons Kind="SettingsiOS" Width="14" Height="14" Foreground="#64748b" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+						</Button>
+					</Grid>
+				</Border>
+				<Grid ColumnDefinitions="24,*,24" Margin="0 8 0 0">
 					<ToggleButton IsChecked="{Binding UserIOFullscreen}" Grid.Column="0" Width="24" Height="24" Padding="4" ToolTip.Tip="左侧全屏">
 						<Image Source="avares://IOTester/Assets/fullscreen.png" />
 					</ToggleButton>
 					<StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Grid.Column="1">
-				<Button Classes="img-btn" ToolTip.Tip="设备配置" Command="{Binding EditDevicePropertiesCommand}" 
-							Width="24" Height="24" Padding="0"
-							Margin="8 0" 
-							HorizontalContentAlignment="Center" 
-							VerticalContentAlignment="Center">
-					<iconPacks:PackIconIonicons Kind="SettingsiOS" Width="16" Height="16"/>
+						<!-- 设备配置按钮 -->
+						<Button Classes="img-btn" ToolTip.Tip="设备配置" 
+								Command="{Binding EditDevicePropertiesCommand}" 
+								Width="24" Height="24" Padding="0"
+								Margin="0 0 8 0">
+							<iconPacks:PackIconIonicons Kind="SettingsiOS" Width="16" Height="16" Foreground="#64748b"/>
 						</Button>
-						<Button Classes="img-btn" ToolTip.Tip="修改设备配置" Command="{Binding EditConfigCommand}" 
-									Width="24" Height="24" Padding="0"
+						<Button Classes="img-btn" ToolTip.Tip="修改配置文件" Command="{Binding EditConfigCommand}" 
+								Width="24" Height="24" Padding="0"
 								Margin="8 0" >
 							<Image Source="avares://IOTester/Assets/edit-config.png" />
 						</Button>
@@ -127,7 +159,7 @@
 				<ColumnDefinition Width="{Binding StandardWidth}" />
 			</Grid.ColumnDefinitions>
 			<ScrollViewer Grid.Column="0" MinWidth="1">
-			<StackPanel>
+			<StackPanel Margin="0 0 0 24">
 				<!-- Action 输入 -->
 				<StackPanel>
 					<controls:CollapsibleHeader Title="Action 输入" 
@@ -184,7 +216,15 @@
 												AddCommand="{Binding AddOActionCommand}"
 												ClearCommand="{Binding ClearOActionCommand}"
 												AddTooltip="添加新的OAction节点"
-												ClearTooltip="清空所有OAction节点" />
+												ClearTooltip="清空所有OAction节点">
+						<controls:CollapsibleHeader.ExtraContent>
+							<Button Classes="img-btn" ToolTip.Tip="输出测试（模拟量/脉冲/跑马灯）" 
+										Command="{Binding OpenOActionTestCommand}"
+										Width="28" Height="28" Padding="0" Margin="8 0 0 0">
+										<iconPacks:PackIconIonicons Kind="PulseiOS" Width="16" Height="16" Foreground="#64748b"/>
+							</Button>
+						</controls:CollapsibleHeader.ExtraContent>
+					</controls:CollapsibleHeader>
 					<ItemsRepeater ItemsSource="{Binding OActionList}" IsVisible="{Binding IsOActionExpanded}">
 						<ItemsRepeater.Layout>
 							<WrapLayout Orientation="Horizontal" />
@@ -200,7 +240,7 @@
 		</ScrollViewer>
 		<GridSplitter Grid.Column="1" Background="WhiteSmoke" ResizeDirection="Columns" />
 		<ScrollViewer Grid.Column="2" Margin="0" MinWidth="1">
-				<StackPanel Orientation="Vertical">
+				<StackPanel Orientation="Vertical" Margin="0 0 0 24">
 					<!-- DI 输入 -->
 					<StackPanel>
 						<controls:CollapsibleHeader Title="DI 输入" 
@@ -301,6 +341,11 @@
 											Margin="16 0 0 0"
 											Width="60" Height="28" Command="{Binding ToggleAllDOCommand}">
 										<TextBlock Text="{Binding ToggleAllDOText}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+									</Button>
+									<Button Classes="img-btn" ToolTip.Tip="输出测试（模拟量/脉冲/跑马灯）" 
+											Command="{Binding OpenDOTestCommand}"
+											Width="28" Height="28" Padding="0" Margin="8 0 0 0">
+										<iconPacks:PackIconIonicons Kind="PulseiOS" Width="16" Height="16" Foreground="#64748b"/>
 									</Button>
 								</StackPanel>
 							</controls:CollapsibleHeader.ExtraContent>

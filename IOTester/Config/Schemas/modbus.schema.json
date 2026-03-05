@@ -1,0 +1,330 @@
+{
+  "dllName": "MODBUS",
+  "displayName": "Modbus 设备",
+  "version": "1.0",
+  "category": "通讯协议",
+  "starred": true,
+  "sections": [
+    {
+      "name": "connection",
+      "title": "连接配置",
+      "collapsed": false,
+      "fields": [
+        {
+          "key": "driver",
+          "label": "驱动类型",
+          "type": "select",
+          "required": true,
+          "description": "选择Modbus通信协议类型",
+          "showInSummary": true,
+          "summaryColor": "#059669",
+          "options": [
+            { "value": "modbus_rtu", "label": "Modbus RTU（串口）" },
+            { "value": "modbus_tcp", "label": "Modbus TCP（网络）" }
+          ]
+        },
+        {
+          "key": "ip",
+          "label": "IP地址",
+          "type": "text",
+          "placeholder": "192.168.1.100",
+          "description": "TCP模式下的设备IP地址",
+          "showInSummary": true,
+          "summaryColor": "#0891b2",
+          "visibleWhen": { "driver": "modbus_tcp" }
+        },
+        {
+          "key": "port",
+          "label": "串口号/端口",
+          "type": "number",
+          "description": "RTU模式为串口号(如10表示COM10)，TCP模式为端口号(默认502)",
+          "default": "502",
+          "showInSummary": true,
+          "summaryColor": "#7c3aed"
+        },
+        {
+          "key": "slave_addr",
+          "label": "从机地址",
+          "type": "number",
+          "min": 1,
+          "max": 247,
+          "default": "1",
+          "description": "Modbus从机地址 (1-247)",
+          "showInSummary": true,
+          "summaryColor": "#c2410c"
+        }
+      ]
+    },
+    {
+      "name": "serial",
+      "title": "串口参数",
+      "collapsed": false,
+      "visibleWhen": { "driver": "modbus_rtu" },
+      "fields": [
+        {
+          "key": "baud_rate",
+          "label": "波特率",
+          "type": "select",
+          "default": "9600",
+          "showInSummary": true,
+          "summaryColor": "#0891b2",
+          "options": [
+            { "value": "1200", "label": "1200" },
+            { "value": "2400", "label": "2400" },
+            { "value": "4800", "label": "4800" },
+            { "value": "9600", "label": "9600" },
+            { "value": "14400", "label": "14400" },
+            { "value": "19200", "label": "19200" },
+            { "value": "38400", "label": "38400" },
+            { "value": "56000", "label": "56000" },
+            { "value": "57600", "label": "57600" },
+            { "value": "115200", "label": "115200" },
+            { "value": "128000", "label": "128000" },
+            { "value": "230400", "label": "230400" },
+            { "value": "256000", "label": "256000" },
+            { "value": "460800", "label": "460800" },
+            { "value": "921600", "label": "921600" }
+          ]
+        },
+        {
+          "key": "data_bit",
+          "label": "数据位",
+          "type": "select",
+          "default": "8",
+          "options": [
+            { "value": "7", "label": "7" },
+            { "value": "8", "label": "8" }
+          ]
+        },
+        {
+          "key": "stop_bit",
+          "label": "停止位",
+          "type": "select",
+          "default": "1",
+          "options": [
+            { "value": "1", "label": "1" },
+            { "value": "2", "label": "2" }
+          ]
+        },
+        {
+          "key": "parity",
+          "label": "校验位",
+          "type": "select",
+          "default": "N",
+          "options": [
+            { "value": "N", "label": "无校验" },
+            { "value": "E", "label": "偶校验" },
+            { "value": "O", "label": "奇校验" }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "timing",
+      "title": "轮询时序",
+      "collapsed": true,
+      "fields": [
+        {
+          "key": "poll_interval_ms",
+          "label": "轮询间隔(ms)",
+          "type": "number",
+          "min": 5,
+          "default": "20",
+          "description": "每轮读取完成后的等待时间"
+        },
+        {
+          "key": "command_interval_ms",
+          "label": "命令间隔(ms)",
+          "type": "number",
+          "min": 0,
+          "default": "10",
+          "description": "连续读取命令之间的间隔"
+        },
+        {
+          "key": "timeout_ms",
+          "label": "超时时间(ms)",
+          "type": "number",
+          "default": "100",
+          "description": "命令超时响应时间"
+        },
+        {
+          "key": "retry_wait_ms",
+          "label": "重试等待(ms)",
+          "type": "number",
+          "default": "20",
+          "description": "指令失败后重试等待时间"
+        },
+        {
+          "key": "max_consecutive_failures",
+          "label": "断线检测阈值",
+          "type": "number",
+          "min": 0,
+          "default": "3",
+          "description": "连续失败多少次判定为断线 (0=禁用)"
+        }
+      ]
+    },
+    {
+      "name": "di",
+      "title": "DI配置（开关量输入）",
+      "collapsed": false,
+      "fields": [
+        {
+          "key": "di_func",
+          "label": "功能码",
+          "type": "select",
+          "default": "0x02",
+          "options": [
+            { "value": "0x01", "label": "01 - 读线圈状态(可读写)" },
+            { "value": "0x02", "label": "02 - 读离散输入(只读)" }
+          ]
+        },
+        {
+          "key": "di_addr",
+          "label": "起始地址",
+          "type": "hex",
+          "default": "0x0000",
+          "description": "DI寄存器起始地址"
+        },
+        {
+          "key": "di_num",
+          "label": "通道数",
+          "type": "hex",
+          "default": "0x0000",
+          "description": "要读取的DI通道数量"
+        }
+      ]
+    },
+    {
+      "name": "do",
+      "title": "DO配置（开关量输出）",
+      "collapsed": false,
+      "fields": [
+        {
+          "key": "do_func",
+          "label": "功能码",
+          "type": "select",
+          "default": "0x05",
+          "options": [
+            { "value": "0x05", "label": "05 - 写单个线圈" },
+            { "value": "0x06", "label": "06 - 写单个寄存器" }
+          ]
+        },
+        {
+          "key": "do_addr",
+          "label": "起始地址",
+          "type": "hex",
+          "default": "0x0000",
+          "description": "DO写操作起始地址"
+        }
+      ]
+    },
+    {
+      "name": "ai",
+      "title": "AI配置（模拟量输入）",
+      "collapsed": false,
+      "fields": [
+        {
+          "key": "ai_func",
+          "label": "默认功能码",
+          "type": "select",
+          "default": "0x04",
+          "options": [
+            { "value": "0x03", "label": "03 - 读保持寄存器(可读写)" },
+            { "value": "0x04", "label": "04 - 读输入寄存器(只读)" }
+          ]
+        },
+        {
+          "key": "ai_channel",
+          "label": "AI通道配置",
+          "type": "array",
+          "arrayKeyPrefix": "ai_channel",
+          "arrayItemFormat": "地址, 数据类型, [表达式], [字节序]",
+          "placeholder": "0x0000, uint16, x*0.1, AB",
+          "description": "格式: 地址, 数据类型, [表达式], [字节序]\n数据类型: uint16, int16, uint32, int32, float32\n字节序: AB(默认), BA(反转)"
+        }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "信捷XD3E",
+      "description": "衢州科技馆",
+      "group": "PLC",
+      "values": {
+        "driver": "modbus_tcp",
+        "ip": "192.168.6.6",
+        "port": "502",
+        "slave_addr": "1",
+        "di_addr": "0x5000",
+        "di_num": "0x0010",
+        "do_addr": "0x6000"
+      }
+    },
+    {
+      "name": "布瑞特编码器",
+      "description": "布瑞特绝对值编码器",
+      "group": "编码器",
+      "hideSections": ["di", "do"],
+      "values": {
+        "driver": "modbus_rtu",
+        "slave_addr": "1",
+        "baud_rate": "115200",
+        "ai_func": "0x03",
+        "ai_channel_0": "0x0000, uint16, x*360/1024"
+      }
+    },
+    {
+      "name": "宏泰IO模块",
+      "description": "宏泰IO模块",
+      "group": "IO模块",
+      "values": {
+        "driver": "modbus_tcp",
+        "ip":"192.168.1.12",
+        "port": "502",
+        "slave_addr": "1",
+        "di_addr": "0x0000",
+        "di_num": "0x0010"
+      }
+    },
+    {
+      "name": "米朗位移传感器",
+      "description": "米郎电位型传感器",
+      "group": "传感器",
+      "hideSections": ["di", "do"],
+      "values": {
+        "driver": "modbus_rtu",
+        "slave_addr": "1",
+        "baud_rate": "9600",
+        "ai_func": "0x03",
+        "ai_channel_0": "0x0300, fixed_16_16"
+      }
+    },
+    {
+      "name": "启力称重传感器",
+      "description": "启力称重传感器-QL-JR485",
+      "group": "传感器",
+      "hideSections": ["di", "do"],
+      "values": {
+        "driver": "modbus_rtu",
+        "baud_rate": "9600",
+        "slave_addr": "1",
+        "ai_func": "0x03",
+        "ai_channel_0": "0x0000, int32"
+      }
+    },
+    {
+      "name": "塔石 IO-441",
+      "description": "塔石 IO-441 模块",
+      "group": "IO模块",
+      "values": {
+        "driver": "modbus_rtu",
+        "slave_addr": "17",
+        "baud_rate": "9600",
+        "di_func": "0x02",
+        "di_addr": "0x0020",
+        "di_num": "0x0004"
+      }
+    }
+  ]
+}

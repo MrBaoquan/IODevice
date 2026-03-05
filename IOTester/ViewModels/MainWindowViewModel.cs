@@ -30,6 +30,9 @@ namespace IOTester.ViewModels
         private readonly SourceList<Device> _devListSource = new SourceList<Device>();
         public ReadOnlyObservableCollection<Device> Devices { get; }
 
+        // 静态实例引用，用于外部调用重启设备
+        private static MainWindowViewModel? _instance;
+
         private bool isStarted = false;
         public bool IsStared
         {
@@ -53,6 +56,8 @@ namespace IOTester.ViewModels
         public ReactiveCommand<Unit, Unit> EditIOConfigCommand { get; }
         public ReactiveCommand<Unit, Unit> OpenEventForwardConfigCommand { get; }
         public ReactiveCommand<Unit, Unit> ToggleEditModeCommand { get; }
+        public ReactiveCommand<Unit, Unit> AddDeviceCommand { get; }
+        public ReactiveCommand<Device, Unit> DeleteDeviceCommand { get; }
 
         private CompositeDisposable? _recordingSubscriptions;
 
@@ -65,6 +70,46 @@ namespace IOTester.ViewModels
 
         public ObservableCollection<Action> tempList { get; set; } =
             new ObservableCollection<Action>();
+
+        /// <summary>
+        /// 静态方法：重启所有设备（关闭后重新打开）
+        /// </summary>
+        public static void RestartDevices()
+        {
+            if (_instance == null)
+                return;
+
+            var wasStarted = _instance.IsStared;
+
+            if (wasStarted)
+            {
+                // 先关闭设备
+                EventForwardingService.Instance.Stop();
+                IODeviceController.Unload();
+                _instance.IsStared = false;
+            }
+
+            // 重新加载并启动
+            _instance.Load();
+
+            var configPath = Path.Combine(_instance.AppRoot, "Config", "EvtMapping.xml");
+            EventForwardingService.Instance.LoadConfig(configPath);
+            EventForwardingService.Instance.Start();
+
+            _instance.SetupKeyBindings();
+            _instance.SetupRecordingSubscriptions();
+
+            _instance.IsStared = true;
+
+            // 更新所有设备状态
+            _instance.Devices
+                .ToList()
+                .ForEach(device =>
+                {
+                    _instance.UpdateRecordButtonVisibility(device);
+                    device.Update();
+                });
+        }
 
         public async void Load()
         {
@@ -97,8 +142,121 @@ namespace IOTester.ViewModels
             IODeviceController.Load();
         }
 
+        /// <summary>
+        /// 添加新设备
+        /// </summary>
+        private async System.Threading.Tasks.Task AddDeviceAsync()
+        {
+            // 创建新设备实例
+            var newDevice = new Device
+            {
+                Name = $"Device_{Devices.Count + 1}",
+                Type = "External",
+                DllName = "MODBUS",
+                Index = 0
+            };
+
+            // 打开设备属性配置窗口
+            var window = new DevicePropertiesWindow();
+            window.SetDevice(newDevice);
+
+            // 获取主窗口作为父窗口
+            var mainWindow = Avalonia.Application.Current?.ApplicationLifetime
+                is Avalonia.Controls.ApplicationLifetimes.IClassicDesktopStyleApplicationLifetime desktop
+                ? desktop.MainWindow
+                : null;
+
+            if (mainWindow != null)
+            {
+                await window.ShowDialog(mainWindow);
+            }
+            else
+            {
+                window.Show();
+                return;
+            }
+
+            // 如果用户确认添加
+            if (window.IsConfirmed)
+            {
+                // 添加到 IORoot
+                IORoot.Instance.Devices.Add(newDevice);
+
+                // 添加到设备列表
+                _devListSource.Add(newDevice);
+
+                // 选中新添加的设备
+                SelectedIODevcie = newDevice;
+
+                // 保存配置到文件
+                SaveDeviceConfig();
+            }
+        }
+
+        /// <summary>
+        /// 删除设备
+        /// </summary>
+        private async System.Threading.Tasks.Task DeleteDeviceAsync(Device device)
+        {
+            if (device == null)
+                return;
+
+            // 弹出确认对话框
+            var box = MessageBoxManager.GetMessageBoxStandard(
+                "确认删除",
+                $"确定要删除设备 \"{device.Title}\" 吗？\n此操作不可撤销。",
+                ButtonEnum.YesNo,
+                MsBox.Avalonia.Enums.Icon.Question
+            );
+
+            var result = await box.ShowAsync();
+            if (result != ButtonResult.Yes)
+                return;
+
+            // 从 IORoot 中移除
+            IORoot.Instance.Devices.Remove(device);
+
+            // 从设备列表中移除
+            _devListSource.Remove(device);
+
+            // 如果删除的是当前选中的设备，选择第一个
+            if (SelectedIODevcie == device)
+            {
+                SelectedIODevcie = Devices.FirstOrDefault()!;
+            }
+
+            // 保存配置
+            SaveDeviceConfig();
+
+            // 提示需要重启
+            var restartBox = MessageBoxManager.GetMessageBoxStandard(
+                "删除成功",
+                $"设备 \"{device.Title}\" 已删除。\n\n为使更改完全生效，建议重启应用程序。",
+                ButtonEnum.Ok,
+                MsBox.Avalonia.Enums.Icon.Info
+            );
+            await restartBox.ShowAsync();
+        }
+
+        /// <summary>
+        /// 保存设备配置到文件
+        /// </summary>
+        private void SaveDeviceConfig()
+        {
+            try
+            {
+                IORoot.Instance.Save();
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"保存配置失败: {ex.Message}");
+            }
+        }
+
         public MainWindowViewModel()
         {
+            _instance = this;
+
             OnTabChangedCommand = ReactiveCommand.Create(() =>
             {
                 return SelectedIODevcie;
@@ -173,6 +331,10 @@ namespace IOTester.ViewModels
                         device.Update();
                     });
             });
+
+            AddDeviceCommand = ReactiveCommand.CreateFromTask(AddDeviceAsync);
+
+            DeleteDeviceCommand = ReactiveCommand.CreateFromTask<Device>(DeleteDeviceAsync);
 
             _devListSource
                 .Connect()

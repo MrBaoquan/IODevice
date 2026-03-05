@@ -1,0 +1,58 @@
+{
+  "dllName": "SERIAL-IOFE",
+  "displayName": "展研-IOFE串口设备",
+  "version": "1.0",
+  "category": "通讯协议",
+  "sections": [
+    {
+      "name": "connection",
+      "title": "\u8FDE\u63A5\u914D\u7F6E",
+      "collapsed": false,
+      "fields": [
+        {
+          "key": "baud_rate",
+          "label": "\u6CE2\u7279\u7387",
+          "type": "select",
+          "default": "115200",
+          "required": false,
+          "options": [
+            {
+              "value": "9600",
+              "label": "9600"
+            },
+            {
+              "value": "19200",
+              "label": "19200"
+            },
+            {
+              "value": "38400",
+              "label": "38400"
+            },
+            {
+              "value": "57600",
+              "label": "57600"
+            },
+            {
+              "value": "115200",
+              "label": "115200"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "other",
+      "title": "\u5176\u4ED6\u914D\u7F6E",
+      "collapsed": true,
+      "fields": [
+        {
+          "key": "write_wait_ms",
+          "label": "write_wait_ms",
+          "type": "number",
+          "default": "60",
+          "required": false
+        }
+      ]
+    }
+  ]
+}

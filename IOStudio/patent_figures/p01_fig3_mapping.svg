@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900">
+  <defs>
+    <style>
+      .title { font: 700 28px 'Microsoft YaHei', sans-serif; fill: #10243e; }
+      .label { font: 600 22px 'Microsoft YaHei', sans-serif; fill: #16324f; }
+      .text { font: 500 17px 'Microsoft YaHei', sans-serif; fill: #274c77; }
+      .box { fill: #f7fbff; stroke: #35608a; stroke-width: 2.2; rx: 18; ry: 18; }
+      .mid { fill: #eef6ff; stroke: #204a73; stroke-width: 2.6; rx: 18; ry: 18; }
+      .line { stroke: #355c7d; stroke-width: 3; fill: none; marker-end: url(#arrow); }
+    </style>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#355c7d" /></marker>
+  </defs>
+  <rect width="1600" height="900" fill="#fff" />
+  <text x="800" y="55" text-anchor="middle" class="title">图3 目标设备物理通道映射为统一逻辑通道模型示意图</text>
+  <rect x="90" y="150" width="360" height="600" class="box" />
+  <text x="270" y="200" text-anchor="middle" class="label">原始物理通道层</text>
+  <rect x="125" y="240" width="290" height="75" class="box" /><text x="270" y="285" text-anchor="middle" class="text">Device A: Button_00 / Axis_00 / DO_00</text>
+  <rect x="125" y="345" width="290" height="75" class="box" /><text x="270" y="390" text-anchor="middle" class="text">Device B: Coil_100 / Register_200</text>
+  <rect x="125" y="450" width="290" height="75" class="box" /><text x="270" y="495" text-anchor="middle" class="text">Device C: Pitch / Roll / OAxis_00</text>
+  <rect x="125" y="555" width="290" height="130" class="box" /><text x="270" y="600" text-anchor="middle" class="text">差异表现</text><text x="270" y="635" text-anchor="middle" class="text">命名差异 / 地址差异 / 协议差异</text><text x="270" y="665" text-anchor="middle" class="text">数值语义差异 / 通道组织差异</text>
+
+  <rect x="620" y="110" width="360" height="680" class="mid" />
+  <text x="800" y="160" text-anchor="middle" class="label">统一逻辑通道模型</text>
+  <rect x="655" y="220" width="290" height="75" class="box" /><text x="800" y="265" text-anchor="middle" class="text">输入通道：Input.Button.Start</text>
+  <rect x="655" y="320" width="290" height="75" class="box" /><text x="800" y="365" text-anchor="middle" class="text">输入通道：Input.Axis.Speed</text>
+  <rect x="655" y="420" width="290" height="75" class="box" /><text x="800" y="465" text-anchor="middle" class="text">输出通道：Output.Light.Level</text>
+  <rect x="655" y="520" width="290" height="75" class="box" /><text x="800" y="565" text-anchor="middle" class="text">动作通道：Motion.Platform.Pitch</text>
+  <rect x="655" y="620" width="290" height="95" class="box" /><text x="800" y="660" text-anchor="middle" class="text">映射关系表</text><text x="800" y="690" text-anchor="middle" class="text">统一标识 ↔ 原始地址 / 协议 / 设备接口</text>
+
+  <rect x="1150" y="150" width="360" height="600" class="box" />
+  <text x="1330" y="200" text-anchor="middle" class="label">编排执行视图</text>
+  <rect x="1185" y="245" width="290" height="75" class="box" /><text x="1330" y="290" text-anchor="middle" class="text">测试任务引用统一通道</text>
+  <rect x="1185" y="350" width="290" height="75" class="box" /><text x="1330" y="395" text-anchor="middle" class="text">事件流程引用统一通道</text>
+  <rect x="1185" y="455" width="290" height="75" class="box" /><text x="1330" y="500" text-anchor="middle" class="text">动作时间线引用统一通道</text>
+  <rect x="1185" y="560" width="290" height="110" class="box" /><text x="1330" y="605" text-anchor="middle" class="text">同一编排可切换设备组合复用</text><text x="1330" y="640" text-anchor="middle" class="text">仅适配映射变化，编排模型不变</text>
+
+  <path d="M 450 280 C 530 280, 540 260, 620 260" class="line" />
+  <path d="M 450 385 C 530 385, 540 360, 620 360" class="line" />
+  <path d="M 450 490 C 530 490, 540 560, 620 560" class="line" />
+  <path d="M 980 260 C 1060 260, 1070 280, 1150 280" class="line" />
+  <path d="M 980 460 C 1060 460, 1070 490, 1150 490" class="line" />
+  <path d="M 980 665 C 1060 665, 1070 615, 1150 615" class="line" />
+</svg>

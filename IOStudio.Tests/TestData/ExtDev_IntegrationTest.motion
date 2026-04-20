@@ -1,0 +1,122 @@
+{
+  "version": "1.0",
+  "name": "ExtDev_IntegrationTest",
+  "duration_ms": 10000,
+  "fps": 60,
+  "tracks": [
+    {
+      "id": "trk_light",
+      "device": "ExtDev",
+      "oaction": "Light",
+      "label": "氛围灯",
+      "color": "#4FC3F7",
+      "value_type": "float",
+      "muted": false,
+      "locked": false,
+      "clips": [
+        {
+          "id": "clip_light",
+          "start_ms": 0,
+          "end_ms": 10000,
+          "keyframes": [
+            { "time_ms": 0,     "value": 0.0,  "interpolation": "linear" },
+            { "time_ms": 2000,  "value": 0.8,  "interpolation": "ease_in_out" },
+            { "time_ms": 5000,  "value": 0.3,  "interpolation": "bezier", "cp2y": -0.1, "cp1y": 0.2 },
+            { "time_ms": 8000,  "value": 0.7,  "interpolation": "linear" },
+            { "time_ms": 10000, "value": 0.5,  "interpolation": "linear" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "trk_fire",
+      "device": "ExtDev",
+      "oaction": "Fire",
+      "label": "开火状态",
+      "color": "#EF5350",
+      "value_type": "bool",
+      "muted": false,
+      "locked": false,
+      "clips": [
+        {
+          "id": "clip_fire",
+          "start_ms": 0,
+          "end_ms": 10000,
+          "keyframes": [
+            { "time_ms": 0,    "value": 0.0, "interpolation": "step" },
+            { "time_ms": 1000, "value": 1.0, "interpolation": "step" },
+            { "time_ms": 2000, "value": 0.0, "interpolation": "step" },
+            { "time_ms": 4000, "value": 1.0, "interpolation": "step" },
+            { "time_ms": 6000, "value": 0.0, "interpolation": "step" },
+            { "time_ms": 8000, "value": 1.0, "interpolation": "step" },
+            { "time_ms": 9000, "value": 0.0, "interpolation": "step" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "trk_movex",
+      "device": "ExtDev",
+      "oaction": "MoveX",
+      "oaxis_channel": "OAxis_00",
+      "output_type": "oaxis",
+      "label": "左右移动",
+      "color": "#66BB6A",
+      "value_type": "float",
+      "muted": false,
+      "locked": false,
+      "clips": [
+        {
+          "id": "clip_movex",
+          "start_ms": 0,
+          "end_ms": 10000,
+          "keyframes": [
+            { "time_ms": 0,     "value": 0.5, "interpolation": "linear" },
+            { "time_ms": 2500,  "value": 0.9, "interpolation": "linear" },
+            { "time_ms": 5000,  "value": 0.1, "interpolation": "ease_in_out" },
+            { "time_ms": 7500,  "value": 0.8, "interpolation": "linear" },
+            { "time_ms": 10000, "value": 0.5, "interpolation": "linear" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "trk_movey",
+      "device": "ExtDev",
+      "oaction": "MoveY",
+      "oaxis_channel": "OAxis_01",
+      "output_type": "oaxis",
+      "label": "前后移动",
+      "color": "#AB47BC",
+      "value_type": "float",
+      "muted": false,
+      "locked": false,
+      "clips": [
+        {
+          "id": "clip_movey",
+          "start_ms": 0,
+          "end_ms": 10000,
+          "keyframes": [
+            { "time_ms": 0,     "value": 0.5, "interpolation": "linear" },
+            { "time_ms": 3000,  "value": 0.7, "interpolation": "bezier", "cp2y": 0.3 },
+            { "time_ms": 6000,  "value": 0.2, "interpolation": "ease_in_out" },
+            { "time_ms": 10000, "value": 0.5, "interpolation": "linear" }
+          ]
+        }
+      ]
+    }
+  ],
+  "events": [
+    { "time_ms": 1000, "event_name": "fire_start", "event_data": "{\"type\":\"weapon\",\"id\":1}", "color": "#f59e0b", "data_type": "json" },
+    { "time_ms": 2000, "event_name": "fire_stop",  "color": "#f59e0b", "data_type": "string" },
+    { "time_ms": 4000, "event_name": "fire_start", "event_data": "{\"type\":\"weapon\",\"id\":2}", "color": "#f59e0b", "data_type": "json" },
+    { "time_ms": 6000, "event_name": "fire_stop",  "color": "#f59e0b", "data_type": "string" },
+    { "time_ms": 8000, "event_name": "fire_start", "event_data": "{\"type\":\"weapon\",\"id\":3}", "color": "#f59e0b", "data_type": "json" },
+    { "time_ms": 9000, "event_name": "fire_stop",  "color": "#f59e0b", "data_type": "string" }
+  ],
+  "markers": [
+    { "time_ms": 0,     "name": "开始", "color": "#f59e0b" },
+    { "time_ms": 5000,  "name": "中场", "color": "#f59e0b" },
+    { "time_ms": 10000, "name": "结束", "color": "#f59e0b" }
+  ]
+}

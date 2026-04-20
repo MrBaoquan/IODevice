@@ -28,6 +28,7 @@ copy %src_include_path%IODevice.h %dst_include_path% /y
 copy %src_include_path%IODeviceController.h %dst_include_path% /y
 copy %src_include_path%IODeviceImpl.hpp %dst_include_path% /y
 copy %src_include_path%IOExportsAPI.h %dst_include_path% /y
+copy %src_include_path%MotionPlayer.h %dst_include_path% /y
 
 if not exist %dst_binaries_path% md %dst_binaries_path%
 copy %src_binaries_path%IODevice.dll %dst_binaries_path% /y

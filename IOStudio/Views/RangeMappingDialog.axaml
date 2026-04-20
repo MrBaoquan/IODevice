@@ -1,0 +1,248 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:IOStudio.ViewModels"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:iconPacks="https://github.com/MahApps/IconPacks.Avalonia"
+        mc:Ignorable="d" d:DesignWidth="600" d:DesignHeight="650"
+        x:Class="IOStudio.Views.RangeMappingDialog"
+        x:DataType="vm:RangeMappingDialogViewModel"
+        Title="批量添加范围映射"
+        Width="600" Height="650"
+        MinWidth="500" MinHeight="550"
+        WindowStartupLocation="CenterOwner"
+        CanResize="False">
+
+    <Design.DataContext>
+        <vm:RangeMappingDialogViewModel/>
+    </Design.DataContext>
+
+    <Window.Styles>
+        <Style Selector="TextBlock.header">
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="Margin" Value="0,0,8,0"/>
+            <Setter Property="FontSize" Value="13"/>
+        </Style>
+        <Style Selector="TextBlock.hint">
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="Foreground" Value="#9ca3af"/>
+            <Setter Property="Margin" Value="4,2,0,0"/>
+        </Style>
+        <Style Selector="Border.section">
+            <Setter Property="Background" Value="#f9fafb"/>
+            <Setter Property="BorderBrush" Value="#e5e7eb"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="6"/>
+            <Setter Property="Padding" Value="16"/>
+            <Setter Property="Margin" Value="0,8,0,0"/>
+        </Style>
+    </Window.Styles>
+
+    <DockPanel>
+        <!-- 底部按钮栏 -->
+        <Border DockPanel.Dock="Bottom" BorderBrush="#e5e7eb" BorderThickness="0,1,0,0" Padding="16,12" Background="#f9fafb">
+            <StackPanel Orientation="Horizontal" Spacing="12" HorizontalAlignment="Center">
+                <Button Content="取消" 
+                        Command="{Binding CancelCommand}"
+                        Width="100" 
+                        Padding="12,8"
+                        Background="#e5e7eb"
+                        Foreground="#374151"
+                        HorizontalContentAlignment="Center"/>
+                <Button Content="确认生成" 
+                        Command="{Binding ConfirmCommand}"
+                        Width="120" 
+                        Padding="12,8"
+                        Background="#3b82f6"
+                        Foreground="White"
+                        HorizontalContentAlignment="Center"/>
+            </StackPanel>
+        </Border>
+
+        <!-- 主内容区 -->
+        <ScrollViewer VerticalScrollBarVisibility="Auto">
+            <StackPanel Margin="24" Spacing="20">
+                <!-- 标题说明 -->
+                <StackPanel Spacing="8">
+                    <TextBlock Text="批量生成范围映射" FontWeight="Bold" FontSize="18" Foreground="#1f2937"/>
+                    <TextBlock Text="通过指定源和目标的通道范围，快速批量生成多个映射配置" 
+                               FontSize="13" 
+                               Foreground="#6b7280"
+                               TextWrapping="Wrap"/>
+                </StackPanel>
+
+                <!-- 映射类型选择 -->
+                <Border Classes="section">
+                    <StackPanel Spacing="6">
+                        <TextBlock Classes="header" Text="映射类型" Foreground="#374151"/>
+                        <ComboBox ItemsSource="{Binding AvailableMappingTypes}"
+                                  SelectedItem="{Binding MappingType}"
+                                  FontSize="13"
+                                  HorizontalAlignment="Stretch"/>
+                        <TextBlock Classes="hint" Text="开关量: 数字量（按键，前缀 Button_） | 模拟量: 连续变化（摇杆轴，前缀 Axis_）"/>
+                    </StackPanel>
+                </Border>
+
+                <!-- 源配置 -->
+                <Border Classes="section">
+                    <StackPanel Spacing="12">
+                        <TextBlock Text="源配置" FontWeight="Bold" FontSize="14" Foreground="#374151"/>
+                        
+                        <StackPanel Spacing="6">
+                            <TextBlock Classes="header" Text="源Key前缀" Foreground="#374151"/>
+                            <TextBox Text="{Binding SourceKeyPrefix}" 
+                                     Watermark="例如：Button_"
+                                     FontSize="13"/>
+                            <TextBlock Classes="hint" Text="键名的前缀部分，后面会自动添加通道号"/>
+                        </StackPanel>
+
+                        <Grid ColumnDefinitions="*,12,*">
+                            <StackPanel Grid.Column="0" Spacing="6">
+                                <TextBlock Classes="header" Text="起始通道号" Foreground="#374151"/>
+                                <NumericUpDown Value="{Binding SourceStartChannel}" 
+                                               Minimum="0" 
+                                               Maximum="9999"
+                                               Increment="1"
+                                               FontSize="13"
+                                               HorizontalAlignment="Stretch"/>
+                            </StackPanel>
+                            
+                            <StackPanel Grid.Column="2" Spacing="6">
+                                <TextBlock Classes="header" Text="结束通道号" Foreground="#374151"/>
+                                <NumericUpDown Value="{Binding SourceEndChannel}" 
+                                               Minimum="0" 
+                                               Maximum="9999"
+                                               Increment="1"
+                                               FontSize="13"
+                                               HorizontalAlignment="Stretch"/>
+                            </StackPanel>
+                        </Grid>
+
+                        <!-- 源范围预览 -->
+                        <Border Background="#dbeafe" 
+                                BorderBrush="#93c5fd" 
+                                BorderThickness="1" 
+                                CornerRadius="4" 
+                                Padding="10">
+                            <StackPanel Spacing="4">
+                                <TextBlock Text="源通道范围预览" FontWeight="SemiBold" FontSize="11" Foreground="#1e40af"/>
+                                <TextBlock Text="{Binding SourceChannelPreview}" 
+                                           FontFamily="Consolas" 
+                                           FontSize="12" 
+                                           Foreground="#1e3a8a"/>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </Border>
+
+                <!-- 目标配置 -->
+                <Border Classes="section">
+                    <StackPanel Spacing="12">
+                        <TextBlock Text="目标配置" FontWeight="Bold" FontSize="14" Foreground="#374151"/>
+                        
+                        <StackPanel Spacing="6">
+                            <TextBlock Classes="header" Text="目标Key前缀" Foreground="#374151"/>
+                            <TextBox Text="{Binding TargetKeyPrefix}" 
+                                     Watermark="例如：Button_"
+                                     FontSize="13"/>
+                            <TextBlock Classes="hint" Text="目标键名的前缀部分，后面会自动添加通道号"/>
+                        </StackPanel>
+
+                        <Grid ColumnDefinitions="*,12,*">
+                            <StackPanel Grid.Column="0" Spacing="6">
+                                <TextBlock Classes="header" Text="起始通道号" Foreground="#374151"/>
+                                <NumericUpDown Value="{Binding TargetStartChannel}" 
+                                               Minimum="0" 
+                                               Maximum="9999"
+                                               Increment="1"
+                                               FontSize="13"
+                                               HorizontalAlignment="Stretch"/>
+                            </StackPanel>
+                            
+                            <StackPanel Grid.Column="2" Spacing="6">
+                                <TextBlock Classes="header" Text="结束通道号" Foreground="#374151"/>
+                                <NumericUpDown Value="{Binding TargetEndChannel}" 
+                                               Minimum="0" 
+                                               Maximum="9999"
+                                               Increment="1"
+                                               FontSize="13"
+                                               HorizontalAlignment="Stretch"/>
+                            </StackPanel>
+                        </Grid>
+
+                        <!-- 目标范围预览 -->
+                        <Border Background="#dbeafe" 
+                                BorderBrush="#93c5fd" 
+                                BorderThickness="1" 
+                                CornerRadius="4" 
+                                Padding="10">
+                            <StackPanel Spacing="4">
+                                <TextBlock Text="目标通道范围预览" FontWeight="SemiBold" FontSize="11" Foreground="#1e40af"/>
+                                <TextBlock Text="{Binding TargetChannelPreview}" 
+                                           FontFamily="Consolas" 
+                                           FontSize="12" 
+                                           Foreground="#1e3a8a"/>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </Border>
+
+                <!-- 其他选项 -->
+                <Border Classes="section">
+                    <StackPanel Spacing="12">
+                        <TextBlock Text="其他选项" FontWeight="Bold" FontSize="14" Foreground="#374151"/>
+                        
+                        <CheckBox IsChecked="{Binding IsEnabled}">
+                            <TextBlock Text="启用所有生成的映射" FontWeight="SemiBold" FontSize="13"/>
+                        </CheckBox>
+
+                        <StackPanel Spacing="6">
+                            <TextBlock Classes="header" Text="批注说明（可选）" Foreground="#374151"/>
+                            <TextBox Text="{Binding Description}" 
+                                     Watermark="为这批映射添加说明..."
+                                     AcceptsReturn="True"
+                                     TextWrapping="Wrap"
+                                     Height="60"
+                                     FontSize="13"/>
+                            <TextBlock Classes="hint" Text="此说明会应用到所有生成的映射配置"/>
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+
+                <!-- 生成预览 -->
+                <Border Background="#f0f9ff" 
+                        BorderBrush="#bfdbfe" 
+                        BorderThickness="1" 
+                        CornerRadius="6" 
+                        Padding="16">
+                    <StackPanel Spacing="8">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <iconPacks:PackIconIonicons Kind="InformationCircleiOS" Width="18" Height="18" Foreground="#1e40af" VerticalAlignment="Center"/>
+                            <TextBlock Text="生成预览" FontWeight="Bold" FontSize="13" Foreground="#1e40af" VerticalAlignment="Center"/>
+                        </StackPanel>
+                        <TextBlock Text="{Binding MappingCount}" 
+                                   FontFamily="Consolas" 
+                                   FontSize="13" 
+                                   FontWeight="SemiBold"
+                                   Foreground="#1e3a8a"/>
+                        <TextBlock Text="示例：" FontSize="11" Foreground="#6b7280"/>
+                        <TextBlock FontFamily="Consolas" FontSize="11" Foreground="#374151">
+                            <Run Text="{Binding SourceKeyPrefix}"/>
+                            <Run Text="{Binding SourceStartChannel, StringFormat='00'}"/>
+                            <Run Text=" → "/>
+                            <Run Text="{Binding TargetKeyPrefix}"/>
+                            <Run Text="{Binding TargetStartChannel, StringFormat='00'}"/>
+                        </TextBlock>
+                        <TextBlock FontFamily="Consolas" FontSize="11" Foreground="#374151">
+                            <Run Text="{Binding SourceKeyPrefix}"/>
+                            <Run Text="{Binding SourceEndChannel, StringFormat='00'}"/>
+                            <Run Text=" → "/>
+                            <Run Text="{Binding TargetKeyPrefix}"/>
+                            <Run Text="{Binding TargetEndChannel, StringFormat='00'}"/>
+                        </TextBlock>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+        </ScrollViewer>
+    </DockPanel>
+</Window>

@@ -14,7 +14,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IODevice_CSharp_Wrapper_Tes
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IODevice_CSharp_Wrapper", "IODevice_CSharp_Wrapper\IODevice_CSharp_Wrapper.csproj", "{7E937156-D2E6-4C7B-BD97-757F9412DFFD}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IOTester", "IOTester\IOTester.csproj", "{E71236AC-B2AB-4175-AD1E-506469AB58B9}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IOStudio", "IOStudio\IOStudio.csproj", "{E71236AC-B2AB-4175-AD1E-506469AB58B9}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DNHper", "DNHper\DNHper.csproj", "{3E89D72B-77E9-4F33-970A-C7A9D033CF9F}"
 EndProject
@@ -23,6 +23,8 @@ EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "LicHper", "C:\Users\Administrator\source\repos\DaemonApps\LicHper\LicHper.vcxproj", "{2392531D-4F21-4531-9CD4-58F7DA8BA618}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AuthAssistant", "C:\Users\Administrator\source\repos\DaemonApps\AuthAssistant\AuthAssistant.csproj", "{222426D6-022A-4F2B-8E3B-C552E8535442}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IOStudio.Tests", "IOStudio.Tests\IOStudio.Tests.csproj", "{D8136016-DDCB-4CC3-8015-204F7CD02061}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -124,6 +126,18 @@ Global
 		{222426D6-022A-4F2B-8E3B-C552E8535442}.Release|x64.Build.0 = Release|Any CPU
 		{222426D6-022A-4F2B-8E3B-C552E8535442}.Release|x86.ActiveCfg = Release|Any CPU
 		{222426D6-022A-4F2B-8E3B-C552E8535442}.Release|x86.Build.0 = Release|Any CPU
+		{D8136016-DDCB-4CC3-8015-204F7CD02061}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D8136016-DDCB-4CC3-8015-204F7CD02061}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D8136016-DDCB-4CC3-8015-204F7CD02061}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{D8136016-DDCB-4CC3-8015-204F7CD02061}.Debug|x64.Build.0 = Debug|Any CPU
+		{D8136016-DDCB-4CC3-8015-204F7CD02061}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{D8136016-DDCB-4CC3-8015-204F7CD02061}.Debug|x86.Build.0 = Debug|Any CPU
+		{D8136016-DDCB-4CC3-8015-204F7CD02061}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D8136016-DDCB-4CC3-8015-204F7CD02061}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D8136016-DDCB-4CC3-8015-204F7CD02061}.Release|x64.ActiveCfg = Release|Any CPU
+		{D8136016-DDCB-4CC3-8015-204F7CD02061}.Release|x64.Build.0 = Release|Any CPU
+		{D8136016-DDCB-4CC3-8015-204F7CD02061}.Release|x86.ActiveCfg = Release|Any CPU
+		{D8136016-DDCB-4CC3-8015-204F7CD02061}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

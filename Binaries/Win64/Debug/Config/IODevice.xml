@@ -31,9 +31,55 @@
       <Key Name="Up" />
       <Key Name="Down" Scale="-10" />
     </Axis>
+    <!-- ========== 姿态控制 (6DOF Motion Platform) ========== -->
+    <OAction Name="Pitch" Label="俯仰">
+      <Key Name="OAxis_00" Scale="1" />
+    </OAction>
+    <OAction Name="Roll" Label="横滚">
+      <Key Name="OAxis_01" Scale="1" />
+    </OAction>
+    <OAction Name="Yaw" Label="偏航">
+      <Key Name="OAxis_02" Scale="1" />
+    </OAction>
+    <OAction Name="Heave" Label="升降">
+      <Key Name="OAxis_03" Scale="1" />
+    </OAction>
+    <OAction Name="Surge" Label="前后平移">
+      <Key Name="OAxis_04" Scale="1" />
+    </OAction>
+    <OAction Name="Sway" Label="左右平移">
+      <Key Name="OAxis_05" Scale="1" />
+    </OAction>
+    <!-- ========== 特效控制 (Special Effects) ========== -->
+    <OAction Name="Wind" Label="风效">
+      <Key Name="OAxis_06" Scale="1" />
+    </OAction>
+    <OAction Name="Fog" Label="烟雾">
+      <Key Name="OAxis_07" Scale="1" />
+    </OAction>
+    <OAction Name="Rain" Label="雨效">
+      <Key Name="OAxis_08" Scale="1" />
+    </OAction>
+    <OAction Name="Snow" Label="雪效/泡泡">
+      <Key Name="OAxis_09" Scale="1" />
+    </OAction>
+    <OAction Name="Lightning" Label="闪电">
+      <Key Name="OAxis_10" Scale="1" />
+    </OAction>
+    <OAction Name="Scent" Label="气味">
+      <Key Name="OAxis_11" Scale="1" />
+    </OAction>
     <OAction Name="Light" Label="氛围灯">
-      <Key Name="OAxis_00" Scale="100" />
-      <Key Name="OAxis_02" Scale="10" />
+      <Key Name="OAxis_12" Scale="1" />
+    </OAction>
+    <OAction Name="LegSweep" Label="扫腿">
+      <Key Name="OAxis_13" Scale="1" />
+    </OAction>
+    <OAction Name="BackPoke" Label="背部顶杆">
+      <Key Name="OAxis_14" Scale="1" />
+    </OAction>
+    <OAction Name="Vibration" Label="座椅振动">
+      <Key Name="OAxis_15" Scale="1" />
     </OAction>
   </Device>
   <Device Name="Device_2" Type="External" DllName="MP-NJQK" Index="0">

@@ -1,0 +1,50 @@
+<Application xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="IOStudio.App"
+             xmlns:local="using:IOStudio"
+             RequestedThemeVariant="Default">
+             <!-- "Default" ThemeVariant follows system theme variant. "Dark" or "Light" are other available options. -->
+
+    <Application.DataTemplates>
+        <local:ViewLocator/>
+    </Application.DataTemplates>
+  
+    <Application.Styles>
+        <FluentTheme />
+		<StyleInclude Source="avares://IconPacks.Avalonia.Ionicons/Ionicons.axaml" />
+		
+		<!-- 全局字体设置，支持中文 -->
+		<Style Selector="Window">
+			<Setter Property="FontFamily" Value="Microsoft YaHei UI,Segoe UI,微软雅黑,宋体,Arial,sans-serif" />
+		</Style>
+		<Style Selector="TextBox">
+			<Setter Property="FontFamily" Value="Microsoft YaHei UI,Segoe UI,微软雅黑,宋体,Arial,sans-serif" />
+		</Style>
+		
+		<!-- 文本按钮样式 -->
+		<Style Selector="Button.text-button">
+			<Setter Property="Background" Value="Transparent" />
+			<Setter Property="BorderThickness" Value="1" />
+			<Setter Property="BorderBrush" Value="#94a3b8" />
+			<Setter Property="Foreground" Value="#475569" />
+			<Setter Property="CornerRadius" Value="4" />
+		</Style>
+		<Style Selector="Button.text-button:pointerover">
+			<Setter Property="Background" Value="#f1f5f9" />
+			<Setter Property="BorderBrush" Value="#64748b" />
+			<Setter Property="Foreground" Value="#1e293b" />
+		</Style>
+		<Style Selector="Button.text-button:pressed">
+			<Setter Property="Background" Value="#e2e8f0" />
+		</Style>
+    </Application.Styles>
+
+	<Application.Resources>
+		<ResourceDictionary>
+			<Thickness x:Key="ExpanderContentPadding">16</Thickness>
+			<ResourceDictionary.MergedDictionaries>
+				<ResourceInclude Source="avares://IOStudio/Assets/Themes/TimelineThemeResources.axaml"/>
+			</ResourceDictionary.MergedDictionaries>
+		</ResourceDictionary>
+	</Application.Resources>
+</Application>

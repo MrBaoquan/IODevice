@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900">
+  <defs>
+    <style>
+      .title { font: 700 28px 'Microsoft YaHei', sans-serif; fill: #10243e; }
+      .label { font: 600 22px 'Microsoft YaHei', sans-serif; fill: #16324f; }
+      .text { font: 500 17px 'Microsoft YaHei', sans-serif; fill: #274c77; }
+      .box { fill: #f7fbff; stroke: #35608a; stroke-width: 2.2; rx: 18; ry: 18; }
+      .line { stroke: #355c7d; stroke-width: 3; fill: none; marker-end: url(#arrow); }
+    </style>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#355c7d" /></marker>
+  </defs>
+  <rect width="1600" height="900" fill="#fff" />
+  <text x="800" y="55" text-anchor="middle" class="title">图4 时序编排任务执行与状态反馈闭环示意图</text>
+  <rect x="110" y="310" width="220" height="90" class="box" /><text x="220" y="360" text-anchor="middle" class="label">编排任务</text>
+  <rect x="420" y="310" width="220" height="90" class="box" /><text x="530" y="360" text-anchor="middle" class="label">执行解析</text>
+  <rect x="730" y="310" width="220" height="90" class="box" /><text x="840" y="360" text-anchor="middle" class="label">设备派发</text>
+  <rect x="1040" y="310" width="220" height="90" class="box" /><text x="1150" y="360" text-anchor="middle" class="label">目标设备执行</text>
+  <rect x="1350" y="310" width="170" height="90" class="box" /><text x="1435" y="348" text-anchor="middle" class="label">状态反馈</text><text x="1435" y="375" text-anchor="middle" class="text">值 / 状态 / 异常</text>
+  <path d="M 330 355 L 420 355" class="line" />
+  <path d="M 640 355 L 730 355" class="line" />
+  <path d="M 950 355 L 1040 355" class="line" />
+  <path d="M 1260 355 L 1350 355" class="line" />
+  <path d="M 1435 400 C 1435 690, 220 690, 220 400" stroke="#4d7ea8" stroke-width="3.4" fill="none" marker-end="url(#arrow)" />
+  <text x="800" y="735" text-anchor="middle" class="label">闭环更新路径</text>
+  <text x="800" y="768" text-anchor="middle" class="text">将设备执行状态映射回统一逻辑通道模型，并更新编排状态、重试策略或后续动作</text>
+  <rect x="500" y="120" width="600" height="110" class="box" />
+  <text x="800" y="165" text-anchor="middle" class="label">实际实现锚点</text>
+  <text x="800" y="198" text-anchor="middle" class="text">IOStudio 服务层 + 协议发送器 + ConnectionManager + IODevice/Wrapper 运行时</text>
+</svg>

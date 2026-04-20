@@ -1,0 +1,52 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:IOStudio.ViewModels.Timeline"
+        x:Class="IOStudio.Views.Timeline.GroupDialog"
+        x:DataType="vm:GroupDialogViewModel"
+        Title="{Binding DialogTitle}"
+        Width="380"
+        SizeToContent="Height"
+        WindowStartupLocation="CenterOwner"
+        CanResize="False">
+
+    <StackPanel Margin="16" Spacing="8">
+        <!-- 提示文字 -->
+        <TextBlock Text="{Binding Prompt}" FontSize="13" />
+
+        <!-- 分组名称输入 -->
+        <TextBox x:Name="GroupNameBox"
+                 Text="{Binding GroupName, Mode=TwoWay}"
+                 Watermark="输入分组名称" />
+
+        <!-- 轨道选择列表 (仅 NewWithTracks 模式显示) -->
+        <TextBlock Text="选择加入该分组的轨道 (可多选):"
+                   FontSize="12"
+                   Foreground="Gray"
+                   IsVisible="{Binding ShowTrackSelection}" />
+
+        <ListBox ItemsSource="{Binding AvailableTracks}"
+                 MaxHeight="200"
+                 IsVisible="{Binding ShowTrackSelection}">
+            <ListBox.ItemTemplate>
+                <DataTemplate x:DataType="vm:SelectableTrackItem">
+                    <CheckBox IsChecked="{Binding IsSelected, Mode=TwoWay}"
+                              Content="{Binding DisplayText}" />
+                </DataTemplate>
+            </ListBox.ItemTemplate>
+        </ListBox>
+
+        <!-- 按钮栏 -->
+        <StackPanel Orientation="Horizontal"
+                    HorizontalAlignment="Right"
+                    Spacing="8"
+                    Margin="0,8,0,0">
+            <Button Content="取消"
+                    Padding="16,4"
+                    Command="{Binding CancelCommand}" />
+            <Button Content="确定"
+                    Padding="16,4"
+                    Command="{Binding ConfirmCommand}"
+                    Classes="accent" />
+        </StackPanel>
+    </StackPanel>
+</Window>

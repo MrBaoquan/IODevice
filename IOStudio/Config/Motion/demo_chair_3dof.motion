@@ -1,0 +1,82 @@
+{
+  "version": "1.0",
+  "name": "demo_chair_3dof",
+  "duration_ms": 10000,
+  "fps": 60,
+  "tracks": [
+    {
+      "id": "trk_ptch",
+      "device_name": "Chair",
+      "oaction_name": "Pitch",
+      "label": "俯仰",
+      "color": "#4FC3F7",
+      "value_type": "float",
+      "muted": false,
+      "locked": false,
+      "clips": [
+        {
+          "id": "clip_p01",
+          "start_ms": 0,
+          "end_ms": 10000,
+          "keyframes": [
+            { "time_ms": 0,     "value": 0.5,  "interpolation": "linear" },
+            { "time_ms": 2000,  "value": 0.8,  "interpolation": "bezier", "tangent_out": 0.3 },
+            { "time_ms": 5000,  "value": 0.2,  "interpolation": "ease_in_out" },
+            { "time_ms": 8000,  "value": 0.7,  "interpolation": "linear" },
+            { "time_ms": 10000, "value": 0.5,  "interpolation": "linear" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "trk_roll",
+      "device_name": "Chair",
+      "oaction_name": "Roll",
+      "label": "横滚",
+      "color": "#FF8A65",
+      "value_type": "float",
+      "muted": false,
+      "locked": false,
+      "clips": [
+        {
+          "id": "clip_r01",
+          "start_ms": 0,
+          "end_ms": 10000,
+          "keyframes": [
+            { "time_ms": 0,     "value": 0.5,  "interpolation": "linear" },
+            { "time_ms": 1500,  "value": 0.3,  "interpolation": "ease_in_out" },
+            { "time_ms": 3500,  "value": 0.7,  "interpolation": "bezier", "tangent_out": 0.4, "tangent_in": 0.2 },
+            { "time_ms": 6000,  "value": 0.4,  "interpolation": "ease_in_out" },
+            { "time_ms": 8500,  "value": 0.6,  "interpolation": "linear" },
+            { "time_ms": 10000, "value": 0.5,  "interpolation": "linear" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "trk_heav",
+      "device_name": "Chair",
+      "oaction_name": "Heave",
+      "label": "升降",
+      "color": "#81C784",
+      "value_type": "float",
+      "muted": false,
+      "locked": false,
+      "clips": [
+        {
+          "id": "clip_h01",
+          "start_ms": 0,
+          "end_ms": 10000,
+          "keyframes": [
+            { "time_ms": 0,     "value": 0.5,  "interpolation": "linear" },
+            { "time_ms": 2500,  "value": 0.9,  "interpolation": "bezier", "tangent_out": 0.5 },
+            { "time_ms": 4000,  "value": 0.1,  "interpolation": "step" },
+            { "time_ms": 6500,  "value": 0.6,  "interpolation": "ease_in_out" },
+            { "time_ms": 9000,  "value": 0.4,  "interpolation": "linear" },
+            { "time_ms": 10000, "value": 0.5,  "interpolation": "linear" }
+          ]
+        }
+      ]
+    }
+  ]
+}

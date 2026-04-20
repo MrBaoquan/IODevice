@@ -51,6 +51,8 @@
     <Compile Include="IOToolkit\Facades\IODevice.cs" />
     <Compile Include="IOToolkit\Facades\IODeviceController.cs" />
     <Compile Include="IOToolkit\Facades\IOSettings.cs" />
+    <Compile Include="IOToolkit\Facades\MotionPlayer.cs" />
+    <Compile Include="IOToolkit\Facades\MotionSlot.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

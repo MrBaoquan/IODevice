@@ -1,0 +1,299 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:vm="using:IOStudio.ViewModels"
+        xmlns:iconPacks="https://github.com/MahApps/IconPacks.Avalonia"
+        xmlns:converters="using:IOStudio.Converters"
+        xmlns:controls="using:IOStudio.Controls"
+        mc:Ignorable="d" d:DesignWidth="700" d:DesignHeight="800"
+        x:Class="IOStudio.Views.DevicePropertiesWindow"
+        x:DataType="vm:Device"
+        Title="设备配置"
+        Width="750" Height="800"
+        CanResize="True"
+        WindowStartupLocation="CenterOwner">
+
+    <Window.Resources>
+        <converters:MinMaxDisplayConverter x:Key="MinMaxDisplayConverter"/>
+    </Window.Resources>
+
+    <Window.Styles>
+        <Style Selector="TextBlock.section-title">
+            <Setter Property="FontSize" Value="16"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Foreground" Value="#1f2937"/>
+        </Style>
+
+        <Style Selector="TextBlock.label">
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="Foreground" Value="#4b5563"/>
+            <Setter Property="Margin" Value="0,0,0,4"/>
+        </Style>
+
+        <Style Selector="Border.section-border">
+            <Setter Property="BorderBrush" Value="#e5e7eb"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="CornerRadius" Value="6"/>
+            <Setter Property="Padding" Value="16"/>
+            <Setter Property="Margin" Value="0,0,0,8"/>
+        </Style>
+    </Window.Styles>
+
+    <DockPanel>
+        <!-- 底部按钮栏 -->
+        <Border DockPanel.Dock="Bottom" BorderBrush="#e5e7eb" BorderThickness="0,1,0,0" Padding="16,12" Background="#f9fafb">
+            <Grid ColumnDefinitions="Auto,*,Auto">
+                <Button Grid.Column="0"
+                        Content="重启设备" 
+                        Name="RestartDeviceButton"
+                        Padding="12,8"
+                        Background="#f59e0b"
+                        Foreground="White"
+                        HorizontalContentAlignment="Center"
+                        VerticalContentAlignment="Center"
+                        ToolTip.Tip="保存配置后需重启设备才能生效"/>
+                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="12" HorizontalAlignment="Right">
+                    <Button Content="取消" 
+                            Name="CancelButton"
+                            Width="100" 
+                            Padding="12,8"
+                            Background="#e5e7eb"
+                            Foreground="#374151"
+                            HorizontalContentAlignment="Center"
+                            VerticalContentAlignment="Center"/>
+                    <Button Content="保存" 
+                            Name="SaveButton"
+                            Width="100" 
+                            Padding="12,8"
+                            Background="#3b82f6"
+                            Foreground="White"
+                            HorizontalContentAlignment="Center"
+                            VerticalContentAlignment="Center"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- 设备基本信息 - 固定在顶部 -->
+        <Border DockPanel.Dock="Top" Classes="section-border" Margin="24,20,24,0">
+            <StackPanel Spacing="12">
+                <TextBlock Classes="section-title" Text="设备基本信息"/>
+                
+                <StackPanel Spacing="8">
+                    <TextBlock Classes="label" Text="设备名称"/>
+                    <TextBox Text="{Binding Name}" 
+                             FontSize="14"
+                             Height="36"/>
+                </StackPanel>
+
+                <Grid ColumnDefinitions="*,16,*,16,*" RowDefinitions="Auto">
+                    <!-- 设备类型 -->
+                    <StackPanel Grid.Column="0" Spacing="8">
+                        <TextBlock Classes="label" Text="设备类型"/>
+                        <ComboBox Name="DeviceTypeComboBox"
+                                  SelectedItem="{Binding Type}"
+                                  HorizontalAlignment="Stretch"
+                                  FontSize="14"
+                                  Height="36"/>
+                    </StackPanel>
+
+                    <!-- DllName（仅 External 类型显示） -->
+                    <StackPanel Grid.Column="2" Spacing="8" Name="DllNameSection">
+                        <TextBlock Classes="label" Text="外部设备类型"/>
+                        <ComboBox Name="DllNameComboBox"
+                                  HorizontalAlignment="Stretch"
+                                  FontSize="14"
+                                  Height="36"
+                                  MaxDropDownHeight="400"/>
+                    </StackPanel>
+
+                    <!-- 设备索引 - 改用 NumericUpDown -->
+                    <StackPanel Grid.Column="4" Spacing="8" Name="DeviceIndexSection">
+                        <TextBlock Classes="label" Text="设备索引"/>
+                        <NumericUpDown Name="DeviceIndexNumeric"
+                                       Value="{Binding Index}"
+                                       Minimum="0"
+                                       Maximum="99"
+                                       Increment="1"
+                                       FormatString="0"
+                                       HorizontalAlignment="Stretch"
+                                       FontSize="14"
+                                       Height="36"/>
+                    </StackPanel>
+                </Grid>
+
+                <!-- 配置摘要区域（仅External类型设备显示） -->
+                <Border Name="ConfigSummaryBorder" 
+                        Background="#f0f9ff" 
+                        CornerRadius="6" 
+                        Padding="12,8" 
+                        Margin="0,4,0,0"
+                        IsVisible="False">
+                    <StackPanel Spacing="6">
+                        <TextBlock Text="配置摘要" FontSize="11" Foreground="#64748b" FontWeight="SemiBold"/>
+                        <WrapPanel Name="ConfigSummaryPanel" Orientation="Horizontal">
+                            <!-- 摘要项将在代码中动态生成 -->
+                        </WrapPanel>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+        </Border>
+
+        <!-- 主内容区 -->
+        <ScrollViewer Margin="0,12,0,0">
+            <StackPanel Margin="24,0,24,16" Spacing="20">
+
+                <!-- 全局按键配置 -->
+                <Border Classes="section-border">
+                    <StackPanel Spacing="12">
+                        <StackPanel Orientation="Horizontal" Spacing="12">
+                            <TextBlock Classes="section-title" Text="全局按键配置 (Properties)"/>
+                            <TextBlock Text="（所有Action/Axis/OAction下的Key继承这些配置）" 
+                                      FontSize="12" 
+                                      Foreground="#9ca3af"
+                                      VerticalAlignment="Center"/>
+                        </StackPanel>
+
+                        <StackPanel Orientation="Horizontal" Spacing="12" HorizontalAlignment="Right">
+                            <Button Content="+ 添加按键" 
+                                    Name="AddPropertyKeyButton"
+                                    Background="#3b82f6"
+                                    Foreground="White"
+                                    Padding="12,6"
+                                    FontSize="13"/>
+                            <Button Content="清空" 
+                                    Name="ClearPropertyKeysButton"
+                                    Background="#ef4444"
+                                    Foreground="White"
+                                    Padding="12,6"
+                                    FontSize="13"/>
+                        </StackPanel>
+
+                        <!-- 按键列表 -->
+                        <ItemsControl ItemsSource="{Binding Properties.KeyList}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Border BorderBrush="#e5e7eb" 
+                                           BorderThickness="1" 
+                                           CornerRadius="4" 
+                                           Padding="12"
+                                           Margin="0,0,0,8"
+                                           Background="#fafafa">
+                                        <StackPanel Spacing="8">
+                                            <!-- 按键名称行 -->
+                                            <Grid ColumnDefinitions="Auto,*,Auto,Auto">
+                                                <TextBlock Grid.Column="0" 
+                                                          Text="{Binding Name}" 
+                                                          FontWeight="SemiBold"
+                                                          FontSize="14"
+                                                          VerticalAlignment="Center"/>
+                                                <Button Grid.Column="2"
+                                                       Name="EditPropertyKeyButton"
+                                                       Background="Transparent"
+                                                       Padding="6"
+                                                       Margin="0,0,4,0"
+                                                       ToolTip.Tip="编辑按键配置">
+                                                    <iconPacks:PackIconIonicons Kind="CreateiOS" Width="16" Height="16"/>
+                                                </Button>
+                                                <Button Grid.Column="3"
+                                                       Name="DeletePropertyKeyButton"
+                                                       Background="Transparent"
+                                                       Padding="6"
+                                                       ToolTip.Tip="删除按键">
+                                                    <iconPacks:PackIconIonicons Kind="TrashiOS" Width="16" Height="16" Foreground="#ef4444"/>
+                                                </Button>
+                                            </Grid>
+
+                                            <!-- 配置参数展示 -->
+                                            <Grid ColumnDefinitions="*,*,*" RowDefinitions="Auto,Auto" ColumnSpacing="8" RowSpacing="4">
+                                                <!-- Row 0 -->
+                                                <StackPanel Grid.Column="0" Grid.Row="0">
+                                                    <TextBlock Text="Offset" FontSize="11" Foreground="#6b7280"/>
+                                                    <TextBlock Text="{Binding Offset}" FontSize="12"/>
+                                                </StackPanel>
+                                                <StackPanel Grid.Column="1" Grid.Row="0">
+                                                    <TextBlock Text="Scale" FontSize="11" Foreground="#6b7280"/>
+                                                    <TextBlock Text="{Binding Scale}" FontSize="12"/>
+                                                </StackPanel>
+                                                <StackPanel Grid.Column="2" Grid.Row="0">
+                                                    <TextBlock Text="Min" FontSize="11" Foreground="#6b7280"/>
+                                                    <TextBlock Text="{Binding Min, Converter={StaticResource MinMaxDisplayConverter}, ConverterParameter=min}" FontSize="12"/>
+                                                </StackPanel>
+
+                                                <!-- Row 1 -->
+                                                <StackPanel Grid.Column="0" Grid.Row="1">
+                                                    <TextBlock Text="Max" FontSize="11" Foreground="#6b7280"/>
+                                                    <TextBlock Text="{Binding Max, Converter={StaticResource MinMaxDisplayConverter}, ConverterParameter=max}" FontSize="12"/>
+                                                </StackPanel>
+                                                <StackPanel Grid.Column="1" Grid.Row="1">
+                                                    <TextBlock Text="DeadZone" FontSize="11" Foreground="#6b7280"/>
+                                                    <TextBlock Text="{Binding DeadZone}" FontSize="12"/>
+                                                </StackPanel>
+                                                <StackPanel Grid.Column="2" Grid.Row="1">
+                                                    <TextBlock Text="Sensitivity" FontSize="11" Foreground="#6b7280"/>
+                                                    <TextBlock Text="{Binding Sensitivity}" FontSize="12"/>
+                                                </StackPanel>
+                                            </Grid>
+                                        </StackPanel>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+
+                        <!-- 空状态提示 -->
+                        <Border BorderBrush="#e5e7eb" 
+                               BorderThickness="1" 
+                               CornerRadius="4" 
+                               Padding="32"
+                               Background="#f9fafb"
+                               IsVisible="{Binding !Properties.KeyList.Count}">
+                            <StackPanel Spacing="8" HorizontalAlignment="Center">
+                                <iconPacks:PackIconIonicons Kind="KeyiOS" 
+                                                           Width="32" 
+                                                           Height="32" 
+                                                           Foreground="#9ca3af"
+                                                           HorizontalAlignment="Center"/>
+                                <TextBlock Text="暂无全局按键配置" 
+                                          Foreground="#9ca3af" 
+                                          HorizontalAlignment="Center"/>
+                        <TextBlock Text="点击 添加按键 开始配置" 
+                                  Foreground="#d1d5db" 
+                                  FontSize="12"
+                                  HorizontalAlignment="Center"/>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </Border>
+
+                <!-- 外部设备配置（仅External类型设备显示） -->
+                <Border Classes="section-border" Name="ExternalDeviceConfigSection" IsVisible="False">
+                    <StackPanel Spacing="12">
+                        <Grid ColumnDefinitions="Auto,Auto,*,Auto" VerticalAlignment="Center">
+                            <TextBlock Grid.Column="0" Classes="section-title" Text="外部设备配置" VerticalAlignment="Center"/>
+                            <TextBlock Grid.Column="1" 
+                                      Name="DllNameText"
+                                      FontSize="12" 
+                                      Foreground="#3b82f6"
+                                      VerticalAlignment="Center"
+                                      Margin="12,0,0,0"/>
+                            <Button Grid.Column="3"
+                                   Name="DocButton"
+                                   Background="Transparent"
+                                   Padding="8"
+                                   ToolTip.Tip="查看设备文档"
+                                   IsEnabled="False">
+                                <StackPanel Orientation="Horizontal" Spacing="4">
+                                    <iconPacks:PackIconIonicons Kind="DocumentiOS" Width="16" Height="16" Foreground="#10b981"/>
+                                    <TextBlock Text="文档" FontSize="12" VerticalAlignment="Center" Foreground="#10b981"/>
+                                </StackPanel>
+                            </Button>
+                        </Grid>
+
+                        <controls:DeviceConfigPanel Name="DeviceConfigPanel"/>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+        </ScrollViewer>
+    </DockPanel>
+</Window>

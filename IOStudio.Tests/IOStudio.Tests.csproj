@@ -1,0 +1,47 @@
+<Project Sdk="Microsoft.NET.Sdk">
+    <PropertyGroup>
+        <TargetFramework>net8.0</TargetFramework>
+        <Nullable>enable</Nullable>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <IsPackable>false</IsPackable>
+        <IsTestProject>true</IsTestProject>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.6.0" />
+        <PackageReference Include="xunit" Version="2.5.3" />
+        <PackageReference Include="xunit.runner.visualstudio" Version="2.5.3">
+            <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+            <PrivateAssets>all</PrivateAssets>
+        </PackageReference>
+        <PackageReference Include="coverlet.collector" Version="6.0.0">
+            <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+            <PrivateAssets>all</PrivateAssets>
+        </PackageReference>
+        <PackageReference Include="Moq" Version="4.20.70" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\IOStudio\IOStudio.csproj" />
+    </ItemGroup>
+
+    <!-- 将 C++ 原生 DLL 复制到测试输出目录 (集成测试需要 P/Invoke) -->
+    <PropertyGroup>
+        <NativeDllDir>$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildProjectDirectory), 'IODevice.sln'))\Binaries\Win64\$(Configuration)\</NativeDllDir>
+    </PropertyGroup>
+    <ItemGroup>
+        <None Include="$(NativeDllDir)IODevice.dll"
+              CopyToOutputDirectory="PreserveNewest"
+              Link="IODevice.dll"
+              Condition="Exists('$(NativeDllDir)IODevice.dll')" />
+        <None Include="$(NativeDllDir)IODevice_C_Wrapper.dll"
+              CopyToOutputDirectory="PreserveNewest"
+              Link="IODevice_C_Wrapper.dll"
+              Condition="Exists('$(NativeDllDir)IODevice_C_Wrapper.dll')" />
+    </ItemGroup>
+
+    <!-- 测试数据文件复制到输出目录 -->
+    <ItemGroup>
+        <None Include="TestData\**\*" CopyToOutputDirectory="PreserveNewest" LinkBase="TestData" />
+    </ItemGroup>
+</Project>

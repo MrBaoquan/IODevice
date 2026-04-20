@@ -1,0 +1,141 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Motion Timeline",
+  "description": "动感平台动作编排文件格式 (.motion)",
+  "type": "object",
+  "required": ["version", "duration_ms", "tracks"],
+  "properties": {
+    "version": {
+      "type": "string",
+      "description": "格式版本号",
+      "enum": ["1.0"]
+    },
+    "name": {
+      "type": "string",
+      "description": "项目名称"
+    },
+    "duration_ms": {
+      "type": "number",
+      "description": "总时长 (毫秒)",
+      "minimum": 0
+    },
+    "fps": {
+      "type": "number",
+      "description": "编辑器帧率 (仅用于 UI 对齐)",
+      "default": 60,
+      "minimum": 1,
+      "maximum": 120
+    },
+    "tracks": {
+      "type": "array",
+      "description": "轨道列表",
+      "items": { "$ref": "#/definitions/track" }
+    }
+  },
+  "definitions": {
+    "track": {
+      "type": "object",
+      "required": ["id", "device_name", "oaction_name", "clips"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "轨道唯一 ID (8 位 hex)"
+        },
+        "device_name": {
+          "type": "string",
+          "description": "IODevice.xml 中的设备名"
+        },
+        "oaction_name": {
+          "type": "string",
+          "description": "OAction 输出动作名 (对应 IODevice.xml OAction.Name)"
+        },
+        "label": {
+          "type": "string",
+          "description": "显示名称 (如 '俯仰')"
+        },
+        "color": {
+          "type": "string",
+          "description": "轨道颜色 (hex)",
+          "pattern": "^#[0-9A-Fa-f]{6}$"
+        },
+        "muted": {
+          "type": "boolean",
+          "description": "是否静音",
+          "default": false
+        },
+        "locked": {
+          "type": "boolean",
+          "description": "是否锁定",
+          "default": false
+        },
+        "value_type": {
+          "type": "string",
+          "description": "值类型: float=连续值(0.0~1.0), bool=开关值(0/1)",
+          "enum": ["float", "bool"],
+          "default": "float"
+        },
+        "clips": {
+          "type": "array",
+          "description": "片段列表",
+          "items": { "$ref": "#/definitions/clip" }
+        }
+      }
+    },
+    "clip": {
+      "type": "object",
+      "required": ["id", "start_ms", "end_ms", "keyframes"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "片段唯一 ID"
+        },
+        "start_ms": {
+          "type": "number",
+          "description": "起始时间 (毫秒)",
+          "minimum": 0
+        },
+        "end_ms": {
+          "type": "number",
+          "description": "结束时间 (毫秒)",
+          "minimum": 0
+        },
+        "keyframes": {
+          "type": "array",
+          "description": "关键帧列表 (按 time_ms 升序)",
+          "items": { "$ref": "#/definitions/keyframe" }
+        }
+      }
+    },
+    "keyframe": {
+      "type": "object",
+      "required": ["time_ms", "value"],
+      "properties": {
+        "time_ms": {
+          "type": "number",
+          "description": "时间偏移 (毫秒, 相对于 clip.start_ms)",
+          "minimum": 0
+        },
+        "value": {
+          "type": "number",
+          "description": "归一化输出值",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "interpolation": {
+          "type": "string",
+          "description": "插值类型",
+          "enum": ["linear", "bezier", "step", "ease_in_out"],
+          "default": "linear"
+        },
+        "tangent_in": {
+          "type": "number",
+          "description": "贝塞尔入切线 (仅 bezier 类型)"
+        },
+        "tangent_out": {
+          "type": "number",
+          "description": "贝塞尔出切线 (仅 bezier 类型)"
+        }
+      }
+    }
+  }
+}

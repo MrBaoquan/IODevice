@@ -1,0 +1,28 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+			 xmlns:vm="using:IOStudio.ViewModels"
+             x:Class="IOStudio.Controls.TestControl"
+			 x:DataType="vm:TestViewModel"
+			 xmlns:controls="using:IOStudio.Controls"
+			 >
+	<Design.DataContext>
+		<vm:TestViewModel />
+	</Design.DataContext>
+	<ItemsControl ItemsSource="{Binding ActionList}">
+		<ItemsControl.ItemsPanel>
+			<ItemsPanelTemplate>
+				<WrapPanel Orientation="Horizontal" />
+			</ItemsPanelTemplate>
+		</ItemsControl.ItemsPanel>
+		<ItemsControl.ItemTemplate>
+			<DataTemplate>
+				<TextBlock Text="{Binding Name}" />
+				<!--<controls:IONodeView MaxWidth="250" />-->
+			</DataTemplate>
+		</ItemsControl.ItemTemplate>
+	</ItemsControl>
+	
+</UserControl>

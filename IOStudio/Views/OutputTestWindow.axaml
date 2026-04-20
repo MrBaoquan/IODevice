@@ -1,0 +1,302 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:vm="using:IOStudio.ViewModels"
+        xmlns:iconPacks="https://github.com/MahApps/IconPacks.Avalonia"
+        mc:Ignorable="d" d:DesignWidth="700" d:DesignHeight="600"
+        x:Class="IOStudio.Views.OutputTestWindow"
+        x:DataType="vm:OutputTestViewModel"
+        Title="{Binding Title}"
+        Width="750" Height="680"
+        CanResize="True"
+        WindowStartupLocation="CenterOwner">
+
+    <Window.Styles>
+        <Style Selector="TextBlock.section-title">
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Foreground" Value="#1f2937"/>
+        </Style>
+
+        <Style Selector="Border.section-border">
+            <Setter Property="BorderBrush" Value="#e5e7eb"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="CornerRadius" Value="6"/>
+            <Setter Property="Padding" Value="12"/>
+            <Setter Property="Margin" Value="0,0,0,8"/>
+        </Style>
+
+        <Style Selector="Button.primary-btn">
+            <Setter Property="Background" Value="#3b82f6"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="Padding" Value="12,6"/>
+            <Setter Property="CornerRadius" Value="4"/>
+        </Style>
+        
+        <Style Selector="Button.primary-btn:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="#2563eb"/>
+        </Style>
+
+        <Style Selector="Button.success-btn">
+            <Setter Property="Background" Value="#10b981"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="Padding" Value="12,6"/>
+            <Setter Property="CornerRadius" Value="4"/>
+        </Style>
+        
+        <Style Selector="Button.success-btn:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="#059669"/>
+        </Style>
+
+        <Style Selector="Button.danger-btn">
+            <Setter Property="Background" Value="#ef4444"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="Padding" Value="12,6"/>
+            <Setter Property="CornerRadius" Value="4"/>
+        </Style>
+        
+        <Style Selector="Button.danger-btn:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="#dc2626"/>
+        </Style>
+
+        <Style Selector="Button.secondary-btn">
+            <Setter Property="Background" Value="#e5e7eb"/>
+            <Setter Property="Foreground" Value="#374151"/>
+            <Setter Property="Padding" Value="12,6"/>
+            <Setter Property="CornerRadius" Value="4"/>
+        </Style>
+        
+        <Style Selector="Button.secondary-btn:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="#d1d5db"/>
+        </Style>
+
+        <!-- 通道按钮样式 -->
+        <Style Selector="Border.channel-item">
+            <Setter Property="Background" Value="#f3f4f6"/>
+            <Setter Property="CornerRadius" Value="6"/>
+            <Setter Property="Padding" Value="8"/>
+            <Setter Property="Margin" Value="4"/>
+            <Setter Property="MinWidth" Value="95"/>
+            <Setter Property="MinHeight" Value="70"/>
+            <Setter Property="Cursor" Value="Hand"/>
+        </Style>
+        
+        <Style Selector="Border.channel-item:pointerover">
+            <Setter Property="Background" Value="#e5e7eb"/>
+        </Style>
+
+        <Style Selector="Border.channel-item.selected">
+            <Setter Property="Background" Value="#dbeafe"/>
+            <Setter Property="BorderBrush" Value="#3b82f6"/>
+            <Setter Property="BorderThickness" Value="2"/>
+        </Style>
+
+        <Style Selector="Border.channel-item.active">
+            <Setter Property="Background" Value="#10b981"/>
+        </Style>
+        
+        <Style Selector="Border.channel-item.active TextBlock">
+            <Setter Property="Foreground" Value="White"/>
+        </Style>
+
+        <Style Selector="Border.channel-item.highlighted">
+            <Setter Property="Background" Value="#f59e0b"/>
+        </Style>
+        
+        <Style Selector="Border.channel-item.highlighted TextBlock">
+            <Setter Property="Foreground" Value="White"/>
+        </Style>
+    </Window.Styles>
+
+    <DockPanel>
+        <!-- 顶部信息栏 -->
+        <Border DockPanel.Dock="Top" Background="#f8fafc" Padding="16,12" BorderBrush="#e5e7eb" BorderThickness="0,0,0,1">
+            <Grid ColumnDefinitions="Auto,*,Auto">
+                <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="12">
+                    <iconPacks:PackIconIonicons Kind="FlashlightiOS" Width="20" Height="20" Foreground="#3b82f6"/>
+                    <TextBlock Text="{Binding DataSourceType}" FontWeight="SemiBold" FontSize="14" VerticalAlignment="Center"/>
+                </StackPanel>
+                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8">
+                    <TextBlock Text="已选择:" VerticalAlignment="Center" Foreground="#6b7280"/>
+                    <TextBlock Text="{Binding SelectedCount}" FontWeight="Bold" VerticalAlignment="Center" Foreground="#3b82f6"/>
+                    <TextBlock Text="个通道" VerticalAlignment="Center" Foreground="#6b7280"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- 底部快捷操作栏 -->
+        <Border DockPanel.Dock="Bottom" Background="#f9fafb" Padding="16,12" BorderBrush="#e5e7eb" BorderThickness="0,1,0,0">
+            <Grid ColumnDefinitions="Auto,*,Auto">
+                <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8">
+                    <Button Content="全开" Command="{Binding AllOnCommand}" Classes="success-btn"/>
+                    <Button Content="全关" Command="{Binding AllOffCommand}" Classes="danger-btn"/>
+                </StackPanel>
+                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8">
+                    <Button Content="全选" Command="{Binding SelectAllCommand}" Classes="secondary-btn"/>
+                    <Button Content="反选" Command="{Binding InvertSelectionCommand}" Classes="secondary-btn"/>
+                    <Button Content="清空选择" Command="{Binding SelectNoneCommand}" Classes="secondary-btn"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- 主内容区 -->
+        <ScrollViewer>
+            <StackPanel Margin="16">
+                <!-- 模拟量输出 -->
+                <Border Classes="section-border">
+                    <StackPanel Spacing="12">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <iconPacks:PackIconIonicons Kind="FlashiOS" Width="18" Height="18" Foreground="#6b7280"/>
+                            <TextBlock Classes="section-title" Text="模拟量输出"/>
+                        </StackPanel>
+                        
+                        <Grid ColumnDefinitions="Auto,Auto,Auto,Auto,*,Auto" RowDefinitions="Auto">
+                            <TextBlock Grid.Column="0" Text="输出范围:" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                            <NumericUpDown Grid.Column="1" Value="{Binding AnalogMin}" Width="120" Minimum="0" Maximum="100" Increment="0.1" FormatString="F2"/>
+                            <TextBlock Grid.Column="2" Text=" ~ " VerticalAlignment="Center"/>
+                            <NumericUpDown Grid.Column="3" Value="{Binding AnalogMax}" Width="120" Minimum="0" Maximum="100" Increment="0.1" FormatString="F2"/>
+                        </Grid>
+                        
+                        <Grid ColumnDefinitions="Auto,*,Auto,Auto">
+                            <TextBlock Grid.Column="0" Text="当前值:" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                            <Slider Grid.Column="1" 
+                                    Value="{Binding AnalogValue}" 
+                                    Minimum="{Binding AnalogMin}" 
+                                    Maximum="{Binding AnalogMax}"
+                                    VerticalAlignment="Center"/>
+                            <TextBlock Grid.Column="2" 
+                                       Text="{Binding AnalogValue, StringFormat='{}{0:F2}'}" 
+                                       VerticalAlignment="Center" 
+                                       Width="50"
+                                       TextAlignment="Center"
+                                       FontWeight="Bold"
+                                       Foreground="#3b82f6"
+                                       Margin="8,0,0,0"/>
+                            <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="8" Margin="16,0,0,0">
+                                <Button Content="发送到选中" Command="{Binding SendAnalogCommand}" Classes="primary-btn"/>
+                                <Button Content="发送到全部" Command="{Binding SendAnalogToAllCommand}" Classes="secondary-btn"/>
+                            </StackPanel>
+                        </Grid>
+                    </StackPanel>
+                </Border>
+
+                <!-- 脉冲测试 -->
+                <Border Classes="section-border">
+                    <StackPanel Spacing="12">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <iconPacks:PackIconIonicons Kind="PulseiOS" Width="18" Height="18" Foreground="#6b7280"/>
+                            <TextBlock Classes="section-title" Text="脉冲测试"/>
+                        </StackPanel>
+                        
+                        <Grid ColumnDefinitions="Auto,Auto,Auto,*,Auto">
+                            <TextBlock Grid.Column="0" Text="脉冲时长:" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                            <NumericUpDown Grid.Column="1" Value="{Binding PulseDuration}" Width="120" Minimum="10" Maximum="10000" Increment="10" FormatString="0"/>
+                            <TextBlock Grid.Column="2" Text=" ms" VerticalAlignment="Center"/>
+                            
+                            <StackPanel Grid.Column="4" Orientation="Horizontal" Spacing="8">
+                                <Button Content="单次脉冲" Command="{Binding SendPulseCommand}" Classes="primary-btn"/>
+                                <Button Content="开始连续" 
+                                        Command="{Binding StartContinuousPulseCommand}" 
+                                        Classes="success-btn"
+                                        IsVisible="{Binding !IsPulseRunning}"/>
+                                <Button Content="停止连续" 
+                                        Command="{Binding StopContinuousPulseCommand}" 
+                                        Classes="danger-btn"
+                                        IsVisible="{Binding IsPulseRunning}"/>
+                            </StackPanel>
+                        </Grid>
+                    </StackPanel>
+                </Border>
+
+                <!-- 跑马灯测试 -->
+                <Border Classes="section-border">
+                    <StackPanel Spacing="12">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <iconPacks:PackIconIonicons Kind="RefreshiOS" Width="18" Height="18" Foreground="#6b7280"/>
+                            <TextBlock Classes="section-title" Text="跑马灯测试"/>
+                            <Border Background="#fef3c7" CornerRadius="4" Padding="8,2" Margin="12,0,0,0"
+                                    IsVisible="{Binding IsSequenceRunning}">
+                                <StackPanel Orientation="Horizontal" Spacing="4">
+                                    <TextBlock Text="当前:" Foreground="#92400e" FontSize="12"/>
+                                    <TextBlock Text="{Binding CurrentSequenceKey}" Foreground="#92400e" FontWeight="Bold" FontSize="12"/>
+                                </StackPanel>
+                            </Border>
+                        </StackPanel>
+                        
+                        <Grid ColumnDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,*,Auto">
+                            <TextBlock Grid.Column="0" Text="扫描间隔:" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                            <NumericUpDown Grid.Column="1" Value="{Binding SequenceInterval}" Width="120" Minimum="50" Maximum="5000" Increment="50" FormatString="0"/>
+                            <TextBlock Grid.Column="2" Text=" ms" VerticalAlignment="Center"/>
+                            
+                            <TextBlock Grid.Column="3" Text="方向:" VerticalAlignment="Center" Margin="16,0,8,0"/>
+                            <ComboBox Grid.Column="4" SelectedIndex="{Binding SequenceDirectionIndex}" Width="90">
+                                <ComboBoxItem Content="正向"/>
+                                <ComboBoxItem Content="反向"/>
+                                <ComboBoxItem Content="往返"/>
+                            </ComboBox>
+                            
+                            <CheckBox Grid.Column="5" Content="循环" IsChecked="{Binding IsLooping}" Margin="16,0,0,0" VerticalAlignment="Center"/>
+                            
+                            <StackPanel Grid.Column="8" Orientation="Horizontal" Spacing="8">
+                                <Button Content="▶ 开始" 
+                                        Command="{Binding StartSequenceCommand}" 
+                                        Classes="success-btn"
+                                        IsVisible="{Binding !IsSequenceRunning}"/>
+                                <Button Content="⏹ 停止" 
+                                        Command="{Binding StopSequenceCommand}" 
+                                        Classes="danger-btn"
+                                        IsVisible="{Binding IsSequenceRunning}"/>
+                            </StackPanel>
+                        </Grid>
+                    </StackPanel>
+                </Border>
+
+                <!-- 通道列表 -->
+                <Border Classes="section-border">
+                    <StackPanel Spacing="12">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <iconPacks:PackIconIonicons Kind="GridiOS" Width="18" Height="18" Foreground="#6b7280"/>
+                            <TextBlock Classes="section-title" Text="通道列表"/>
+                            <TextBlock Text="(点击选中/取消，双击切换开关)" Foreground="#9ca3af" FontSize="12" VerticalAlignment="Center" Margin="8,0,0,0"/>
+                        </StackPanel>
+                        
+                        <ItemsControl ItemsSource="{Binding TestKeys}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <WrapPanel Orientation="Horizontal"/>
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate DataType="vm:TestableKey">
+                                    <Border Classes="channel-item"
+                                            Classes.selected="{Binding IsSelected}"
+                                            Classes.active="{Binding IsActive}"
+                                            Classes.highlighted="{Binding IsHighlighted}"
+                                            PointerPressed="OnChannelPointerPressed"
+                                            DoubleTapped="OnChannelDoubleTapped">
+                                        <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                                            <CheckBox IsChecked="{Binding IsSelected}" 
+                                                      HorizontalAlignment="Center" 
+                                                      Margin="0,0,0,4"
+                                                      PointerPressed="OnCheckBoxPointerPressed"/>
+                                            <TextBlock Text="{Binding DisplayName}" 
+                                                       HorizontalAlignment="Center" 
+                                                       FontSize="11"
+                                                       FontWeight="Medium"/>
+                                            <TextBlock Text="{Binding Value, StringFormat='{}{0:F2}'}" 
+                                                       HorizontalAlignment="Center" 
+                                                       FontSize="10" 
+                                                       Foreground="#6b7280"/>
+                                        </StackPanel>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+        </ScrollViewer>
+    </DockPanel>
+</Window>

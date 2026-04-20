@@ -1,0 +1,106 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- ═══════ Timeline Editor Theme Resources ═══════ -->
+    <!-- 使用 Avalonia 11 ThemeVariant 系统, 自动响应 Dark/Light 切换 -->
+
+    <ResourceDictionary.ThemeDictionaries>
+
+        <!-- ═══ Light Theme ═══ -->
+        <ResourceDictionary x:Key="Light">
+            <!-- 面板背景 -->
+            <SolidColorBrush x:Key="TlPanelBg" Color="#f9fafb"/>
+            <SolidColorBrush x:Key="TlToolbarBg" Color="#f3f4f6"/>
+            <SolidColorBrush x:Key="TlMenuBg" Color="#f9fafb"/>
+            <SolidColorBrush x:Key="TlBorderBrush" Color="#e5e7eb"/>
+            <SolidColorBrush x:Key="TlBorderLight" Color="#d1d5db"/>
+
+            <!-- 轨道头 -->
+            <SolidColorBrush x:Key="TlTrackHeaderBg" Color="#f9fafb"/>
+            <SolidColorBrush x:Key="TlTrackHeaderSelectedBg" Color="#eff6ff"/>
+            <SolidColorBrush x:Key="TlTrackHeaderSelectedBorder" Color="#3b82f6"/>
+
+            <!-- 文本 -->
+            <SolidColorBrush x:Key="TlTextPrimary" Color="#1f2937"/>
+            <SolidColorBrush x:Key="TlTextSecondary" Color="#6b7280"/>
+            <SolidColorBrush x:Key="TlTextMuted" Color="#9ca3af"/>
+
+            <!-- 工具栏按钮 hover -->
+            <SolidColorBrush x:Key="TlBtnHover" Color="#e5e7eb"/>
+
+            <!-- 标签 / 徽章 -->
+            <SolidColorBrush x:Key="TlBadgeBg" Color="#f0f9ff"/>
+            <SolidColorBrush x:Key="TlBadgeGroupBg" Color="#faf5ff"/>
+            <SolidColorBrush x:Key="TlBadgeLiveBg" Color="#ecfdf5"/>
+
+            <!-- 轨道头标题区 -->
+            <SolidColorBrush x:Key="TlTrackPanelTitleBg" Color="#f3f4f6"/>
+
+            <!-- 时间轴内容区背景 -->
+            <SolidColorBrush x:Key="TlContentBg" Color="White"/>
+
+            <!-- 视频预览区 -->
+            <SolidColorBrush x:Key="TlVideoViewerBg" Color="#e5e7eb"/>
+            <SolidColorBrush x:Key="TlVideoTitleBg" Color="#f3f4f6"/>
+            <SolidColorBrush x:Key="TlVideoSidebarBg" Color="#f0f1f3"/>
+            <SolidColorBrush x:Key="TlVideoToolbarBg" Color="#f3f4f6"/>
+            <SolidColorBrush x:Key="TlVideoOverlayBg" Color="#80ffffff"/>
+            <SolidColorBrush x:Key="TlVideoOverlayText" Color="#6b7280"/>
+            <SolidColorBrush x:Key="TlVideoPlaceholderIcon" Color="#d1d5db"/>
+
+            <!-- 属性面板区 -->
+            <SolidColorBrush x:Key="TlPropSectionBg" Color="#f3f4f6"/>
+            <SolidColorBrush x:Key="TlPropSectionDot" Color="#3b82f6"/>
+            <SolidColorBrush x:Key="TlPropSectionDotInactive" Color="#9ca3af"/>
+        </ResourceDictionary>
+
+        <!-- ═══ Dark Theme ═══ -->
+        <ResourceDictionary x:Key="Dark">
+            <!-- 面板背景 -->
+            <SolidColorBrush x:Key="TlPanelBg" Color="#111827"/>
+            <SolidColorBrush x:Key="TlToolbarBg" Color="#1f2937"/>
+            <SolidColorBrush x:Key="TlMenuBg" Color="#111827"/>
+            <SolidColorBrush x:Key="TlBorderBrush" Color="#374151"/>
+            <SolidColorBrush x:Key="TlBorderLight" Color="#4b5563"/>
+
+            <!-- 轨道头 -->
+            <SolidColorBrush x:Key="TlTrackHeaderBg" Color="#111827"/>
+            <SolidColorBrush x:Key="TlTrackHeaderSelectedBg" Color="#1e3a5f"/>
+            <SolidColorBrush x:Key="TlTrackHeaderSelectedBorder" Color="#3b82f6"/>
+
+            <!-- 文本 -->
+            <SolidColorBrush x:Key="TlTextPrimary" Color="#f3f4f6"/>
+            <SolidColorBrush x:Key="TlTextSecondary" Color="#d1d5db"/>
+            <SolidColorBrush x:Key="TlTextMuted" Color="#9ca3af"/>
+
+            <!-- 工具栏按钮 hover -->
+            <SolidColorBrush x:Key="TlBtnHover" Color="#374151"/>
+
+            <!-- 标签 / 徽章 -->
+            <SolidColorBrush x:Key="TlBadgeBg" Color="#1e3a5f"/>
+            <SolidColorBrush x:Key="TlBadgeGroupBg" Color="#2e1065"/>
+            <SolidColorBrush x:Key="TlBadgeLiveBg" Color="#064e3b"/>
+
+            <!-- 轨道头标题区 -->
+            <SolidColorBrush x:Key="TlTrackPanelTitleBg" Color="#1f2937"/>
+
+            <!-- 时间轴内容区背景 -->
+            <SolidColorBrush x:Key="TlContentBg" Color="#0f172a"/>
+
+            <!-- 视频预览区 -->
+            <SolidColorBrush x:Key="TlVideoViewerBg" Color="#0a0e17"/>
+            <SolidColorBrush x:Key="TlVideoTitleBg" Color="#141a26"/>
+            <SolidColorBrush x:Key="TlVideoSidebarBg" Color="#111723"/>
+            <SolidColorBrush x:Key="TlVideoToolbarBg" Color="#141a26"/>
+            <SolidColorBrush x:Key="TlVideoOverlayBg" Color="#80000000"/>
+            <SolidColorBrush x:Key="TlVideoOverlayText" Color="#ffffff60"/>
+            <SolidColorBrush x:Key="TlVideoPlaceholderIcon" Color="#374151"/>
+
+            <!-- 属性面板区 -->
+            <SolidColorBrush x:Key="TlPropSectionBg" Color="#1a2235"/>
+            <SolidColorBrush x:Key="TlPropSectionDot" Color="#ef4444"/>
+            <SolidColorBrush x:Key="TlPropSectionDotInactive" Color="#6b7280"/>
+        </ResourceDictionary>
+
+    </ResourceDictionary.ThemeDictionaries>
+</ResourceDictionary>

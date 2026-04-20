@@ -7,6 +7,7 @@
 #include <windows.h>
 #include "IOStatics.h"
 #include "PlayerInput.h"
+#include "MotionPlayer.h"
 #include "IOApplication.h"
 #include "IOLog.h"
 
@@ -94,6 +95,8 @@ void IOToolkit::IODeviceController::Update()
     /** Step 2. Tick player input */
     PlayerInput::Instance().Tick(deltaSeconds);
 
+    /** Step 3. Tick motion player (output-side state machine) */
+    MotionPlayer::Instance().Tick(deltaSeconds);
 
     for (auto& deviceIt : devices)
     {

@@ -3,7 +3,7 @@
   <ImportGroup Label="PropertySheets" />
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup>
-    <IncludePath>$(SolutionDir)IODevice\Source\Vendor\spdlog-1.x\include;$(SolutionDir)IODevice\Source\Vendor\rapidxml;$(SolutionDir)IODevice\Source\Vendor\JoyStick;$(SolutionDir)IODevice\Source\Vendor\DevelopHelper;$(SolutionDir)IODevice\Source\Public;$(IncludePath)</IncludePath>
+    <IncludePath>$(SolutionDir)IODevice\Source\Vendor\spdlog-1.x\include;$(SolutionDir)IODevice\Source\Vendor\rapidxml;$(SolutionDir)IODevice\Source\Vendor\JoyStick;$(SolutionDir)IODevice\Source\Vendor\DevelopHelper;$(SolutionDir)IODevice\Source\Vendor;$(SolutionDir)IODevice\Source\Public;$(IncludePath)</IncludePath>
     <OutDir>$(SolutionDir)Binaries\Win64\Release\</OutDir>
     <IntDir>$(SolutionDir)Binaries\Win64\Release\Temp\</IntDir>
   </PropertyGroup>

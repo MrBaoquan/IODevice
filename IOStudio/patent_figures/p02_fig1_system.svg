@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900">
+  <defs><style>
+    .title { font: 700 28px 'Microsoft YaHei', sans-serif; fill: #10243e; }
+    .label { font: 600 22px 'Microsoft YaHei', sans-serif; fill: #16324f; }
+    .text { font: 500 17px 'Microsoft YaHei', sans-serif; fill: #274c77; }
+    .small { font: 500 14px 'Microsoft YaHei', sans-serif; fill: #55738f; }
+    .box { fill: #f7fbff; stroke: #35608a; stroke-width: 2.2; rx: 18; ry: 18; }
+    .core { fill: #eef6ff; stroke: #204a73; stroke-width: 2.6; rx: 18; ry: 18; }
+    .line { stroke: #355c7d; stroke-width: 3; fill: none; marker-end: url(#arrow); }
+  </style><marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#355c7d" /></marker></defs>
+  <rect width="1600" height="900" fill="#fff" />
+  <text x="800" y="55" text-anchor="middle" class="title">图1 基于事件、条件、动作与时间轴融合的多设备联动编排系统总体结构框图</text>
+  <rect x="70" y="200" width="250" height="430" class="box" />
+  <text x="195" y="245" text-anchor="middle" class="label">事件输入层</text>
+  <rect x="100" y="280" width="190" height="60" class="box" /><text x="195" y="317" text-anchor="middle" class="text">设备输入事件</text>
+  <rect x="100" y="360" width="190" height="60" class="box" /><text x="195" y="397" text-anchor="middle" class="text">系统状态事件</text>
+  <rect x="100" y="440" width="190" height="60" class="box" /><text x="195" y="477" text-anchor="middle" class="text">关键帧 / 播放状态事件</text>
+  <rect x="100" y="520" width="190" height="60" class="box" /><text x="195" y="557" text-anchor="middle" class="text">网络命令事件</text>
+
+  <rect x="410" y="150" width="420" height="530" class="core" />
+  <text x="620" y="195" text-anchor="middle" class="label">统一编排模型与调度内核</text>
+  <rect x="450" y="230" width="340" height="68" class="box" /><text x="620" y="272" text-anchor="middle" class="text">事件节点</text>
+  <rect x="450" y="320" width="340" height="68" class="box" /><text x="620" y="362" text-anchor="middle" class="text">条件节点</text>
+  <rect x="450" y="410" width="340" height="68" class="box" /><text x="620" y="452" text-anchor="middle" class="text">动作节点</text>
+  <rect x="450" y="500" width="340" height="110" class="box" /><text x="620" y="545" text-anchor="middle" class="text">时间轴片段节点</text><text x="620" y="578" text-anchor="middle" class="small">关键帧 / 曲线 / 片段起止时间 / 连续值求值</text>
+
+  <rect x="930" y="200" width="250" height="430" class="box" />
+  <text x="1055" y="245" text-anchor="middle" class="label">统一调度流程</text>
+  <rect x="960" y="280" width="190" height="60" class="box" /><text x="1055" y="317" text-anchor="middle" class="text">事件接收</text>
+  <rect x="960" y="360" width="190" height="60" class="box" /><text x="1055" y="397" text-anchor="middle" class="text">条件判定</text>
+  <rect x="960" y="440" width="190" height="60" class="box" /><text x="1055" y="477" text-anchor="middle" class="text">节点调度</text>
+  <rect x="960" y="520" width="190" height="60" class="box" /><text x="1055" y="557" text-anchor="middle" class="text">连续值求值 + 离散派发</text>
+
+  <rect x="1270" y="250" width="260" height="320" class="box" />
+  <text x="1400" y="295" text-anchor="middle" class="label">目标设备层</text>
+  <text x="1400" y="340" text-anchor="middle" class="text">动感平台</text>
+  <text x="1400" y="385" text-anchor="middle" class="text">灯光 / 风机 / 烟雾 / 水雾</text>
+  <text x="1400" y="430" text-anchor="middle" class="text">协议发送 / DO / OAxis</text>
+  <text x="1400" y="475" text-anchor="middle" class="small">离散动作与连续控制共存</text>
+
+  <path d="M 320 390 C 360 390, 370 260, 410 260" class="line" />
+  <path d="M 320 390 C 360 390, 370 350, 410 350" class="line" />
+  <path d="M 320 390 C 360 390, 370 445, 410 445" class="line" />
+  <path d="M 320 390 C 360 390, 370 555, 410 555" class="line" />
+  <path d="M 830 555 C 880 555, 885 550, 930 550" class="line" />
+  <path d="M 830 350 C 880 350, 885 390, 930 390" class="line" />
+  <path d="M 1180 550 C 1220 550, 1230 430, 1270 430" class="line" />
+  <path d="M 1270 470 C 1210 470, 1180 470, 1180 470" stroke="#4d7ea8" stroke-width="2.5" fill="none" marker-end="url(#arrow)" />
+</svg>

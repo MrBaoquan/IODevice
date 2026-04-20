@@ -4,6 +4,7 @@
 
 #include "IODeviceController.h"
 #include "IOSettings.h"
+#include "MotionPlayer.h"
 #include "StringUtils.hpp"
 #include "Paths.hpp"
 #include <filesystem>
@@ -299,3 +300,180 @@ IOCAPI int __stdcall SetPKProps(BSTR InDeviceName, BSTR InKeyName, float InOffse
 	return _device.SetPKProps(BSTR2String(InKeyName).c_str(), InOffset, InScale, InMinValue, InMaxValue, InDeadZone, InSensitivity, InExponent, InInvert, InInvertEvent);
 }
 
+// ── MotionPlayer C Wrapper ──────────────────────────────────────
+
+IOCAPI int __stdcall MotionLoadSlot(BSTR InSlotId, BSTR InFilePath, int InPriority, int InMixPolicy)
+{
+	return dh::MotionPlayer::Instance().LoadSlot(
+		BSTR2String(InSlotId).c_str(),
+		std::filesystem::path(std::wstring(InFilePath)).string().c_str(),
+		InPriority,
+		static_cast<dh::MixPolicy>(InMixPolicy));
+}
+
+IOCAPI void __stdcall MotionUnloadSlot(BSTR InSlotId)
+{
+	dh::MotionPlayer::Instance().UnloadSlot(BSTR2String(InSlotId).c_str());
+}
+
+IOCAPI void __stdcall MotionUnloadAll()
+{
+	dh::MotionPlayer::Instance().UnloadAll();
+}
+
+IOCAPI int __stdcall MotionPlaySlot(BSTR InSlotId)
+{
+	return dh::MotionPlayer::Instance().PlaySlot(BSTR2String(InSlotId).c_str());
+}
+
+IOCAPI int __stdcall MotionPlaySlotFrom(BSTR InSlotId, float InTimeMs)
+{
+	return dh::MotionPlayer::Instance().PlaySlotFrom(BSTR2String(InSlotId).c_str(), InTimeMs);
+}
+
+IOCAPI int __stdcall MotionPauseSlot(BSTR InSlotId)
+{
+	return dh::MotionPlayer::Instance().PauseSlot(BSTR2String(InSlotId).c_str());
+}
+
+IOCAPI int __stdcall MotionResumeSlot(BSTR InSlotId)
+{
+	return dh::MotionPlayer::Instance().ResumeSlot(BSTR2String(InSlotId).c_str());
+}
+
+IOCAPI int __stdcall MotionStopSlot(BSTR InSlotId)
+{
+	return dh::MotionPlayer::Instance().StopSlot(BSTR2String(InSlotId).c_str());
+}
+
+IOCAPI int __stdcall MotionSeekSlot(BSTR InSlotId, float InTimeMs)
+{
+	return dh::MotionPlayer::Instance().SeekSlot(BSTR2String(InSlotId).c_str(), InTimeMs);
+}
+
+IOCAPI void __stdcall MotionSetSlotSpeed(BSTR InSlotId, float InSpeed)
+{
+	dh::MotionPlayer::Instance().SetSlotSpeed(BSTR2String(InSlotId).c_str(), InSpeed);
+}
+
+IOCAPI void __stdcall MotionSetSlotLoop(BSTR InSlotId, bool InLoop)
+{
+	dh::MotionPlayer::Instance().SetSlotLoop(BSTR2String(InSlotId).c_str(), InLoop);
+}
+
+IOCAPI void __stdcall MotionSetSlotClockMode(BSTR InSlotId, int InMode)
+{
+	dh::MotionPlayer::Instance().SetSlotClockMode(
+		BSTR2String(InSlotId).c_str(),
+		static_cast<dh::ClockMode>(InMode));
+}
+
+IOCAPI void __stdcall MotionSetSlotExternalTime(BSTR InSlotId, float InTimeMs)
+{
+	dh::MotionPlayer::Instance().SetSlotExternalTime(BSTR2String(InSlotId).c_str(), InTimeMs);
+}
+
+IOCAPI int __stdcall MotionGetSlotState(BSTR InSlotId)
+{
+	return static_cast<int>(dh::MotionPlayer::Instance().GetSlotState(BSTR2String(InSlotId).c_str()));
+}
+
+IOCAPI float __stdcall MotionGetSlotCurrentTime(BSTR InSlotId)
+{
+	return dh::MotionPlayer::Instance().GetSlotCurrentTime(BSTR2String(InSlotId).c_str());
+}
+
+IOCAPI float __stdcall MotionGetSlotDuration(BSTR InSlotId)
+{
+	return dh::MotionPlayer::Instance().GetSlotDuration(BSTR2String(InSlotId).c_str());
+}
+
+IOCAPI int __stdcall MotionGetSlotCount()
+{
+	return dh::MotionPlayer::Instance().GetSlotCount();
+}
+
+IOCAPI void __stdcall MotionPlayAll()
+{
+	dh::MotionPlayer::Instance().PlayAll();
+}
+
+IOCAPI void __stdcall MotionPauseAll()
+{
+	dh::MotionPlayer::Instance().PauseAll();
+}
+
+IOCAPI void __stdcall MotionStopAll()
+{
+	dh::MotionPlayer::Instance().StopAll();
+}
+
+// ── Phase 3 new APIs ────────────────────────────────────
+
+IOCAPI int __stdcall MotionLoadSlotFromJson(BSTR InSlotId, BSTR InJsonContent, int InPriority, int InMixPolicy)
+{
+	return dh::MotionPlayer::Instance().LoadSlotFromJson(
+		BSTR2String(InSlotId).c_str(),
+		BSTR2String(InJsonContent).c_str(),
+		InPriority,
+		static_cast<dh::MixPolicy>(InMixPolicy));
+}
+
+IOCAPI int __stdcall MotionEvaluateSlotAt(BSTR InSlotId, float InTimeMs, float* OutValues, int InMaxChannels)
+{
+	return dh::MotionPlayer::Instance().EvaluateSlotAt(
+		BSTR2String(InSlotId).c_str(),
+		InTimeMs,
+		OutValues,
+		InMaxChannels);
+}
+
+// Global managed callback holder
+static MotionEventCallbackManaged g_managedEventCallback = nullptr;
+static MotionEventDataCallbackManaged g_managedEventDataCallback = nullptr;
+
+// C ABI bridge: native cdecl -> managed stdcall + BSTR
+static void NativeEventBridge(const char* slotId, int eventType)
+{
+	if (g_managedEventCallback) {
+		BSTR bstrSlotId = string2BSTR(slotId);
+		g_managedEventCallback(bstrSlotId, eventType);
+		SysFreeString(bstrSlotId);
+	}
+}
+
+static void NativeEventDataBridge(const char* slotId, int eventType, const char* eventData)
+{
+	if (g_managedEventDataCallback) {
+		BSTR bstrSlotId = string2BSTR(slotId);
+		BSTR bstrEventData = string2BSTR(eventData ? eventData : "");
+		g_managedEventDataCallback(bstrSlotId, eventType, bstrEventData);
+		SysFreeString(bstrEventData);
+		SysFreeString(bstrSlotId);
+	}
+}
+
+IOCAPI void __stdcall MotionSetEventCallback(MotionEventCallbackManaged InCallback)
+{
+	g_managedEventCallback = InCallback;
+	if (InCallback) {
+		dh::MotionPlayer::Instance().SetEventCallback(NativeEventBridge);
+	} else {
+		dh::MotionPlayer::Instance().SetEventCallback(nullptr);
+	}
+}
+
+IOCAPI void __stdcall MotionSetEventDataCallback(MotionEventDataCallbackManaged InCallback)
+{
+	g_managedEventDataCallback = InCallback;
+	if (InCallback) {
+		dh::MotionPlayer::Instance().SetEventDataCallback(NativeEventDataBridge);
+	} else {
+		dh::MotionPlayer::Instance().SetEventDataCallback(nullptr);
+	}
+}
+
+IOCAPI void __stdcall MotionSetSafetyConfig(float InMaxRatePerSecond)
+{
+	dh::MotionPlayer::Instance().SetSafetyConfig(InMaxRatePerSecond);
+}

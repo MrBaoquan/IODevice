@@ -271,5 +271,136 @@ namespace IOToolkit.Core
             [MarshalAs(UnmanagedType.I1)] bool InInvert,
             [MarshalAs(UnmanagedType.I1)] bool InInvertEvent
         );
+
+        // ── MotionPlayer ────────────────────────────────────
+
+        [DllImport(DllName, CallingConvention = CallingConvention.StdCall)]
+        public static extern int MotionLoadSlot(
+            [MarshalAs(UnmanagedType.BStr)] string InSlotId,
+            [MarshalAs(UnmanagedType.BStr)] string InFilePath,
+            int InPriority,
+            int InMixPolicy
+        );
+
+        [DllImport(DllName, CallingConvention = CallingConvention.StdCall)]
+        public static extern void MotionUnloadSlot([MarshalAs(UnmanagedType.BStr)] string InSlotId);
+
+        [DllImport(DllName, CallingConvention = CallingConvention.StdCall)]
+        public static extern void MotionUnloadAll();
+
+        [DllImport(DllName, CallingConvention = CallingConvention.StdCall)]
+        public static extern int MotionPlaySlot([MarshalAs(UnmanagedType.BStr)] string InSlotId);
+
+        [DllImport(DllName, CallingConvention = CallingConvention.StdCall)]
+        public static extern int MotionPlaySlotFrom(
+            [MarshalAs(UnmanagedType.BStr)] string InSlotId,
+            float InTimeMs
+        );
+
+        [DllImport(DllName, CallingConvention = CallingConvention.StdCall)]
+        public static extern int MotionPauseSlot([MarshalAs(UnmanagedType.BStr)] string InSlotId);
+
+        [DllImport(DllName, CallingConvention = CallingConvention.StdCall)]
+        public static extern int MotionResumeSlot([MarshalAs(UnmanagedType.BStr)] string InSlotId);
+
+        [DllImport(DllName, CallingConvention = CallingConvention.StdCall)]
+        public static extern int MotionStopSlot([MarshalAs(UnmanagedType.BStr)] string InSlotId);
+
+        [DllImport(DllName, CallingConvention = CallingConvention.StdCall)]
+        public static extern int MotionSeekSlot(
+            [MarshalAs(UnmanagedType.BStr)] string InSlotId,
+            float InTimeMs
+        );
+
+        [DllImport(DllName, CallingConvention = CallingConvention.StdCall)]
+        public static extern void MotionSetSlotSpeed(
+            [MarshalAs(UnmanagedType.BStr)] string InSlotId,
+            float InSpeed
+        );
+
+        [DllImport(DllName, CallingConvention = CallingConvention.StdCall)]
+        public static extern void MotionSetSlotLoop(
+            [MarshalAs(UnmanagedType.BStr)] string InSlotId,
+            [MarshalAs(UnmanagedType.I1)] bool InLoop
+        );
+
+        [DllImport(DllName, CallingConvention = CallingConvention.StdCall)]
+        public static extern void MotionSetSlotClockMode(
+            [MarshalAs(UnmanagedType.BStr)] string InSlotId,
+            int InMode
+        );
+
+        [DllImport(DllName, CallingConvention = CallingConvention.StdCall)]
+        public static extern void MotionSetSlotExternalTime(
+            [MarshalAs(UnmanagedType.BStr)] string InSlotId,
+            float InTimeMs
+        );
+
+        [DllImport(DllName, CallingConvention = CallingConvention.StdCall)]
+        public static extern int MotionGetSlotState(
+            [MarshalAs(UnmanagedType.BStr)] string InSlotId
+        );
+
+        [DllImport(DllName, CallingConvention = CallingConvention.StdCall)]
+        public static extern float MotionGetSlotCurrentTime(
+            [MarshalAs(UnmanagedType.BStr)] string InSlotId
+        );
+
+        [DllImport(DllName, CallingConvention = CallingConvention.StdCall)]
+        public static extern float MotionGetSlotDuration(
+            [MarshalAs(UnmanagedType.BStr)] string InSlotId
+        );
+
+        [DllImport(DllName, CallingConvention = CallingConvention.StdCall)]
+        public static extern int MotionGetSlotCount();
+
+        [DllImport(DllName, CallingConvention = CallingConvention.StdCall)]
+        public static extern void MotionPlayAll();
+
+        [DllImport(DllName, CallingConvention = CallingConvention.StdCall)]
+        public static extern void MotionPauseAll();
+
+        [DllImport(DllName, CallingConvention = CallingConvention.StdCall)]
+        public static extern void MotionStopAll();
+
+        // ── Phase 3 新增 API ────────────────────────────
+
+        [DllImport(DllName, CallingConvention = CallingConvention.StdCall)]
+        public static extern int MotionLoadSlotFromJson(
+            [MarshalAs(UnmanagedType.BStr)] string InSlotId,
+            [MarshalAs(UnmanagedType.BStr)] string InJsonContent,
+            int InPriority,
+            int InMixPolicy
+        );
+
+        [DllImport(DllName, CallingConvention = CallingConvention.StdCall)]
+        public static extern int MotionEvaluateSlotAt(
+            [MarshalAs(UnmanagedType.BStr)] string InSlotId,
+            float InTimeMs,
+            [Out] float[] OutValues,
+            int InMaxChannels
+        );
+
+        public delegate void MotionEventCallbackDelegate(
+            [MarshalAs(UnmanagedType.BStr)] string slotId,
+            int eventType
+        );
+
+        public delegate void MotionEventDataCallbackDelegate(
+            [MarshalAs(UnmanagedType.BStr)] string slotId,
+            int eventType,
+            [MarshalAs(UnmanagedType.BStr)] string eventData
+        );
+
+        [DllImport(DllName, CallingConvention = CallingConvention.StdCall)]
+        public static extern void MotionSetEventCallback(MotionEventCallbackDelegate InCallback);
+
+        [DllImport(DllName, CallingConvention = CallingConvention.StdCall)]
+        public static extern void MotionSetEventDataCallback(
+            MotionEventDataCallbackDelegate InCallback
+        );
+
+        [DllImport(DllName, CallingConvention = CallingConvention.StdCall)]
+        public static extern void MotionSetSafetyConfig(float InMaxRatePerSecond);
     }
 }

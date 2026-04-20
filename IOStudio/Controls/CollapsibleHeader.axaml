@@ -1,0 +1,90 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:iconPacks="https://github.com/MahApps/IconPacks.Avalonia"
+             mc:Ignorable="d" d:DesignWidth="400" d:DesignHeight="40"
+             x:Class="IOStudio.Controls.CollapsibleHeader"
+             x:Name="root">
+	
+	<UserControl.Styles>
+		<Style Selector="Border.chevron-icon">
+			<Setter Property="Background" Value="Transparent" />
+			<Setter Property="Cursor" Value="Hand" />
+		</Style>
+		<Style Selector="Border.chevron-icon:pointerover iconPacks|PackIconIonicons">
+			<Setter Property="Foreground" Value="#000000" />
+		</Style>
+	</UserControl.Styles>
+	
+	<Border Background="#e0f2fe" Padding="12 8">
+		<Grid ColumnDefinitions="Auto,*,Auto">
+			<!-- 左侧：折叠按钮 + 标题 -->
+			<StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8">
+				<Border Classes="chevron-icon"
+						Width="24" Height="24"
+						VerticalAlignment="Center"
+						PointerPressed="OnChevronClicked">
+					<Panel HorizontalAlignment="Center" VerticalAlignment="Center">
+						<!-- 展开状态：向下箭头 -->
+						<iconPacks:PackIconIonicons Kind="ArrowDowniOS"
+													Width="16" Height="16"
+													Foreground="#616161"
+													HorizontalAlignment="Center"
+													VerticalAlignment="Center"
+													IsVisible="{Binding #root.IsExpanded}" />
+						<!-- 收起状态：向前箭头 -->
+						<iconPacks:PackIconIonicons Kind="ArrowForwardiOS"
+													Width="16" Height="16"
+													Foreground="#616161"
+													HorizontalAlignment="Center"
+													VerticalAlignment="Center"
+													IsVisible="{Binding !#root.IsExpanded}" />
+					</Panel>
+				</Border>
+				<TextBlock Text="{Binding #root.Title}" 
+						   FontSize="14" 
+						   FontWeight="Medium"
+						   VerticalAlignment="Center" />
+				
+				<!-- 节点数量提示 -->
+				<Border Background="#94a3b8" 
+						CornerRadius="8" 
+						Padding="6 1" 
+						Margin="6 0 0 0"
+						VerticalAlignment="Center"
+						IsVisible="{Binding #root.ShowItemCount}">
+					<TextBlock Text="{Binding #root.ItemCount}" 
+							   FontSize="11" 
+							   Foreground="White"
+							   VerticalAlignment="Center"
+							   HorizontalAlignment="Center" />
+				</Border>
+				
+				<!-- 中间：额外内容区域（紧跟标题后） -->
+				<ContentPresenter Content="{Binding #root.ExtraContent}"
+								  VerticalAlignment="Center"
+								  Margin="16 0 0 0" />
+			</StackPanel>
+			
+			<!-- 右侧：编辑模式操作按钮 -->
+			<StackPanel Grid.Column="2" 
+						Orientation="Horizontal" 
+						Spacing="8"
+						IsVisible="{Binding #root.ShowEditButtons}">
+				<Button Content="+ 新增" 
+						Classes="text-button"
+						Padding="8 4"
+						FontSize="12"
+						Command="{Binding #root.AddCommand}"
+						ToolTip.Tip="{Binding #root.AddTooltip}" />
+				<Button Content="清空" 
+						Classes="text-button"
+						Padding="8 4"
+						FontSize="12"
+						Command="{Binding #root.ClearCommand}"
+						ToolTip.Tip="{Binding #root.ClearTooltip}" />
+			</StackPanel>
+		</Grid>
+	</Border>
+</UserControl>

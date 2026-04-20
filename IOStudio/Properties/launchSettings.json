@@ -1,0 +1,9 @@
+{
+  "profiles": {
+    "IOStudio": {
+      "commandName": "Project",
+      "nativeDebugging": true,
+      "hotReloadEnabled": true
+    }
+  }
+}

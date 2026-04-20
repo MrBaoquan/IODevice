@@ -100,5 +100,41 @@ extern "C"
 	 * @return: 成功返回1 失败返回0
 	 */
 	IOCAPI int __stdcall SetPKProps(BSTR InDeviceName, BSTR InKeyName, float InOffset, float InScale, float InMinValue, float InMaxValue, float InDeadZone, float InSensitivity, float InExponent, bool InInvert, bool InInvertEvent);
-	
+
+	// ── MotionPlayer (多 Slot 动作文件播放) ─────────────
+
+	IOCAPI int   __stdcall MotionLoadSlot(BSTR InSlotId, BSTR InFilePath, int InPriority, int InMixPolicy);
+	IOCAPI void  __stdcall MotionUnloadSlot(BSTR InSlotId);
+	IOCAPI void  __stdcall MotionUnloadAll();
+	IOCAPI int   __stdcall MotionPlaySlot(BSTR InSlotId);
+	IOCAPI int   __stdcall MotionPlaySlotFrom(BSTR InSlotId, float InTimeMs);
+	IOCAPI int   __stdcall MotionPauseSlot(BSTR InSlotId);
+	IOCAPI int   __stdcall MotionResumeSlot(BSTR InSlotId);
+	IOCAPI int   __stdcall MotionStopSlot(BSTR InSlotId);
+	IOCAPI int   __stdcall MotionSeekSlot(BSTR InSlotId, float InTimeMs);
+	IOCAPI void  __stdcall MotionSetSlotSpeed(BSTR InSlotId, float InSpeed);
+	IOCAPI void  __stdcall MotionSetSlotLoop(BSTR InSlotId, bool InLoop);
+	IOCAPI void  __stdcall MotionSetSlotClockMode(BSTR InSlotId, int InMode);
+	IOCAPI void  __stdcall MotionSetSlotExternalTime(BSTR InSlotId, float InTimeMs);
+	IOCAPI int   __stdcall MotionGetSlotState(BSTR InSlotId);
+	IOCAPI float __stdcall MotionGetSlotCurrentTime(BSTR InSlotId);
+	IOCAPI float __stdcall MotionGetSlotDuration(BSTR InSlotId);
+	IOCAPI int   __stdcall MotionGetSlotCount();
+	IOCAPI void  __stdcall MotionPlayAll();
+	IOCAPI void  __stdcall MotionPauseAll();
+	IOCAPI void  __stdcall MotionStopAll();
+
+	// ── Phase 3 新增 API ────────────────────────────────
+	IOCAPI int   __stdcall MotionLoadSlotFromJson(BSTR InSlotId, BSTR InJsonContent, int InPriority, int InMixPolicy);
+	IOCAPI int   __stdcall MotionEvaluateSlotAt(BSTR InSlotId, float InTimeMs, float* OutValues, int InMaxChannels);
+	IOCAPI void  __stdcall MotionSetSafetyConfig(float InMaxRatePerSecond);
+}
+
+// typedef outside extern "C" for C++ usage
+typedef void (__stdcall *MotionEventCallbackManaged)(BSTR InSlotId, int InEventType);
+typedef void (__stdcall *MotionEventDataCallbackManaged)(BSTR InSlotId, int InEventType, BSTR InEventData);
+
+extern "C" {
+	IOCAPI void  __stdcall MotionSetEventCallback(MotionEventCallbackManaged InCallback);
+	IOCAPI void  __stdcall MotionSetEventDataCallback(MotionEventDataCallbackManaged InCallback);
 }

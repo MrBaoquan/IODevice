@@ -14,7 +14,8 @@ namespace IOToolkit
     {
         private class IODeviceNative : IODevice
         {
-            public IODeviceNative(string InID) : base(InID){}
+            public IODeviceNative(string InID)
+                : base(InID) { }
         }
 
         /// <summary>
@@ -36,6 +37,11 @@ namespace IOToolkit
             return IONativeWrapper.Unload();
         }
 
+        public static int EnterSafeState()
+        {
+            return IONativeWrapper.EnterSafeState();
+        }
+
         /// <summary>
         /// 获取设备
         /// </summary>
@@ -45,9 +51,10 @@ namespace IOToolkit
         public static IODevice GetIODevice(string InDeviceName)
         {
             IODevice _device;
-            if (!devices.TryGetValue(InDeviceName, out _device)) {
+            if (!devices.TryGetValue(InDeviceName, out _device))
+            {
                 _device = new IODeviceNative(InDeviceName);
-                devices.Add(InDeviceName, _device); 
+                devices.Add(InDeviceName, _device);
             }
             return _device;
         }
@@ -67,7 +74,6 @@ namespace IOToolkit
         {
             IONativeWrapper.ClearAllBindings();
         }
-
 
         private static Dictionary<string, IODevice> devices = new Dictionary<string, IODevice>();
     }

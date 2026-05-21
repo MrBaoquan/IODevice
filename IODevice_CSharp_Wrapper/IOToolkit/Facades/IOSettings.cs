@@ -18,5 +18,10 @@ namespace IOToolkit
         {
             return IONativeWrapper.SetIOLogDir(InLogDir);
         }
+
+        public static int SetIORuntimeRoot(string InRuntimeRoot)
+        {
+            return IONativeWrapper.SetIORuntimeRoot(InRuntimeRoot);
+        }
     }
 }

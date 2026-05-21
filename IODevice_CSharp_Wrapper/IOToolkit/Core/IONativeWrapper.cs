@@ -37,6 +37,9 @@ namespace IOToolkit.Core
         public static extern int Unload();
 
         [DllImport(DllName, CallingConvention = CallingConvention.StdCall)]
+        public static extern int EnterSafeState();
+
+        [DllImport(DllName, CallingConvention = CallingConvention.StdCall)]
         public static extern bool IsValid([MarshalAs(UnmanagedType.BStr)] string InDeviceName);
 
         [DllImport(DllName, CallingConvention = CallingConvention.StdCall)]
@@ -59,6 +62,9 @@ namespace IOToolkit.Core
 
         [DllImport(DllName, CallingConvention = CallingConvention.StdCall)]
         public static extern int SetIOLogDir([MarshalAs(UnmanagedType.BStr)] string InFilePath);
+
+        [DllImport(DllName, CallingConvention = CallingConvention.StdCall)]
+        public static extern int SetIORuntimeRoot([MarshalAs(UnmanagedType.BStr)] string InRuntimeRoot);
 
         [DllImport(
             DllName,

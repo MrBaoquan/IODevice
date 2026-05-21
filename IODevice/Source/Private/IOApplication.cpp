@@ -74,7 +74,7 @@ BOOL WINAPI DllMain(
 		{
 			/** Initialize Paths before initialize IOLog, because IOLog need a correct log path. */
 			Paths::Instance().SetModule(IOApplication::dllInstance);
-			std::string dllPath = Paths::Instance().GetModuleDir() + "ExternalLibraries\\Core\\";
+            std::string dllPath = Paths::Instance().GetExternalLibraryCoreDir();
 			std::wstring _wdllPath(dllPath.begin(), dllPath.end());
 			AddDllDirectory(_wdllPath.data());
 		}

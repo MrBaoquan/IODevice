@@ -12,7 +12,7 @@
 #include "LessKey.h"
 
 
-struct __declspec(dllimport) DeviceInfo
+struct IOTK_DLL_IMPORT DeviceInfo
 {
     /** Digital input channel count */
     BYTE InputCount = 16;
@@ -52,7 +52,7 @@ public:
     {
         if (0 == m_isGetDeviceAD_INT && m_dllHandle)
         {
-            m_GetDeviceAD_INT = (TYPE_GetDeviceAD_INT)GetProcAddress(m_dllHandle, "GetDeviceAD_INT");
+            m_GetDeviceAD_INT = (TYPE_GetDeviceAD_INT)PDLLGetSymbol(m_dllHandle, "GetDeviceAD_INT");
             m_isGetDeviceAD_INT = (m_GetDeviceAD_INT != NULL) ? FUNC_LOADED : -1;
         }
         return m_isGetDeviceAD_INT == FUNC_LOADED && m_GetDeviceAD_INT != NULL;

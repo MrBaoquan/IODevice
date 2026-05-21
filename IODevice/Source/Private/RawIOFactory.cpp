@@ -4,8 +4,12 @@
  */
 
 #include "RawIOFactory.h"
+#include "IOPlatform.h"
+#if IODEVICE_PLATFORM_WINDOWS
 #include <windows.h>
+#endif
 #include <algorithm>
+#include <cctype>
 #include <filesystem>
 #include "RawIO/StandardIO.h"
 #include "RawIO/ExternalIO.h"
@@ -15,6 +19,36 @@
 #include "IOStatics.h"
 
 namespace fs = std::filesystem;
+
+namespace
+{
+    class PlatformPluginNaming
+    {
+    public:
+        static std::string Resolve(const std::string& pluginName)
+        {
+#if IODEVICE_PLATFORM_WINDOWS
+#if defined(WIN_64) || IODEVICE_PLATFORM_64BIT
+            return std::string("IOUI-Win64-").append(pluginName).append(".dll");
+#else
+            return std::string("IOUI-Win32-").append(pluginName).append(".dll");
+#endif
+#else
+            std::string normalizedName = pluginName;
+            std::transform(normalizedName.begin(), normalizedName.end(), normalizedName.begin(), [](unsigned char ch) {
+                return static_cast<char>(std::tolower(ch));
+            });
+            return std::string("libioui-android-").append(normalizedName).append(".so");
+#endif
+        }
+    };
+
+    std::string ResolveExternalPluginPath(const std::string& pluginName)
+    {
+        fs::path pluginPath = fs::path(IOToolkit::Paths::Instance().GetExternalLibrariesDir()) / PlatformPluginNaming::Resolve(pluginName);
+        return pluginPath.string();
+    }
+}
 
 
 std::shared_ptr<IOToolkit::RawIO> IOToolkit::RawIOFactory::CreateRawInput(DeviceProperties deviceProps)
@@ -43,13 +77,7 @@ std::shared_ptr<IOToolkit::RawIO> IOToolkit::RawIOFactory::CreateRawInput(Device
     }
     else if(deviceProps.Type == IOType::External)
     {
-        std::string fullDllName = "";
-#ifdef WIN_64
-        fullDllName.append("IOUI-Win64-").append(deviceProps.DllName).append(".dll");
-#else
-        fullDllName.append("IOUI-Win32-").append(deviceProps.DllName).append(".dll");
-#endif // WIN_64
-        fullDllName = Paths::Instance().GetModuleDir()+ "ExternalLibraries\\" + fullDllName;    
+        std::string fullDllName = ResolveExternalPluginPath(deviceProps.DllName);
         if(fs::exists(fullDllName))
         {
             std::shared_ptr<ExternalIO> externalIO = std::make_shared<ExternalIO>(deviceProps.DeviceID, deviceProps.DeviceIndex, fullDllName);

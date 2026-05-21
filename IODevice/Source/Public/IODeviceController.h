@@ -17,6 +17,7 @@ public:
     static IODeviceController& Instance();
 	int Load();
 	int Unload();
+    int EnterSafeState();
     IODevice& GetIODevice(const char* deviceName);
     const float GetDeltaSeconds() const;
     void Update();

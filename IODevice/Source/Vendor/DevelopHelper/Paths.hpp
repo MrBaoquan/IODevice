@@ -33,6 +33,11 @@ class Paths
             SetDirectoriesFromModule(InModule);
             return *this;
         }
+        Paths& SetRuntimeRoot(const std::string& InRuntimeRoot)
+        {
+            SetDirectoriesFromRoot(InRuntimeRoot);
+            return *this;
+        }
 		const std::string& GetModuleDir() const{ return module_dir; }
 		const std::string& GetResourceDir() const{ return resource_dir; }
 		const std::string& GetConfigDir() const{ return config_dir; }
@@ -69,15 +74,29 @@ class Paths
             return base + child + DirectorySeparator();
         }
 
-        void SetDirectoriesFromFullPath(const std::string& full_path)
+        static std::string NormalizeBaseDir(std::string base)
         {
-            size_t pos = full_path.find_last_of("\\/");
-            module_dir = pos == std::string::npos ? std::string() : full_path.substr(0, pos + 1);
+            if (!base.empty() && base.back() != '\\' && base.back() != '/')
+            {
+                base.push_back(DirectorySeparator());
+            }
+            return base;
+        }
+
+        void SetDirectoriesFromRoot(const std::string& root_path)
+        {
+            module_dir = NormalizeBaseDir(root_path);
             resource_dir = AppendDir(module_dir, "Resources");
             config_dir = AppendDir(module_dir, "Config");
             log_dir = AppendDir(module_dir, "Logs");
             external_libraries_dir = AppendDir(module_dir, "ExternalLibraries");
             external_library_core_dir = AppendDir(external_libraries_dir, "Core");
+        }
+
+        void SetDirectoriesFromFullPath(const std::string& full_path)
+        {
+            size_t pos = full_path.find_last_of("\\/");
+            SetDirectoriesFromRoot(pos == std::string::npos ? std::string() : full_path.substr(0, pos + 1));
         }
 
         void SetDirectoriesFromModule(HMODULE module)

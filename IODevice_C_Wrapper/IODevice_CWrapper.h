@@ -13,8 +13,10 @@ extern "C"
 
 	IOCAPI int __stdcall Load();
 	IOCAPI int __stdcall Unload();
+	IOCAPI int __stdcall EnterSafeState();
 
 	IOCAPI int __stdcall SetIOConfigPath(BSTR InFilePath);
+	IOCAPI int __stdcall SetIORuntimeRoot(BSTR InRuntimeRoot);
 	IOCAPI int __stdcall SetIOLogDir(BSTR InLogDir);
 
 	IOCAPI BSTR __stdcall DeviceIOType(BSTR InDeviceName);

@@ -762,6 +762,36 @@ void MotionPlayer::StopAll() {
     }
 }
 
+void MotionPlayer::EnterSafeState() {
+    std::lock_guard<std::recursive_mutex> lock(_impl->mutex);
+    std::map<std::string, float> safeChannels;
+    for (auto& [id, slot] : _impl->slots) {
+        if (slot.state == MotionState::Playing || slot.state == MotionState::Paused) {
+            for (const auto& [key, value] : slot.EvaluateChannels()) {
+                safeChannels[key] = 0.5f;
+            }
+        }
+        else if (slot.state == MotionState::Stopping) {
+            for (const auto& [key, value] : slot.EvaluateReturnChannels()) {
+                safeChannels[key] = 0.5f;
+            }
+        }
+
+        if (slot.state != MotionState::Idle) {
+            slot.StopTimer();
+            slot.returnStartValues.clear();
+            slot.returnElapsedMs = 0;
+            slot.state = MotionState::Idle;
+            slot.FireEvent(MotionEvent::StateChanged);
+        }
+    }
+
+    for (const auto& [key, value] : safeChannels) {
+        _impl->DispatchChannel(key, value);
+    }
+    IOLog::Instance().Log("MotionPlayer entered lifecycle safe state.\n");
+}
+
 // ── 状态查询 ─────────────────────────────────────────
 
 MotionState MotionPlayer::GetSlotState(const char* slotId) const {

@@ -6,6 +6,7 @@
 #include "..\Public\IOSettings.h"
 #include "InputSettings.h"
 #include "IOLog.h"
+#include "Paths.hpp"
 
 /** Copyright (c) 2018 Hefei And Technology Co.,Ltd All rights reserved
  *  Author: MrBaoquan
@@ -23,6 +24,13 @@ IOSettings & IOSettings::Instance()
 int IOSettings::SetIOConfigPath(const char* InPath)
 {
     return UInputSettings::Instance().SetConfigPath(InPath);
+}
+
+int IOSettings::SetIORuntimeRoot(const char* InRuntimeRoot)
+{
+    if (!InRuntimeRoot || InRuntimeRoot[0] == '\0') return 0;
+    Paths::Instance().SetRuntimeRoot(InRuntimeRoot);
+    return 1;
 }
 
 int IOToolkit::IOSettings::SetIOLogDir(const char* InLogDir)

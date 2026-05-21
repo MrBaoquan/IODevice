@@ -52,6 +52,7 @@ namespace IOToolkit {
         void PlayAll();
         void PauseAll();
         void StopAll();
+        void EnterSafeState();
 
         // ── 状态查询 ─────────────────────────────────
         MotionState GetSlotState(const char* slotId) const;

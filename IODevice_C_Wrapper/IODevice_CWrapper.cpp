@@ -70,9 +70,19 @@ IOCAPI int __stdcall Unload()
 	return dh::IODeviceController::Instance().Unload();
 }
 
+IOCAPI int __stdcall EnterSafeState()
+{
+	return dh::IODeviceController::Instance().EnterSafeState();
+}
+
 IOCAPI int __stdcall SetIOConfigPath(BSTR InFilePath)
 {
 	return dh::IOSettings::Instance().SetIOConfigPath(std::filesystem::path(std::wstring(InFilePath)).string().data());
+}
+
+IOCAPI int __stdcall SetIORuntimeRoot(BSTR InRuntimeRoot)
+{
+	return dh::IOSettings::Instance().SetIORuntimeRoot(std::filesystem::path(std::wstring(InRuntimeRoot)).string().data());
 }
 
 IOCAPI int __stdcall SetIOLogDir(BSTR InLogDir)

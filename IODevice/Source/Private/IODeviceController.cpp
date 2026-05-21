@@ -57,6 +57,17 @@ int IOToolkit::IODeviceController::Unload()
 	return 0;
 }
 
+int IOToolkit::IODeviceController::EnterSafeState()
+{
+    std::lock_guard<std::recursive_mutex> lock(controllerMutex);
+    MotionPlayer::Instance().EnterSafeState();
+    for (auto& deviceIt : IODevices::GetDevcies())
+    {
+        deviceIt.second.DOImmediate();
+    }
+    return 0;
+}
+
 IOToolkit::IODevice& IOToolkit::IODeviceController::GetIODevice(const char* deviceName)
 {
     return IODevices::GetDevice(deviceName);

@@ -141,8 +141,8 @@ namespace
 {
 	// 插件 → 宿主 C 回调；插件用 __stdcall 调回此函数, user 指针即 IODeviceDetails*
 	// 使用基础类型以避免依赖 IODevice 内部 typedef.
-	void IOTK_PLUGIN_CALL PluginChannelDispatchThunk(unsigned char /*devIdx*/, const char* channelName,
-		const unsigned char* data, unsigned int size, void* user)
+	void IOTK_PLUGIN_CALL PluginChannelDispatchThunk(IOToolkit::uint8 /*devIdx*/, const char* channelName,
+		const IOToolkit::BYTE* data, unsigned int size, void* user)
 	{
 		if (!user || !channelName) return;
 		auto* details = static_cast<IOToolkit::IODeviceDetails*>(user);
@@ -158,7 +158,7 @@ void IOToolkit::ExternalIO::EnsurePluginChannelDispatcher(void* details)
 	// 将 C 回调指针交给插件；插件需以此签名调用
 	externalDll.SetPluginChannelDispatcher(
 		deviceIndex,
-		reinterpret_cast<void*>(&PluginChannelDispatchThunk),
+		&PluginChannelDispatchThunk,
 		details);
 }
 

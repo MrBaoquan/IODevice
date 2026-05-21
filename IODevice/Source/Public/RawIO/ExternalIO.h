@@ -25,6 +25,8 @@ struct IOTK_DLL_IMPORT DeviceInfo
 namespace IOToolkit
 {
 
+using PluginChannelDispatcher = void(IOTK_PLUGIN_CALL*)(uint8 deviceIndex, const char* channelName, const BYTE* data, unsigned int size, void* userData);
+
 class IOUIDLL :public PDLL
 {
     DECLARE_CLASS(IOUIDLL)
@@ -43,8 +45,8 @@ class IOUIDLL :public PDLL
     // 宿主 → 插件 下行写入
     DECLARE_FUNCTION4(int, WritePluginChannel, uint8, const char*, const BYTE*, unsigned int)
     // 注册派发回调 (插件 → 宿主 上行)
-    // fn 签名: void(__stdcall*)(uint8 devIdx, const char* channel, const BYTE* data, unsigned int size, void* user)
-    DECLARE_FUNCTION3(int, SetPluginChannelDispatcher, uint8, void*, void*)
+    // fn 签名: void(IOUI_CALL*)(uint8 devIdx, const char* channel, const BYTE* data, unsigned int size, void* user)
+    DECLARE_FUNCTION3(int, SetPluginChannelDispatcher, uint8, PluginChannelDispatcher, void*)
 
 public:
     // Check if new version GetDeviceAD_INT is supported

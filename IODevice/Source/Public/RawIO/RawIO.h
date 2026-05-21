@@ -52,6 +52,18 @@ public:
 	virtual float GetDO(const char* InOAction);
     virtual int RefreshStreamingData(BYTE* StreamingData, unsigned int DataSize);
 
+    /**
+     * 通用插件通道 - 宿主→插件 下行写入
+     * 默认无实现, 返回 0. ExternalIO 会覆盖, 转发至插件 DLL 的 WritePluginChannel.
+     */
+    virtual int WritePluginChannel(const char* channelName, const BYTE* data, unsigned int size) { return 0; }
+
+    /**
+     * 通用插件通道 - 首次有 handler 绑定时调用, 让 ExternalIO 向插件注册派发回调.
+     * @param details 宿主侧 IODeviceDetails*, 用于回调入口.
+     */
+    virtual void EnsurePluginChannelDispatcher(void* details) {}
+
 	virtual void Initialize() = 0;
 
     virtual void OnFrameEnd();

@@ -33,6 +33,49 @@ extern "C"
 	IOCAPI int __stdcall GetDOAll(BSTR InDeviceName, float* InStatus);
 	IOCAPI int RefreshStreamingData(BSTR InDeviceName, BYTE* StreamingData, unsigned int DataSize);
 
+	/**
+	 * 通用插件通道 (Socket.IO 化改造)
+	 * 上层（托管语言）通过此接口和插件（NETIO 等）交换字节流，不关心底层协议。
+	 * channelName 采用 ASCII (const char*) 而非 BSTR，降低互操作开销。
+	 */
+	typedef void(__stdcall *PluginChannelCallbackManaged)(const char* channelName, const BYTE* data, unsigned int size);
+
+	/**
+	 * 对端请求回调 (插件 → 宿主 RPC). requestId/payload/metadata 均为 UTF-8 字节串.
+	 * 业务侧需保存 requestId 并调用 RespondChannelRequest 完成响应.
+	 */
+	typedef void(__stdcall *ChannelRequestCallbackManaged)(
+		const char* name,
+		const char* requestId,
+		const BYTE* payloadJson, unsigned int payloadSize,
+		const BYTE* metadataJson, unsigned int metadataSize);
+
+	IOCAPI int  __stdcall WritePluginChannel(BSTR InDeviceName, const char* channelName, const BYTE* data, unsigned int size);
+	IOCAPI int  __stdcall BindPluginChannel(BSTR InDeviceName, const char* channelName, PluginChannelCallbackManaged InCallback);
+	IOCAPI int  __stdcall UnbindPluginChannel(BSTR InDeviceName, const char* channelName, int handlerId);
+	IOCAPI int  __stdcall QueryPluginCapabilities(BSTR InDeviceName, BYTE* outJson, unsigned int capacity, unsigned int timeoutMs);
+	IOCAPI int  __stdcall SendPluginRequest(BSTR InDeviceName, const char* topic, const BYTE* requestJson, unsigned int requestSize, BYTE* responseJson, unsigned int capacity, unsigned int timeoutMs);
+	IOCAPI int  __stdcall BindPluginEvent(BSTR InDeviceName, const char* eventName, PluginChannelCallbackManaged InCallback);
+	IOCAPI int  __stdcall UnbindPluginEvent(BSTR InDeviceName, int handlerId);
+	/**
+	 * 标准 Channel 请求入口. metadataJson 为透传 JSON 字符串 (如需要路由可传 {"target":"sid:xxx"}, 可为 nullptr/0).
+	 * 若 waitResponse=0, 则单向投递不等响应 (responseJson 不会被填充, 返回 1=投递成功 / 0=失败).
+	 */
+	IOCAPI int  __stdcall RequestChannel(BSTR InDeviceName, const char* name, const BYTE* requestJson, unsigned int requestSize, int waitResponse, const BYTE* metadataJson, unsigned int metadataSize, BYTE* responseJson, unsigned int capacity, unsigned int timeoutMs);
+	IOCAPI int  __stdcall SubscribeChannel(BSTR InDeviceName, const char* name, PluginChannelCallbackManaged InCallback);
+	IOCAPI int  __stdcall UnsubscribeChannel(BSTR InDeviceName, int handlerId);
+	/**
+	 * 订阅插件转发的对端请求 (plugin → host RPC).
+	 * 插件获取 NetFrame.req 后包装为 _rpc.req envelope, IODevice 按 topic 分派。
+	 */
+	IOCAPI int  __stdcall SubscribeChannelRequest(BSTR InDeviceName, const char* name, ChannelRequestCallbackManaged InCallback);
+	IOCAPI int  __stdcall UnsubscribeChannelRequest(BSTR InDeviceName, int handlerId);
+	/**
+	 * 响应上一步 SubscribeChannelRequest handler 收到的请求. requestId 必须与 ctx.RequestId 一致.
+	 */
+	IOCAPI int  __stdcall RespondChannelRequest(BSTR InDeviceName, const char* requestId, const BYTE* payloadJson, unsigned int payloadSize, int ok, const char* errorMessage);
+	IOCAPI int  __stdcall QueryChannelCapabilities(BSTR InDeviceName, BYTE* outJson, unsigned int capacity, unsigned int timeoutMs);
+
 	IOCAPI int __stdcall SetDOSingle(BSTR InDeviceName, BSTR InKeyName, float InVal);
 	IOCAPI int __stdcall SetDOAll(BSTR InDeviceName, float* InStatus);
 	

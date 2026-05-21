@@ -8,6 +8,8 @@
 #include <set>
 #include <string>
 #include <memory>
+#include <map>
+#include <mutex>
 #include "IODevice.h"
 #include "InputBinding.h"
 #include "InputBinding/InputKeyBinding.h"
@@ -67,6 +69,18 @@ public:
 
     int RefreshStreamingData(BYTE* StreamingData, unsigned int DataSize);
 
+    /** 通用插件通道 - 宿主→插件 */
+    int WritePluginChannel(const char* channelName, const BYTE* data, unsigned int size);
+
+    /** 通用插件通道 - 宿主订阅 */
+    int BindPluginChannel(const char* channelName,
+                          std::function<void(const char*, const BYTE*, unsigned int)> handler);
+
+    int UnbindPluginChannel(const char* channelName, int handlerId);
+
+    /** 供 RawIO 调用，将插件上行字节派发给所有已注册 handler */
+    void DispatchPluginChannel(const char* channelName, const BYTE* data, unsigned int size);
+
     bool GetKey(const FKey& InKey);
     bool GetKeyDown(const FKey& InKey);
     bool GetKeyUp(const FKey& InKey);
@@ -103,6 +117,20 @@ private:
     std::shared_ptr<RawIO> rawIO;
    
     DeviceProperties props;
+
+    /** 插件通道订阅状态 (用 shared_ptr 包裹以保持 IODeviceDetails 可拷贝) */
+    struct PluginChannelState
+    {
+        struct Entry
+        {
+            int id;
+            std::function<void(const char*, const BYTE*, unsigned int)> handler;
+        };
+        std::map<std::string, std::vector<Entry>> handlers;
+        int nextId = 1;
+        std::mutex mtx;
+    };
+    std::shared_ptr<PluginChannelState> pluginChannelState = std::make_shared<PluginChannelState>();
 };
 
 };

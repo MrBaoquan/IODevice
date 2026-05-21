@@ -11,6 +11,17 @@ namespace IOToolkit.Core
     public delegate void NativeActionWithKeySignature([MarshalAs(UnmanagedType.BStr)] string _ptr);
     public delegate void NativeAxisSignature(float _val);
 
+    /// <summary>
+    /// 插件通道回调（字节流原样下发）。
+    /// 注意：channelName 为 ANSI char*，data 为非托管缓冲区，长度由 size 指定。
+    /// </summary>
+    [UnmanagedFunctionPointer(CallingConvention.StdCall)]
+    public delegate void PluginChannelCallback(
+        [MarshalAs(UnmanagedType.LPStr)] string channelName,
+        IntPtr data,
+        uint size
+    );
+
     internal class IONativeWrapper
     {
         const string DllName = "IODevice_C_Wrapper";
@@ -114,6 +125,144 @@ namespace IOToolkit.Core
             [MarshalAs(UnmanagedType.BStr)] string InDeviceName,
             [MarshalAs(UnmanagedType.LPArray)] byte[] StreamingData,
             UInt32 DataSize
+        );
+
+        // ── Plugin Channel (原始字节流通道) ─────────────────
+
+        /// <summary>
+        /// 向设备插件通道写入字节流（如 netio.udp.out）。
+        /// </summary>
+        [DllImport(DllName, CallingConvention = CallingConvention.StdCall)]
+        public static extern int WritePluginChannel(
+            [MarshalAs(UnmanagedType.BStr)] string InDeviceName,
+            [MarshalAs(UnmanagedType.LPStr)] string channelName,
+            [MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 3)] byte[] data,
+            uint size
+        );
+
+        /// <summary>
+        /// 订阅设备插件通道（如 netio.udp.in）。返回 handlerId（>=0 成功，&lt;0 失败）。
+        /// 调用方须保持 callback 委托引用，防止被 GC 回收。
+        /// </summary>
+        [DllImport(DllName, CallingConvention = CallingConvention.StdCall)]
+        public static extern int BindPluginChannel(
+            [MarshalAs(UnmanagedType.BStr)] string InDeviceName,
+            [MarshalAs(UnmanagedType.LPStr)] string channelName,
+            PluginChannelCallback callback
+        );
+
+        /// <summary>
+        /// 取消订阅设备插件通道。
+        /// </summary>
+        [DllImport(DllName, CallingConvention = CallingConvention.StdCall)]
+        public static extern int UnbindPluginChannel(
+            [MarshalAs(UnmanagedType.BStr)] string InDeviceName,
+            [MarshalAs(UnmanagedType.LPStr)] string channelName,
+            int handlerId
+        );
+
+        [DllImport(DllName, CallingConvention = CallingConvention.StdCall)]
+        public static extern int QueryPluginCapabilities(
+            [MarshalAs(UnmanagedType.BStr)] string InDeviceName,
+            [MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 2)] byte[] outJson,
+            uint capacity,
+            uint timeoutMs
+        );
+
+        [DllImport(DllName, CallingConvention = CallingConvention.StdCall)]
+        public static extern int SendPluginRequest(
+            [MarshalAs(UnmanagedType.BStr)] string InDeviceName,
+            [MarshalAs(UnmanagedType.LPStr)] string topic,
+            [MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 3)] byte[] requestJson,
+            uint requestSize,
+            [MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 5)] byte[] responseJson,
+            uint capacity,
+            uint timeoutMs
+        );
+
+        [DllImport(DllName, CallingConvention = CallingConvention.StdCall)]
+        public static extern int BindPluginEvent(
+            [MarshalAs(UnmanagedType.BStr)] string InDeviceName,
+            [MarshalAs(UnmanagedType.LPStr)] string eventName,
+            PluginChannelCallback callback
+        );
+
+        [DllImport(DllName, CallingConvention = CallingConvention.StdCall)]
+        public static extern int UnbindPluginEvent(
+            [MarshalAs(UnmanagedType.BStr)] string InDeviceName,
+            int handlerId
+        );
+
+        [DllImport(DllName, CallingConvention = CallingConvention.StdCall)]
+        public static extern int RequestChannel(
+            [MarshalAs(UnmanagedType.BStr)] string InDeviceName,
+            [MarshalAs(UnmanagedType.LPStr)] string name,
+            [MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 3)] byte[] requestJson,
+            uint requestSize,
+            int waitResponse,
+            [MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 6)] byte[] metadataJson,
+            uint metadataSize,
+            [MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 8)] byte[] responseJson,
+            uint capacity,
+            uint timeoutMs
+        );
+
+        [DllImport(DllName, CallingConvention = CallingConvention.StdCall)]
+        public static extern int SubscribeChannel(
+            [MarshalAs(UnmanagedType.BStr)] string InDeviceName,
+            [MarshalAs(UnmanagedType.LPStr)] string name,
+            PluginChannelCallback callback
+        );
+
+        [DllImport(DllName, CallingConvention = CallingConvention.StdCall)]
+        public static extern int UnsubscribeChannel(
+            [MarshalAs(UnmanagedType.BStr)] string InDeviceName,
+            int handlerId
+        );
+
+        /// <summary>
+        /// 插件→宿主 RPC 请求回调. requestId/payloadJson/metadataJson 均为非托管字节缓冲;
+        /// 通过 Marshal.Copy + UTF8 解码读取.
+        /// </summary>
+        [UnmanagedFunctionPointer(CallingConvention.StdCall)]
+        public delegate void ChannelRequestCallback(
+            [MarshalAs(UnmanagedType.LPStr)] string name,
+            [MarshalAs(UnmanagedType.LPStr)] string requestId,
+            IntPtr payloadJson,
+            uint payloadSize,
+            IntPtr metadataJson,
+            uint metadataSize
+        );
+
+        [DllImport(DllName, CallingConvention = CallingConvention.StdCall)]
+        public static extern int SubscribeChannelRequest(
+            [MarshalAs(UnmanagedType.BStr)] string InDeviceName,
+            [MarshalAs(UnmanagedType.LPStr)] string name,
+            ChannelRequestCallback callback
+        );
+
+        [DllImport(DllName, CallingConvention = CallingConvention.StdCall)]
+        public static extern int UnsubscribeChannelRequest(
+            [MarshalAs(UnmanagedType.BStr)] string InDeviceName,
+            int handlerId
+        );
+
+        [DllImport(DllName, CallingConvention = CallingConvention.StdCall)]
+        public static extern int RespondChannelRequest(
+            [MarshalAs(UnmanagedType.BStr)] string InDeviceName,
+            [MarshalAs(UnmanagedType.LPStr)] string requestId,
+            [MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 3)] byte[] payloadJson,
+            uint payloadSize,
+            int ok,
+            [MarshalAs(UnmanagedType.LPStr)] string errorMessage
+        );
+
+        [DllImport(DllName, CallingConvention = CallingConvention.StdCall)]
+        public static extern int QueryChannelCapabilities(
+            [MarshalAs(UnmanagedType.BStr)] string InDeviceName,
+            [MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 2)] byte[] outJson,
+            uint capacity,
+            uint timeoutMs
         );
 
         [DllImport(DllName, CallingConvention = CallingConvention.StdCall)]

@@ -8,6 +8,7 @@
 #include "InputSettings.h"
 #include "CoreTypes/IOTypes.h"
 #include "IOLog.h"
+#include "IODeviceDetails.h"
 
 IOToolkit::ExternalIO::ExternalIO(uint8 InID, uint8 InDeviceIndex, std::string InFullDllName):
                                  CustomIOBase(InID,InDeviceIndex,IOType::External)
@@ -126,6 +127,39 @@ int IOToolkit::ExternalIO::RefreshStreamingData(BYTE* StreamingData, unsigned in
 {
 	if (!bValid) { return 0; }
 	return externalDll.RefreshStreamingData(deviceIndex, StreamingData, DataSize);
+}
+
+// —— 通用插件通道 —— //
+
+int IOToolkit::ExternalIO::WritePluginChannel(const char* channelName, const BYTE* data, unsigned int size)
+{
+	if (!bValid) return 0;
+	return externalDll.WritePluginChannel(deviceIndex, channelName, data, size);
+}
+
+namespace
+{
+	// 插件 → 宿主 C 回调；插件用 __stdcall 调回此函数, user 指针即 IODeviceDetails*
+	// 使用基础类型以避免依赖 IODevice 内部 typedef.
+	void __stdcall PluginChannelDispatchThunk(unsigned char /*devIdx*/, const char* channelName,
+		const unsigned char* data, unsigned int size, void* user)
+	{
+		if (!user || !channelName) return;
+		auto* details = static_cast<IOToolkit::IODeviceDetails*>(user);
+		details->DispatchPluginChannel(channelName, data, size);
+	}
+}
+
+void IOToolkit::ExternalIO::EnsurePluginChannelDispatcher(void* details)
+{
+	if (!bValid || !details) return;
+	if (pluginChannelDetails == details) return;
+	pluginChannelDetails = details;
+	// 将 C 回调指针交给插件；插件需以此签名调用
+	externalDll.SetPluginChannelDispatcher(
+		deviceIndex,
+		reinterpret_cast<void*>(&PluginChannelDispatchThunk),
+		details);
 }
 
 float IOToolkit::ExternalIO::GetDO(const char* InOAction)

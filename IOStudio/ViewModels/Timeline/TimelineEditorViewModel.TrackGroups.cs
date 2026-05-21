@@ -27,6 +27,49 @@ namespace IOStudio.ViewModels.Timeline
         /// </summary>
         public ObservableCollection<object> DisplayItems { get; } = new();
 
+        // ---- UX-B2: 显示过滤 ----
+
+        /// <summary>显示过滤模式</summary>
+        public enum DisplayFilterMode
+        {
+            All,
+            SelectedTrackOnly,
+            ActiveGroupOnly,
+            HasKeyframesInWorkArea,
+        }
+
+        /// <summary>过滤选项 (用于 ComboBox 绑定)</summary>
+        public class DisplayFilterOption
+        {
+            public DisplayFilterMode Mode { get; set; }
+            public string Label { get; set; } = "";
+            public override string ToString() => Label;
+        }
+
+        public List<DisplayFilterOption> DisplayFilterOptions { get; } = new()
+        {
+            new DisplayFilterOption { Mode = DisplayFilterMode.All, Label = "全部轨道" },
+            new DisplayFilterOption { Mode = DisplayFilterMode.SelectedTrackOnly, Label = "仅选中轨道" },
+            new DisplayFilterOption { Mode = DisplayFilterMode.ActiveGroupOnly, Label = "仅当前分组" },
+            new DisplayFilterOption
+            {
+                Mode = DisplayFilterMode.HasKeyframesInWorkArea,
+                Label = "工作区内有关键帧",
+            },
+        };
+
+        private DisplayFilterOption? _displayFilter;
+
+        public DisplayFilterOption? DisplayFilter
+        {
+            get => _displayFilter ??= DisplayFilterOptions[0];
+            set
+            {
+                this.RaiseAndSetIfChanged(ref _displayFilter, value);
+                RefreshDisplayList();
+            }
+        }
+
         /// <summary>获取所有已知分组名 (去重, 有序)</summary>
         public List<string> GetGroupNames()
         {
@@ -70,6 +113,22 @@ namespace IOStudio.ViewModels.Timeline
         {
             DisplayItems.Clear();
 
+            // UX-B2: 计算当前过滤模式下, 哪些轨道应可见
+            var mode = DisplayFilter?.Mode ?? DisplayFilterMode.All;
+            string? activeGroup = mode == DisplayFilterMode.ActiveGroupOnly
+                ? SelectedTrack?.Group
+                : null;
+            bool TrackPassesFilter(TrackViewModel track) =>
+                mode switch
+                {
+                    DisplayFilterMode.All => true,
+                    DisplayFilterMode.SelectedTrackOnly => SelectedTrack != null && track == SelectedTrack,
+                    DisplayFilterMode.ActiveGroupOnly =>
+                        !string.IsNullOrEmpty(activeGroup) && track.Group == activeGroup,
+                    DisplayFilterMode.HasKeyframesInWorkArea => TrackHasKeyframesInWorkArea(track),
+                    _ => true,
+                };
+
             // 已处理的轨道集合
             var processedTracks = new HashSet<string>();
 
@@ -80,6 +139,7 @@ namespace IOStudio.ViewModels.Timeline
                 if (!_groupHeaders.TryGetValue(group.Name, out var header))
                 {
                     header = new GroupHeaderViewModel(group) { IsCollapsed = group.Collapsed };
+                    header.SoloMuteChanged = ApplyGroupSoloMute; // UX-B4
                     _groupHeaders[group.Name] = header;
                 }
 
@@ -87,17 +147,29 @@ namespace IOStudio.ViewModels.Timeline
                 header.TrackCount = groupTracks.Count;
                 header.IsCollapsed = group.Collapsed;
 
+                // UX-B2: 分组内无可见轨道时隐藏分组头 (All 模式保持原行为)
+                var visibleGroupTracks = mode == DisplayFilterMode.All
+                    ? groupTracks
+                    : groupTracks.Where(TrackPassesFilter).ToList();
+                if (mode != DisplayFilterMode.All && visibleGroupTracks.Count == 0)
+                {
+                    foreach (var t in groupTracks)
+                        processedTracks.Add(t.Id);
+                    continue;
+                }
+
                 DisplayItems.Add(header);
 
                 // 折叠时不显示子轨道
                 if (!group.Collapsed)
                 {
-                    foreach (var track in groupTracks)
+                    foreach (var track in visibleGroupTracks)
                     {
                         track.IsVisibleInTimeline = true;
                         DisplayItems.Add(track);
-                        processedTracks.Add(track.Id);
                     }
+                    foreach (var track in groupTracks)
+                        processedTracks.Add(track.Id);
                 }
                 else
                 {
@@ -112,9 +184,32 @@ namespace IOStudio.ViewModels.Timeline
             // 未分组轨道
             foreach (var track in Tracks.Where(t => !processedTracks.Contains(t.Id)))
             {
+                if (!TrackPassesFilter(track))
+                    continue;
                 track.IsVisibleInTimeline = true;
                 DisplayItems.Add(track);
             }
+        }
+
+        /// <summary>UX-B2: 判断轨道在当前工作区域范围内是否有关键帧 (无工作区时等价于有关键帧)</summary>
+        private bool TrackHasKeyframesInWorkArea(TrackViewModel track)
+        {
+            if (track.Clips.Count == 0)
+                return false;
+            if (!HasWorkArea)
+                return track.Clips.Any(c => c.Keyframes.Count > 0);
+            double inMs = WorkAreaInMs ?? 0;
+            double outMs = WorkAreaOutMs ?? 0;
+            foreach (var clip in track.Clips)
+            {
+                foreach (var kf in clip.Keyframes)
+                {
+                    double absTime = clip.StartMs + kf.TimeMs;
+                    if (absTime >= inMs && absTime <= outMs)
+                        return true;
+                }
+            }
+            return false;
         }
 
         /// <summary>新建分组 (支持 Undo/Redo)</summary>
@@ -135,7 +230,7 @@ namespace IOStudio.ViewModels.Timeline
                         if (!_groups.Contains(group))
                             _groups.Add(group);
                         SyncGroupsToTimeline();
-                        header = new GroupHeaderViewModel(group);
+                        header = new GroupHeaderViewModel(group) { SoloMuteChanged = ApplyGroupSoloMute };
                         _groupHeaders[name] = header;
                         RefreshDisplayList();
                     },
@@ -300,6 +395,31 @@ namespace IOStudio.ViewModels.Timeline
             bool anyUnlocked = groupTracks.Any(t => !t.IsLocked);
             foreach (var t in groupTracks)
                 t.IsLocked = anyUnlocked;
+        }
+
+        /// <summary>
+        /// UX-B4: 将 GroupHeader 的 Solo/Mute 状态级联到组内所有轨道
+        /// </summary>
+        private void ApplyGroupSoloMute(GroupHeaderViewModel header)
+        {
+            var groupTracks = Tracks.Where(t => t.Group == header.Name).ToList();
+            foreach (var t in groupTracks)
+            {
+                t.IsMuted = header.IsMuted;
+                t.IsSolo = header.IsSolo;
+            }
+
+            // Solo 互斥: 若当前分组为 Solo, 其它分组自动取消 Solo
+            if (header.IsSolo)
+            {
+                foreach (var other in _groupHeaders.Values)
+                {
+                    if (other != header && other.IsSolo)
+                        other.IsSolo = false;
+                }
+            }
+
+            MarkDirty();
         }
 
         /// <summary>同步分组模型到 Timeline</summary>

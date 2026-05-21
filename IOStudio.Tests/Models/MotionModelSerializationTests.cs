@@ -50,7 +50,7 @@ namespace IOStudio.Tests.Models
         {
             var timeline = new MotionTimeline();
 
-            Assert.Equal("1.0", timeline.Version);
+            Assert.Equal("2.0", timeline.Version);
             Assert.Equal(60, timeline.Fps);
             Assert.NotNull(timeline.Tracks);
             Assert.Empty(timeline.Tracks);

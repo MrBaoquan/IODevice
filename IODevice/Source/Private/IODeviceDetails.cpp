@@ -295,6 +295,75 @@ int IOToolkit::IODeviceDetails::RefreshStreamingData(BYTE* StreamingData, unsign
 	return rawIO ? rawIO->RefreshStreamingData(StreamingData,DataSize) : -1;
 }
 
+int IOToolkit::IODeviceDetails::WritePluginChannel(const char* channelName, const BYTE* data, unsigned int size)
+{
+	if (!ValidDevcie(std::string(" [WritePluginChannel] ")))
+	{
+		return 0;
+	}
+	if (!channelName) return 0;
+	return rawIO ? rawIO->WritePluginChannel(channelName, data, size) : 0;
+}
+
+int IOToolkit::IODeviceDetails::BindPluginChannel(const char* channelName,
+	std::function<void(const char*, const BYTE*, unsigned int)> handler)
+{
+	if (!channelName || !handler) return -1;
+
+	// First handler for this channel triggers ExternalIO to register dispatcher.
+	bool firstHandlerForChannel = false;
+	int assignedId = -1;
+	{
+		std::lock_guard<std::mutex> lk(pluginChannelState->mtx);
+		auto& list = pluginChannelState->handlers[channelName];
+		firstHandlerForChannel = list.empty();
+		assignedId = pluginChannelState->nextId++;
+		list.push_back({ assignedId, std::move(handler) });
+	}
+	if (firstHandlerForChannel && rawIO)
+	{
+		rawIO->EnsurePluginChannelDispatcher(this);
+	}
+	return assignedId;
+}
+
+int IOToolkit::IODeviceDetails::UnbindPluginChannel(const char* channelName, int handlerId)
+{
+	if (!channelName) return 0;
+	std::lock_guard<std::mutex> lk(pluginChannelState->mtx);
+	auto it = pluginChannelState->handlers.find(channelName);
+	if (it == pluginChannelState->handlers.end()) return 0;
+	auto& list = it->second;
+	for (auto eIt = list.begin(); eIt != list.end(); ++eIt)
+	{
+		if (eIt->id == handlerId)
+		{
+			list.erase(eIt);
+			if (list.empty()) pluginChannelState->handlers.erase(it);
+			return 1;
+		}
+	}
+	return 0;
+}
+
+void IOToolkit::IODeviceDetails::DispatchPluginChannel(const char* channelName, const BYTE* data, unsigned int size)
+{
+	if (!channelName) return;
+	std::vector<std::function<void(const char*, const BYTE*, unsigned int)>> snapshot;
+	{
+		std::lock_guard<std::mutex> lk(pluginChannelState->mtx);
+		auto it = pluginChannelState->handlers.find(channelName);
+		if (it == pluginChannelState->handlers.end()) return;
+		snapshot.reserve(it->second.size());
+		for (auto& e : it->second) snapshot.push_back(e.handler);
+	}
+	for (auto& h : snapshot)
+	{
+		try { h(channelName, data, size); }
+		catch (...) { /* isolate callback exceptions */ }
+	}
+}
+
 float IOToolkit::IODeviceDetails::GetDO(const char* InOAction)
 {
     if (!ValidDevcie(std::string(" [GetDO] ") + InOAction))

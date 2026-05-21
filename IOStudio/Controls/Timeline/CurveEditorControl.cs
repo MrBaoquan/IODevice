@@ -254,6 +254,9 @@ namespace IOStudio.Controls.Timeline
         public bool IsMuted { get; set; }
         public bool IsSolo { get; set; }
         public bool IsEnabled { get; set; } = true;
+
+        /// <summary>UX-B1: 是否在曲线编辑器中显示 (焦点模式)</summary>
+        public bool ShowInCurve { get; set; } = true;
         public List<MotionClip> Clips { get; set; } = new();
     }
 }

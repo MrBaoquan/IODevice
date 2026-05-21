@@ -30,5 +30,10 @@ namespace IOStudio.Models.Motion
         /// <summary>事件数据类型 (string / json / number)</summary>
         [JsonPropertyName("data_type")]
         public string DataType { get; set; } = "string";
+
+        /// <summary>所属事件轨道 (lane) ID — 支持多事件轨。空/"default" 表示默认轨</summary>
+        [JsonPropertyName("lane")]
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+        public string LaneId { get; set; } = "default";
     }
 }

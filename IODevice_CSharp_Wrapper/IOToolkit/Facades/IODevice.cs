@@ -1,6 +1,7 @@
 ﻿using IOToolkit.Core;
 using System;
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
 
 namespace IOToolkit
 {
@@ -633,5 +634,155 @@ namespace IOToolkit
 
         // 引用回调函数,防止被GC
         private List<Delegate> delegateRefs = new List<Delegate>();
+
+        /// <summary>
+        /// 查询插件通道能力声明，返回插件通过 _capabilities 通道提供的 UTF-8 JSON。
+        /// </summary>
+        public string QueryPluginCapabilities(int timeoutMs = 1000, int maxBytes = 64 * 1024)
+        {
+            if (maxBytes <= 0)
+                maxBytes = 64 * 1024;
+            var buffer = new byte[maxBytes];
+            int size = IONativeWrapper.QueryPluginCapabilities(
+                this.ID,
+                buffer,
+                (uint)buffer.Length,
+                (uint)Math.Max(1, timeoutMs)
+            );
+            if (size <= 0)
+                return string.Empty;
+            int count = Math.Min(size, buffer.Length);
+            return System.Text.Encoding.UTF8.GetString(buffer, 0, count);
+        }
+
+        /// <summary>
+        /// 通过 IODevice 通用 _rpc.req/_rpc.res 通道发送请求并等待响应。
+        /// </summary>
+        public string SendPluginRequest(
+            string topic,
+            string requestJson,
+            int timeoutMs = 1000,
+            int maxBytes = 1024 * 1024
+        )
+        {
+            if (string.IsNullOrEmpty(topic))
+                return string.Empty;
+            if (maxBytes <= 0)
+                maxBytes = 1024 * 1024;
+            byte[] requestBytes = System.Text.Encoding.UTF8.GetBytes(requestJson ?? string.Empty);
+            var responseBuffer = new byte[maxBytes];
+            int size = IONativeWrapper.SendPluginRequest(
+                this.ID,
+                topic,
+                requestBytes,
+                (uint)requestBytes.Length,
+                responseBuffer,
+                (uint)responseBuffer.Length,
+                (uint)Math.Max(1, timeoutMs)
+            );
+            if (size <= 0)
+                return string.Empty;
+            int count = Math.Min(size, responseBuffer.Length);
+            return System.Text.Encoding.UTF8.GetString(responseBuffer, 0, count);
+        }
+
+        /// <summary>
+        /// 调试工具专用: 订阅插件 `_event` 原始结构化事件。
+        /// 普通业务代码应使用 <see cref="Subscribe(string, Func{ChannelContext, Task{ChannelResponse}})"/>,
+        /// 它内部同时覆盖了 _event 与命名通道路径。
+        /// </summary>
+        public int DebugBindPluginEvent(string eventName, Action<string, byte[]> handler)
+        {
+            if (handler == null)
+                return -1;
+            PluginChannelCallback proxy = (ch, dataPtr, size) =>
+            {
+                byte[] buf = new byte[0];
+                if (dataPtr != IntPtr.Zero && size > 0)
+                {
+                    buf = new byte[size];
+                    Marshal.Copy(dataPtr, buf, 0, (int)size);
+                }
+                try
+                {
+                    handler(ch ?? eventName ?? string.Empty, buf);
+                }
+                catch { }
+            };
+            delegateRefs.Add(proxy);
+            return IONativeWrapper.BindPluginEvent(this.ID, eventName ?? string.Empty, proxy);
+        }
+
+        /// <summary>
+        /// 调试工具专用: 取消 <see cref="DebugBindPluginEvent"/> 返回的订阅。
+        /// </summary>
+        public int DebugUnbindPluginEvent(int handlerId)
+        {
+            if (handlerId < 0)
+                return 0;
+            return IONativeWrapper.UnbindPluginEvent(this.ID, handlerId);
+        }
+
+        /// <summary>
+        /// 调试工具专用：向底层 raw plugin channel 写入字节流。
+        /// 普通业务代码应优先使用 <see cref="Subscribe(string, Func{ChannelContext, Task{ChannelResponse}})"/> 配套的 Channel API。
+        /// </summary>
+        public int DebugWritePluginRawChannel(string channelName, byte[] data)
+        {
+            if (string.IsNullOrEmpty(channelName) || data == null)
+                return 0;
+            return IONativeWrapper.WritePluginChannel(
+                this.ID,
+                channelName,
+                data,
+                (uint)data.Length
+            );
+        }
+
+        /// <summary>
+        /// 调试工具专用：以 UTF-8 文本写入底层 raw plugin channel。
+        /// </summary>
+        public int DebugWritePluginRawChannel(string channelName, string text)
+        {
+            var bytes = System.Text.Encoding.UTF8.GetBytes(text ?? string.Empty);
+            return DebugWritePluginRawChannel(channelName, bytes);
+        }
+
+        /// <summary>
+        /// 调试工具专用：订阅底层 raw plugin channel。
+        /// 普通业务代码应优先使用 <see cref="Subscribe(string, Func{ChannelContext, Task{ChannelResponse}})"/> 或 <see cref="DebugBindPluginEvent(string, Action{string, byte[]})"/>。
+        /// </summary>
+        public int DebugBindPluginRawChannel(string channelName, Action<string, byte[]> handler)
+        {
+            if (string.IsNullOrEmpty(channelName) || handler == null)
+                return -1;
+            PluginChannelCallback proxy = (ch, dataPtr, size) =>
+            {
+                byte[] buf = new byte[0];
+                if (dataPtr != IntPtr.Zero && size > 0)
+                {
+                    buf = new byte[size];
+                    Marshal.Copy(dataPtr, buf, 0, (int)size);
+                }
+
+                try
+                {
+                    handler(ch ?? channelName, buf);
+                }
+                catch { }
+            };
+            delegateRefs.Add(proxy);
+            return IONativeWrapper.BindPluginChannel(this.ID, channelName, proxy);
+        }
+
+        /// <summary>
+        /// 调试工具专用：取消底层 raw plugin channel 订阅。
+        /// </summary>
+        public int DebugUnbindPluginRawChannel(string channelName, int handlerId)
+        {
+            if (string.IsNullOrEmpty(channelName) || handlerId < 0)
+                return 0;
+            return IONativeWrapper.UnbindPluginChannel(this.ID, channelName, handlerId);
+        }
     }
 }

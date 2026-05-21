@@ -184,6 +184,19 @@ namespace IOStudio.ViewModels.Timeline
         /// <summary>是否属于某个分组</summary>
         public bool HasGroup => !string.IsNullOrEmpty(Group);
 
+        /// <summary>在曲线编辑器中是否可见 (UX-B1 焦点模式)</summary>
+        public bool ShowInCurve
+        {
+            get => Track.ShowInCurve;
+            set
+            {
+                if (Track.ShowInCurve == value)
+                    return;
+                Track.ShowInCurve = value;
+                this.RaisePropertyChanged();
+            }
+        }
+
         /// <summary>轨道在时间轴中是否可见 (用于分组折叠)</summary>
         private bool _isVisibleInTimeline = true;
         public bool IsVisibleInTimeline
@@ -276,6 +289,19 @@ namespace IOStudio.ViewModels.Timeline
         public void RaiseClipsChanged()
         {
             this.RaisePropertyChanged(nameof(Clips));
+        }
+
+        /// <summary>UX-A2: 轨道属性对话框提交后通知所有派生属性刷新</summary>
+        public void RaiseAllBindingsChanged()
+        {
+            this.RaisePropertyChanged(nameof(DisplayTitle));
+            this.RaisePropertyChanged(nameof(DeviceName));
+            this.RaisePropertyChanged(nameof(OActionName));
+            this.RaisePropertyChanged(nameof(Label));
+            this.RaisePropertyChanged(nameof(Color));
+            this.RaisePropertyChanged(nameof(ValueType));
+            this.RaisePropertyChanged(nameof(ValueTypeDisplay));
+            this.RaisePropertyChanged(nameof(LiveValueDisplay));
         }
     }
 }

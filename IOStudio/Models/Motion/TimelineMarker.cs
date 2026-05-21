@@ -23,5 +23,10 @@ namespace IOStudio.Models.Motion
         /// <summary>备注说明</summary>
         [JsonPropertyName("note")]
         public string? Note { get; set; }
+
+        /// <summary>所属标记轨道 (lane) ID — 支持多标记轨。空/"default" 表示默认轨</summary>
+        [JsonPropertyName("lane")]
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+        public string LaneId { get; set; } = "default";
     }
 }

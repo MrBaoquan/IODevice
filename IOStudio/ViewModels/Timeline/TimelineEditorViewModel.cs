@@ -261,7 +261,18 @@ namespace IOStudio.ViewModels.Timeline
         public TrackViewModel? SelectedTrack
         {
             get => _selectedTrack;
-            set => this.RaiseAndSetIfChanged(ref _selectedTrack, value);
+            set
+            {
+                var changed = !ReferenceEquals(_selectedTrack, value);
+                this.RaiseAndSetIfChanged(ref _selectedTrack, value);
+                // UX-B2: 仅选中 / 仅当前分组模式需随选择变化刷新显示列表
+                if (changed && _displayFilter != null &&
+                    (_displayFilter.Mode == DisplayFilterMode.SelectedTrackOnly
+                     || _displayFilter.Mode == DisplayFilterMode.ActiveGroupOnly))
+                {
+                    RefreshDisplayList();
+                }
+            }
         }
 
         // ---- 关键帧选中状态 ----

@@ -82,7 +82,6 @@
       <Key Name="OAxis_15" Scale="1" />
     </OAction>
   </Device>
-  <Device Name="Device_2" Type="External" DllName="MP-NJQK" Index="0">
-    <Properties />
-  </Device>
+  <Device Name="Simulator-1" Type="External" DllName="Simulator" Index="1" />
+  <Device Name="Simulator-2" Type="External" DllName="Simulator" Index="2" />
 </IORoot>

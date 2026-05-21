@@ -53,6 +53,30 @@ namespace IOStudio.ViewModels.Timeline
         private string _label = "";
         private string _selectedColor = "#4FC3F7";
         private int _selectedValueTypeIndex;
+        private bool _isEditMode;
+        private string _dialogTitle = "添加轨道";
+        private string _confirmButtonText = "✓ 确定添加";
+
+        /// <summary>是否为编辑模式 (true=编辑已有轨道, false=新建)</summary>
+        public bool IsEditMode
+        {
+            get => _isEditMode;
+            private set => this.RaiseAndSetIfChanged(ref _isEditMode, value);
+        }
+
+        /// <summary>对话框标题文本 (根据模式自动切换)</summary>
+        public string DialogTitle
+        {
+            get => _dialogTitle;
+            private set => this.RaiseAndSetIfChanged(ref _dialogTitle, value);
+        }
+
+        /// <summary>确认按钮文本 (根据模式自动切换)</summary>
+        public string ConfirmButtonText
+        {
+            get => _confirmButtonText;
+            private set => this.RaiseAndSetIfChanged(ref _confirmButtonText, value);
+        }
 
         /// <summary>设备名称列表 (ComboBox ItemsSource)。</summary>
         public ObservableCollection<string> DeviceNames { get; } = new();
@@ -177,6 +201,51 @@ namespace IOStudio.ViewModels.Timeline
             {
                 SelectedDeviceName = DeviceNames[0];
             }
+        }
+
+        /// <summary>
+        /// 从已有 <see cref="MotionTrack"/> 加载数据, 切换到编辑模式。
+        /// </summary>
+        public void LoadFromTrack(MotionTrack track)
+        {
+            IsEditMode = true;
+            DialogTitle = "编辑轨道属性";
+            ConfirmButtonText = "✓ 保存修改";
+
+            // 选中对应设备
+            if (DeviceNames.Contains(track.DeviceName))
+            {
+                SelectedDeviceName = track.DeviceName;
+            }
+
+            // 切换输出类型
+            SelectedOutputTypeIndex = track.OutputType == "oaxis" ? 1 : 0;
+
+            // 选中对应输出项 (按 DisplayName 匹配)
+            var device = _devices.FirstOrDefault(d => d.DeviceName == track.DeviceName);
+            if (device != null)
+            {
+                if (track.OutputType == "oaxis")
+                {
+                    var ch = device.OAxisChannels.FirstOrDefault(
+                        c => c.ChannelName == track.OAxisChannel
+                    );
+                    if (ch != null && OutputItems.Contains(ch.DisplayName))
+                        SelectedOutputDisplay = ch.DisplayName;
+                }
+                else
+                {
+                    var oa = device.OActions.FirstOrDefault(
+                        o => o.OActionName == track.OActionName
+                    );
+                    if (oa != null && OutputItems.Contains(oa.DisplayName))
+                        SelectedOutputDisplay = oa.DisplayName;
+                }
+            }
+
+            Label = track.Label;
+            SelectedColor = track.Color;
+            SelectedValueTypeIndex = track.ValueType == "bool" ? 1 : 0;
         }
 
         // ── 私有方法 ──

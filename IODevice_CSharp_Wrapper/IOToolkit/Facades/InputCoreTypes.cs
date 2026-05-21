@@ -13,7 +13,13 @@ namespace IOToolkit
         IE_Repeat = 2,
         IE_DoubleClick = 3,
         IE_Axis = 4,
-        IE_MAX = 5
+
+        /// <summary>
+        /// NetIO 帧通道事件 (插件协议 ws/tcp). 由 IOEvent trigger="device:name@channel" 声明,
+        /// 在 UNIPlayer 层通过 NetIOExtensions.On / OnRequest 订阅, 脚本中用 reply(data) 回复 req.
+        /// </summary>
+        IE_Channel = 5,
+        IE_MAX = 6
     }
 
     public class Key
@@ -22,6 +28,7 @@ namespace IOToolkit
         {
             this.ID = InID;
         }
+
         // ------------- Properties -----------
         string ID;
 
@@ -35,21 +42,24 @@ namespace IOToolkit
             return v.ID;
         }
 
-        public static bool operator ==(Key lhs,Key rhs)
+        public static bool operator ==(Key lhs, Key rhs)
         {
-            if (ReferenceEquals(rhs, null)) return false;
-            if (ReferenceEquals(rhs, lhs)) return true;
+            if (ReferenceEquals(rhs, null))
+                return false;
+            if (ReferenceEquals(rhs, lhs))
+                return true;
             return lhs.ID == rhs.ID;
         }
 
-        public static bool operator !=(Key lhs,Key rhs)
+        public static bool operator !=(Key lhs, Key rhs)
         {
             return lhs.ID != rhs.ID;
         }
 
         public override bool Equals(object rhs)
         {
-            if (this.GetType() != rhs.GetType()) return false;
+            if (this.GetType() != rhs.GetType())
+                return false;
             Key _rhs = rhs as Key;
             return _rhs == this;
         }
@@ -63,7 +73,6 @@ namespace IOToolkit
         {
             return this.ID;
         }
-
     }
 
     public struct IOKeyCode
@@ -442,7 +451,6 @@ namespace IOToolkit
         public static readonly Key Button_253 = "Button_253";
         public static readonly Key Button_254 = "Button_254";
         public static readonly Key Button_255 = "Button_255";
-
 
         public static readonly Key Axis_00 = "Axis_00";
         public static readonly Key Axis_01 = "Axis_01";
@@ -959,51 +967,48 @@ namespace IOToolkit
         public static readonly Key OAxis_254 = "OAxis_254";
         public static readonly Key OAxis_255 = "OAxis_255";
 
-
-
-
         /** Joystick axes */
         /** Joystick axes */
-        public static readonly Key JS_X = "JS_X";                     /* x-axis position              */
-        public static readonly Key JS_Y = "JS_Y";                     /* y-axis position              */
-        public static readonly Key JS_Z = "JS_Z";                     /* z-axis position              */
-        public static readonly Key JS_Rx = "JS_Rx";                    /* x-axis rotation              */
-        public static readonly Key JS_Ry = "JS_Ry";                    /* y-axis rotation              */
-        public static readonly Key JS_Rz = "JS_Rz";                    /* z-axis rotation              */
-        public static readonly Key JS_VX = "JS_VX";                    /* x-axis velocity              */
-        public static readonly Key JS_VY = "JS_VY";                    /* y-axis velocity              */
-        public static readonly Key JS_VZ = "JS_VZ";                    /* z-axis velocity              */
-        public static readonly Key JS_VRx = "JS_VRx";                   /* x-axis angular velocity      */
-        public static readonly Key JS_VRy = "JS_VRy";                   /* y-axis angular velocity      */
-        public static readonly Key JS_VRz = "JS_VRz";                   /* z-axis angular velocity      */
-        public static readonly Key JS_AX = "JS_AX";                    /* x-axis acceleration          */
-        public static readonly Key JS_AY = "JS_AY";                    /* y-axis acceleration          */
-        public static readonly Key JS_AZ = "JS_AZ";                    /* z-axis acceleration          */
-        public static readonly Key JS_ARx = "JS_ARx";                   /* x-axis angular acceleration  */
-        public static readonly Key JS_ARy = "JS_ARy";                   /* y-axis angular acceleration  */
-        public static readonly Key JS_ARz = "JS_ARz";                   /* z-axis angular acceleration  */
-        public static readonly Key JS_FX = "JS_FX";                    /* x-axis force                 */
-        public static readonly Key JS_FY = "JS_FY";                    /* y-axis force                 */
-        public static readonly Key JS_FZ = "JS_FZ";                    /* z-axis force                 */
-        public static readonly Key JS_FRx = "JS_FRx";                   /* x-axis torque                */
-        public static readonly Key JS_FRy = "JS_FRy";                   /* y-axis torque                */
-        public static readonly Key JS_FRz = "JS_FRz";                   /* z-axis torque                */
+        public static readonly Key JS_X = "JS_X"; /* x-axis position              */
+        public static readonly Key JS_Y = "JS_Y"; /* y-axis position              */
+        public static readonly Key JS_Z = "JS_Z"; /* z-axis position              */
+        public static readonly Key JS_Rx = "JS_Rx"; /* x-axis rotation              */
+        public static readonly Key JS_Ry = "JS_Ry"; /* y-axis rotation              */
+        public static readonly Key JS_Rz = "JS_Rz"; /* z-axis rotation              */
+        public static readonly Key JS_VX = "JS_VX"; /* x-axis velocity              */
+        public static readonly Key JS_VY = "JS_VY"; /* y-axis velocity              */
+        public static readonly Key JS_VZ = "JS_VZ"; /* z-axis velocity              */
+        public static readonly Key JS_VRx = "JS_VRx"; /* x-axis angular velocity      */
+        public static readonly Key JS_VRy = "JS_VRy"; /* y-axis angular velocity      */
+        public static readonly Key JS_VRz = "JS_VRz"; /* z-axis angular velocity      */
+        public static readonly Key JS_AX = "JS_AX"; /* x-axis acceleration          */
+        public static readonly Key JS_AY = "JS_AY"; /* y-axis acceleration          */
+        public static readonly Key JS_AZ = "JS_AZ"; /* z-axis acceleration          */
+        public static readonly Key JS_ARx = "JS_ARx"; /* x-axis angular acceleration  */
+        public static readonly Key JS_ARy = "JS_ARy"; /* y-axis angular acceleration  */
+        public static readonly Key JS_ARz = "JS_ARz"; /* z-axis angular acceleration  */
+        public static readonly Key JS_FX = "JS_FX"; /* x-axis force                 */
+        public static readonly Key JS_FY = "JS_FY"; /* y-axis force                 */
+        public static readonly Key JS_FZ = "JS_FZ"; /* z-axis force                 */
+        public static readonly Key JS_FRx = "JS_FRx"; /* x-axis torque                */
+        public static readonly Key JS_FRy = "JS_FRy"; /* y-axis torque                */
+        public static readonly Key JS_FRz = "JS_FRz"; /* z-axis torque                */
 
-        public static readonly Key JS_Slider_00 = "JS_Slider_00";           /* extra axes positions         */
-        public static readonly Key JS_Slider_01 = "JS_Slider_01";           /* extra axes positions         */
+        public static readonly Key JS_Slider_00 = "JS_Slider_00"; /* extra axes positions         */
+        public static readonly Key JS_Slider_01 = "JS_Slider_01"; /* extra axes positions         */
 
-        public static readonly Key JS_VSlider_00 = "JS_VSlider_00";          /* extra axes velocities        */
-        public static readonly Key JS_VSlider_01 = "JS_VSlider_01";          /* extra axes velocities        */
+        public static readonly Key JS_VSlider_00 = "JS_VSlider_00"; /* extra axes velocities        */
+        public static readonly Key JS_VSlider_01 = "JS_VSlider_01"; /* extra axes velocities        */
 
-        public static readonly Key JS_ASlider_00 = "JS_ASlider_00";          /* extra axes accelerations     */
-        public static readonly Key JS_ASlider_01 = "JS_ASlider_01";          /* extra axes accelerations     */
+        public static readonly Key JS_ASlider_00 = "JS_ASlider_00"; /* extra axes accelerations     */
+        public static readonly Key JS_ASlider_01 = "JS_ASlider_01"; /* extra axes accelerations     */
 
-        public static readonly Key JS_FSlider_00 = "JS_FSlider_00";          /* extra axes forces            */
-        public static readonly Key JS_FSlider_01 = "JS_FSlider_01";          /* extra axes forces            */
+        public static readonly Key JS_FSlider_00 = "JS_FSlider_00"; /* extra axes forces            */
+        public static readonly Key JS_FSlider_01 = "JS_FSlider_01"; /* extra axes forces            */
 
-        public static readonly Key JS_POV_00 = "JS_POV_00";             /* POV directions               */
-        public static readonly Key JS_POV_01 = "JS_POV_01";             /* POV directions               */
-        public static readonly Key JS_POV_02 = "JS_POV_02";             /* POV directions               */
-        public static readonly Key JS_POV_03 = "JS_POV_03";             /* POV directions               */
+        public static readonly Key JS_POV_00 = "JS_POV_00"; /* POV directions               */
+        public static readonly Key JS_POV_01 = "JS_POV_01"; /* POV directions               */
+        public static readonly Key JS_POV_02 = "JS_POV_02"; /* POV directions               */
+        public static readonly Key JS_POV_03 = "JS_POV_03"; /* POV directions               */
     };
 }

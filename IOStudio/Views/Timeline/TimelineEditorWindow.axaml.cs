@@ -817,6 +817,14 @@ namespace IOStudio.Views.Timeline
                     return;
             }
 
+            // UX-D1: F2 重命名 — 根据当前选中项路由 (轨道→属性对话框; 事件/标记→属性面板聚焦名称输入)
+            if (action == ShortcutAction.RenameSelected)
+            {
+                _ = HandleRenameSelectedAsync();
+                e.Handled = true;
+                return;
+            }
+
             // ViewModel 可处理的动作 — 委托执行并根据结果同步 UI
             var result = ViewModel.ExecuteShortcut(action);
 

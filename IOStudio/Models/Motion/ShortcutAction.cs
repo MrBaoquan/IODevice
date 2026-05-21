@@ -105,5 +105,8 @@ namespace IOStudio.Models.Motion
 
         /// <summary>退出视频全屏 (Escape, 仅在全屏时)</summary>
         ExitVideoFullscreen,
+
+        /// <summary>重命名选中轨道 / 事件 / 标记 (F2) — UX-D1</summary>
+        RenameSelected,
     }
 }

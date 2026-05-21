@@ -58,6 +58,8 @@
 				</MenuItem>
 				<Separator />
 				<MenuItem Header="查看日志(_L)" Command="{Binding ViewIOLogCommand}" />
+				<Separator />
+				<MenuItem Header="接口调试(_D)" Command="{Binding OpenInterfaceDebugCommand}" />
 			</MenuItem>
 			<MenuItem Header="帮助(_H)">
 				<MenuItem Header="参考信息(_R)" Name="HelpReferenceMenuItem" />

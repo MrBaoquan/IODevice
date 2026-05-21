@@ -90,6 +90,14 @@ namespace IOStudio.Models.Motion
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
         public string Group { get; set; } = "";
 
+        /// <summary>
+        /// 是否在曲线编辑器中显示 (UX-B1 焦点模式)。
+        /// true = 显示, false = 隐藏但保留轨道; 默认 true.
+        /// </summary>
+        [JsonPropertyName("show_in_curve")]
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+        public bool ShowInCurve { get; set; } = true;
+
         /// <summary>片段列表</summary>
         [JsonPropertyName("clips")]
         public List<MotionClip> Clips { get; set; } = new();

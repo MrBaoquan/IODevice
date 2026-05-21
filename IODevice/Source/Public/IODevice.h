@@ -4,11 +4,85 @@
  */
 
 #pragma once
+#include <functional>
+#include <string>
+#include <vector>
 #include "IOExportsAPI.h"
 #include "ExportCoreTypes.h"
 
 namespace IOToolkit
 {
+
+struct PluginMessage
+{
+    std::string RequestId;
+    std::string Topic;
+    std::string ContentType = "application/json";
+    std::string Payload;
+    bool Ok = true;
+    int ErrorCode = 0;
+    std::string ErrorMessage;
+};
+
+struct PluginChannelInfo
+{
+    std::string Name;
+    std::string Direction;
+    std::string ContentType;
+    std::string Mode;
+    int RateHintHz = 0;
+    bool LatestOnly = false;
+};
+
+struct PluginCapabilities
+{
+    std::string Plugin;
+    int Version = 0;
+    bool Rpc = false;
+    std::vector<PluginChannelInfo> Channels;
+    std::string Json;
+};
+
+enum class ChannelCompletionKind
+{
+    LocalAccepted = 0,
+    RemoteResponded = 1,
+    Failed = 2,
+    Timeout = 3
+};
+
+struct ChannelRequestOptions
+{
+    bool WaitResponse = true;
+    int TimeoutMs = 1000;
+    /**
+     * 透明 metadata, IODevice 不解析仅原样转发到插件 envelope.
+     * 推荐内容由插件协议定义 (NETIO 使用 {"target":"sid:xxx" 或 "ip:port"} 等).
+     * 若为空且 Target 非空, IODevice 会合成 {"target":Target}.
+     */
+    std::string MetadataJson;
+    std::string Target;
+};
+
+struct ChannelResponse
+{
+    bool Ok = false;
+    ChannelCompletionKind Completion = ChannelCompletionKind::Failed;
+    PluginMessage Message;
+};
+
+/**
+ * 插件转发的对端请求上下文. 由 SubscribeChannelRequest 的 handler 接收;
+ * 业务侧调用 RespondChannelRequest(ctx, ...) 完成响应.
+ * IODevice 对 metadata 内容透明, 仅作为字符串原样转发回插件.
+ */
+struct ChannelRequestContext
+{
+    std::string Name;          ///< 业务 topic, 来自 envelope.topic
+    std::string RequestId;     ///< 由插件分配 (推荐 "p:xxx" 前缀), 用于回写 _rpc.res
+    std::string PayloadJson;   ///< envelope.payload 序列化后的 JSON
+    std::string MetadataJson;  ///< envelope.metadata, 协议特定 (NETIO 含 srcSid 等)
+};
 
 /**
  * Device export type
@@ -107,8 +181,112 @@ public:
      * 刷新设备自定义数据流
      * @param StreamingData 数据流缓冲区
      * @param DataSize  数据缓冲区大小
+     *
+     * @deprecated 建议改用 WritePluginChannel("default", ...)，该接口作为兼容层保留。
      */
     int RefreshStreamingData(BYTE* StreamingData, unsigned int DataSize);
+
+    /**
+     * 通用插件通道：宿主 → 插件 写入字节流
+     * 通道命名由插件自身约定（如 NETIO 的 "netio.event.out"、"netio.ws.out"）
+     * @param channelName 通道名称 (ASCII/UTF-8)
+     * @param data 字节缓冲区
+     * @param size 字节数
+     * @return 成功返回 1, 失败返回 0 或负数
+     */
+    int WritePluginChannel(const char* channelName, const BYTE* data, unsigned int size);
+
+    /**
+     * 通用插件通道：宿主侧订阅插件上行字节流
+     * @param channelName 通道名称
+     * @param handler 接收字节流的回调 (channel, data, size)
+     * @return >=0 : 回调 ID (用于 UnbindPluginChannel); <0 : 失败
+     */
+    int BindPluginChannel(const char* channelName,
+                          std::function<void(const char*, const BYTE*, unsigned int)> handler);
+
+    /**
+     * 解除通道订阅
+     * @param channelName 通道名称
+     * @param handlerId BindPluginChannel 返回的 ID
+     * @return 1 成功; 0 未找到
+     */
+    int UnbindPluginChannel(const char* channelName, int handlerId);
+
+    /**
+     * 查询插件能力声明. 插件需通过 _capabilities 通道返回 UTF-8 JSON.
+     * @param outCaps 解析后的能力信息, Json 字段保留原始 JSON
+     * @return 1 成功; 0/负数 失败或超时
+     */
+    int QueryPluginCapabilities(PluginCapabilities& outCaps, int timeoutMs = 1000);
+
+    /**
+     * 通过 _rpc.req/_rpc.res 执行通用请求/响应.
+     * @param topic 请求主题
+     * @param request 请求消息, Payload 为 UTF-8 JSON 或文本
+     * @param response 响应消息
+     * @param timeoutMs 超时时间
+     * @return 1 成功; 0/负数 失败或超时
+     */
+    int SendPluginRequest(const char* topic, const PluginMessage& request, PluginMessage& response, int timeoutMs);
+
+    /**
+     * 订阅 _event 通道中的结构化事件.
+     * @param eventName 事件名; 为空则接收全部事件
+     * @param handler 事件回调
+        * @return >=0 : 回调 ID, 可用 UnbindPluginEvent(id) 解绑
+     */
+    int BindPluginEvent(const char* eventName, std::function<void(const PluginMessage&)> handler);
+
+        /**
+        * 解除结构化事件订阅.
+        * @param handlerId BindPluginEvent 返回的 ID
+        * @return 1 成功; 0 未找到
+        */
+        int UnbindPluginEvent(int handlerId);
+
+    /**
+    * 标准 Channel 发送入口. 默认等待响应; WaitResponse=false 时直接走单向通道.
+     */
+    int RequestChannel(const char* name, const PluginMessage& request, const ChannelRequestOptions& options, ChannelResponse& response);
+
+    /**
+     * 标准 Channel 订阅入口. 覆盖 _event 路径 + 命名 channel 路径 (单向消息).
+     * 若需处理对端请求并回复, 使用 SubscribeChannelRequest.
+     */
+    int SubscribeChannel(const char* name, std::function<void(const PluginMessage&)> handler);
+
+    /**
+     * 解除标准 Channel 订阅.
+     */
+    int UnsubscribeChannel(int handlerId);
+
+    /**
+     * 标准能力查询入口.
+     */
+    int QueryChannelCapabilities(PluginCapabilities& outCaps, int timeoutMs = 1000);
+
+    /**
+     * 订阅插件转发的对端请求 (plugin → host RPC).
+     * 插件通过约定通道 _rpc.req 把对端请求 envelope 推给宿主, IODevice 解析 envelope.topic
+     * 并仅在等于 name 时回调 handler. handler 必须使用 ctx.RequestId 调用 RespondChannelRequest 完成响应.
+     * @return >=0: 订阅 ID 用于 UnsubscribeChannelRequest; <0: 失败
+     */
+    int SubscribeChannelRequest(const char* name, std::function<void(const ChannelRequestContext&)> handler);
+
+    /**
+     * 解除 SubscribeChannelRequest 订阅.
+     */
+    int UnsubscribeChannelRequest(int handlerId);
+
+    /**
+     * 把响应写回 _rpc.res, 让插件路由回原 peer.
+     * @param ctx SubscribeChannelRequest handler 收到的上下文 (RequestId 不能为空)
+     * @param response 响应消息, Payload 为 UTF-8 JSON 或文本
+     * @param ok 是否业务成功; 失败时 response.ErrorMessage 作为 errorMessage 字段
+     * @return 1 成功; 0 失败
+     */
+    int RespondChannelRequest(const ChannelRequestContext& ctx, const PluginMessage& response, bool ok = true);
   
     /**
      * 获取设备指定按键状态

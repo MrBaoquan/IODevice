@@ -146,6 +146,19 @@ namespace IOStudio.Views.Timeline
             }
         }
 
+        /// <summary>UX-B1: 曲线编辑器显示开关切换</summary>
+        private void OnToggleShowInCurve(object? sender, RoutedEventArgs e)
+        {
+            if (
+                sender is Avalonia.Controls.Primitives.ToggleButton tb
+                && tb.DataContext is TrackViewModel trackVm
+            )
+            {
+                SyncCurveEditorData();
+                ViewModel?.MarkDirty();
+            }
+        }
+
         private void OnDeleteTrack(object? sender, RoutedEventArgs e)
         {
             if (sender is Button btn && btn.Tag is TrackViewModel trackVm)
@@ -651,6 +664,103 @@ namespace IOStudio.Views.Timeline
                     border.PointerMoved += OnTrackHeaderPointerMoved;
                     border.PointerReleased += OnTrackHeaderPointerReleased;
                 }
+            }
+        }
+
+        /// <summary>UX-A2: 双击轨道头打开属性对话框</summary>
+        private async void OnTrackHeaderDoubleTapped(object? sender, TappedEventArgs e)
+        {
+            if (sender is Border border && border.Tag is TrackViewModel trackVm)
+            {
+                await ShowTrackPropertiesDialogAsync(trackVm);
+                e.Handled = true;
+            }
+        }
+
+        /// <summary>UX-A2: 右键菜单 / F2 打开轨道属性对话框</summary>
+        private async void OnEditTrackProperties(object? sender, RoutedEventArgs e)
+        {
+            TrackViewModel? trackVm = null;
+            if (sender is MenuItem mi && mi.Tag is TrackViewModel vm)
+                trackVm = vm;
+            else if (ViewModel?.SelectedTrack is TrackViewModel sel)
+                trackVm = sel;
+
+            if (trackVm != null)
+                await ShowTrackPropertiesDialogAsync(trackVm);
+        }
+
+        /// <summary>
+        /// UX-D1: F2 快捷键 — 重命名当前选中项
+        /// 优先级: 选中事件 → 选中标记 → 选中轨道 (打开属性对话框)
+        /// </summary>
+        private async System.Threading.Tasks.Task HandleRenameSelectedAsync()
+        {
+            if (ViewModel == null)
+                return;
+
+            // 选中的事件 / 标记目前由属性面板显示, 这里简单地聚焦其名称输入框即可
+            if (ViewModel.SelectedEvent != null || ViewModel.MarkerService?.SelectedMarker != null)
+            {
+                var panel = this.FindControl<IOStudio.Controls.Timeline.KeyframePropertyPanel>("KfPropertyPanel");
+                // 尝试查找名称 TextBox 并聚焦 (面板内第一个可聚焦 TextBox 视为名称字段)
+                var tb = panel?.GetVisualDescendants().OfType<Avalonia.Controls.TextBox>().FirstOrDefault();
+                tb?.Focus();
+                tb?.SelectAll();
+                return;
+            }
+
+            // 默认: 打开选中轨道的属性对话框
+            if (ViewModel.SelectedTrack is TrackViewModel trackVm)
+                await ShowTrackPropertiesDialogAsync(trackVm);
+        }
+
+        /// <summary>UX-A2: 打开轨道属性对话框 (使用 AddTrackDialog 的编辑模式)</summary>
+        private async System.Threading.Tasks.Task ShowTrackPropertiesDialogAsync(
+            TrackViewModel trackVm
+        )
+        {
+            var dialog = new AddTrackDialog();
+            // 切换到编辑模式并从轨道加载数据
+            dialog.ViewModel?.LoadFromTrack(trackVm.Track);
+            await dialog.ShowDialog(this);
+
+            if (dialog.Result != null)
+            {
+                // 应用修改到轨道 (undo 记录完整前后状态)
+                var result = dialog.Result;
+                string oldValueType = trackVm.ValueType;
+                string newValueType = result.ValueType;
+
+                trackVm.Label = result.Label;
+                trackVm.Color = result.Color;
+                trackVm.DeviceName = result.DeviceName;
+                trackVm.OActionName = result.OActionName;
+                trackVm.Track.OutputType = result.OutputType;
+                trackVm.Track.OAxisChannel = result.OAxisChannel;
+
+                // ValueType 切换: float → bool 时将所有关键帧二值化
+                if (oldValueType != newValueType)
+                {
+                    trackVm.ValueType = newValueType;
+                    if (newValueType == "bool")
+                    {
+                        foreach (var clip in trackVm.Track.Clips)
+                        {
+                            foreach (var kf in clip.Keyframes)
+                            {
+                                kf.Value = kf.Value >= 0.5f ? 1f : 0f;
+                                kf.Interpolation = "step";
+                            }
+                        }
+                    }
+                }
+
+                trackVm.RaiseAllBindingsChanged();
+                trackVm.RaiseClipsChanged();
+                SyncCurveEditorData();
+                RefreshAllTrackControls();
+                ViewModel?.MarkDirty();
             }
         }
 

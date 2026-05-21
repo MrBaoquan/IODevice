@@ -8,9 +8,9 @@ namespace IOStudio.Models.Motion
     /// </summary>
     public class MotionTimeline
     {
-        /// <summary>格式版本号</summary>
+        /// <summary>格式版本号 (v2.0 起支持 EventLanes/MarkerLanes + 轨道 ShowInCurve)</summary>
         [JsonPropertyName("version")]
-        public string Version { get; set; } = "1.0";
+        public string Version { get; set; } = "2.0";
 
         /// <summary>项目名称</summary>
         [JsonPropertyName("name")]
@@ -42,5 +42,15 @@ namespace IOStudio.Models.Motion
         [JsonPropertyName("markers")]
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public List<TimelineMarker>? Markers { get; set; }
+
+        /// <summary>事件轨道列表 (v2.0) — 空或缺省时按单条默认轨处理</summary>
+        [JsonPropertyName("event_lanes")]
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public List<EventLane>? EventLanes { get; set; }
+
+        /// <summary>标记轨道列表 (v2.0) — 空或缺省时按单条默认轨处理</summary>
+        [JsonPropertyName("marker_lanes")]
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public List<MarkerLane>? MarkerLanes { get; set; }
     }
 }

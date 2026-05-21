@@ -1,8 +1,10 @@
 #include <windows.h>
 #include <combaseapi.h>
 #include <iostream>
+#include <cstring>
 
 #include "IODeviceController.h"
+#include "IODevice.h"
 #include "IOSettings.h"
 #include "MotionPlayer.h"
 #include "StringUtils.hpp"
@@ -16,6 +18,15 @@ namespace dh = IOToolkit;
 
 // PreDeclare
 dh::IODevice& getIODevice(BSTR);
+
+static int CopyBytesToBuffer(const std::string& payload, BYTE* outData, unsigned int capacity)
+{
+	if (!outData || capacity == 0) return static_cast<int>(payload.size());
+	unsigned int copySize = static_cast<unsigned int>(payload.size());
+	if (copySize > capacity) copySize = capacity;
+	if (copySize > 0) std::memcpy(outData, payload.data(), copySize);
+	return static_cast<int>(payload.size());
+}
 
 
 BOOL WINAPI DllMain(
@@ -149,6 +160,163 @@ IOCAPI int RefreshStreamingData(BSTR InDeviceName, BYTE* StreamingData, unsigned
 {
 	dh::IODevice& _device = getIODevice(InDeviceName);
 	return _device.RefreshStreamingData(StreamingData, DataSize);
+}
+
+// --- Generic plugin channel ---
+IOCAPI int __stdcall WritePluginChannel(BSTR InDeviceName, const char* channelName, const BYTE* data, unsigned int size)
+{
+	if (!channelName) return 0;
+	dh::IODevice& _device = getIODevice(InDeviceName);
+	return _device.WritePluginChannel(channelName, data, size);
+}
+
+IOCAPI int __stdcall BindPluginChannel(BSTR InDeviceName, const char* channelName, PluginChannelCallbackManaged InCallback)
+{
+	if (!channelName || !InCallback) return -1;
+	dh::IODevice& _device = getIODevice(InDeviceName);
+	// Hold callback ptr; managed side is responsible for keeping the delegate alive.
+	PluginChannelCallbackManaged cb = InCallback;
+	return _device.BindPluginChannel(channelName,
+		[cb](const char* ch, const BYTE* d, unsigned int s) {
+			cb(ch, d, s);
+		});
+}
+
+IOCAPI int __stdcall UnbindPluginChannel(BSTR InDeviceName, const char* channelName, int handlerId)
+{
+	if (!channelName) return 0;
+	dh::IODevice& _device = getIODevice(InDeviceName);
+	return _device.UnbindPluginChannel(channelName, handlerId);
+}
+
+IOCAPI int __stdcall QueryPluginCapabilities(BSTR InDeviceName, BYTE* outJson, unsigned int capacity, unsigned int timeoutMs)
+{
+	dh::IODevice& _device = getIODevice(InDeviceName);
+	dh::PluginCapabilities caps;
+	int result = _device.QueryPluginCapabilities(caps, static_cast<int>(timeoutMs));
+	if (result <= 0) return result;
+	return CopyBytesToBuffer(caps.Json, outJson, capacity);
+}
+
+IOCAPI int __stdcall SendPluginRequest(BSTR InDeviceName, const char* topic, const BYTE* requestJson, unsigned int requestSize, BYTE* responseJson, unsigned int capacity, unsigned int timeoutMs)
+{
+	if (!topic) return 0;
+	dh::IODevice& _device = getIODevice(InDeviceName);
+	dh::PluginMessage request;
+	request.Topic = topic;
+	request.ContentType = "application/json";
+	if (requestJson && requestSize > 0)
+		request.Payload.assign(reinterpret_cast<const char*>(requestJson), requestSize);
+	dh::PluginMessage response;
+	int result = _device.SendPluginRequest(topic, request, response, static_cast<int>(timeoutMs));
+	if (result <= 0) return result;
+	return CopyBytesToBuffer(response.Payload, responseJson, capacity);
+}
+
+IOCAPI int __stdcall BindPluginEvent(BSTR InDeviceName, const char* eventName, PluginChannelCallbackManaged InCallback)
+{
+	if (!InCallback) return -1;
+	dh::IODevice& _device = getIODevice(InDeviceName);
+	PluginChannelCallbackManaged cb = InCallback;
+	return _device.BindPluginEvent(eventName,
+		[cb](const dh::PluginMessage& message) {
+			const std::string channelName = message.Topic.empty() ? std::string("_event") : message.Topic;
+			cb(channelName.c_str(), reinterpret_cast<const BYTE*>(message.Payload.data()), static_cast<unsigned int>(message.Payload.size()));
+		});
+}
+
+IOCAPI int __stdcall UnbindPluginEvent(BSTR InDeviceName, int handlerId)
+{
+	if (handlerId < 0) return 0;
+	dh::IODevice& _device = getIODevice(InDeviceName);
+	return _device.UnbindPluginEvent(handlerId);
+}
+
+IOCAPI int __stdcall RequestChannel(BSTR InDeviceName, const char* name, const BYTE* requestJson, unsigned int requestSize, int waitResponse, const BYTE* metadataJson, unsigned int metadataSize, BYTE* responseJson, unsigned int capacity, unsigned int timeoutMs)
+{
+	if (!name) return 0;
+	dh::IODevice& _device = getIODevice(InDeviceName);
+	dh::PluginMessage request;
+	request.Topic = name;
+	request.ContentType = "application/json";
+	if (requestJson && requestSize > 0)
+		request.Payload.assign(reinterpret_cast<const char*>(requestJson), requestSize);
+
+	dh::ChannelRequestOptions options;
+	options.WaitResponse = waitResponse != 0;
+	options.TimeoutMs = static_cast<int>(timeoutMs);
+	if (metadataJson && metadataSize > 0)
+		options.MetadataJson.assign(reinterpret_cast<const char*>(metadataJson), metadataSize);
+
+	dh::ChannelResponse response;
+	int result = _device.RequestChannel(name, request, options, response);
+	if (result <= 0) return result;
+	return CopyBytesToBuffer(response.Message.Payload, responseJson, capacity);
+}
+
+IOCAPI int __stdcall SubscribeChannelRequest(BSTR InDeviceName, const char* name, ChannelRequestCallbackManaged InCallback)
+{
+	if (!name || !InCallback) return -1;
+	dh::IODevice& _device = getIODevice(InDeviceName);
+	ChannelRequestCallbackManaged cb = InCallback;
+	return _device.SubscribeChannelRequest(name,
+		[cb](const dh::ChannelRequestContext& ctx) {
+			cb(ctx.Name.c_str(),
+			   ctx.RequestId.c_str(),
+			   reinterpret_cast<const BYTE*>(ctx.PayloadJson.data()),
+			   static_cast<unsigned int>(ctx.PayloadJson.size()),
+			   reinterpret_cast<const BYTE*>(ctx.MetadataJson.data()),
+			   static_cast<unsigned int>(ctx.MetadataJson.size()));
+		});
+}
+
+IOCAPI int __stdcall UnsubscribeChannelRequest(BSTR InDeviceName, int handlerId)
+{
+	if (handlerId < 0) return 0;
+	dh::IODevice& _device = getIODevice(InDeviceName);
+	return _device.UnsubscribeChannelRequest(handlerId);
+}
+
+IOCAPI int __stdcall RespondChannelRequest(BSTR InDeviceName, const char* requestId, const BYTE* payloadJson, unsigned int payloadSize, int ok, const char* errorMessage)
+{
+	if (!requestId || requestId[0] == '\0') return 0;
+	dh::IODevice& _device = getIODevice(InDeviceName);
+	dh::ChannelRequestContext ctx;
+	ctx.RequestId = requestId;
+	dh::PluginMessage response;
+	response.ContentType = "application/json";
+	if (payloadJson && payloadSize > 0)
+		response.Payload.assign(reinterpret_cast<const char*>(payloadJson), payloadSize);
+	if (errorMessage && errorMessage[0] != '\0') response.ErrorMessage = errorMessage;
+	return _device.RespondChannelRequest(ctx, response, ok != 0);
+}
+
+IOCAPI int __stdcall SubscribeChannel(BSTR InDeviceName, const char* name, PluginChannelCallbackManaged InCallback)
+{
+	if (!name || !InCallback) return -1;
+	dh::IODevice& _device = getIODevice(InDeviceName);
+	PluginChannelCallbackManaged cb = InCallback;
+	return _device.SubscribeChannel(name,
+		[cb](const dh::PluginMessage& message) {
+			const std::string channelName = message.Topic.empty() ? std::string() : message.Topic;
+			cb(channelName.c_str(), reinterpret_cast<const BYTE*>(message.Payload.data()), static_cast<unsigned int>(message.Payload.size()));
+		});
+}
+
+IOCAPI int __stdcall UnsubscribeChannel(BSTR InDeviceName, int handlerId)
+{
+	if (handlerId < 0) return 0;
+	dh::IODevice& _device = getIODevice(InDeviceName);
+	return _device.UnsubscribeChannel(handlerId);
+}
+
+IOCAPI int __stdcall QueryChannelCapabilities(BSTR InDeviceName, BYTE* outJson, unsigned int capacity, unsigned int timeoutMs)
+{
+	dh::IODevice& _device = getIODevice(InDeviceName);
+	dh::PluginCapabilities caps;
+	int result = _device.QueryChannelCapabilities(caps, static_cast<int>(timeoutMs));
+	if (result <= 0) return result;
+	return CopyBytesToBuffer(caps.Json, outJson, capacity);
 }
 
 IOCAPI int __stdcall SetDOSingle(BSTR InDeviceName, BSTR InKeyName, float InVal)

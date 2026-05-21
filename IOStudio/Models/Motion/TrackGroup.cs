@@ -19,5 +19,15 @@ namespace IOStudio.Models.Motion
         /// <summary>是否折叠</summary>
         [JsonPropertyName("collapsed")]
         public bool Collapsed { get; set; }
+
+        /// <summary>分组静音 — 将组内所有轨道视为 muted (UX-B4)</summary>
+        [JsonPropertyName("muted")]
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+        public bool Muted { get; set; }
+
+        /// <summary>分组独奏 — 仅组内轨道参与输出 (UX-B4)</summary>
+        [JsonPropertyName("soloed")]
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+        public bool Soloed { get; set; }
     }
 }

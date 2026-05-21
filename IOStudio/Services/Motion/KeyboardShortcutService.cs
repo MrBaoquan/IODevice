@@ -77,6 +77,7 @@ namespace IOStudio.Services.Motion
                 Key.K => ShortcutAction.AddKeyframeAtPlayhead,
                 Key.E => ShortcutAction.AddEventAtPlayhead,
                 Key.F => ShortcutAction.ZoomToFit,
+                Key.F2 => ShortcutAction.RenameSelected,
                 Key.H => ShortcutAction.CycleTrackHeight,
                 Key.M => ShortcutAction.AddMarkerAtPlayhead,
                 Key.I => ShortcutAction.SetWorkAreaIn,

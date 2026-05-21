@@ -1,0 +1,38 @@
+
+  IODevice_CSharp_Wrapper -> o:\DevModules\IODevice\IODevice\Binaries\Win64\Release\IODevice_CSharp_Wrapper.dll
+C:\Program Files\Microsoft Visual Studio\2022\Professional\MSBuild\Microsoft\VC\v170\Microsoft.CppBuild.targets(538,5): warning MSB8028: 涓棿鐩綍(o:\DevModules\IODevice\IODevice\Binaries\Win64\Release\Temp\)鍖呭惈浠庡彟涓€涓」鐩?EM9703.vcxproj, ExternalTest.vcxproj, IODevice_CWrapper.vcxproj, IODevice_C_Wrapper.vcxproj, IODevice_Test.vcxproj, IOMFCTest.vcxproj, IOUI.vcxproj, PCI2312A.vcxproj, PCI2394.vcxproj, PCI8201.vcxproj, PCI8408.vcxproj, PCI8409.vcxproj, PCI8735.vcxproj)鍏变韩鐨勬枃浠躲€?  杩欎細瀵艰嚧閿欒鐨勬竻闄ゅ拰閲嶆柊鐢熸垚琛屼负銆?[o:\DevModules\IODevice\IODevice\IODevice\IODevice.vcxproj]
+  LicHper.vcxproj -> C:\Users\Administrator\source\repos\DaemonApps\Binaries\Win64\Release\LicHper.dll
+  IODevice.vcxproj -> o:\DevModules\IODevice\IODevice\Binaries\Win64\Release\IODevice.dll
+  宸插鍒?        1 涓枃浠躲€?
+  宸插鍒?        1 涓枃浠躲€?
+  宸插鍒?        1 涓枃浠躲€?
+  宸插鍒?        1 涓枃浠躲€?
+  宸插鍒?        1 涓枃浠躲€?
+  宸插鍒?        1 涓枃浠躲€?
+  宸插鍒?        1 涓枃浠躲€?
+  宸插鍒?        1 涓枃浠躲€?
+  宸插鍒?        1 涓枃浠躲€?
+  宸插鍒?        1 涓枃浠躲€?
+  宸插鍒?        1 涓枃浠躲€?
+  宸插鍒?        1 涓枃浠躲€?
+  宸插鍒?        1 涓枃浠躲€?
+  宸插鍒?        1 涓枃浠躲€?
+  o:\DevModules\IODevice\IODevice\IODevice\..\Config\EventForwardConfig.example.json
+  o:\DevModules\IODevice\IODevice\IODevice\..\Config\IOdevice.example.xml
+  o:\DevModules\IODevice\IODevice\IODevice\..\Config\IODevice.xml
+  o:\DevModules\IODevice\IODevice\IODevice\..\Config\IOStudioSettings.xml
+  宸插鍒?        4 涓枃浠躲€?
+  IODevice has beed copied to o:\DevModules\IODevice\IODevice\IODevice\..\v2.4.1\IOToolkit\ successfully.
+C:\Program Files\dotnet\sdk\10.0.101\Sdks\Microsoft.NET.Sdk\targets\Microsoft.NET.EolTargetFrameworks.targets(32,5): warning NETSDK1138: 鐩爣妗嗘灦鈥渘et6.0-windows8.0鈥濅笉鍙楁敮鎸侊紝灏嗘潵涓嶄細鏀跺埌瀹夊叏鏇存柊銆傛湁鍏虫敮鎸佺瓥鐣ョ殑璇︾粏淇℃伅锛岃鍙傞槄 https://aka.ms/dotnet-core-support銆?[C:\Users\Administrator\source\repos\DaemonApps\AuthAssistant\AuthAssistant.csproj]
+C:\Program Files\Microsoft Visual Studio\2022\Professional\MSBuild\Microsoft\VC\v170\Microsoft.CppBuild.targets(523,5): warning MSB8004: Intermediate 鐩綍鏈互鏂滄潬缁撳熬銆? 姝ょ敓鎴愬疄渚嬪皢娣诲姞鏂滄潬锛屽洜涓哄繀椤绘湁杩欎釜鏂滄潬鎵嶈兘姝ｇ‘璁＄畻 Intermediate 鐩綍銆?[o:\DevModules\IODevice\IODevice\IODevice_C_Wrapper\IODevice_C_Wrapper.vcxproj]
+C:\Program Files\Microsoft Visual Studio\2022\Professional\MSBuild\Microsoft\VC\v170\Microsoft.CppBuild.targets(524,5): warning MSB8004: Output 鐩綍鏈互鏂滄潬缁撳熬銆? 姝ょ敓鎴愬疄渚嬪皢娣诲姞鏂滄潬锛屽洜涓哄繀椤绘湁杩欎釜鏂滄潬鎵嶈兘姝ｇ‘璁＄畻 Output 鐩綍銆?[o:\DevModules\IODevice\IODevice\IODevice_C_Wrapper\IODevice_C_Wrapper.vcxproj]
+C:\Program Files\Microsoft Visual Studio\2022\Professional\MSBuild\Microsoft\VC\v170\Microsoft.CppBuild.targets(538,5): warning MSB8028: 涓棿鐩綍(o:\DevModules\IODevice\IODevice\Binaries\Win64\Release\Temp\)鍖呭惈浠庡彟涓€涓」鐩?EM9703.vcxproj, ExternalTest.vcxproj, IODevice_CWrapper.vcxproj, IODevice.vcxproj, IODevice_Test.vcxproj, IOMFCTest.vcxproj, IOUI.vcxproj, PCI2312A.vcxproj, PCI2394.vcxproj, PCI8201.vcxproj, PCI8408.vcxproj, PCI8409.vcxproj, PCI8735.vcxproj)鍏变韩鐨勬枃浠躲€?  杩欎細瀵艰嚧閿欒鐨勬竻闄ゅ拰閲嶆柊鐢熸垚琛屼负銆?[o:\DevModules\IODevice\IODevice\IODevice_C_Wrapper\IODevice_C_Wrapper.vcxproj]
+  DNHper -> o:\DevModules\IODevice\IODevice\DNHper\bin\Release\netstandard2.0\DNHper.dll
+  IODevice_C_Wrapper.vcxproj -> o:\DevModules\IODevice\IODevice\Binaries\Win64\Release\IODevice_C_Wrapper.dll
+  o:\DevModules\IODevice\IODevice\IODevice_C_Wrapper\..\Binaries\Win64\Release\
+  宸插鍒?        1 涓枃浠躲€?
+  IODevice_CSharp_Wrapper_Test -> o:\DevModules\IODevice\IODevice\Binaries\Win64\Release\IODevice_C_CSharpTest.exe
+  IOStudio -> o:\DevModules\IODevice\IODevice\Binaries\Win64\Release\IOStudio.dll
+  AuthAssistant -> C:\Users\Administrator\source\repos\DaemonApps\AuthAssistant\bin\Release\net6.0-windows8.0\AuthAssistant.dll
+  IOStudio.Tests -> o:\DevModules\IODevice\IODevice\IOStudio.Tests\bin\Release\net8.0\IOStudio.Tests.dll
+

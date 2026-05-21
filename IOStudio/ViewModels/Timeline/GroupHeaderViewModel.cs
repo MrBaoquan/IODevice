@@ -11,9 +11,14 @@ namespace IOStudio.ViewModels.Timeline
     {
         public TrackGroup Model { get; }
 
+        /// <summary>当 Solo/Mute 变更时通知外部 (用于级联到组内轨道) — UX-B4</summary>
+        public System.Action<GroupHeaderViewModel>? SoloMuteChanged;
+
         public GroupHeaderViewModel(TrackGroup model)
         {
             Model = model;
+            _isMuted = model.Muted;
+            _isSolo = model.Soloed;
         }
 
         /// <summary>分组名称</summary>
@@ -71,5 +76,39 @@ namespace IOStudio.ViewModels.Timeline
 
         /// <summary>标记: 这是分组头 (用于 DataTemplate 选择)</summary>
         public bool IsGroupHeader => true;
+
+        // ───── UX-B4 分组 Solo / Mute ─────
+
+        private bool _isMuted;
+        /// <summary>分组静音 — 级联到组内轨道的 IsMuted</summary>
+        public bool IsMuted
+        {
+            get => _isMuted;
+            set
+            {
+                if (_isMuted == value)
+                    return;
+                _isMuted = value;
+                Model.Muted = value;
+                this.RaisePropertyChanged();
+                SoloMuteChanged?.Invoke(this);
+            }
+        }
+
+        private bool _isSolo;
+        /// <summary>分组独奏 — 级联到组内轨道的 IsSolo</summary>
+        public bool IsSolo
+        {
+            get => _isSolo;
+            set
+            {
+                if (_isSolo == value)
+                    return;
+                _isSolo = value;
+                Model.Soloed = value;
+                this.RaisePropertyChanged();
+                SoloMuteChanged?.Invoke(this);
+            }
+        }
     }
 }

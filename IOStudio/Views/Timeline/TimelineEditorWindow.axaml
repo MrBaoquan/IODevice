@@ -514,6 +514,21 @@
                             <!-- 右侧: 缩放滑块 + 操作提示 -->
                             <StackPanel HorizontalAlignment="Right" Orientation="Horizontal"
                                         Spacing="8" VerticalAlignment="Center">
+                                <!-- UX-B2: 显示过滤下拉 -->
+                                <StackPanel Orientation="Horizontal" Spacing="3"
+                                            VerticalAlignment="Center"
+                                            ToolTip.Tip="过滤轨道列表的显示范围">
+                                    <TextBlock Text="显示" FontSize="10"
+                                               Foreground="{DynamicResource TlTextMuted}"
+                                               VerticalAlignment="Center"/>
+                                    <ComboBox Name="DisplayFilterCombo"
+                                              ItemsSource="{Binding DisplayFilterOptions}"
+                                              SelectedItem="{Binding DisplayFilter}"
+                                              DisplayMemberBinding="{Binding Label}"
+                                              MinHeight="0" Padding="4,1" FontSize="10"
+                                              VerticalAlignment="Center"/>
+                                </StackPanel>
+                                <Border Width="1" Background="{DynamicResource TlBorderLight}" Margin="0,4"/>
                                 <!-- 缩放滑块 -->
                                 <StackPanel Orientation="Horizontal" Spacing="4"
                                             VerticalAlignment="Center">
@@ -568,13 +583,21 @@
                                 </ContextMenu>
                             </Border.ContextMenu>
                             <DockPanel>
-                                <!-- 轨道面板标题 (与时间标尺高度对齐) -->
-                                <Border DockPanel.Dock="Top" Height="28"
+                                <!-- 轨道面板标题 (与时间标尺高度对齐: 20 刻度 + 22 标记 + 26 事件 = 68) -->
+                                <Border DockPanel.Dock="Top" Height="68"
                                         Background="{DynamicResource TlTrackPanelTitleBg}"
                                         BorderBrush="{DynamicResource TlBorderBrush}" BorderThickness="0,0,0,1">
-                                    <TextBlock Text="轨道" FontWeight="SemiBold" FontSize="11"
-                                               Foreground="{DynamicResource TlTextSecondary}" VerticalAlignment="Center"
-                                               Margin="8,0"/>
+                                    <Grid RowDefinitions="20,22,26">
+                                        <TextBlock Grid.Row="0" Text="轨道" FontWeight="SemiBold" FontSize="11"
+                                                   Foreground="{DynamicResource TlTextSecondary}" VerticalAlignment="Center"
+                                                   Margin="8,0"/>
+                                        <TextBlock Grid.Row="1" Text="◆ 标记" FontSize="10"
+                                                   Foreground="{DynamicResource TlTextMuted}" VerticalAlignment="Center"
+                                                   Margin="8,0"/>
+                                        <TextBlock Grid.Row="2" Text="🚩 事件" FontSize="10"
+                                                   Foreground="{DynamicResource TlTextMuted}" VerticalAlignment="Center"
+                                                   Margin="8,0"/>
+                                    </Grid>
                                 </Border>
 
                                 <!-- 波形占位区 (与右侧波形控件高度对齐) -->
@@ -637,6 +660,27 @@
                                                                    Margin="4,0,0,0"
                                                                    VerticalAlignment="Center"
                                                                    DockPanel.Dock="Left"/>
+                                                        <!-- UX-B4: 分组 Solo / Mute 按钮 (DockPanel.Dock=Right 让它们贴右) -->
+                                                        <ToggleButton Classes="track-toggle" IsChecked="{Binding IsMuted}"
+                                                                      DockPanel.Dock="Right"
+                                                                      Padding="2" Background="Transparent"
+                                                                      ToolTip.Tip="分组静音 (级联到组内轨道)"
+                                                                      MinWidth="0" MinHeight="0"
+                                                                      Width="20" Height="20"
+                                                                      Margin="1,0,4,0">
+                                                            <TextBlock Text="M" FontSize="10" FontWeight="Bold"
+                                                                       HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                                        </ToggleButton>
+                                                        <ToggleButton Classes="track-toggle" IsChecked="{Binding IsSolo}"
+                                                                      DockPanel.Dock="Right"
+                                                                      Padding="2" Background="Transparent"
+                                                                      ToolTip.Tip="分组独奏 (级联到组内轨道, 分组间互斥)"
+                                                                      MinWidth="0" MinHeight="0"
+                                                                      Width="20" Height="20"
+                                                                      Margin="1,0">
+                                                            <TextBlock Text="S" FontSize="10" FontWeight="Bold"
+                                                                       HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                                        </ToggleButton>
                                                     </DockPanel>
                                                 </Border>
                                             </DataTemplate>
@@ -649,7 +693,8 @@
                                                         IsVisible="{Binding IsVisibleInTimeline}"
                                                         Opacity="{Binding TrackOpacity}"
                                                         Tag="{Binding}"
-                                                        PointerPressed="OnTrackHeaderPointerPressed">
+                                                        PointerPressed="OnTrackHeaderPointerPressed"
+                                                        DoubleTapped="OnTrackHeaderDoubleTapped">
                                                     <Border.ContextMenu>
                                                         <ContextMenu>
                                                             <!-- 外观 -->
@@ -699,6 +744,9 @@
                                                                       CommandParameter="{Binding}"/>
                                                             <Separator/>
                                                             <!-- 管理 -->
+                                                            <MenuItem Header="轨道属性..." Click="OnEditTrackProperties"
+                                                                      Tag="{Binding}"
+                                                                      InputGesture="F2"/>
                                                             <MenuItem Header="添加轨道..." Click="OnAddTrack"/>
                                                             <MenuItem Header="新建分组..." Click="OnPanelNewGroup"/>
                                                             <Separator/>
@@ -793,6 +841,20 @@
                                                                 <TextBlock Text="S" FontSize="12" FontWeight="Bold"
                                                                            HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                                             </ToggleButton>
+                                                            <!-- UX-B1: 曲线编辑器显示开关 (眼睛图标) -->
+                                                            <ToggleButton Classes="track-toggle" IsChecked="{Binding ShowInCurve}"
+                                                                          Padding="2" Background="Transparent"
+                                                                          ToolTip.Tip="在曲线编辑器中显示"
+                                                                          MinWidth="0" MinHeight="0"
+                                                                          Width="22" Height="22"
+                                                                          Click="OnToggleShowInCurve">
+                                                                <Canvas Width="14" Height="14">
+                                                                    <Path Data="M 1,7 C 3,3 11,3 13,7 C 11,11 3,11 1,7 Z"
+                                                                          Stroke="{Binding $parent[ToggleButton].Foreground}" StrokeThickness="1.3" Fill="Transparent"/>
+                                                                    <Ellipse Canvas.Left="5" Canvas.Top="5" Width="4" Height="4"
+                                                                             Fill="{Binding $parent[ToggleButton].Foreground}"/>
+                                                                </Canvas>
+                                                            </ToggleButton>
                                                             <ToggleButton Classes="track-toggle" IsChecked="{Binding IsLocked}"
                                                                           Padding="2" Background="Transparent"
                                                                           ToolTip.Tip="锁定"
@@ -822,8 +884,8 @@
                         <!-- 右侧: 时间轴区域 -->
                         <Border Grid.Column="2">
                             <DockPanel>
-                                <!-- 时间标尺 -->
-                                <tc:TimeRulerControl DockPanel.Dock="Top" Height="28"
+                                <!-- 时间标尺 (分带: 20 刻度 + 22 标记独立轨 + 26 事件独立轨 = 68px) -->
+                                <tc:TimeRulerControl DockPanel.Dock="Top" Height="68"
                                                      Name="TimeRuler"
                                                      DurationMs="{Binding DurationMs}"
                                                      CurrentTimeMs="{Binding CurrentTimeMs}"

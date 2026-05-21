@@ -57,7 +57,7 @@
                 <StackPanel Orientation="Horizontal" Spacing="10">
                     <TextBlock Text="➕" FontSize="18" VerticalAlignment="Center"/>
                     <StackPanel>
-                        <TextBlock Text="添加轨道" FontSize="16" FontWeight="Bold"
+                        <TextBlock Text="{Binding DialogTitle}" FontSize="16" FontWeight="Bold"
                                    Foreground="White"/>
                         <TextBlock Text="配置设备输出映射到时间轴轨道" FontSize="11"
                                    Foreground="#c7d2fe"/>
@@ -72,7 +72,7 @@
                     <Button Content="取消" Padding="20,8" MinWidth="80"
                             Command="{Binding CancelCommand}"
                             Background="#f1f5f9" Foreground="#64748b"/>
-                    <Button Content="✓ 确定添加" Padding="20,8" MinWidth="100"
+                    <Button Content="{Binding ConfirmButtonText}" Padding="20,8" MinWidth="100"
                             Command="{Binding ConfirmCommand}"
                             Background="#4f46e5" Foreground="White" FontWeight="SemiBold"/>
                 </StackPanel>

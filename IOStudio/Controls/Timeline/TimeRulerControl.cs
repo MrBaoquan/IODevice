@@ -208,6 +208,28 @@ namespace IOStudio.Controls.Timeline
         private bool _isDraggingEvent;
         private TimelineEvent? _draggingEvent;
 
+        // ═══════ 分带布局常量 (UX-B3: 独立事件/标记轨, 彻底消除与刻度的叠放) ═══════
+        /// <summary>刻度+时间标签区高度</summary>
+        public const double TicksBandH = 20;
+
+        /// <summary>标记(Marker)独立轨高度</summary>
+        public const double MarkersBandH = 22;
+
+        /// <summary>事件(Event)独立轨高度 (单层, 多层将累加)</summary>
+        public const double EventsBandH = 26;
+
+        /// <summary>总默认高度: 20 + 22 + 26 = 68</summary>
+        public const double DefaultHeight = TicksBandH + MarkersBandH + EventsBandH;
+
+        // 渲染时缓存的绘制矩形, 用于精确命中测试 (修复: 点击标签文字无法选中)
+        private readonly List<(TimelineEvent evt, Rect flagRect, double stemX)> _drawnEventHits =
+            new();
+        private readonly List<(
+            TimelineMarker marker,
+            Rect labelRect,
+            double stemX
+        )> _drawnMarkerHits = new();
+
         // 右键菜单 (确保同时只有一个打开)
         private ContextMenu? _activeContextMenu;
 
@@ -220,7 +242,7 @@ namespace IOStudio.Controls.Timeline
         public TimeRulerControl()
         {
             ClipToBounds = true;
-            Height = 32;
+            Height = DefaultHeight;
         }
 
         static TimeRulerControl()
@@ -247,12 +269,32 @@ namespace IOStudio.Controls.Timeline
             // 背景
             context.DrawRectangle(BgBrush, null, new Rect(0, 0, w, h));
 
-            // 底部分隔线
-            context.DrawLine(BottomPen, new Point(0, h - 0.5), new Point(w, h - 0.5));
-
             double ppm = PixelsPerMs;
             if (ppm <= 0)
                 return;
+
+            // ── 分带布局: ticks / markers / events ──
+            double ticksBottom = Math.Min(TicksBandH, h);
+            double markersTop = ticksBottom;
+            double markersBottom = Math.Min(markersTop + MarkersBandH, h);
+            double eventsTop = markersBottom;
+
+            // 分带之间的分隔线
+            var bandSepPen = BottomPen;
+            if (ticksBottom < h)
+                context.DrawLine(
+                    bandSepPen,
+                    new Point(0, ticksBottom - 0.5),
+                    new Point(w, ticksBottom - 0.5)
+                );
+            if (markersBottom < h && markersBottom > ticksBottom + 0.5)
+                context.DrawLine(
+                    bandSepPen,
+                    new Point(0, markersBottom - 0.5),
+                    new Point(w, markersBottom - 0.5)
+                );
+            // 底部分隔线
+            context.DrawLine(bandSepPen, new Point(0, h - 0.5), new Point(w, h - 0.5));
 
             // 计算自适应刻度间距
             var (majorIntervalMs, minorIntervalMs) = CalculateTickInterval(ppm);
@@ -261,22 +303,22 @@ namespace IOStudio.Controls.Timeline
             double startMs = ScrollOffsetX / ppm;
             double endMs = (ScrollOffsetX + w) / ppm;
 
-            // 绘制刻度
-            DrawTicks(context, startMs, endMs, majorIntervalMs, minorIntervalMs, h, ppm);
+            // 刻度绘制限定在顶部刻度带内 (高度 = ticksBottom)
+            DrawTicks(context, startMs, endMs, majorIntervalMs, minorIntervalMs, ticksBottom, ppm);
 
-            // 绘制视频时长参考线
-            DrawVideoReference(context, h, ppm);
+            // 视频/工作区参考线跨全高, 但标签放在刻度带内
+            DrawVideoReference(context, h, ppm, ticksBottom);
 
-            // 绘制事件标记
-            DrawEventMarkers(context, h, ppm);
+            // 标记独立轨
+            DrawTimelineMarkers(context, ppm, markersTop, markersBottom, h);
 
-            // 绘制时间轴标记 (书签/旗帜)
-            DrawTimelineMarkers(context, h, ppm);
+            // 事件独立轨 (含多层避让)
+            DrawEventMarkers(context, ppm, eventsTop, h);
 
-            // 绘制工作区域标记
-            DrawWorkArea(context, w, h, ppm);
+            // 工作区域高亮跨全高
+            DrawWorkArea(context, w, h, ppm, ticksBottom);
 
-            // 绘制播放头
+            // 播放头跨全高
             DrawPlayhead(context, h, ppm);
         }
 
@@ -286,7 +328,7 @@ namespace IOStudio.Controls.Timeline
             double endMs,
             double majorMs,
             double minorMs,
-            double height,
+            double ticksBandH,
             double ppm
         )
         {
@@ -294,14 +336,18 @@ namespace IOStudio.Controls.Timeline
             var minorPen = MinorPen;
             var labelBrush = LabelBrush;
 
-            // Minor ticks
+            // Minor ticks (短, 顶部刻度带底部 6px)
             double firstMinor = Math.Floor(startMs / minorMs) * minorMs;
             for (double ms = firstMinor; ms <= endMs; ms += minorMs)
             {
                 if (ms < 0)
                     continue;
                 double x = ms * ppm - ScrollOffsetX;
-                context.DrawLine(minorPen, new Point(x, height - 6), new Point(x, height - 1));
+                context.DrawLine(
+                    minorPen,
+                    new Point(x, ticksBandH - 6),
+                    new Point(x, ticksBandH - 1)
+                );
             }
 
             // Major ticks + labels
@@ -312,8 +358,12 @@ namespace IOStudio.Controls.Timeline
                     continue;
                 double x = ms * ppm - ScrollOffsetX;
 
-                // Tick line
-                context.DrawLine(majorPen, new Point(x, height - 14), new Point(x, height - 1));
+                // Tick line (较长, 在刻度带底部)
+                context.DrawLine(
+                    majorPen,
+                    new Point(x, ticksBandH - 12),
+                    new Point(x, ticksBandH - 1)
+                );
 
                 // Label
                 string label = FormatTime(ms);
@@ -354,7 +404,13 @@ namespace IOStudio.Controls.Timeline
         /// <summary>
         /// 绘制工作区域标记 (半透明蓝色高亮范围 + I/O 标签)
         /// </summary>
-        private void DrawWorkArea(DrawingContext context, double width, double height, double ppm)
+        private void DrawWorkArea(
+            DrawingContext context,
+            double width,
+            double height,
+            double ppm,
+            double ticksBandH
+        )
         {
             double inMs = WorkAreaInMs;
             double outMs = WorkAreaOutMs;
@@ -378,7 +434,7 @@ namespace IOStudio.Controls.Timeline
                         9,
                         new SolidColorBrush(Color.FromArgb(255, 34, 197, 94))
                     );
-                    context.DrawText(inLabel, new Point(xIn + 2, height - 12));
+                    context.DrawText(inLabel, new Point(xIn + 2, ticksBandH - 12));
                 }
             }
 
@@ -402,7 +458,7 @@ namespace IOStudio.Controls.Timeline
                         9,
                         new SolidColorBrush(Color.FromArgb(255, 239, 68, 68))
                     );
-                    context.DrawText(outLabel, new Point(xOut - 10, height - 12));
+                    context.DrawText(outLabel, new Point(xOut - 10, ticksBandH - 12));
                 }
             }
 
@@ -423,7 +479,12 @@ namespace IOStudio.Controls.Timeline
         /// <summary>
         /// 绘制视频时长参考标记 (紫色虚线 + 🎬 标签)
         /// </summary>
-        private void DrawVideoReference(DrawingContext context, double height, double ppm)
+        private void DrawVideoReference(
+            DrawingContext context,
+            double height,
+            double ppm,
+            double ticksBandH
+        )
         {
             double videoMs = VideoDurationMs;
             if (videoMs <= 0)
@@ -436,7 +497,7 @@ namespace IOStudio.Controls.Timeline
             // 紫色虚线
             context.DrawLine(VideoRefPen, new Point(x, 0), new Point(x, height));
 
-            // 标签
+            // 标签 (限定在刻度带内)
             var label = new FormattedText(
                 "🎬",
                 CultureInfo.InvariantCulture,
@@ -449,10 +510,17 @@ namespace IOStudio.Controls.Timeline
         }
 
         /// <summary>
-        /// 绘制独立事件标记 (旗帜样式, 选中时高亮, 自动避让重叠)
+        /// 绘制独立事件轨 (eventsBand 内): 小圆点(精确时间) + 旗帜标签(名称), 支持多层避让
+        /// 同时缓存每个旗帜的绘制矩形到 _drawnEventHits, 供精确命中测试
         /// </summary>
-        private void DrawEventMarkers(DrawingContext context, double height, double ppm)
+        private void DrawEventMarkers(
+            DrawingContext context,
+            double ppm,
+            double bandTop,
+            double totalH
+        )
         {
+            _drawnEventHits.Clear();
             var events = Events;
             if (events == null || events.Count == 0)
                 return;
@@ -460,63 +528,73 @@ namespace IOStudio.Controls.Timeline
             var selectedHighlightBrush = new SolidColorBrush(Color.Parse("#ef4444"));
             var selectedBorderPen = new Pen(Brushes.White, 1.5);
             var normalBorderPen = new Pen(new SolidColorBrush(Color.Parse("#d97706")), 0.8);
-            var stalkPen = new Pen(new SolidColorBrush(Color.Parse("#a0f59e0b")), 1);
-            var stalkPenSelected = new Pen(new SolidColorBrush(Color.Parse("#a0ef4444")), 1);
-            var bgBrush = new SolidColorBrush(Color.Parse("#E01e1e1e"));
+            var stalkPen = new Pen(
+                new SolidColorBrush(Color.Parse("#70f59e0b")),
+                1,
+                DashStyle.Dash
+            );
+            var stalkPenSelected = new Pen(
+                new SolidColorBrush(Color.Parse("#a0ef4444")),
+                1.2,
+                DashStyle.Dash
+            );
 
             // ── 计算每个标记的 X 位置并排序 ──
-            var markers = new List<(TimelineEvent evt, double x)>();
+            var candidates = new List<(TimelineEvent evt, double x)>();
             foreach (var evt in events)
             {
                 double x = evt.TimeMs * ppm - ScrollOffsetX;
                 if (x < -30 || x > Bounds.Width + 30)
                     continue;
-                markers.Add((evt, x));
+                candidates.Add((evt, x));
             }
-            markers.Sort((a, b) => a.x.CompareTo(b.x));
+            candidates.Sort((a, b) => a.x.CompareTo(b.x));
 
-            // ── 避让: 计算每个标签的 Y 层级 (密集时交错) ──
-            const double flagWidth = 60; // 标签最小间距 (px)
-            const double flagH = 14; // 旗帜高度
-            const double stalkTop = 4; // 杆顶部距控件顶
-            const double maxLevels = 3;
-            double[] levelEndX = new double[(int)maxLevels]; // 每层已占用的右边界
+            // ── 避让: 层级排布, 每层高度 flagH + 2, 位于事件带内 ──
+            const double flagH = 14;
+            const int maxLevels = 3;
+            double bandBottom = totalH; // 事件带底部 = 控件底部
+            // 至多可容纳几层 (受事件带高度限制)
+            int availableLevels = Math.Max(
+                1,
+                (int)Math.Floor((bandBottom - bandTop) / (flagH + 2))
+            );
+            int levels = Math.Min(maxLevels, availableLevels);
+            double[] levelEndX = new double[levels];
             for (int i = 0; i < levelEndX.Length; i++)
                 levelEndX[i] = double.MinValue;
 
-            foreach (var (evt, x) in markers)
+            foreach (var (evt, x) in candidates)
             {
                 bool isSelected = (evt == _selectedEvent);
 
-                // 确定层级 (找第一个不冲突的层)
-                int level = 0;
-                for (int lv = 0; lv < levelEndX.Length; lv++)
+                // 确定层级 (找第一个不冲突的层, 否则用最后一层)
+                int level = levels - 1;
+                for (int lv = 0; lv < levels; lv++)
                 {
                     if (x >= levelEndX[lv])
                     {
                         level = lv;
                         break;
                     }
-                    if (lv == levelEndX.Length - 1)
-                        level = lv; // 全满则用最后一层
                 }
 
-                double flagY = stalkTop + level * (flagH + 2);
+                // 事件带内的 Y 坐标 (自顶向下堆叠)
+                double flagY = bandTop + 2 + level * (flagH + 2);
 
-                // ── 竖直杆 (从旗帜底部延伸到标尺底部) ──
+                // ── 竖直虚线杆 (贯穿整个控件, 提供时间对齐视觉) ──
                 context.DrawLine(
                     isSelected ? stalkPenSelected : stalkPen,
-                    new Point(x, flagY + flagH),
-                    new Point(x, height)
+                    new Point(x, 0),
+                    new Point(x, totalH)
                 );
 
-                // ── 小圆点标记精确时间位置 ──
+                // ── 小圆点标记精确时间位置 (位于事件带底部) ──
                 var dotBrush = isSelected ? selectedHighlightBrush : EventMarkerBrush;
-                context.DrawEllipse(dotBrush, null, new Point(x, height - 2), 2.5, 2.5);
+                context.DrawEllipse(dotBrush, null, new Point(x, totalH - 2), 2.5, 2.5);
 
                 // ── 旗帜标签 ──
                 string label = string.IsNullOrEmpty(evt.EventName) ? "event" : evt.EventName;
-                // 缩放较小时截断名称
                 if (label.Length > 8 && ppm < 0.08)
                     label = label.Substring(0, 6) + "…";
 
@@ -537,7 +615,6 @@ namespace IOStudio.Controls.Timeline
                 double boxX = x + 1;
                 double boxY = flagY;
 
-                // 绘制旗帜背景 (圆角矩形)
                 var flagBrush = isSelected
                     ? new SolidColorBrush(Color.Parse("#D0ef4444"))
                     : new SolidColorBrush(Color.Parse("#D0b45309"));
@@ -550,12 +627,14 @@ namespace IOStudio.Controls.Timeline
                     3
                 );
 
-                // 绘制文字
                 var textOrigin = new Point(boxX + 5, boxY + (flagH - nameText.Height) / 2);
                 using (context.PushClip(flagRect))
                 {
                     context.DrawText(nameText, textOrigin);
                 }
+
+                // 记录精确命中矩形 (覆盖整个旗帜, 修复点击标签文字无响应问题)
+                _drawnEventHits.Add((evt, flagRect, x));
 
                 // 更新层级占用
                 levelEndX[level] = boxX + boxW + 4;
@@ -563,69 +642,83 @@ namespace IOStudio.Controls.Timeline
         }
 
         /// <summary>
-        /// 绘制时间轴标记 (彩色旗帜 🏁, 可自定义颜色)
+        /// 绘制独立标记轨 (markersBand 内): 圆角矩形标签 + 贯穿实线, 同时缓存绘制矩形供命中测试
         /// </summary>
-        private void DrawTimelineMarkers(DrawingContext context, double height, double ppm)
+        private void DrawTimelineMarkers(
+            DrawingContext context,
+            double ppm,
+            double bandTop,
+            double bandBottom,
+            double totalH
+        )
         {
+            _drawnMarkerHits.Clear();
             var markers = Markers;
             if (markers == null || markers.Count == 0)
                 return;
 
             var selectedBorderPen = new Pen(Brushes.White, 1.5);
 
-            foreach (var marker in markers)
+            // 排序 + 水平避让 (单层, 仅当绝对重叠时轻微错位)
+            var candidates = new List<(TimelineMarker m, double x)>();
+            foreach (var m in markers)
             {
-                double x = marker.TimeMs * ppm - ScrollOffsetX;
-                if (x < -10 || x > Bounds.Width + 10)
+                double x = m.TimeMs * ppm - ScrollOffsetX;
+                if (x < -40 || x > Bounds.Width + 40)
                     continue;
+                candidates.Add((m, x));
+            }
+            candidates.Sort((a, b) => a.x.CompareTo(b.x));
 
+            double lastRight = double.MinValue;
+            foreach (var (marker, x) in candidates)
+            {
                 bool isSelected = (marker == _selectedMarker);
-                var markerColor = Color.Parse(marker.Color ?? "#f59e0b");
+                var markerColor = Color.Parse(marker.Color ?? "#10b981");
                 var markerBrush = new SolidColorBrush(markerColor);
 
-                // 小旗帜形状 (在刻度顶部)
-                var flag = new StreamGeometry();
-                using (var gc = flag.Open())
+                string labelText = string.IsNullOrEmpty(marker.Name) ? "◆" : marker.Name;
+                var textBrush = new SolidColorBrush(Colors.White);
+                var nameText = new FormattedText(
+                    labelText,
+                    CultureInfo.InvariantCulture,
+                    FlowDirection.LeftToRight,
+                    _typeface,
+                    10,
+                    textBrush
+                );
+
+                double padH = 6;
+                double padV = 2;
+                double labelW = Math.Max(18, nameText.Width + padH * 2);
+                double labelH = Math.Min(nameText.Height + padV * 2, bandBottom - bandTop - 2);
+                double labelX = x - 2;
+                // 同时刻避让: 若与上一个完全重叠, 向右微偏
+                if (labelX < lastRight)
+                    labelX = lastRight + 2;
+
+                double labelY = bandTop + ((bandBottom - bandTop) - labelH) / 2;
+                var labelRect = new Rect(labelX, labelY, labelW, labelH);
+                var labelGeo = new RectangleGeometry(labelRect, 4, 4);
+                context.DrawGeometry(markerBrush, isSelected ? selectedBorderPen : null, labelGeo);
+
+                // 文本
+                using (context.PushClip(labelRect))
                 {
-                    gc.BeginFigure(new Point(x, 0), true);
-                    gc.LineTo(new Point(x + 10, 0));
-                    gc.LineTo(new Point(x + 10, 8));
-                    gc.LineTo(new Point(x + 3, 5));
-                    gc.LineTo(new Point(x, 8));
-                    gc.EndFigure(true);
+                    context.DrawText(nameText, new Point(labelX + padH, labelY + padV));
                 }
 
-                if (isSelected)
-                {
-                    context.DrawGeometry(markerBrush, selectedBorderPen, flag);
-                }
-                else
-                {
-                    context.DrawGeometry(markerBrush, null, flag);
-                }
+                // 贯穿实线 (从刻度带底延伸到控件底)
+                var solidPen = new Pen(
+                    new SolidColorBrush(
+                        Color.FromArgb(160, markerColor.R, markerColor.G, markerColor.B)
+                    ),
+                    1
+                );
+                context.DrawLine(solidPen, new Point(x, bandTop), new Point(x, totalH));
 
-                // 垂直虚线
-                var dashPen = new Pen(markerBrush, 0.8, DashStyle.Dash);
-                context.DrawLine(dashPen, new Point(x, 8), new Point(x, height));
-
-                // 标记名称标签
-                if (!string.IsNullOrEmpty(marker.Name))
-                {
-                    var labelBrush = isSelected
-                        ? markerBrush
-                        : new SolidColorBrush(
-                            Color.FromArgb(180, markerColor.R, markerColor.G, markerColor.B)
-                        );
-                    var nameText = new FormattedText(
-                        "🏷" + marker.Name,
-                        CultureInfo.InvariantCulture,
-                        FlowDirection.LeftToRight,
-                        _typeface,
-                        8,
-                        labelBrush
-                    );
-                    context.DrawText(nameText, new Point(x + 11, 0));
-                }
+                _drawnMarkerHits.Add((marker, labelRect, x));
+                lastRight = labelX + labelW;
             }
         }
 
@@ -704,61 +797,50 @@ namespace IOStudio.Controls.Timeline
         // ═══════ 交互: 鼠标 ═══════
 
         /// <summary>
-        /// 命中测试: 查找鼠标位置最近的事件标记 (旗帜+竖杆区域)
-        /// 仅在标尺上半区域 (旗帜渲染区) 检测, 下半区域保留给播放头拖拽
+        /// 命中测试: 使用绘制阶段缓存的精确矩形 (旗帜标签) + 时间点竖杆邻域 (6px)
+        /// 修复: 先前 ±10px 水平圆形命中范围导致的"标签文字不可点击"问题
         /// </summary>
         private TimelineEvent? HitTestEvent(Point pos)
         {
-            var events = Events;
-            if (events == null || events.Count == 0)
-                return null;
-
-            double ppm = PixelsPerMs;
-            if (ppm <= 0)
-                return null;
-
-            double h = Bounds.Height;
-            const double hitRadiusX = 10; // 水平命中范围 (收窄避免误操作)
-
-            // 事件旗帜渲染在标尺上半部分, 下半部分为时间刻度 → 播放头优先区
-            double eventZoneMaxY = h * 0.6;
-            if (pos.Y > eventZoneMaxY)
-                return null;
-
-            foreach (var evt in events)
+            // 优先匹配旗帜矩形 (从后向前匹配 → 顶层优先)
+            for (int i = _drawnEventHits.Count - 1; i >= 0; i--)
             {
-                double x = evt.TimeMs * ppm - ScrollOffsetX;
-                double dx = Math.Abs(pos.X - x);
-                if (dx <= hitRadiusX)
+                var (evt, rect, _) = _drawnEventHits[i];
+                if (rect.Contains(pos))
                     return evt;
+            }
+            // 其次匹配竖杆 (事件带垂直范围内 ±6px)
+            double bandTop = TicksBandH + MarkersBandH;
+            if (pos.Y >= bandTop && pos.Y <= Bounds.Height)
+            {
+                foreach (var (evt, _, stemX) in _drawnEventHits)
+                {
+                    if (Math.Abs(pos.X - stemX) <= 6)
+                        return evt;
+                }
             }
             return null;
         }
 
         /// <summary>
-        /// 命中测试: 查找鼠标位置最近的时间轴标记 (在命中半径内)
+        /// 命中测试: 使用绘制阶段缓存的精确矩形 (标签) + 竖杆邻域 (6px)
         /// </summary>
         private TimelineMarker? HitTestMarker(Point pos)
         {
-            var markers = Markers;
-            if (markers == null || markers.Count == 0)
-                return null;
-
-            double ppm = PixelsPerMs;
-            if (ppm <= 0)
-                return null;
-
-            const double hitRadius = 10;
-
-            foreach (var marker in markers)
+            for (int i = _drawnMarkerHits.Count - 1; i >= 0; i--)
             {
-                double x = marker.TimeMs * ppm - ScrollOffsetX;
-                // 标记旗帜中心约在 (x+5, 4)
-                double dy = pos.Y - 4;
-                double dx = pos.X - (x + 5);
-                double dist = Math.Sqrt(dx * dx + dy * dy);
-                if (dist <= hitRadius)
-                    return marker;
+                var (m, rect, _) = _drawnMarkerHits[i];
+                if (rect.Contains(pos))
+                    return m;
+            }
+            // 标记带或贯穿竖杆
+            double markersTop = TicksBandH;
+            double markersBottom = TicksBandH + MarkersBandH;
+            foreach (var (m, _, stemX) in _drawnMarkerHits)
+            {
+                // 标记带内 ±6px 命中竖杆; 其它区域不拦截以免干扰事件/播放头
+                if (pos.Y >= markersTop && pos.Y <= markersBottom && Math.Abs(pos.X - stemX) <= 6)
+                    return m;
             }
             return null;
         }
@@ -793,13 +875,19 @@ namespace IOStudio.Controls.Timeline
             }
             else if (props.IsLeftButtonPressed)
             {
+                // UX-A3: 仅 Alt+左键 才进入拖拽模式; 普通左键仅选中
+                bool isAltDrag = e.KeyModifiers.HasFlag(KeyModifiers.Alt);
+
                 // 优先检测标记命中
                 var hitMarker = HitTestMarker(pos);
                 if (hitMarker != null)
                 {
                     _selectedMarker = hitMarker;
-                    _isDraggingMarker = true;
-                    _draggingMarker = hitMarker;
+                    if (isAltDrag)
+                    {
+                        _isDraggingMarker = true;
+                        _draggingMarker = hitMarker;
+                    }
                     MarkerSelected?.Invoke(hitMarker);
                     InvalidateVisual();
                     e.Handled = true;
@@ -812,8 +900,11 @@ namespace IOStudio.Controls.Timeline
                 {
                     _selectedEvent = hitEvent;
                     _selectedMarker = null;
-                    _isDraggingEvent = true;
-                    _draggingEvent = hitEvent;
+                    if (isAltDrag)
+                    {
+                        _isDraggingEvent = true;
+                        _draggingEvent = hitEvent;
+                    }
                     EventSelected?.Invoke(hitEvent);
                     InvalidateVisual();
                     e.Handled = true;

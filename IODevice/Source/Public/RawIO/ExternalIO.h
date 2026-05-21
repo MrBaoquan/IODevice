@@ -39,6 +39,13 @@ class IOUIDLL :public PDLL
     DECLARE_FUNCTION2(int, GetDeviceAD_INT, uint8, int32_t*)    // V2: New interface (int32_t)
     DECLARE_FUNCTION3(int, RefreshStreamingData, uint8, BYTE*, unsigned int)
 
+    // —— 通用插件通道 —— //
+    // 宿主 → 插件 下行写入
+    DECLARE_FUNCTION4(int, WritePluginChannel, uint8, const char*, const BYTE*, unsigned int)
+    // 注册派发回调 (插件 → 宿主 上行)
+    // fn 签名: void(__stdcall*)(uint8 devIdx, const char* channel, const BYTE* data, unsigned int size, void* user)
+    DECLARE_FUNCTION3(int, SetPluginChannelDispatcher, uint8, void*, void*)
+
 public:
     // Check if new version GetDeviceAD_INT is supported
     bool HasGetDeviceAD_INT()
@@ -82,6 +89,10 @@ public:
 	virtual float GetDO(const char* InOAction) override;
 
     virtual int RefreshStreamingData(BYTE* StreamingData, unsigned int DataSize) override;
+
+    // —— 通用插件通道 —— //
+    virtual int WritePluginChannel(const char* channelName, const BYTE* data, unsigned int size) override;
+    virtual void EnsurePluginChannelDispatcher(void* details) override;
     
 	virtual void Initialize() override;
     virtual ~ExternalIO() override;
@@ -112,6 +123,9 @@ private:
     std::vector<short> ADStatus;        // V1: Legacy version uses this
     std::vector<int32_t> ADStatusInt;   // V2: New version uses this
 	std::map<std::string, std::vector<FOutputActionKey>> OActionMappings;
+
+	// 插件通道派发器：仅注册一次, 指向 IODeviceDetails*
+	void* pluginChannelDetails = nullptr;
 };
 
 };

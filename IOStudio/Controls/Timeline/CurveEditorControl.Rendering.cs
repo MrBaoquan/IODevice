@@ -13,7 +13,7 @@ namespace IOStudio.Controls.Timeline
     // Rendering methods extracted from CurveEditorControl
     public partial class CurveEditorControl
     {
-        /// <summary>判断轨道是否应该被隐藏 (禁用/静音/非Solo)</summary>
+        /// <summary>判断轨道是否应该被隐藏 (禁用/静音/非Solo/ShowInCurve=false)</summary>
         private bool IsTrackHidden(int trackIdx)
         {
             var tracks = CurveTracks;
@@ -23,6 +23,9 @@ namespace IOStudio.Controls.Timeline
             if (!t.IsEnabled)
                 return true;
             if (t.IsMuted)
+                return true;
+            // UX-B1: 用户显式在轨道头隐藏了曲线显示
+            if (!t.ShowInCurve)
                 return true;
             // Solo 逻辑: 如果任何轨道开启了 Solo, 则只显示 Solo 轨道
             bool anySolo = false;

@@ -72,6 +72,7 @@ namespace IOStudio.ViewModels.Timeline
                         IsMuted = tvm.IsMuted,
                         IsSolo = tvm.IsSolo,
                         IsEnabled = tvm.IsEnabled,
+                        ShowInCurve = tvm.ShowInCurve,
                         Clips = clips
                     }
                 );

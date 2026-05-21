@@ -61,6 +61,7 @@ namespace IOStudio.ViewModels
         public ReactiveCommand<Unit, Unit> AddDeviceCommand { get; }
         public ReactiveCommand<Device, Unit> DeleteDeviceCommand { get; }
         public ReactiveCommand<Unit, Unit> OpenTimelineEditorCommand { get; }
+        public ReactiveCommand<Unit, Unit> OpenInterfaceDebugCommand { get; }
 
         private CompositeDisposable? _recordingSubscriptions;
 
@@ -317,6 +318,12 @@ namespace IOStudio.ViewModels
                 {
                     ViewModel = new EventForwardConfigViewModel()
                 };
+                window.Show();
+            });
+
+            OpenInterfaceDebugCommand = ReactiveCommand.Create(() =>
+            {
+                var window = new InterfaceDebugWindow();
                 window.Show();
             });
 

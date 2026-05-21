@@ -32,6 +32,7 @@ class IOUIDLL :public PDLL
     DECLARE_CLASS(IOUIDLL)
 
     DECLARE_FUNCTION0(DeviceInfo*,Initialize)
+    DECLARE_FUNCTION1(int, SetPluginRuntimeRoot, const char*)
     DECLARE_FUNCTION1(int, OpenDevice, uint8)
     DECLARE_FUNCTION1(int, CloseDevice, uint8)
     DECLARE_FUNCTION2(int, SetDeviceDO, uint8, short*)

@@ -9,6 +9,7 @@
 #include "CoreTypes/IOTypes.h"
 #include "IOLog.h"
 #include "IODeviceDetails.h"
+#include "Paths.hpp"
 
 IOToolkit::ExternalIO::ExternalIO(uint8 InID, uint8 InDeviceIndex, std::string InFullDllName):
                                  CustomIOBase(InID,InDeviceIndex,IOType::External)
@@ -352,6 +353,9 @@ void IOToolkit::ExternalIO::Constructor()
         bValid = false;
         return;
     }
+#if !IODEVICE_PLATFORM_WINDOWS
+	externalDll.SetPluginRuntimeRoot(Paths::Instance().GetModuleDir().data());
+#endif
     DeviceInfo* devInfo = externalDll.Initialize();
     inputCount = devInfo->InputCount;
     outputCount = devInfo->OutputCount;

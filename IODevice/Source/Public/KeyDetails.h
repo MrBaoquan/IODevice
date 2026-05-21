@@ -26,7 +26,7 @@ public:
 
         NoFlags = 0,
     };
-    FKeyDetails(const FKey InKey, const std::string InDisplayName, const unsigned __int8 inKeyFlags = 0);
+    FKeyDetails(const FKey InKey, const std::string InDisplayName, const uint8 inKeyFlags = 0);
 
     inline bool IsGamepadKey() const { return bIsGamepadKey != 0; }
     inline const FKey& GetKey() const { return Key; }

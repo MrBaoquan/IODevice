@@ -4,7 +4,7 @@
  */
 
 #include "IODeviceController.h"
-#include <windows.h>
+#include "IOClock.h"
 #include "IOStatics.h"
 #include "PlayerInput.h"
 #include "MotionPlayer.h"
@@ -26,7 +26,6 @@ IODeviceController::IODeviceController()
 	else
 	{
 		IOLog::Instance().Log("IODevice initialize failed. \n");
-		PostQuitMessage(0);
 	}
 }
 
@@ -79,9 +78,10 @@ void IOToolkit::IODeviceController::Update()
     if (!IOApplication::bLoaded) return;
     
     static float minDelta = 0.02f;
-    static unsigned long lastTime = GetTickCount();
+    static std::uint64_t lastTime = IOClock::GetMilliseconds();
     
-    float deltaSeconds = static_cast<float>((GetTickCount() - lastTime) / 1000.0f);
+    const std::uint64_t currentTime = IOClock::GetMilliseconds();
+    float deltaSeconds = static_cast<float>((currentTime - lastTime) / 1000.0f);
     deltaTime = deltaSeconds;
    
     /** Step 1.   Tick all devices . */
@@ -103,7 +103,7 @@ void IOToolkit::IODeviceController::Update()
         deviceIt.second.ProcessFrameEnd();
     }
 
-    lastTime = GetTickCount();
+    lastTime = currentTime;
 }
 
 void IOToolkit::IODeviceController::ClearBindings()

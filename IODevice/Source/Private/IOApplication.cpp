@@ -7,12 +7,17 @@
 #include <string>
 #include "IOStatics.h"
 #include "PlayerInput.h"
+#include "IOPlatform.h"
+#if IODEVICE_PLATFORM_WINDOWS
 #include "RawIO/StandardIO.h"
+#endif
 #include "RawIOFactory.h"
 #include "Paths.hpp"
 #include "IOLog.h"
 
+#if IODEVICE_PLATFORM_WINDOWS
 #pragma comment(lib,"Winmm.lib")
+#endif
 
 std::vector<HHOOK> IOToolkit::IOApplication::hhks;
 std::vector<HWND> IOToolkit::IOApplication::mainWindows;
@@ -22,6 +27,7 @@ HINSTANCE IOToolkit::IOApplication::dllInstance;
 bool IOToolkit::IOApplication::bLoaded = false;
 
 
+#if IODEVICE_PLATFORM_WINDOWS
 std::string HWNDToString(HWND input)
 {
     std::string output = "";
@@ -52,7 +58,6 @@ BOOL CALLBACK EnumWindowsProc(HWND hwnd, LPARAM lParam)
     }
     return TRUE;
 }
-
 HWND RefreshMainWindows()
 {
     static DWORD dwCurrentProcessId = GetCurrentProcessId();
@@ -93,6 +98,7 @@ BOOL WINAPI DllMain(
     }
     return TRUE;
 }
+#endif
 
 int IOToolkit::IOApplication::Constructor()
 {
@@ -124,13 +130,15 @@ int IOToolkit::IOApplication::DyLoad()
 
 	IOLog::Instance().Log(std::string("------------------------------  IOToolkit Loading...  ------------------------------"));
     
+#if IODEVICE_PLATFORM_WINDOWS
     mainWindows.clear();
     RegisterRawInput();
-    
-	if (SetWindowsHook() != SuccessCode) {
-		IOLog::Instance().Warning("Failed to set windows hook");
-		return ErrorCode;
-	}
+
+    if (SetWindowsHook() != SuccessCode) {
+        IOLog::Instance().Warning("Failed to set windows hook");
+        return ErrorCode;
+    }
+#endif
     
 	/** Device initializtion */
 	IODevices::Initialize();
@@ -148,6 +156,7 @@ int IOToolkit::IOApplication::DyUnload()
 	return SuccessCode;
 }
 
+#if IODEVICE_PLATFORM_WINDOWS
 void IOToolkit::IOApplication::RegisterRawInput()
 {
     RefreshMainWindows();
@@ -178,6 +187,11 @@ void IOToolkit::IOApplication::RegisterRawInput()
     }
 
 }
+#else
+void IOToolkit::IOApplication::RegisterRawInput()
+{
+}
+#endif
 
 bool IOToolkit::IOApplication::SuccessResult(int code)
 {
@@ -192,18 +206,22 @@ void IOToolkit::IOApplication::Cleanup()
     
     IOLog::Instance().Log("IOToolkit cleanup started...");
     
+#if IODEVICE_PLATFORM_WINDOWS
     // 1. Unhook first to stop receiving new messages
     UnHookWindow();
     
     // 2. Unregister raw input devices
     UnregisterRawInput();
+#endif
     
     // 3. Clean up devices and input system
     IODevices::UnInitialize();
     PlayerInput::Instance().UnInitialize();
     
+#if IODEVICE_PLATFORM_WINDOWS
     // 4. Clear window list
     mainWindows.clear();
+#endif
     
     // 5. Mark as unloaded
     bLoaded = false;
@@ -211,6 +229,7 @@ void IOToolkit::IOApplication::Cleanup()
     IOLog::Instance().Log("IOToolkit cleanup completed.");
 }
 
+#if IODEVICE_PLATFORM_WINDOWS
 void IOToolkit::IOApplication::UnregisterRawInput()
 {
 #ifndef HID_USAGE_PAGE_GENERIC
@@ -231,7 +250,13 @@ void IOToolkit::IOApplication::UnregisterRawInput()
         IOLog::Instance().Warning("Unregister raw input devices failed.");
     }
 }
+#else
+void IOToolkit::IOApplication::UnregisterRawInput()
+{
+}
+#endif
 
+#if IODEVICE_PLATFORM_WINDOWS
 int IOToolkit::IOApplication::SetWindowsHook()
 {
     RefreshMainWindows();
@@ -289,7 +314,14 @@ int IOToolkit::IOApplication::SetWindowsHook()
 
     return SuccessCode;
 }
+#else
+int IOToolkit::IOApplication::SetWindowsHook()
+{
+    return SuccessCode;
+}
+#endif
 
+#if IODEVICE_PLATFORM_WINDOWS
 void IOToolkit::IOApplication::UnHookWindow()
 {
     for (auto& hhk:IOApplication::hhks)
@@ -298,7 +330,13 @@ void IOToolkit::IOApplication::UnHookWindow()
     }
     IOApplication::hhks.clear();
 }
+#else
+void IOToolkit::IOApplication::UnHookWindow()
+{
+}
+#endif
 
+#if IODEVICE_PLATFORM_WINDOWS
 LRESULT CALLBACK IOToolkit::IOApplication::OnMessageProc(int code, WPARAM wParam, LPARAM lParam)
 {
     return StandardIO::OnMessageProc(code, wParam, lParam);
@@ -337,3 +375,19 @@ LRESULT CALLBACK IOToolkit::IOApplication::CallWndProc(_In_ int nCode, _In_ WPAR
     
 	return CallNextHookEx(nullptr, nCode, wParam, lParam);
 }
+    #else
+    LRESULT CALLBACK IOToolkit::IOApplication::OnMessageProc(int code, WPARAM wParam, LPARAM lParam)
+    {
+        return 0;
+    }
+
+    LRESULT CALLBACK IOToolkit::IOApplication::CallWndRetProc(_In_ int nCode, _In_ WPARAM wParam, _In_ LPARAM lParam)
+    {
+        return 0;
+    }
+
+    LRESULT CALLBACK IOToolkit::IOApplication::CallWndProc(_In_ int nCode, _In_ WPARAM wParam, _In_ LPARAM lParam)
+    {
+        return 0;
+    }
+    #endif

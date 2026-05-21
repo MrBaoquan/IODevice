@@ -4,9 +4,11 @@
  */
 
 #include "RawIO/RawIO.h"
-#include <windows.h>
+#include "IOClock.h"
 #include "PlayerInput.h"
 #include "InputSettings.h"
+#include <algorithm>
+#include <cmath>
 
 #define CLAMP(x, low, high)  (((x) > (high)) ? (high) : (((x) < (low)) ? (low) : (x)))
 
@@ -128,7 +130,7 @@ IOToolkit::InputEvent IOToolkit::RawIO::GetChannelEvent(ButtonState& chState)
     bool bPressed = IsKeyPressed(chState);
     if (bPressed)
     {
-        double currentTime = GetTickCount() / 1000.0;
+        double currentTime = IOClock::GetSeconds();
         if (chState.status != chState.lastStatus)   // �����¼�
         {
             FinalInputEvent = IE_Pressed;
@@ -238,11 +240,11 @@ float IOToolkit::RawIO::MassageKeyInput(FKey InKey, float InRawValue)
 		{
 			if (NewVal > 0)
 			{
-				NewVal = max(0.f, NewVal - KeyProps->DeadZone) / deadZoneDenom;
+                NewVal = (std::max)(0.f, NewVal - KeyProps->DeadZone) / deadZoneDenom;
 			}
 			else
 			{
-				NewVal = -max(0.f, -NewVal - KeyProps->DeadZone) / deadZoneDenom;
+                NewVal = -(std::max)(0.f, -NewVal - KeyProps->DeadZone) / deadZoneDenom;
 			}
 		}
 		else
@@ -254,7 +256,7 @@ float IOToolkit::RawIO::MassageKeyInput(FKey InKey, float InRawValue)
 		if (KeyProps->Exponent != 1.f)
 		{
 			float sign = NewVal >= 0.f ? 1.f : -1.f;
-			NewVal = sign * std::powf(std::abs(NewVal), KeyProps->Exponent);
+            NewVal = sign * std::pow(std::abs(NewVal), KeyProps->Exponent);
 		}
 		NewVal *= KeyProps->Sensitivity;
 

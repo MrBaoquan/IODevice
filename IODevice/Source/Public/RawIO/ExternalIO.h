@@ -15,11 +15,11 @@
 struct IOTK_DLL_IMPORT DeviceInfo
 {
     /** Digital input channel count */
-    BYTE InputCount = 16;
+    IOToolkit::BYTE InputCount = 16;
     /** Digital output channel count */
-    BYTE OutputCount = 16;
+    IOToolkit::BYTE OutputCount = 16;
     /** Analog input channel count */
-    BYTE AxisCount = 0;
+    IOToolkit::BYTE AxisCount = 0;
 };
 
 namespace IOToolkit

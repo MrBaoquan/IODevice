@@ -4,7 +4,21 @@
  */
 
 #pragma once
+#include "IOPlatform.h"
+#if IODEVICE_PLATFORM_WINDOWS
 #include <windows.h>
+#else
+#include <cstdint>
+#define CALLBACK
+#define WINAPI
+#define _In_
+using HHOOK = void*;
+using HWND = void*;
+using HINSTANCE = void*;
+using WPARAM = std::uintptr_t;
+using LPARAM = std::intptr_t;
+using LRESULT = std::intptr_t;
+#endif
 #include <vector>
 
 namespace IOToolkit

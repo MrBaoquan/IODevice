@@ -26,5 +26,5 @@ void IOToolkit::CustomIOBase::OnFrameEnd()
 
 void IOToolkit::CustomIOBase::Initialize()
 {
-	__super::Initialize();
+    RawIO::Initialize();
 }

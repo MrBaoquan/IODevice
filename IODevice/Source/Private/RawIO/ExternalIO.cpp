@@ -176,7 +176,7 @@ float IOToolkit::ExternalIO::GetDO(const char* InOAction)
 
 void IOToolkit::ExternalIO::Initialize()
 {
-	__super::Initialize();
+	CustomIOBase::Initialize();
 	OActionMappings = UInputSettings::Instance().OActionMappings[deviceID];
 }
 
@@ -364,7 +364,7 @@ void IOToolkit::ExternalIO::Constructor()
 
     channelsState = std::vector<ButtonState>(inputCount);
 	// Initialize base class after basic variables are initialized
-	__super::Constructor();
+	CustomIOBase::Constructor();
     bValid = externalDll.OpenDevice(deviceIndex)==1;
 }
 

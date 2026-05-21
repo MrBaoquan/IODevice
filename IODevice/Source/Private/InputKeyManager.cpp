@@ -4,12 +4,18 @@
  */
 
 #include "InputKeyManager.h"
+#include "IOPlatform.h"
+#if IODEVICE_PLATFORM_WINDOWS
 #include <windows.h>
+#endif
 #include <map>
 #include "IOStatics.h"
 
 IOToolkit::uint32 IOToolkit::InputKeyManager::GetKeyMap(uint32* KeyCodes, std::string* KeyNames, uint32 MaxMappings)
 {
+#if !IODEVICE_PLATFORM_WINDOWS
+    return GetCharKeyMap(KeyCodes, KeyNames, MaxMappings);
+#else
 #define ADDKEYMAP(KeyCode, KeyName)		if (NumMappings<MaxMappings) { KeyCodes[NumMappings]=KeyCode; KeyNames[NumMappings]=KeyName; ++NumMappings; };
 
     uint32 NumMappings = 0;
@@ -123,6 +129,7 @@ IOToolkit::uint32 IOToolkit::InputKeyManager::GetKeyMap(uint32* KeyCodes, std::s
     return NumMappings;
 
 #undef ADDKEYMAP
+#endif
 }
 
 IOToolkit::uint32 IOToolkit::InputKeyManager::GetCharKeyMap(uint32* KeyCodes, std::string* KeyNames, uint32 MaxMappings)

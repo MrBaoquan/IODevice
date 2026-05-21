@@ -4,8 +4,10 @@
  */
 
 #include "PlayerInput.h"
-#include <windows.h>
 #include <algorithm>
+#include <atomic>
+#include <cmath>
+#include "IOClock.h"
 #include "IOStatics.h"
 #include "IODeviceController.h"
 #include "Math/Vector.h"
@@ -71,7 +73,7 @@ void IOToolkit::PlayerInput::InputKey(FKey& InKey, InputEvent KeyEvent,const uin
         {
             // check for doubleclick
             // note, a tripleclick will currently count as a 2nd double click.
-            const float WorldRealTimeSeconds = GetTickCount()/1000.f;
+            const float WorldRealTimeSeconds = static_cast<float>(IOClock::GetSeconds());
             const float deltaTime = WorldRealTimeSeconds - keyState.LastUpDownTransitionTime;
             if (deltaTime < doubleClickTime&&deltaTime>0.01f)
             {
@@ -84,7 +86,7 @@ void IOToolkit::PlayerInput::InputKey(FKey& InKey, InputEvent KeyEvent,const uin
         break;
     case IE_Released:
         {
-            const float WorldRealTimeSeconds = GetTickCount() / 1000.f;
+            const float WorldRealTimeSeconds = static_cast<float>(IOClock::GetSeconds());
             keyState.LastUpDownTransitionTime = WorldRealTimeSeconds;
             keyState.RawValueAccumulator.X = 0.f;
             keyState.EventAccumulator[IE_Released].push_back(++EventCount);
@@ -145,7 +147,7 @@ const float IOToolkit::PlayerInput::GetKeyDownTime(const FKey& InKey, uint8 devi
     if (KeyStateMap.count(InKey)&&bPressed)
     {
         const FKeyState& keyState = KeyStateMap.at(InKey);
-        float curTime = GetTickCount64() / 1000.f;
+        float curTime = static_cast<float>(IOClock::GetSeconds());
         return curTime - keyState.LastUpDownTransitionTime;
     }
     return 0.0f;
@@ -548,11 +550,11 @@ float IOToolkit::PlayerInput::MassageKeyRawInput(FKey Key, float RawValue, uint8
         {
             if (NewVal > 0)
             {
-                NewVal = max(0.f, NewVal - KeyProps->DeadZone) / deadZoneDenom;
+                NewVal = (std::max)(0.f, NewVal - KeyProps->DeadZone) / deadZoneDenom;
             }
             else
             {
-                NewVal = -max(0.f, -NewVal - KeyProps->DeadZone) / deadZoneDenom;
+                NewVal = -(std::max)(0.f, -NewVal - KeyProps->DeadZone) / deadZoneDenom;
             }
         }
         else
@@ -564,7 +566,7 @@ float IOToolkit::PlayerInput::MassageKeyRawInput(FKey Key, float RawValue, uint8
         if (KeyProps->Exponent != 1.f)
         {
             float sign = NewVal >= 0.f ? 1.f : -1.f;
-            NewVal = sign * std::powf(std::abs(NewVal), KeyProps->Exponent);
+            NewVal = sign * std::pow(std::abs(NewVal), KeyProps->Exponent);
         }
         NewVal *= KeyProps->Sensitivity;
 
@@ -775,7 +777,7 @@ void IOToolkit::PlayerInput::ConditionalBuildKeyMappings_Internal()
     AxisMappingsUtility.Build(AxisMappings, AxisKeyMaps);
 
     // 内存屏障，确保所有写入完成后再设置 bKeyMapsBuilt
-    MemoryBarrier();
+    std::atomic_thread_fence(std::memory_order_seq_cst);
     bKeyMapsBuilt = true;
 }
 
@@ -808,7 +810,7 @@ void IOToolkit::PlayerInput::FlushPressedKeys()
         }
     }
 
-    float TimeSeconds = GetTickCount() / 1000.f;
+    float TimeSeconds = static_cast<float>(IOClock::GetSeconds());
     for (auto& KeyStateMap : KeyStateMaps)
     {
         for (auto& It:KeyStateMap)

@@ -8,7 +8,7 @@
 
 using namespace IOToolkit;
 
-IOToolkit::FKeyDetails::FKeyDetails(const FKey InKey, const std::string InDisplayName, const unsigned __int8 InKeyFlags /*= 0*/)
+IOToolkit::FKeyDetails::FKeyDetails(const FKey InKey, const std::string InDisplayName, const uint8 InKeyFlags /*= 0*/)
     : Key(InKey)
     , DisplayName(InDisplayName)
     , bIsModifierKey((InKeyFlags & EKeyFlags::ModifierKey) != 0)

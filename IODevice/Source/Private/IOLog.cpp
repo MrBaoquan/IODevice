@@ -9,6 +9,7 @@
 #include <filesystem>
 #include <algorithm>
 #include <chrono>
+#include "IOPlatform.h"
 #include "Paths.hpp"
 #include "spdlog/sinks/simple_file_sink.h"
 
@@ -111,7 +112,11 @@ const std::string GetDateTimeString(std::string filePath)
     std::time_t start_time = to_time_t(time);
     char timedisplay[100];
     struct tm buf;
-    errno_t err = localtime_s(&buf, &start_time);
+#if IODEVICE_PLATFORM_WINDOWS
+    localtime_s(&buf, &start_time);
+#else
+    localtime_r(&start_time, &buf);
+#endif
     std::strftime(timedisplay, sizeof(timedisplay), "%Y.%m.%d-%H.%M.%S", &buf);
     return std::string(timedisplay);
 }

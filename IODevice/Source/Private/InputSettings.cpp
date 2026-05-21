@@ -269,7 +269,7 @@ const bool IOToolkit::UInputSettings::HasOAction(uint8 deviceID, std::string oAc
     if (deviceID < IODevices::GetDevicesCount())
     {
         auto& _oactions = OActionMappings[deviceID];
-        if (_oactions.contains(oActionName)) return true;
+        if (_oactions.find(oActionName) != _oactions.end()) return true;
     }
     return false;
 }

@@ -11,9 +11,11 @@
 #include <algorithm>
 #include <cctype>
 #include <filesystem>
+#if IODEVICE_PLATFORM_WINDOWS
 #include "RawIO/StandardIO.h"
-#include "RawIO/ExternalIO.h"
 #include "RawIO/Joystick.h"
+#endif
+#include "RawIO/ExternalIO.h"
 #include "Paths.hpp"
 #include "IOLog.h"
 #include "IOStatics.h"
@@ -55,6 +57,7 @@ std::shared_ptr<IOToolkit::RawIO> IOToolkit::RawIOFactory::CreateRawInput(Device
 {
     if (deviceProps.Type == IOType::Standard)
     {
+#if IODEVICE_PLATFORM_WINDOWS
         uint8 standardDeviceCount = IODevices::GetDevicesCount(IOType::Standard);
         if (standardDeviceCount > 1)
         {
@@ -63,9 +66,14 @@ std::shared_ptr<IOToolkit::RawIO> IOToolkit::RawIOFactory::CreateRawInput(Device
         }
         IOLog::Instance().Log(std::string("Create Standard IO <") + deviceProps.Name + "> succeed.");
         return std::make_shared<StandardIO>(deviceProps.DeviceID);
+    #else
+        IOLog::Instance().Warning("Standard IO is not supported on this platform.");
+        return nullptr;
+    #endif
     }
     else if (deviceProps.Type == IOType::Joystick)
     {
+    #if IODEVICE_PLATFORM_WINDOWS
         std::shared_ptr<Joystick> joystick = std::make_shared<IOToolkit::Joystick>(deviceProps.DeviceID, deviceProps.DeviceIndex);
         if (joystick->Valid())
         {
@@ -74,6 +82,10 @@ std::shared_ptr<IOToolkit::RawIO> IOToolkit::RawIOFactory::CreateRawInput(Device
         }
         IOLog::Instance().Warning(std::string("Create Joystick IO <") + deviceProps.Name + "> failed.");
         return joystick;
+    #else
+        IOLog::Instance().Warning("Joystick IO is not supported on this platform.");
+        return nullptr;
+    #endif
     }
     else if(deviceProps.Type == IOType::External)
     {

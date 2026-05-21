@@ -8,7 +8,8 @@
 #include "IOStatics.h"
 #include "IOLog.h"
 
-#include <windows.h>
+#include "IOClock.h"
+#include <cstdint>
 #include <map>
 #include <vector>
 #include <string>
@@ -360,8 +361,7 @@ namespace {
         double externalTimeMs = 0;
 
         // 高精度时间追踪
-        LARGE_INTEGER tickFrequency;
-        LARGE_INTEGER lastTick;
+        std::uint64_t lastTick = 0;
         bool timerInitialized = false;
 
         // 回中状态
@@ -373,12 +373,10 @@ namespace {
         std::map<MotionEvent, std::function<void()>> callbacks;
         std::map<MotionEvent, std::function<void(const char*)>> dataCallbacks;
 
-        MotionSlotImpl() {
-            QueryPerformanceFrequency(&tickFrequency);
-        }
+        MotionSlotImpl() = default;
 
         void StartTimer() {
-            QueryPerformanceCounter(&lastTick);
+            lastTick = IOClock::GetMilliseconds();
             timerInitialized = true;
         }
 

@@ -31,6 +31,12 @@ add_library(iodevice-android-lite SHARED
     Source/Private/RawIOFactory.cpp
 )
 
+if(ANDROID)
+    target_sources(iodevice-android-lite PRIVATE
+        Source/Private/Unity/IOUnityBridge.cpp
+    )
+endif()
+
 target_compile_features(iodevice-android-lite PRIVATE cxx_std_17)
 
 target_include_directories(iodevice-android-lite

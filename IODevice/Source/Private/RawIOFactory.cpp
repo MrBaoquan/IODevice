@@ -36,9 +36,9 @@ namespace
 #else
             std::string normalizedName = pluginName;
             std::transform(normalizedName.begin(), normalizedName.end(), normalizedName.begin(), [](unsigned char ch) {
-                return static_cast<char>(std::tolower(ch));
+                return static_cast<char>(std::toupper(ch));
             });
-            return std::string("libioui-android-").append(normalizedName).append(".so");
+            return std::string("IOUI-ANDROID-").append(normalizedName).append(".so");
 #endif
         }
     };

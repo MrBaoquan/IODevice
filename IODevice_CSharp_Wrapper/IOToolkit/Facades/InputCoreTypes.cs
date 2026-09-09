@@ -73,11 +73,6 @@ namespace IOToolkit
         {
             return StringComparer.InvariantCulture.GetHashCode(ID);
         }
-
-        public override string ToString()
-        {
-            return this.ID;
-        }
     }
 
     public struct IOKeyCode

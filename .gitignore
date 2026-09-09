@@ -251,3 +251,11 @@ ModelManifest.xml
 
 # FAKE - F# Make
 .fake/
+
+# 构建/调试输出（本地生成，勿入库）
+TestRunDebug/
+
+# 大体积二进制文档（pptx/mp4 可经 docs/**/generate_ppt*.py 重新生成，勿入库）
+*.pptx
+*.mp4
+

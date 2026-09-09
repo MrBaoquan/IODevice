@@ -121,16 +121,16 @@
                             <Path Data="M 18,16 L 34,24 L 18,32 Z"
                                   Fill="{DynamicResource TlVideoPlaceholderIcon}"/>
                         </Canvas>
-                        <TextBlock Text="加载参考视频" FontSize="14"
+                        <TextBlock Text="未加载参考视频" FontSize="13"
                                    Foreground="{DynamicResource TlTextMuted}"
                                    HorizontalAlignment="Center"/>
                         <TextBlock Text="将视频与时间轴同步，参考画面编辑动作关键帧"
                                    FontSize="11" Foreground="{DynamicResource TlTextMuted}"
                                    HorizontalAlignment="Center" TextWrapping="Wrap"
-                                   TextAlignment="Center" MaxWidth="300" Opacity="0.7"/>
+                                   TextAlignment="Center" MaxWidth="300" Opacity="0.7" IsVisible="False"/>
                         <Button HorizontalAlignment="Center"
                                 Padding="16,8" FontSize="12" CornerRadius="4"
-                                Background="#3b82f6" Foreground="White"
+                                Background="{DynamicResource TlAccent}" Foreground="{DynamicResource TlAccentFg}"
                                 Click="OnLoadVideo">
                             <StackPanel Orientation="Horizontal" Spacing="6">
                                 <Canvas Width="14" Height="14" VerticalAlignment="Center">

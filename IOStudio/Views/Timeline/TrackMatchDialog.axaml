@@ -1,0 +1,40 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="IOStudio.Views.Timeline.TrackMatchDialog"
+        Width="560" Height="440" MinWidth="480" MinHeight="340"
+        WindowStartupLocation="CenterOwner"
+        CanResize="True"
+        Title="匹配预设通道到轨道">
+    <Grid RowDefinitions="Auto,*,Auto" Background="{DynamicResource TlPanelBg}">
+        <Border Padding="16,12" BorderBrush="{DynamicResource TlBorderBrush}" BorderThickness="0,0,0,1">
+            <StackPanel Spacing="4">
+                <TextBlock Text="预设包含多个通道 / 无法明确匹配" FontSize="14" FontWeight="SemiBold"
+                           Foreground="{DynamicResource TlTextSecondary}"/>
+                <TextBlock Text="请确认每个通道放置的轨道；选择「+ 新建轨道」将自动创建该角色的轨道。"
+                           FontSize="11" TextWrapping="Wrap" Foreground="{DynamicResource TlTextMuted}"/>
+            </StackPanel>
+        </Border>
+
+        <Border Grid.Row="1" Margin="12">
+            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                <ItemsControl Name="ChannelList">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <StackPanel Spacing="10"/>
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                </ItemsControl>
+            </ScrollViewer>
+        </Border>
+
+        <Border Grid.Row="2" Padding="16,12" BorderBrush="{DynamicResource TlBorderBrush}" BorderThickness="0,1,0,0">
+            <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="10">
+                <TextBlock Text="提示：拖入目标轨道时，该轨道会作为对应通道的默认目标。"
+                           FontSize="10" Foreground="{DynamicResource TlTextMuted}" VerticalAlignment="Center"/>
+                <Button Grid.Column="1" Content="取消" Click="OnCancelClick" Padding="18,7"/>
+                <Button Grid.Column="2" Content="确定" Click="OnConfirmClick" Padding="18,7"
+                        Background="{DynamicResource TlAccent}" Foreground="{DynamicResource TlAccentFg}"/>
+            </Grid>
+        </Border>
+    </Grid>
+</Window>

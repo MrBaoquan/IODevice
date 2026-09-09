@@ -122,7 +122,7 @@ public partial class IONodeView : ReactiveUserControl<IONodeBase>
 
     private async void EditNodeButton_Click(object? sender, RoutedEventArgs e)
     {
-        if (this.ViewModel != null)
+        if (this.ViewModel != null && this.ViewModel.IsEditMode)
         {
             // 查找包含当前节点的设备
             Device? parentDevice = FindParentDevice(this.ViewModel);
@@ -135,6 +135,24 @@ public partial class IONodeView : ReactiveUserControl<IONodeBase>
             {
                 await editWindow.ShowDialog(window);
             }
+        }
+    }
+
+    // P1: 双击节点标题行 → 打开编辑窗口 (与 Key 双击编辑深度对齐)
+    private async void OnNodeHeaderDoubleTapped(object? sender, Avalonia.Input.TappedEventArgs e)
+    {
+        if (this.ViewModel != null && this.ViewModel.IsEditMode)
+        {
+            Device? parentDevice = FindParentDevice(this.ViewModel);
+            var editWindow = new IONodeEditWindow();
+            editWindow.SetNode(this.ViewModel, parentDevice);
+
+            var window = TopLevel.GetTopLevel(this) as Window;
+            if (window != null)
+            {
+                await editWindow.ShowDialog(window);
+            }
+            e.Handled = true;
         }
     }
 }

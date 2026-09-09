@@ -4,34 +4,64 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:vm="using:IOStudio.ViewModels.Timeline"
         xmlns:tc="using:IOStudio.Controls.Timeline"
+        xmlns:iconPacks="https://github.com/MahApps/IconPacks.Avalonia"
         mc:Ignorable="d" d:DesignWidth="1440" d:DesignHeight="900"
         x:Class="IOStudio.Views.Timeline.TimelineEditorWindow"
         x:DataType="vm:TimelineEditorViewModel"
         Title="{Binding WindowTitle}"
         Width="1440" Height="900"
+        MinWidth="960" MinHeight="640"
         CanResize="True"
         WindowStartupLocation="CenterOwner">
 
     <Window.Styles>
+        <!-- Shared editor control metrics: one compact, predictable rhythm -->
+        <Style Selector="TextBox">
+            <Setter Property="MinHeight" Value="26"/>
+            <Setter Property="CornerRadius" Value="2"/>
+            <Setter Property="Background" Value="{DynamicResource TlInputBg}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource TlBorderLight}"/>
+        </Style>
+        <Style Selector="ComboBox">
+            <Setter Property="MinHeight" Value="26"/>
+            <Setter Property="CornerRadius" Value="2"/>
+            <Setter Property="Background" Value="{DynamicResource TlInputBg}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource TlBorderLight}"/>
+        </Style>
+
+        <!-- Workspace dock tabs: stable right-side home for contextual tools -->
+        <Style Selector="TabControl.workspace-tabs">
+            <Setter Property="Background" Value="{DynamicResource TlPanelBg}"/>
+            <Setter Property="Padding" Value="0"/>
+        </Style>
+        <Style Selector="TabItem.workspace-tab">
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="Padding" Value="12,7"/>
+            <Setter Property="Foreground" Value="{DynamicResource TlTextMuted}"/>
+        </Style>
+        <Style Selector="TabItem.workspace-tab:selected">
+            <Setter Property="Foreground" Value="{DynamicResource TlAccent}"/>
+        </Style>
+
         <!-- 工具栏按钮 -->
         <Style Selector="Button.toolbar-btn">
             <Setter Property="Background" Value="Transparent"/>
             <Setter Property="Padding" Value="8,4"/>
             <Setter Property="Margin" Value="2,0"/>
-            <Setter Property="CornerRadius" Value="4"/>
-            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="CornerRadius" Value="3"/>
+            <Setter Property="FontSize" Value="12"/>
         </Style>
         <Style Selector="Button.toolbar-btn:pointerover /template/ ContentPresenter#PART_ContentPresenter">
-            <Setter Property="Background" Value="#e5e7eb"/>
+            <Setter Property="Background" Value="{DynamicResource TlBtnHover}"/>
         </Style>
 
-        <!-- 播控传输栏按钮 -->
+        <!-- 播控传输栏按钮 (固定深色风格, 支持主题资源) -->
         <Style Selector="Button.transport-btn">
             <Setter Property="Focusable" Value="False"/>
             <Setter Property="Background" Value="Transparent"/>
             <Setter Property="Padding" Value="6,4"/>
             <Setter Property="Margin" Value="1,0"/>
-            <Setter Property="CornerRadius" Value="4"/>
+            <Setter Property="CornerRadius" Value="3"/>
             <Setter Property="FontSize" Value="16"/>
             <Setter Property="MinWidth" Value="32"/>
             <Setter Property="MinHeight" Value="28"/>
@@ -39,7 +69,7 @@
             <Setter Property="VerticalContentAlignment" Value="Center"/>
         </Style>
         <Style Selector="Button.transport-btn:pointerover /template/ ContentPresenter#PART_ContentPresenter">
-            <Setter Property="Background" Value="#334155"/>
+            <Setter Property="Background" Value="{DynamicResource TlTransportBtnHover}"/>
         </Style>
 
         <Style Selector="Button.transport-play">
@@ -47,7 +77,7 @@
             <Setter Property="Background" Value="Transparent"/>
             <Setter Property="Foreground" Value="White"/>
             <Setter Property="Padding" Value="8,4"/>
-            <Setter Property="CornerRadius" Value="4"/>
+            <Setter Property="CornerRadius" Value="3"/>
             <Setter Property="FontSize" Value="16"/>
             <Setter Property="MinWidth" Value="36"/>
             <Setter Property="MinHeight" Value="28"/>
@@ -55,7 +85,7 @@
             <Setter Property="VerticalContentAlignment" Value="Center"/>
         </Style>
         <Style Selector="Button.transport-play:pointerover /template/ ContentPresenter#PART_ContentPresenter">
-            <Setter Property="Background" Value="#334155"/>
+            <Setter Property="Background" Value="{DynamicResource TlTransportBtnHover}"/>
         </Style>
 
         <!-- 播控传输栏 ToggleButton (循环等) -->
@@ -63,15 +93,33 @@
             <Setter Property="Focusable" Value="False"/>
             <Setter Property="Background" Value="Transparent"/>
             <Setter Property="Padding" Value="6,4"/>
-            <Setter Property="CornerRadius" Value="4"/>
+            <Setter Property="CornerRadius" Value="3"/>
             <Setter Property="MinWidth" Value="32"/>
             <Setter Property="MinHeight" Value="28"/>
         </Style>
         <Style Selector="ToggleButton.transport-toggle:pointerover /template/ ContentPresenter#PART_ContentPresenter">
-            <Setter Property="Background" Value="#334155"/>
+            <Setter Property="Background" Value="{DynamicResource TlTransportBtnHover}"/>
         </Style>
         <Style Selector="ToggleButton.transport-toggle:checked /template/ ContentPresenter#PART_ContentPresenter">
-            <Setter Property="Background" Value="#1e3a5f"/>
+            <Setter Property="Background" Value="{DynamicResource TlTransportCheckedBg}"/>
+        </Style>
+
+        <!-- 时间轴工具栏切换按钮 (主题感知, 用于吸附/预设等) -->
+        <Style Selector="ToggleButton.tl-toggle-btn">
+            <Setter Property="Focusable" Value="False"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Padding" Value="4,3"/>
+            <Setter Property="CornerRadius" Value="2"/>
+            <Setter Property="Foreground" Value="{DynamicResource TlTextSecondary}"/>
+        </Style>
+        <Style Selector="ToggleButton.tl-toggle-btn:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="{DynamicResource TlHoverBg}"/>
+        </Style>
+        <Style Selector="ToggleButton.tl-toggle-btn:checked /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="{DynamicResource TlAccentSoftBg}"/>
+        </Style>
+        <Style Selector="ToggleButton.tl-toggle-btn:checked">
+            <Setter Property="Foreground" Value="{DynamicResource TlAccentSoftFg}"/>
         </Style>
 
         <!-- 时间轴工具栏按钮 -->
@@ -79,11 +127,11 @@
             <Setter Property="Focusable" Value="False"/>
             <Setter Property="Background" Value="Transparent"/>
             <Setter Property="Padding" Value="8,4"/>
-            <Setter Property="CornerRadius" Value="3"/>
+            <Setter Property="CornerRadius" Value="2"/>
             <Setter Property="FontSize" Value="12"/>
         </Style>
         <Style Selector="Button.tl-btn:pointerover /template/ ContentPresenter#PART_ContentPresenter">
-            <Setter Property="Background" Value="#e5e7eb"/>
+            <Setter Property="Background" Value="{DynamicResource TlBtnHover}"/>
         </Style>
 
         <!-- 视图模式切换 -->
@@ -91,34 +139,42 @@
             <Setter Property="Focusable" Value="False"/>
             <Setter Property="Background" Value="Transparent"/>
             <Setter Property="Padding" Value="8,4"/>
-            <Setter Property="CornerRadius" Value="3"/>
+            <Setter Property="CornerRadius" Value="2"/>
             <Setter Property="FontSize" Value="12"/>
-            <Setter Property="Foreground" Value="#6b7280"/>
+            <Setter Property="Foreground" Value="{DynamicResource TlTextSecondary}"/>
         </Style>
         <Style Selector="ToggleButton.viewmode-btn:pointerover /template/ ContentPresenter#PART_ContentPresenter">
-            <Setter Property="Background" Value="#334155"/>
+            <Setter Property="Background" Value="{DynamicResource TlHoverBg}"/>
         </Style>
         <Style Selector="ToggleButton.viewmode-btn:checked /template/ ContentPresenter#PART_ContentPresenter">
-            <Setter Property="Background" Value="#1e3a5f"/>
+            <Setter Property="Background" Value="{DynamicResource TlAccentSoftBg}"/>
         </Style>
         <Style Selector="ToggleButton.viewmode-btn:checked">
-            <Setter Property="Foreground" Value="#60a5fa"/>
+            <Setter Property="Foreground" Value="{DynamicResource TlAccent}"/>
         </Style>
 
         <!-- 轨道操作按钮 (Enable/Solo/Lock) -->
         <Style Selector="ToggleButton.track-toggle">
             <Setter Property="Focusable" Value="False"/>
-            <Setter Property="CornerRadius" Value="3"/>
-            <Setter Property="Foreground" Value="#9ca3af"/>
+            <Setter Property="CornerRadius" Value="2"/>
+            <Setter Property="Foreground" Value="{DynamicResource TlTextMuted}"/>
         </Style>
         <Style Selector="ToggleButton.track-toggle:pointerover /template/ ContentPresenter#PART_ContentPresenter">
-            <Setter Property="Background" Value="#374151"/>
+            <Setter Property="Background" Value="{DynamicResource TlHoverBg}"/>
         </Style>
         <Style Selector="ToggleButton.track-toggle:checked /template/ ContentPresenter#PART_ContentPresenter">
-            <Setter Property="Background" Value="#1e3a5f"/>
+            <Setter Property="Background" Value="{DynamicResource TlAccentSoftBg}"/>
         </Style>
         <Style Selector="ToggleButton.track-toggle:checked">
-            <Setter Property="Foreground" Value="#60a5fa"/>
+            <Setter Property="Foreground" Value="{DynamicResource TlAccent}"/>
+        </Style>
+        <Style Selector="ToggleButton.group-mute-toggle:checked">
+            <Setter Property="Background" Value="{DynamicResource TlStatusOfflineBg}"/>
+            <Setter Property="Foreground" Value="{DynamicResource TlDanger}"/>
+        </Style>
+        <Style Selector="ToggleButton.group-solo-toggle:checked">
+            <Setter Property="Background" Value="{DynamicResource TlAccentSoftBg}"/>
+            <Setter Property="Foreground" Value="{DynamicResource TlAccent}"/>
         </Style>
 
         <!-- 轨道头样式 (主题感知) -->
@@ -146,21 +202,27 @@
                 </Transitions>
             </Setter>
         </Style>
-
-        <!-- 工具栏按钮悬停动画 -->
-        <Style Selector="Button.tl-btn">
+        <Style Selector="Border.track-group-header">
+            <Setter Property="Background" Value="{DynamicResource TlSectionHeaderBg}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource TlBorderBrush}"/>
+            <Setter Property="BorderThickness" Value="0,1,0,1"/>
             <Setter Property="Transitions">
                 <Transitions>
-                    <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.1"/>
+                    <BrushTransition Property="Background" Duration="0:0:0.12"/>
                 </Transitions>
             </Setter>
         </Style>
+        <Style Selector="Border.track-group-header:pointerover">
+            <Setter Property="Background" Value="{DynamicResource TlHoverBg}"/>
+        </Style>
+
+        <!-- 工具栏悬停只改变明度，避免编辑器控件产生位移感 -->
         <Style Selector="Button.tl-btn:pointerover">
-            <Setter Property="RenderTransform" Value="scale(1.08)"/>
+            <Setter Property="Opacity" Value="0.92"/>
         </Style>
     </Window.Styles>
 
-    <DockPanel>
+    <DockPanel Background="{DynamicResource TlWindowBg}">
         <!-- ═══════ 顶部专业菜单栏 ═══════ -->
         <Menu Name="MainMenu" DockPanel.Dock="Top" Background="{DynamicResource TlMenuBg}"
               BorderBrush="{DynamicResource TlBorderBrush}" Padding="4,0">
@@ -188,7 +250,8 @@
                 <MenuItem Header="添加关键帧" Click="OnAddKeyframeAtPlayhead"
                           InputGesture="K"/>
                 <Separator/>
-                <MenuItem Header="删除关键帧" InputGesture="Delete"/>
+                <MenuItem Header="删除关键帧" Command="{Binding DeleteKeyframeCommand}"
+                          InputGesture="Delete"/>
                 <Separator/>
                 <MenuItem Header="删除选中轨道" Click="OnDeleteSelectedTrack"/>
             </MenuItem>
@@ -219,51 +282,137 @@
                           ToolTip.Tip="重置所有轨道为全局默认高度"/>
             </MenuItem>
             <MenuItem Header="播放(_P)">
-                <MenuItem Header="播放/暂停" InputGesture="Space"/>
+                <MenuItem Header="播放/暂停" Command="{Binding PlayPauseCommand}" InputGesture="Space"/>
                 <MenuItem Header="停止" Command="{Binding StopCommand}"/>
                 <Separator/>
-                <MenuItem Header="循环播放" />
+                <MenuItem Header="循环播放" Command="{Binding ToggleLoopCommand}"
+                          ToolTip.Tip="切换循环播放" />
             </MenuItem>
         </Menu>
+
+        <!-- ═══════ 底部状态栏 (操作反馈 / 撤销重做提示 / 轨道统计) ═══════ -->
+        <Border DockPanel.Dock="Bottom" Background="{DynamicResource TlToolbarBg}"
+                BorderBrush="{DynamicResource TlBorderBrush}" BorderThickness="0,1,0,0" Padding="10,4">
+            <Grid ColumnDefinitions="Auto,*,Auto">
+                <!-- 左侧: 当前操作反馈 -->
+                <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="7" VerticalAlignment="Center">
+                    <Ellipse Width="7" Height="7" Fill="{DynamicResource TlAccent}" VerticalAlignment="Center"/>
+                    <TextBlock Text="{Binding StatusMessage}" FontSize="11"
+                               Foreground="{DynamicResource TlTextSecondary}" VerticalAlignment="Center"
+                               TextTrimming="CharacterEllipsis" MaxWidth="420"/>
+                </StackPanel>
+
+                <!-- 中间: 最近操作日志 (最新在前, 仅显示保留的前若干条) -->
+                <ItemsControl Grid.Column="1" ItemsSource="{Binding RecentOperations}" Margin="20,0,0,0"
+                              VerticalAlignment="Center">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <StackPanel Orientation="Horizontal" Spacing="20"/>
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding}" FontSize="10"
+                                       Foreground="{DynamicResource TlTextMuted}" VerticalAlignment="Center"
+                                       TextTrimming="CharacterEllipsis"/>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+
+                <!-- 右侧: 撤销/重做 提示 + 轨道统计 -->
+                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="16" VerticalAlignment="Center">
+                    <StackPanel Orientation="Horizontal" Spacing="4">
+                        <TextBlock Text="撤销:" FontSize="10" Foreground="{DynamicResource TlTextMuted}"
+                                   VerticalAlignment="Center"/>
+                        <TextBlock Text="{Binding UndoDescription}" FontSize="10"
+                                   Foreground="{DynamicResource TlTextSecondary}"
+                                   VerticalAlignment="Center" TextTrimming="CharacterEllipsis" MaxWidth="140"/>
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" Spacing="4">
+                        <TextBlock Text="重做:" FontSize="10" Foreground="{DynamicResource TlTextMuted}"
+                                   VerticalAlignment="Center"/>
+                        <TextBlock Text="{Binding RedoDescription}" FontSize="10"
+                                   Foreground="{DynamicResource TlTextSecondary}"
+                                   VerticalAlignment="Center" TextTrimming="CharacterEllipsis" MaxWidth="140"/>
+                    </StackPanel>
+                    <TextBlock Text="{Binding TrackCountLabel}" FontSize="10"
+                               Foreground="{DynamicResource TlTextMuted}" VerticalAlignment="Center"/>
+                </StackPanel>
+            </Grid>
+        </Border>
 
         <!-- ═══════ 主体: 上下分栏 (预览区 + 时间轴) ═══════ -->
         <Grid Name="MainContentGrid">
             <Grid.RowDefinitions>
-                <RowDefinition Height="2*" MinHeight="120"/>
+                <RowDefinition Height="1*" MinHeight="150"/>
                 <RowDefinition Height="Auto"/>
-                <RowDefinition Height="3*" MinHeight="180"/>
+                <RowDefinition Height="4*" MinHeight="240"/>
             </Grid.RowDefinitions>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" MinWidth="520"/>
+                <ColumnDefinition Width="4"/>
+                <ColumnDefinition Width="300" MinWidth="260" MaxWidth="420"/>
+            </Grid.ColumnDefinitions>
 
             <!-- ═══════ 上半部: 视频预览 + 关键帧属性 ═══════ -->
-            <Grid Grid.Row="0" Name="UpperGrid">
+            <Grid Grid.Row="0" Grid.Column="0" Name="UpperGrid">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*" MinWidth="120"/>
-                    <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="320" MinWidth="260" MaxWidth="480"/>
+                    <ColumnDefinition Width="0"/>
+                    <ColumnDefinition Width="0"/>
                 </Grid.ColumnDefinitions>
 
                 <!-- 视频预览 -->
                 <tc:VideoPreviewControl Grid.Column="0" Name="VideoPreview"/>
 
                 <!-- 分隔条 -->
-                <GridSplitter Grid.Column="1" Width="4" Background="{DynamicResource TlBorderBrush}"
+                <GridSplitter Grid.Column="1" Width="0" IsVisible="False" Background="{DynamicResource TlBorderBrush}"
                               ResizeDirection="Columns" Name="UpperVerticalSplitter"/>
-
-                <!-- 关键帧属性面板 (右侧) -->
-                <tc:KeyframePropertyPanel Grid.Column="2" Name="KfPropertyPanel"/>
             </Grid>
 
             <!-- 上下分隔条 (仅在预览区和下半部之间, 不再影响传输栏) -->
-            <GridSplitter Grid.Row="1" Height="4" Background="{DynamicResource TlBorderLight}"
+            <GridSplitter Grid.Row="1" Grid.Column="0" Height="4" Background="{DynamicResource TlBorderLight}"
                           ResizeDirection="Rows" HorizontalAlignment="Stretch"
                           Name="MainHorizontalSplitter"/>
 
+            <!-- Contextual dock shared by the entire workspace -->
+            <GridSplitter Grid.Row="0" Grid.Column="1" Grid.RowSpan="3" Width="4"
+                          Background="{DynamicResource TlBorderBrush}"
+                          ResizeDirection="Columns" Name="WorkspaceDockSplitter"/>
+
+            <Border Grid.Row="0" Grid.Column="2" Grid.RowSpan="3" Name="InspectorDock"
+                    Background="{DynamicResource TlPanelBg}"
+                    BorderBrush="{DynamicResource TlBorderBrush}" BorderThickness="1,0,0,0">
+                <TabControl Name="WorkspaceDockTabs" Classes="workspace-tabs" SelectedIndex="0">
+                    <TabItem Classes="workspace-tab">
+                        <TabItem.Header>
+                            <StackPanel Orientation="Horizontal" Spacing="5">
+                                <iconPacks:PackIconIonicons Kind="SettingsiOS" Width="13" Height="13"/>
+                                <TextBlock Text="检查器"/>
+                            </StackPanel>
+                        </TabItem.Header>
+                        <tc:KeyframePropertyPanel Name="KfPropertyPanel"/>
+                    </TabItem>
+                    <TabItem Classes="workspace-tab"
+                             IsVisible="{Binding PresetPanelVm.IsPanelVisible}">
+                        <TabItem.Header>
+                            <StackPanel Orientation="Horizontal" Spacing="5">
+                                <iconPacks:PackIconIonicons Kind="BookmarkiOS" Width="13" Height="13"/>
+                                <TextBlock Text="预设"/>
+                            </StackPanel>
+                        </TabItem.Header>
+                        <tc:PresetLibraryPanel Name="PresetLibraryDockPanel"
+                                               DataContext="{Binding PresetPanelVm}"/>
+                    </TabItem>
+                </TabControl>
+            </Border>
+
             <!-- ═══════ 下半部: 播控传输栏 + 时间轴编辑器 ═══════ -->
-            <DockPanel Grid.Row="2" Name="LowerPanel">
+            <DockPanel Grid.Row="2" Grid.Column="0" Name="LowerPanel">
 
                 <!-- ═══════ 播控传输栏 (固定高度, 不受拉伸影响) ═══════ -->
-                <Border DockPanel.Dock="Top" Background="#1e293b" Padding="8,3" Height="36"
-                        BorderBrush="#334155" BorderThickness="0,1">
+                <Border DockPanel.Dock="Top" Background="{DynamicResource TlTransportBg}" Padding="8,3" Height="36"
+                        BorderBrush="{DynamicResource TlTransportBorder}" BorderThickness="0,1">
                     <Grid>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto"/>
@@ -276,84 +425,72 @@
                                     VerticalAlignment="Center">
                             <!-- 跳转到开始 -->
                             <Button Classes="transport-btn" Click="OnJumpToStart"
-                                    ToolTip.Tip="跳转到开始 (Home)" Foreground="#e2e8f0">
-                                <Canvas Width="14" Height="14">
-                                    <Rectangle Canvas.Left="1" Canvas.Top="2" Width="2" Height="10" Fill="#e2e8f0"/>
-                                    <Path Data="M 12,2 L 4,7 L 12,12 Z" Fill="#e2e8f0"/>
-                                </Canvas>
+                                    ToolTip.Tip="跳转到开始 (Home)" Foreground="{DynamicResource TlTransportBtn}">
+                                <iconPacks:PackIconIonicons Kind="SkipBackwardiOS" Width="16" Height="16"/>
                             </Button>
                             <!-- 上一关键帧 -->
                             <Button Classes="transport-btn" Click="OnPrevKeyframe"
-                                    ToolTip.Tip="上一关键帧 (J)" Foreground="#e2e8f0">
-                                <Canvas Width="14" Height="14">
-                                    <Path Data="M 10,2 L 4,7 L 10,12" Stroke="#e2e8f0" StrokeThickness="1.8" Fill="Transparent"/>
-                                </Canvas>
+                                    ToolTip.Tip="上一关键帧 (J)" Foreground="{DynamicResource TlTransportBtn}">
+                                <iconPacks:PackIconIonicons Kind="ArrowBackiOS" Width="16" Height="16"/>
                             </Button>
                             <Button Classes="transport-play" Command="{Binding PlayCommand}"
                                     IsVisible="{Binding !IsPlaying}" ToolTip.Tip="播放 (Space)">
-                                <!-- Play: 右向三角 -->
-                                <Canvas Width="14" Height="14">
-                                    <Path Data="M 3,1 L 13,7 L 3,13 Z" Fill="#22c55e"/>
-                                </Canvas>
+                                <iconPacks:PackIconIonicons Kind="PlayiOS" Width="17" Height="17" Foreground="{DynamicResource TlTransportAccent}"/>
                             </Button>
                             <Button Classes="transport-play" Command="{Binding PauseCommand}"
                                     IsVisible="{Binding IsPlaying}" ToolTip.Tip="暂停 (Space)">
-                                <!-- Pause: 两条竖线 -->
-                                <Canvas Width="14" Height="14">
-                                    <Rectangle Canvas.Left="2" Canvas.Top="1" Width="3" Height="12" Fill="#f59e0b"/>
-                                    <Rectangle Canvas.Left="9" Canvas.Top="1" Width="3" Height="12" Fill="#f59e0b"/>
-                                </Canvas>
+                                <iconPacks:PackIconIonicons Kind="PauseiOS" Width="17" Height="17" Foreground="{DynamicResource TlTransportWarn}"/>
                             </Button>
                             <Button Classes="transport-btn" Command="{Binding StopCommand}"
-                                    ToolTip.Tip="停止" Foreground="#e2e8f0">
-                                <!-- Stop: 实心方块 -->
-                                <Canvas Width="14" Height="14">
-                                    <Rectangle Canvas.Left="2" Canvas.Top="2" Width="10" Height="10" Fill="#e2e8f0"
-                                               RadiusX="1" RadiusY="1"/>
-                                </Canvas>
+                                    ToolTip.Tip="停止" Foreground="{DynamicResource TlTransportBtn}">
+                                <iconPacks:PackIconIonicons Kind="SquareiOS" Width="15" Height="15"/>
                             </Button>
+                            <Border Width="1" Background="{DynamicResource TlTransportSeparator}" Margin="4,5"/>
                             <ToggleButton Classes="transport-toggle" IsChecked="{Binding IsLoop}" ToolTip.Tip="循环播放"
-                                          Foreground="#e2e8f0">
+                                          Foreground="{DynamicResource TlTransportBtn}">
                                 <!-- Loop: 循环箭头 -->
                                 <Canvas Width="14" Height="14">
                                     <Path
-                                    Data="M 11,4 A 4,4 0 1 0 11,10 M 11,4 L 13,2 M 11,4 L 13,6"
-                                    Stroke="#e2e8f0" StrokeThickness="1.5" Fill="Transparent"/>
+                                        Data="M 11,4 A 4,4 0 1 0 11,10 M 11,4 L 13,2 M 11,4 L 13,6"
+                                        Stroke="{DynamicResource TlTransportBtn}" StrokeThickness="1.5" Fill="Transparent"/>
                                 </Canvas>
                             </ToggleButton>
+                            <Border Width="1" Background="{DynamicResource TlTransportSeparator}" Margin="4,5"/>
                             <!-- 设备实时输出开关 -->
                             <ToggleButton Classes="transport-toggle" IsChecked="{Binding IsLiveOutputEnabled}"
                                           ToolTip.Tip="设备实时输出 (预览时将值发送到物理设备)"
-                                          Foreground="#e2e8f0">
+                                          Foreground="{DynamicResource TlTransportBtn}">
                                 <!-- Device output: 信号塔/广播图标 -->
                                 <Canvas Width="14" Height="14">
                                     <Path
-                                    Data="M 7,12 L 7,5 M 4,8 A 4,4 0 0 1 10,8 M 2,6 A 6,6 0 0 1 12,6"
-                                    Stroke="#e2e8f0" StrokeThickness="1.3" Fill="Transparent"/>
-                                    <Ellipse Canvas.Left="5.5" Canvas.Top="3" Width="3" Height="3" Fill="#e2e8f0"/>
+                                        Data="M 7,12 L 7,5 M 4,8 A 4,4 0 0 1 10,8 M 2,6 A 6,6 0 0 1 12,6"
+                                        Stroke="{DynamicResource TlTransportBtn}" StrokeThickness="1.3" Fill="Transparent"/>
+                                    <Ellipse Canvas.Left="5.5" Canvas.Top="3" Width="3" Height="3" Fill="{DynamicResource TlTransportBtn}"/>
                                 </Canvas>
                             </ToggleButton>
+                            <!-- LiveOutput 状态灯 (绿=输出到设备 / 灰=仅预览) -->
+                            <Grid Width="8" Height="8" Margin="2,0" VerticalAlignment="Center"
+                                  ToolTip.Tip="设备实时输出">
+                                <Ellipse Width="8" Height="8" Fill="{DynamicResource TlTransportSeparator}"/>
+                                <Ellipse Width="8" Height="8" IsVisible="{Binding IsLiveOutputEnabled}"
+                                         Fill="{DynamicResource TlTransportAccent}"/>
+                            </Grid>
                             <!-- 下一关键帧 -->
                             <Button Classes="transport-btn" Click="OnNextKeyframe"
-                                    ToolTip.Tip="下一关键帧 (L)" Foreground="#e2e8f0">
-                                <Canvas Width="14" Height="14">
-                                    <Path Data="M 4,2 L 10,7 L 4,12" Stroke="#e2e8f0" StrokeThickness="1.8" Fill="Transparent"/>
-                                </Canvas>
+                                    ToolTip.Tip="下一关键帧 (L)" Foreground="{DynamicResource TlTransportBtn}">
+                                <iconPacks:PackIconIonicons Kind="ArrowForwardiOS" Width="16" Height="16"/>
                             </Button>
                             <!-- 跳转到结尾 -->
                             <Button Classes="transport-btn" Click="OnJumpToEnd"
-                                    ToolTip.Tip="跳转到结尾 (End)" Foreground="#e2e8f0">
-                                <Canvas Width="14" Height="14">
-                                    <Path Data="M 2,2 L 10,7 L 2,12 Z" Fill="#e2e8f0"/>
-                                    <Rectangle Canvas.Left="11" Canvas.Top="2" Width="2" Height="10" Fill="#e2e8f0"/>
-                                </Canvas>
+                                    ToolTip.Tip="跳转到结尾 (End)" Foreground="{DynamicResource TlTransportBtn}">
+                                <iconPacks:PackIconIonicons Kind="SkipForwardiOS" Width="16" Height="16"/>
                             </Button>
 
-                            <Border Width="1" Background="#475569" Margin="4,4"/>
+                            <Border Width="1" Background="{DynamicResource TlTransportSeparator}" Margin="4,4"/>
 
                             <!-- 速度 -->
                             <ComboBox SelectedIndex="2" Padding="4,2" MinWidth="56" FontSize="11"
-                                      Background="#334155" Foreground="#e2e8f0" BorderBrush="#475569"
+                                      Background="{DynamicResource TlTransportInputBg}" Foreground="{DynamicResource TlTransportBtn}" BorderBrush="{DynamicResource TlTransportSeparator}"
                                       VerticalAlignment="Center"
                                       Name="SpeedComboBox">
                                 <ComboBoxItem Content="0.25x" Tag="0.25"/>
@@ -373,14 +510,14 @@
                                 <Panel>
                                     <TextBlock Name="CurrentTimeDisplayText"
                                                FontFamily="Consolas, monospace" FontSize="14"
-                                               Foreground="#93c5fd" FontWeight="Bold"
+                                               Foreground="{DynamicResource TlTransportTimeText}" FontWeight="Bold"
                                                Text="{Binding CurrentTimeDisplay}"
                                                DoubleTapped="OnCurrentTimeDoubleClick"/>
                                     <TextBox Name="CurrentTimeEditBox"
                                              IsVisible="False"
                                              FontFamily="Consolas, monospace" FontSize="13"
-                                             FontWeight="Bold" Foreground="#93c5fd"
-                                             Background="#334155" BorderBrush="#60a5fa"
+                                             FontWeight="Bold" Foreground="{DynamicResource TlTransportTimeText}"
+                                             Background="{DynamicResource TlTransportInputBg}" BorderBrush="{DynamicResource TlAccent}"
                                              Width="90" Padding="2,0"
                                              VerticalAlignment="Center"
                                              KeyDown="OnCurrentTimeEditKeyDown"
@@ -388,37 +525,27 @@
                                 </Panel>
                             </Border>
                             <TextBlock FontFamily="Consolas, monospace" FontSize="12"
-                                       Foreground="#64748b" VerticalAlignment="Center"
+                                       Foreground="{DynamicResource TlTransportTextDim}" VerticalAlignment="Center"
                                        Text="/"/>
                             <TextBlock FontFamily="Consolas, monospace" FontSize="12"
-                                       Foreground="#94a3b8" VerticalAlignment="Center"
+                                       Foreground="{DynamicResource TlTransportTextSoft}" VerticalAlignment="Center"
                                        Text="{Binding DurationDisplay}"/>
                         </StackPanel>
 
-                        <!-- 右侧: 视图模式快捷切换 -->
+                        <!-- 右侧: 视图模式快捷切换 (随传输栏深色风格) -->
                         <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="2"
                                     VerticalAlignment="Center">
                             <ToggleButton Classes="viewmode-btn"
                                           IsChecked="{Binding IsDopesheetMode, Mode=OneWay}"
                                           Click="OnDopesheetClick"
                                           ToolTip.Tip="关键帧视图">
-                                <!-- Diamond shape for dopesheet -->
-                                <Canvas Width="13" Height="13">
-                                    <Path
-                                    Data="M 6.5,1 L 12,6.5 L 6.5,12 L 1,6.5 Z"
-                                    Stroke="#e2e8f0" StrokeThickness="1.5" Fill="Transparent"/>
-                                </Canvas>
+                                <iconPacks:PackIconIonicons Kind="GridiOS" Width="15" Height="15" Foreground="{DynamicResource TlTransportBtn}"/>
                             </ToggleButton>
                             <ToggleButton Classes="viewmode-btn"
                                           IsChecked="{Binding IsCurvesMode, Mode=OneWay}"
                                           Click="OnCurvesClick"
                                           ToolTip.Tip="曲线视图">
-                                <!-- Curve line for curves mode -->
-                                <Canvas Width="13" Height="13">
-                                    <Path
-                                    Data="M 1,11 C 3,11 5,2 7,2 C 9,2 11,11 13,11"
-                                    Stroke="#e2e8f0" StrokeThickness="1.5" Fill="Transparent"/>
-                                </Canvas>
+                                <iconPacks:PackIconIonicons Kind="PulseiOS" Width="15" Height="15" Foreground="{DynamicResource TlTransportBtn}"/>
                             </ToggleButton>
                         </StackPanel>
                     </Grid>
@@ -429,139 +556,160 @@
                     <!-- 时间轴工具栏 -->
                     <Border DockPanel.Dock="Top" Background="{DynamicResource TlToolbarBg}" Padding="6,3"
                             BorderBrush="{DynamicResource TlBorderBrush}" BorderThickness="0,0,0,1">
-                        <Grid>
-                            <StackPanel Orientation="Horizontal" Spacing="2">
-                                <!-- 添加轨道 -->
-                                <Button Classes="tl-btn" ToolTip.Tip="添加轨道"
-                                        Click="OnAddTrack" Cursor="Hand" Padding="4,3">
-                                    <Canvas Width="14" Height="14">
-                                        <Line StartPoint="7,2" EndPoint="7,12" Stroke="{DynamicResource TlTextSecondary}" StrokeThickness="1.8"/>
-                                        <Line StartPoint="2,7" EndPoint="12,7" Stroke="{DynamicResource TlTextSecondary}" StrokeThickness="1.8"/>
-                                    </Canvas>
-                                </Button>
+                        <!--
+                        Keep the command groups in separate columns. The minimum content width
+                        makes the compact window scroll horizontally instead of allowing the right
+                        zoom controls to overlap the editing commands.
+                        -->
+                        <ScrollViewer HorizontalScrollBarVisibility="Auto"
+                                      VerticalScrollBarVisibility="Disabled">
+                            <Grid MinWidth="720" ColumnDefinitions="*,Auto">
+                                <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="2"
+                                            HorizontalAlignment="Left">
+                                    <!-- 添加轨道 -->
+                                    <Button Classes="tl-btn" ToolTip.Tip="添加轨道"
+                                            Click="OnAddTrack" Cursor="Hand" Padding="4,3">
+                                        <StackPanel Orientation="Horizontal" Spacing="4">
+                                            <iconPacks:PackIconIonicons Kind="AddiOS" Width="16" Height="16" Foreground="{DynamicResource TlTextSecondary}"/>
+                                            <TextBlock Text="轨道" FontSize="11" VerticalAlignment="Center"/>
+                                        </StackPanel>
+                                    </Button>
 
-                                <Border Width="1" Background="{DynamicResource TlBorderLight}" Margin="2,4"/>
+                                    <Border Width="1" Background="{DynamicResource TlBorderLight}" Margin="2,4"/>
 
-                                <!-- 添加关键帧 -->
-                                <Button Classes="tl-btn" ToolTip.Tip="添加关键帧 (K)"
-                                        Click="OnAddKeyframeAtPlayhead" Cursor="Hand" Padding="4,3">
-                                    <Canvas Width="14" Height="14">
-                                        <Path Data="M 7,1 L 12,7 L 7,13 L 2,7 Z" Stroke="{DynamicResource TlTextSecondary}" StrokeThickness="1.5" Fill="Transparent"/>
-                                    </Canvas>
-                                </Button>
+                                    <!-- 添加关键帧 -->
+                                    <Button Classes="tl-btn" ToolTip.Tip="添加关键帧 (K)"
+                                            Click="OnAddKeyframeAtPlayhead" Cursor="Hand" Padding="4,3">
+                                        <StackPanel Orientation="Horizontal" Spacing="4">
+                                            <iconPacks:PackIconIonicons Kind="KeyiOS" Width="16" Height="16" Foreground="{DynamicResource TlTextSecondary}"/>
+                                            <TextBlock Text="关键帧" FontSize="11" VerticalAlignment="Center"/>
+                                        </StackPanel>
+                                    </Button>
 
-                                <!-- 添加事件 -->
-                                <Button Classes="tl-btn" ToolTip.Tip="添加事件 (E)"
-                                        Click="OnAddEventAtPlayhead" Cursor="Hand" Padding="4,3">
-                                    <Canvas Width="14" Height="14">
-                                        <Path Data="M 8,1 L 5,7 H 8 L 6,13" Stroke="#f59e0b" StrokeThickness="1.8" Fill="Transparent" StrokeLineCap="Round"/>
-                                    </Canvas>
-                                </Button>
+                                    <!-- 添加事件 -->
+                                    <Button Classes="tl-btn" ToolTip.Tip="添加事件 (E)"
+                                            Click="OnAddEventAtPlayhead" Cursor="Hand" Padding="4,3">
+                                        <StackPanel Orientation="Horizontal" Spacing="4">
+                                            <iconPacks:PackIconIonicons Kind="FlashiOS" Width="16" Height="16" Foreground="{DynamicResource TlEvent}"/>
+                                            <TextBlock Text="事件" FontSize="11" VerticalAlignment="Center"/>
+                                        </StackPanel>
+                                    </Button>
 
-                                <Border Width="1" Background="{DynamicResource TlBorderLight}" Margin="2,4"/>
+                                    <Border Width="1" Background="{DynamicResource TlBorderLight}" Margin="2,4"/>
 
-                                <!-- 缩放适配 -->
-                                <Button Classes="tl-btn" ToolTip.Tip="适配窗口 (F)"
-                                        Click="OnZoomToFit" Cursor="Hand" Padding="4,3">
-                                    <Canvas Width="14" Height="14">
-                                        <Path Data="M 1,4 L 1,1 L 4,1 M 10,1 L 13,1 L 13,4 M 13,10 L 13,13 L 10,13 M 4,13 L 1,13 L 1,10"
-                                              Stroke="{DynamicResource TlTextSecondary}" StrokeThickness="1.5" Fill="Transparent"/>
-                                    </Canvas>
-                                </Button>
+                                    <!-- 缩放适配 -->
+                                    <Button Classes="tl-btn" ToolTip.Tip="适配窗口 (F)"
+                                            Click="OnZoomToFit" Cursor="Hand" Padding="4,3">
+                                        <iconPacks:PackIconIonicons Kind="ResizeiOS" Width="16" Height="16" Foreground="{DynamicResource TlTextSecondary}"/>
+                                    </Button>
 
-                                <!-- 吸附开关 -->
-                                <ToggleButton Classes="viewmode-btn"
-                                              Name="SnapToggle"
-                                              IsChecked="{Binding IsSnapEnabled}"
-                                              ToolTip.Tip="吸附 (关键帧/事件/视频结尾)"
-                                              Cursor="Hand" Padding="4,3">
-                                    <Canvas Width="14" Height="14">
-                                        <Path Data="M 3,2 C 3,2 2,6 5,7 C 8,8 3,12 3,12 M 11,2 C 11,2 12,6 9,7 C 6,8 11,12 11,12"
-                                              Stroke="{DynamicResource TlTextSecondary}" StrokeThickness="1.4" Fill="Transparent"/>
-                                    </Canvas>
-                                </ToggleButton>
+                                    <Border Width="1" Background="{DynamicResource TlBorderLight}" Margin="2,4"/>
 
-                                <Border Width="1" Background="{DynamicResource TlBorderLight}" Margin="2,4"/>
+                                    <!-- 效果预设库面板切换 -->
+                                    <ToggleButton Classes="tl-toggle-btn"
+                                                  IsChecked="{Binding PresetPanelVm.IsPanelVisible}"
+                                                  ToolTip.Tip="效果预设库"
+                                                  Cursor="Hand" Padding="4,3"
+                                                  Click="OnPresetPanelToggleClick">
+                                        <StackPanel Orientation="Horizontal" Spacing="3">
+                                            <iconPacks:PackIconIonicons Kind="BookmarkiOS" Width="14" Height="14"
+                                                                        Foreground="{DynamicResource TlTextSecondary}"/>
+                                            <TextBlock Text="预设" FontSize="11" VerticalAlignment="Center"/>
+                                        </StackPanel>
+                                    </ToggleButton>
 
-                                <!-- 总时长显示 (双击可编辑) -->
-                                <Border Background="{DynamicResource TlBadgeBg}" CornerRadius="4" Padding="6,2"
-                                        VerticalAlignment="Center"
-                                        ToolTip.Tip="双击设置总时长 (秒), 设为 0 恢复自动计算">
-                                    <StackPanel Orientation="Horizontal" Spacing="4">
-                                        <TextBlock Text="总时长" FontSize="10" Foreground="{DynamicResource TlTextMuted}"
+                                    <!-- 吸附开关 -->
+                                    <ToggleButton Classes="tl-toggle-btn"
+                                                  Name="SnapToggle"
+                                                  IsChecked="{Binding IsSnapEnabled}"
+                                                  ToolTip.Tip="吸附 (关键帧/事件/视频结尾)"
+                                                  Cursor="Hand" Padding="4,3">
+                                        <Canvas Width="14" Height="14">
+                                            <Path Data="M 3,2 C 3,2 2,6 5,7 C 8,8 3,12 3,12 M 11,2 C 11,2 12,6 9,7 C 6,8 11,12 11,12"
+                                                  Stroke="{DynamicResource TlTextSecondary}" StrokeThickness="1.4" Fill="Transparent"/>
+                                        </Canvas>
+                                    </ToggleButton>
+
+                                    <Border Width="1" Background="{DynamicResource TlBorderLight}" Margin="2,4"/>
+
+                                    <!-- 总时长显示 (双击可编辑) -->
+                                    <Border Background="Transparent" Padding="6,2"
+                                            VerticalAlignment="Center"
+                                            ToolTip.Tip="双击设置总时长 (秒), 设为 0 恢复自动计算">
+                                        <StackPanel Orientation="Horizontal" Spacing="4">
+                                            <TextBlock Text="总时长" FontSize="10" Foreground="{DynamicResource TlTextMuted}"
+                                                       VerticalAlignment="Center"/>
+                                            <TextBlock Name="DurationDisplayText"
+                                                       Text="{Binding DurationDisplay}"
+                                                       FontSize="11" FontWeight="SemiBold"
+                                                       Foreground="{DynamicResource TlAccent}"
+                                                       FontFamily="Consolas, monospace"
+                                                       VerticalAlignment="Center"
+                                                       DoubleTapped="OnDurationDoubleClick"
+                                                       Cursor="Hand"/>
+                                            <TextBox Name="DurationEditBox"
+                                                     IsVisible="False"
+                                                     FontSize="11" FontWeight="SemiBold"
+                                                     Foreground="{DynamicResource TlAccent}"
+                                                     FontFamily="Consolas, monospace"
+                                                     Width="60" Padding="2,0"
+                                                     VerticalAlignment="Center"
+                                                     KeyDown="OnDurationEditKeyDown"
+                                                     LostFocus="OnDurationEditLostFocus"/>
+                                        </StackPanel>
+                                    </Border>
+                                </StackPanel>
+
+                                <!-- 右侧: 缩放滑块 + 操作提示 -->
+                                <StackPanel Grid.Column="1" HorizontalAlignment="Right" Orientation="Horizontal"
+                                            Spacing="8" VerticalAlignment="Center">
+                                    <!-- UX-B2: 显示过滤下拉 -->
+                                    <StackPanel Orientation="Horizontal" Spacing="3"
+                                                VerticalAlignment="Center"
+                                                ToolTip.Tip="过滤轨道列表的显示范围">
+                                        <TextBlock Text="显示" FontSize="10"
+                                                   Foreground="{DynamicResource TlTextMuted}"
                                                    VerticalAlignment="Center"/>
-                                        <TextBlock Name="DurationDisplayText"
-                                                   Text="{Binding DurationDisplay}"
-                                                   FontSize="11" FontWeight="SemiBold"
-                                                   Foreground="#1e40af"
-                                                   FontFamily="Consolas, monospace"
-                                                   VerticalAlignment="Center"
-                                                   DoubleTapped="OnDurationDoubleClick"
-                                                   Cursor="Hand"/>
-                                        <TextBox Name="DurationEditBox"
-                                                 IsVisible="False"
-                                                 FontSize="11" FontWeight="SemiBold"
-                                                 Foreground="#1e40af"
-                                                 FontFamily="Consolas, monospace"
-                                                 Width="60" Padding="2,0"
-                                                 VerticalAlignment="Center"
-                                                 KeyDown="OnDurationEditKeyDown"
-                                                 LostFocus="OnDurationEditLostFocus"/>
+                                        <ComboBox Name="DisplayFilterCombo"
+                                                  ItemsSource="{Binding DisplayFilterOptions}"
+                                                  SelectedItem="{Binding DisplayFilter}"
+                                                  DisplayMemberBinding="{Binding Label}"
+                                                  MinHeight="0" Padding="4,1" FontSize="10"
+                                                  VerticalAlignment="Center"/>
                                     </StackPanel>
-                                </Border>
-                            </StackPanel>
-
-                            <!-- 右侧: 缩放滑块 + 操作提示 -->
-                            <StackPanel HorizontalAlignment="Right" Orientation="Horizontal"
-                                        Spacing="8" VerticalAlignment="Center">
-                                <!-- UX-B2: 显示过滤下拉 -->
-                                <StackPanel Orientation="Horizontal" Spacing="3"
-                                            VerticalAlignment="Center"
-                                            ToolTip.Tip="过滤轨道列表的显示范围">
-                                    <TextBlock Text="显示" FontSize="10"
-                                               Foreground="{DynamicResource TlTextMuted}"
-                                               VerticalAlignment="Center"/>
-                                    <ComboBox Name="DisplayFilterCombo"
-                                              ItemsSource="{Binding DisplayFilterOptions}"
-                                              SelectedItem="{Binding DisplayFilter}"
-                                              DisplayMemberBinding="{Binding Label}"
-                                              MinHeight="0" Padding="4,1" FontSize="10"
-                                              VerticalAlignment="Center"/>
+                                    <Border Width="1" Background="{DynamicResource TlBorderLight}" Margin="0,4"/>
+                                    <!-- 缩放滑块 -->
+                                    <StackPanel Orientation="Horizontal" Spacing="4"
+                                                VerticalAlignment="Center">
+                                        <Button Classes="tl-btn" Click="OnZoomOut" ToolTip.Tip="缩小 (-)"
+                                                Cursor="Hand" Padding="2,2">
+                                            <iconPacks:PackIconIonicons Kind="RemoveiOS" Width="15" Height="15" Foreground="{DynamicResource TlTextSecondary}"/>
+                                        </Button>
+                                        <Slider Name="ZoomSlider" Width="120"
+                                                Minimum="0" Maximum="100" Value="30"
+                                                VerticalAlignment="Center"
+                                                ToolTip.Tip="缩放级别"
+                                                PropertyChanged="OnZoomSliderChanged"/>
+                                        <Button Classes="tl-btn" Click="OnZoomIn" ToolTip.Tip="放大 (+)"
+                                                Cursor="Hand" Padding="2,2">
+                                            <iconPacks:PackIconIonicons Kind="AddiOS" Width="15" Height="15" Foreground="{DynamicResource TlTextSecondary}"/>
+                                        </Button>
+                                        <TextBlock Name="ZoomPercentText" FontSize="10"
+                                                   Foreground="{DynamicResource TlTextMuted}" VerticalAlignment="Center"
+                                                   Width="36" TextAlignment="Center" Text="100%"/>
+                                    </StackPanel>
+                                    <Border Width="1" Background="{DynamicResource TlBorderLight}" Margin="0,4"/>
+                                    <TextBlock FontSize="9" Foreground="{DynamicResource TlTextMuted}" VerticalAlignment="Center"
+                                               Text="快捷键见菜单" Opacity="0.55" IsVisible="False"/>
                                 </StackPanel>
-                                <Border Width="1" Background="{DynamicResource TlBorderLight}" Margin="0,4"/>
-                                <!-- 缩放滑块 -->
-                                <StackPanel Orientation="Horizontal" Spacing="4"
-                                            VerticalAlignment="Center">
-                                    <Button Classes="tl-btn" Click="OnZoomOut" ToolTip.Tip="缩小 (-)"
-                                            Cursor="Hand" Padding="2,2">
-                                        <TextBlock Text="−" FontSize="14" Foreground="#6b7280"
-                                                   FontWeight="Bold"/>
-                                    </Button>
-                                    <Slider Name="ZoomSlider" Width="120"
-                                            Minimum="0" Maximum="100" Value="30"
-                                            VerticalAlignment="Center"
-                                            ToolTip.Tip="缩放级别"
-                                            PropertyChanged="OnZoomSliderChanged"/>
-                                    <Button Classes="tl-btn" Click="OnZoomIn" ToolTip.Tip="放大 (+)"
-                                            Cursor="Hand" Padding="2,2">
-                                        <TextBlock Text="+" FontSize="14" Foreground="#6b7280"
-                                                   FontWeight="Bold"/>
-                                    </Button>
-                                    <TextBlock Name="ZoomPercentText" FontSize="10"
-                                               Foreground="#9ca3af" VerticalAlignment="Center"
-                                               Width="36" TextAlignment="Center" Text="100%"/>
-                                </StackPanel>
-                                <Border Width="1" Background="{DynamicResource TlBorderLight}" Margin="0,4"/>
-                                <TextBlock FontSize="9" Foreground="{DynamicResource TlTextMuted}" VerticalAlignment="Center"
-                                           Text="K:帧 E:事件 F:适配" Opacity="0.6"/>
-                            </StackPanel>
-                        </Grid>
+                            </Grid>
+                        </ScrollViewer>
                     </Border>
 
                     <!-- 时间轴内容区 -->
                     <Grid>
                         <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="180" MinWidth="120" MaxWidth="320"/>
+                            <ColumnDefinition Width="280" MinWidth="220" MaxWidth="420"/>
                             <ColumnDefinition Width="Auto"/>
                             <ColumnDefinition Width="*"/>
                         </Grid.ColumnDefinitions>
@@ -591,10 +739,10 @@
                                         <TextBlock Grid.Row="0" Text="轨道" FontWeight="SemiBold" FontSize="11"
                                                    Foreground="{DynamicResource TlTextSecondary}" VerticalAlignment="Center"
                                                    Margin="8,0"/>
-                                        <TextBlock Grid.Row="1" Text="◆ 标记" FontSize="10"
+                                        <TextBlock Grid.Row="1" Text="标记" FontSize="10"
                                                    Foreground="{DynamicResource TlTextMuted}" VerticalAlignment="Center"
                                                    Margin="8,0"/>
-                                        <TextBlock Grid.Row="2" Text="🚩 事件" FontSize="10"
+                                        <TextBlock Grid.Row="2" Text="事件" FontSize="10"
                                                    Foreground="{DynamicResource TlTextMuted}" VerticalAlignment="Center"
                                                    Margin="8,0"/>
                                     </Grid>
@@ -605,11 +753,11 @@
                                         IsVisible="{Binding IsWaveformVisible}"
                                         Background="{DynamicResource TlPanelBg}"
                                         BorderBrush="{DynamicResource TlBorderBrush}" BorderThickness="0,0,0,1">
-                                    <TextBlock Text="♪" FontSize="11"
-                                               Foreground="{DynamicResource TlTextMuted}"
-                                               VerticalAlignment="Center"
-                                               HorizontalAlignment="Center"
-                                               Opacity="0.5"/>
+                                    <iconPacks:PackIconIonicons Kind="PulseiOS" Width="14" Height="14"
+                                                                Foreground="{DynamicResource TlTextMuted}"
+                                                                VerticalAlignment="Center"
+                                                                HorizontalAlignment="Center"
+                                                                Opacity="0.5"/>
                                 </Border>
 
                                 <!-- 轨道头列表 (分组头 + 轨道交替) -->
@@ -621,9 +769,9 @@
 
                                             <!-- ══ 分组头行模板 ══ -->
                                             <DataTemplate DataType="vm:GroupHeaderViewModel">
-                                                <Border Height="24" Background="{DynamicResource TlBadgeGroupBg}"
-                                                        BorderBrush="{DynamicResource TlBorderLight}" BorderThickness="0,0,0,1"
-                                                        Padding="4,0" Tag="{Binding}">
+                                                <Border Classes="track-group-header" Height="34"
+                                                        Padding="0" Tag="{Binding}"
+                                                        AutomationProperties.Name="{Binding Name}">
                                                     <Border.ContextMenu>
                                                         <ContextMenu>
                                                             <MenuItem Header="重命名分组..." Tag="{Binding}"
@@ -631,7 +779,7 @@
                                                             <MenuItem Header="删除分组"
                                                                       Command="{Binding $parent[Window].((vm:TimelineEditorViewModel)DataContext).DeleteGroupCommand}"
                                                                       CommandParameter="{Binding}"
-                                                                      Foreground="#ef4444"/>
+                                                                      Foreground="{DynamicResource TlDanger}"/>
                                                             <Separator/>
                                                             <MenuItem Header="添加轨道到此分组..." Tag="{Binding}"
                                                                       Click="OnAddTrackToGroup"/>
@@ -639,46 +787,67 @@
                                                         </ContextMenu>
                                                     </Border.ContextMenu>
                                                     <DockPanel VerticalAlignment="Center">
+                                                        <Border Width="3" Height="34" Background="{Binding Color}"
+                                                                DockPanel.Dock="Left"/>
                                                         <Button Tag="{Binding}"
                                                                 Click="OnToggleGroupExpand"
-                                                                Padding="2,0" Background="Transparent"
-                                                                MinWidth="0" MinHeight="0" Cursor="Hand"
+                                                                Padding="4,0" Background="Transparent"
+                                                                MinWidth="26" MinHeight="26" Cursor="Hand"
+                                                                ToolTip.Tip="{Binding ExpandActionLabel}"
+                                                                AutomationProperties.Name="{Binding ExpandActionLabel}"
                                                                 DockPanel.Dock="Left">
-                                                            <TextBlock Text="{Binding ExpandIcon}"
-                                                                       FontSize="9" Foreground="#7c3aed"/>
+                                                            <Panel Width="14" Height="14">
+                                                                <iconPacks:PackIconIonicons Kind="ArrowDowniOS"
+                                                                                            Width="12" Height="12"
+                                                                                            Foreground="{DynamicResource TlAccent}"
+                                                                                            HorizontalAlignment="Center"
+                                                                                            VerticalAlignment="Center"
+                                                                                            IsVisible="{Binding !IsCollapsed}"/>
+                                                                <iconPacks:PackIconIonicons Kind="ArrowForwardiOS"
+                                                                                            Width="12" Height="12"
+                                                                                            Foreground="{DynamicResource TlAccent}"
+                                                                                            HorizontalAlignment="Center"
+                                                                                            VerticalAlignment="Center"
+                                                                                            IsVisible="{Binding IsCollapsed}"/>
+                                                            </Panel>
                                                         </Button>
-                                                        <TextBlock Text="▸" FontSize="10" Foreground="#7c3aed"
-                                                                   VerticalAlignment="Center"
-                                                                   DockPanel.Dock="Left" Margin="4,0,4,0"/>
+                                                        <iconPacks:PackIconIonicons Kind="FolderOpeniOS" Width="13" Height="13"
+                                                                                    Foreground="{DynamicResource TlAccent}"
+                                                                                    VerticalAlignment="Center"
+                                                                                    DockPanel.Dock="Left" Margin="2,0,6,0"/>
                                                         <TextBlock Text="{Binding Name}"
-                                                                   FontSize="10" FontWeight="SemiBold"
-                                                                   Foreground="#7c3aed"
+                                                                   FontSize="11" FontWeight="SemiBold"
+                                                                   Foreground="{DynamicResource TlTextPrimary}"
                                                                    VerticalAlignment="Center"
-                                                                   DockPanel.Dock="Left"/>
-                                                        <TextBlock Text="{Binding TrackCountDisplay}"
-                                                                   FontSize="9" Foreground="#a78bfa"
-                                                                   Margin="4,0,0,0"
-                                                                   VerticalAlignment="Center"
-                                                                   DockPanel.Dock="Left"/>
+                                                                   DockPanel.Dock="Left"
+                                                                   TextTrimming="CharacterEllipsis"/>
+                                                        <Border Background="{DynamicResource TlBadgeGroupBg}" CornerRadius="3"
+                                                                Padding="7,2" Margin="8,0,0,0"
+                                                                VerticalAlignment="Center" DockPanel.Dock="Left">
+                                                            <TextBlock Text="{Binding TrackCountDisplay}"
+                                                                       FontSize="10" Foreground="{DynamicResource TlTextSecondary}"/>
+                                                        </Border>
                                                         <!-- UX-B4: 分组 Solo / Mute 按钮 (DockPanel.Dock=Right 让它们贴右) -->
-                                                        <ToggleButton Classes="track-toggle" IsChecked="{Binding IsMuted}"
+                                                        <ToggleButton Classes="track-toggle group-mute-toggle" IsChecked="{Binding IsMuted}"
                                                                       DockPanel.Dock="Right"
                                                                       Padding="2" Background="Transparent"
-                                                                      ToolTip.Tip="分组静音 (级联到组内轨道)"
+                                                                      ToolTip.Tip="{Binding MuteActionLabel}"
+                                                                      AutomationProperties.Name="{Binding MuteActionLabel}"
                                                                       MinWidth="0" MinHeight="0"
-                                                                      Width="20" Height="20"
-                                                                      Margin="1,0,4,0">
-                                                            <TextBlock Text="M" FontSize="10" FontWeight="Bold"
+                                                                      Width="22" Height="22"
+                                                                      Margin="1,0,5,0">
+                                                            <TextBlock Text="M" FontSize="10" FontWeight="SemiBold"
                                                                        HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                                         </ToggleButton>
-                                                        <ToggleButton Classes="track-toggle" IsChecked="{Binding IsSolo}"
+                                                        <ToggleButton Classes="track-toggle group-solo-toggle" IsChecked="{Binding IsSolo}"
                                                                       DockPanel.Dock="Right"
                                                                       Padding="2" Background="Transparent"
-                                                                      ToolTip.Tip="分组独奏 (级联到组内轨道, 分组间互斥)"
+                                                                      ToolTip.Tip="{Binding SoloActionLabel}"
+                                                                      AutomationProperties.Name="{Binding SoloActionLabel}"
                                                                       MinWidth="0" MinHeight="0"
-                                                                      Width="20" Height="20"
-                                                                      Margin="1,0">
-                                                            <TextBlock Text="S" FontSize="10" FontWeight="Bold"
+                                                                      Width="22" Height="22"
+                                                                      Margin="1,0,0,0">
+                                                            <TextBlock Text="S" FontSize="10" FontWeight="SemiBold"
                                                                        HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                                         </ToggleButton>
                                                     </DockPanel>
@@ -693,8 +862,8 @@
                                                         IsVisible="{Binding IsVisibleInTimeline}"
                                                         Opacity="{Binding TrackOpacity}"
                                                         Tag="{Binding}"
-                                                        PointerPressed="OnTrackHeaderPointerPressed"
-                                                        DoubleTapped="OnTrackHeaderDoubleTapped">
+                                                        ToolTip.Tip="{Binding DisplayTitle}"
+                                                        PointerPressed="OnTrackHeaderPointerPressed">
                                                     <Border.ContextMenu>
                                                         <ContextMenu>
                                                             <!-- 外观 -->
@@ -721,7 +890,7 @@
                                                             <MenuItem Header="轨道高度" Tag="{Binding}">
                                                                 <MenuItem Header="小" Tag="{Binding}"
                                                                           Click="OnCtxSetTrackHeight"
-                                                                          CommandParameter="36"/>
+                                                                          CommandParameter="28"/>
                                                                 <MenuItem Header="标准" Tag="{Binding}"
                                                                           Click="OnCtxSetTrackHeight"
                                                                           CommandParameter="36"/>
@@ -743,6 +912,33 @@
                                                                       Command="{Binding $parent[Window].((vm:TimelineEditorViewModel)DataContext).RemoveFromGroupCommand}"
                                                                       CommandParameter="{Binding}"/>
                                                             <Separator/>
+                                                            <!-- 待机循环 (idle) -->
+                                                            <MenuItem Header="待机循环">
+                                                                <MenuItem Header="{Binding HasIdleLoop, StringFormat=待机循环: {0}}"
+                                                                          IsEnabled="False"/>
+                                                                <MenuItem Header="启用 / 停用待机"
+                                                                          Command="{Binding $parent[Window].((vm:TimelineEditorViewModel)DataContext).ToggleTrackIdleCommand}"
+                                                                          CommandParameter="{Binding}"/>
+                                                                <MenuItem Header="编辑待机曲线…"
+                                                                          Command="{Binding $parent[Window].((vm:TimelineEditorViewModel)DataContext).EditTrackIdleCommand}"
+                                                                          CommandParameter="{Binding}"/>
+                                                                <Separator/>
+                                                                <MenuItem Header="应用待机模板" Tag="{Binding}">
+                                                                    <MenuItem Header="呼吸" Tag="{Binding}"
+                                                                              Click="OnCtxApplyIdleTemplate"
+                                                                              CommandParameter="breathing"/>
+                                                                    <MenuItem Header="摇摆" Tag="{Binding}"
+                                                                              Click="OnCtxApplyIdleTemplate"
+                                                                              CommandParameter="sway"/>
+                                                                    <MenuItem Header="微幅" Tag="{Binding}"
+                                                                              Click="OnCtxApplyIdleTemplate"
+                                                                              CommandParameter="micro"/>
+                                                                </MenuItem>
+                                                                <Separator/>
+                                                                <MenuItem Header="待机参数…" Click="OnEditTrackProperties"
+                                                                          Tag="{Binding}"/>
+                                                            </MenuItem>
+                                                            <Separator/>
                                                             <!-- 管理 -->
                                                             <MenuItem Header="轨道属性..." Click="OnEditTrackProperties"
                                                                       Tag="{Binding}"
@@ -753,7 +949,7 @@
                                                             <MenuItem Header="删除轨道"
                                                                       Command="{Binding $parent[Window].((vm:TimelineEditorViewModel)DataContext).DeleteTrackCommand}"
                                                                       CommandParameter="{Binding}"
-                                                                      Foreground="#ef4444"/>
+                                                                      Foreground="{DynamicResource TlDanger}"/>
                                                         </ContextMenu>
                                                     </Border.ContextMenu>
                                                     <Grid>
@@ -797,17 +993,39 @@
                                                                            VerticalAlignment="Center" Opacity="0.7"
                                                                            TextTrimming="CharacterEllipsis"
                                                                            IsVisible="{Binding ShowSubtitle}"/>
+                                                                <!-- 轨道 Role 徽章 (主流化: 实底徽章, 与预设库/时间标尺一致) -->
+                                                                <Border Background="{DynamicResource TlRoleBadgeBg}"
+                                                                        CornerRadius="2" Padding="3,1"
+                                                                        IsVisible="{Binding HasRole}"
+                                                                        VerticalAlignment="Center">
+                                                                    <TextBlock Text="{Binding RoleDisplay}"
+                                                                               FontSize="8" Foreground="{DynamicResource TlRoleBadgeText}"
+                                                                               FontWeight="Bold"/>
+                                                                </Border>
+                                                                <!-- 待机循环徽章 (启用时显示) -->
+                                                                <Border Background="{DynamicResource TlRoleBadgeBg}"
+                                                                        CornerRadius="2" Padding="3,1"
+                                                                        IsVisible="{Binding HasIdleLoop}"
+                                                                        VerticalAlignment="Center"
+                                                                        ToolTip.Tip="已启用待机循环 · 右键轨道头可编辑">
+                                                                    <StackPanel Orientation="Horizontal" Spacing="2">
+                                                                        <iconPacks:PackIconIonicons Kind="RefreshiOS" Width="9" Height="9"
+                                                                                                    Foreground="{DynamicResource TlRoleBadgeText}"/>
+                                                                        <TextBlock Text="待机" FontSize="8" Foreground="{DynamicResource TlRoleBadgeText}"
+                                                                                   FontWeight="Bold"/>
+                                                                    </StackPanel>
+                                                                </Border>
                                                             </StackPanel>
                                                         </DockPanel>
 
                                                         <!-- 实时输出值 (突出显示) -->
                                                         <Border Grid.Column="3"
-                                                                Background="{DynamicResource TlContentBg}" CornerRadius="3"
+                                                                Background="Transparent" CornerRadius="2"
                                                                 Padding="6,2" VerticalAlignment="Center"
                                                                 Margin="0,0,6,0"
                                                                 IsVisible="{Binding !IsCompactDisplay}">
                                                             <TextBlock Text="{Binding LiveValueDisplay}"
-                                                                       FontSize="11" Foreground="#34d399"
+                                                                       FontSize="11" Foreground="{DynamicResource TlSuccess}"
                                                                        FontFamily="Consolas, monospace"
                                                                        FontWeight="Bold"
                                                                        MinWidth="40" TextAlignment="Center"/>
@@ -857,7 +1075,9 @@
                                                             </ToggleButton>
                                                             <ToggleButton Classes="track-toggle" IsChecked="{Binding IsLocked}"
                                                                           Padding="2" Background="Transparent"
-                                                                          ToolTip.Tip="锁定"
+                                                                          ToolTip.Tip="{Binding LockActionLabel}"
+                                                                          AutomationProperties.Name="{Binding LockActionLabel}"
+                                                                          Click="OnToggleTrackLock"
                                                                           MinWidth="0" MinHeight="0"
                                                                           Width="22" Height="22">
                                                                 <Canvas Width="14" Height="14">
@@ -904,53 +1124,138 @@
                                                     IsDarkTheme="{Binding IsDarkTheme}"
                                                     IsVisible="{Binding IsWaveformVisible}"/>
 
-                                <!-- 轨道片段区域 (含播放头叠加层) -->
-                                <Grid>
+                                <!-- 时间轴横向滚动条 (右侧时间轴区, 标准滚动条样式) -->
+                                <Border DockPanel.Dock="Bottom" Height="18"
+                                        Background="{DynamicResource TlToolbarBg}"
+                                        BorderBrush="{DynamicResource TlBorderBrush}"
+                                        BorderThickness="0,1,0,0">
+                                    <ScrollBar Name="HScrollBar" Orientation="Horizontal"
+                                               Minimum="0" Maximum="0" ViewportSize="100" Value="0"
+                                               Scroll="OnHScrollBarScroll"
+                                               HorizontalAlignment="Stretch"/>
+                                </Border>
+
+                                <!-- 轨道片段区域 (含播放头叠加层) — LastChild 填充剩余宽度 -->
+                                <Grid Name="TimelineCanvas">
                                     <!-- Dopesheet/Curves 每轨道视图 -->
                                     <ScrollViewer Name="TrackClipScroller"
-                                                  IsVisible="{Binding IsDopesheetMode}">
-                                        <ItemsControl ItemsSource="{Binding DisplayItems}">
+                                                  IsVisible="{Binding IsDopesheetMode}"
+                                                  HorizontalScrollBarVisibility="Disabled"
+                                                  HorizontalContentAlignment="Stretch">
+                                        <ItemsControl Name="TrackItemsControl" ItemsSource="{Binding DisplayItems}"
+                                                      HorizontalAlignment="Stretch"
+                                                      MinWidth="1">
+                                            <ItemsControl.ItemsPanel>
+                                                <ItemsPanelTemplate>
+                                                    <StackPanel Orientation="Vertical" />
+                                                </ItemsPanelTemplate>
+                                            </ItemsControl.ItemsPanel>
                                             <ItemsControl.DataTemplates>
                                                 <!-- 分组头占位行 (与左侧对齐) -->
                                                 <DataTemplate DataType="vm:GroupHeaderViewModel">
-                                                    <Border Height="24" Background="Transparent"
+                                                    <Border Height="34" Background="Transparent"
                                                             IsHitTestVisible="False"/>
                                                 </DataTemplate>
                                                 <!-- 轨道片段 -->
                                                 <DataTemplate DataType="vm:TrackViewModel">
                                                     <tc:TrackClipControl
-                                                    Height="{Binding $parent[Window].((vm:TimelineEditorViewModel)DataContext).TrackHeight}"
-                                                    IsVisible="{Binding IsVisibleInTimeline}"
-                                                    ViewMode="{Binding $parent[Window].((vm:TimelineEditorViewModel)DataContext).ViewMode}"
-                                                    Clips="{Binding Clips, Converter={x:Static vm:TrackViewModel.ClipsConverter}}"
-                                                    TrackColor="{Binding Color}"
-                                                    ValueType="{Binding ValueType}"
-                                                    DurationMs="{Binding $parent[Window].((vm:TimelineEditorViewModel)DataContext).DurationMs}"
-                                                    PixelsPerMs="{Binding $parent[Window].((vm:TimelineEditorViewModel)DataContext).PixelsPerMs}"
-                                                    ScrollOffsetX="{Binding $parent[Window].((vm:TimelineEditorViewModel)DataContext).ScrollOffsetX}"
-                                                    CurrentTimeMs="{Binding $parent[Window].((vm:TimelineEditorViewModel)DataContext).CurrentTimeMs}"/>
+                                                        Height="{Binding $parent[Window].((vm:TimelineEditorViewModel)DataContext).TrackHeight}"
+                                                        HorizontalAlignment="Stretch"
+                                                        MinWidth="1"
+                                                        IsVisible="{Binding IsVisibleInTimeline}"
+                                                        ViewMode="{Binding $parent[Window].((vm:TimelineEditorViewModel)DataContext).ViewMode}"
+                                                        Clips="{Binding Clips, Converter={x:Static vm:TrackViewModel.ClipsConverter}}"
+                                                        TrackColor="{Binding Color}"
+                                                        ValueType="{Binding ValueType}"
+                                                        IsTrackLocked="{Binding IsLocked}"
+                                                        TrackId="{Binding Id}"
+                                                        IsDarkTheme="{Binding $parent[Window].((vm:TimelineEditorViewModel)DataContext).IsDarkTheme}"
+                                                        DurationMs="{Binding $parent[Window].((vm:TimelineEditorViewModel)DataContext).DurationMs}"
+                                                        PixelsPerMs="{Binding $parent[Window].((vm:TimelineEditorViewModel)DataContext).PixelsPerMs}"
+                                                        ScrollOffsetX="{Binding $parent[Window].((vm:TimelineEditorViewModel)DataContext).ScrollOffsetX}"
+                                                        CurrentTimeMs="{Binding $parent[Window].((vm:TimelineEditorViewModel)DataContext).CurrentTimeMs}"
+                                                        SelectedActionInstanceId="{Binding $parent[Window].((vm:TimelineEditorViewModel)DataContext).SelectedActionInstanceId}"/>
                                                 </DataTemplate>
                                             </ItemsControl.DataTemplates>
                                         </ItemsControl>
                                     </ScrollViewer>
 
-                                    <!-- 曲线编辑器 (Curves 模式) -->
-                                    <tc:CurveEditorControl Name="CurveEditor"
-                                                           IsVisible="{Binding IsCurvesMode}"
-                                                           DurationMs="{Binding DurationMs}"
-                                                           PixelsPerMs="{Binding PixelsPerMs}"
-                                                           ScrollOffsetX="{Binding ScrollOffsetX}"
-                                                           CurrentTimeMs="{Binding CurrentTimeMs}"/>
+                                    <Border Background="Transparent" Padding="12,18"
+                                            HorizontalAlignment="Left" VerticalAlignment="Top"
+                                            IsVisible="{Binding IsDisplayEmpty}">
+                                        <StackPanel Spacing="6" Orientation="Horizontal">
+                                            <iconPacks:PackIconIonicons Kind="GridiOS" Width="14" Height="14"
+                                                                        Foreground="{DynamicResource TlTextMuted}"
+                                                                        VerticalAlignment="Center"/>
+                                            <TextBlock Text="{Binding DisplayEmptyMessage}"
+                                                       Foreground="{DynamicResource TlTextMuted}"
+                                                       FontSize="11" VerticalAlignment="Center"/>
+                                            <Button Classes="tl-btn" Click="OnAddTrack"
+                                                    IsVisible="{Binding HasNoTracks}"
+                                                    ToolTip.Tip="添加第一条轨道" Padding="5,2">
+                                                <StackPanel Orientation="Horizontal" Spacing="3">
+                                                    <iconPacks:PackIconIonicons Kind="AddiOS" Width="13" Height="13"
+                                                                                Foreground="{DynamicResource TlAccent}"/>
+                                                    <TextBlock Text="添加轨道" FontSize="11"
+                                                               Foreground="{DynamicResource TlAccent}"/>
+                                                </StackPanel>
+                                            </Button>
+                                            <Button Classes="tl-btn" Click="OnPanelNewGroup"
+                                                    IsVisible="{Binding !HasNoTracks}"
+                                                    ToolTip.Tip="新建轨道分组" Padding="5,2">
+                                                <StackPanel Orientation="Horizontal" Spacing="3">
+                                                    <iconPacks:PackIconIonicons Kind="AddiOS" Width="13" Height="13"
+                                                                                Foreground="{DynamicResource TlAccent}"/>
+                                                    <TextBlock Text="新建分组" FontSize="11"
+                                                               Foreground="{DynamicResource TlAccent}"/>
+                                                </StackPanel>
+                                            </Button>
+                                        </StackPanel>
+                                    </Border>
 
-                                    <!-- 播放头叠加线 (始终可见, 即使无轨道) -->
+                                    <!-- 曲线编辑器 (Curves 模式) -->
+                                    <Grid>
+                                        <tc:CurveEditorControl Name="CurveEditor"
+                                                               IsVisible="{Binding IsCurvesMode}"
+                                                               DurationMs="{Binding DurationMs}"
+                                                               PixelsPerMs="{Binding PixelsPerMs}"
+                                                               ScrollOffsetX="{Binding ScrollOffsetX}"
+                                                               CurrentTimeMs="{Binding CurrentTimeMs}"
+                                                               ShowIdleOverlaysInCurve="{Binding ShowIdleOverlaysInCurve}"/>
+                                        <!-- 可控查看: 显示/隐藏 待机曲线 (幽灵) 开关 — 仅曲线视图可见 -->
+                                        <ToggleButton Classes="tl-btn"
+                                                      HorizontalAlignment="Right" VerticalAlignment="Top"
+                                                      Margin="0,6,10,0"
+                                                      IsVisible="{Binding IsCurvesMode}"
+                                                      IsChecked="{Binding ShowIdleOverlaysInCurve}"
+                                                      ToolTip.Tip="在曲线视图显示待机循环 (幽灵) 曲线">
+                                            <StackPanel Orientation="Horizontal" Spacing="4">
+                                                <iconPacks:PackIconIonicons Kind="SynciOS" Width="13" Height="13"
+                                                                            Foreground="{DynamicResource TlTextMuted}"
+                                                                            VerticalAlignment="Center"/>
+                                                <TextBlock Text="显示待机曲线" FontSize="11"
+                                                           Foreground="{DynamicResource TlText}"/>
+                                            </StackPanel>
+                                        </ToggleButton>
+                                    </Grid>
+
+                                    <!-- 播放头叠加线 (始终可见, 即使无轨道); 工作区外降透明 -->
                                     <tc:PlayheadOverlay Name="PlayheadOverlay" IsHitTestVisible="False"
                                                         CurrentTimeMs="{Binding CurrentTimeMs}"
                                                         PixelsPerMs="{Binding PixelsPerMs}"
                                                         ScrollOffsetX="{Binding ScrollOffsetX}"
+                                                        WorkAreaInMs="{Binding WorkAreaInMs}"
+                                                        WorkAreaOutMs="{Binding WorkAreaOutMs}"
                                                         IsVisible="{Binding IsDopesheetMode}"/>
+
+                                    <!-- 工作区 In/Out 叠加层: 轨道主体区显示入点/出点竖线 + 区域高亮 + 时长徽章 -->
+                                    <tc:WorkAreaOverlay Name="WorkAreaOverlay" IsHitTestVisible="False"
+                                                        PixelsPerMs="{Binding PixelsPerMs}"
+                                                        ScrollOffsetX="{Binding ScrollOffsetX}"/>
                                 </Grid>
                             </DockPanel>
                         </Border>
+
                     </Grid>
                 </DockPanel>
 

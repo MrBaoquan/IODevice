@@ -8,9 +8,9 @@ namespace IOStudio.Models.Motion
     /// </summary>
     public class MotionTimeline
     {
-        /// <summary>格式版本号 (v2.0 起支持 EventLanes/MarkerLanes + 轨道 ShowInCurve)</summary>
+        /// <summary>格式版本号 (v3.0 起支持可复用动作实例与 role 绑定)</summary>
         [JsonPropertyName("version")]
-        public string Version { get; set; } = "2.0";
+        public string Version { get; set; } = "3.0";
 
         /// <summary>项目名称</summary>
         [JsonPropertyName("name")]
@@ -27,6 +27,21 @@ namespace IOStudio.Models.Motion
         /// <summary>轨道列表</summary>
         [JsonPropertyName("tracks")]
         public List<MotionTrack> Tracks { get; set; } = new();
+
+        /// <summary>影片级动作实例。对应轨道 Clip 通过 ActionInstanceId 保持关联。</summary>
+        [JsonPropertyName("action_instances")]
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public List<ActionInstance> ActionInstances { get; set; } = new();
+
+        /// <summary>项目级逻辑角色到轨道 ID 的绑定。</summary>
+        [JsonPropertyName("role_track_bindings")]
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public Dictionary<string, string> RoleTrackBindings { get; set; } = new();
+
+        /// <summary>项目使用过的预设快照，保证外部预设库变化后仍可重建动作。</summary>
+        [JsonPropertyName("embedded_presets")]
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public List<EffectPreset> EmbeddedPresets { get; set; } = new();
 
         /// <summary>轨道分组列表 (持久化分组实体, 即使无子轨道也保留)</summary>
         [JsonPropertyName("groups")]

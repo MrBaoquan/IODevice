@@ -80,6 +80,62 @@ namespace IOStudio.Controls.Timeline
             set => SetValue(ValueOffsetProperty, value);
         }
 
+        private int _focusedTrackIndex = -1;
+
+        /// <summary>
+        /// 焦点轨道索引 (-1=无焦点, 显示所有可显示轨道)。方案 A 焦点模式: 有选中轨道时曲线视图默认只显示焦点轨, 多轨用 Solo。
+        /// </summary>
+        public int FocusedTrackIndex
+        {
+            get => _focusedTrackIndex;
+            set
+            {
+                if (_focusedTrackIndex != value)
+                {
+                    _focusedTrackIndex = value;
+                    _focusedTrackIndexes.Clear();
+                    if (value >= 0)
+                        _focusedTrackIndexes.Add(value);
+                    InvalidateVisual();
+                }
+            }
+        }
+
+        private readonly HashSet<int> _focusedTrackIndexes = new();
+
+        /// <summary>多选焦点轨道索引集合 (空 = 无焦点, 显示所有)。用于轨道多选后曲线同时显示多条。</summary>
+        public IReadOnlyCollection<int> FocusedTrackIndexes => _focusedTrackIndexes;
+
+        /// <summary>
+        /// 是否在动画曲线视图叠加 idle 装饰 (幽灵曲线/周期边界/淡化带)。
+        /// 独立待机编辑器接管后默认 false (动画视图仅显示动画曲线, 减负)。
+        /// 可在曲线视图工具栏切换, 用于"可控查看"待机形态。
+        /// </summary>
+        public static readonly StyledProperty<bool> ShowIdleOverlaysInCurveProperty =
+            AvaloniaProperty.Register<CurveEditorControl, bool>(
+                nameof(ShowIdleOverlaysInCurve),
+                false
+            );
+
+        public bool ShowIdleOverlaysInCurve
+        {
+            get => GetValue(ShowIdleOverlaysInCurveProperty);
+            set => SetValue(ShowIdleOverlaysInCurveProperty, value);
+        }
+
+        /// <summary>设置焦点轨道集合 (轨道多选后调用)。</summary>
+        public void SetFocusedTrackIndexes(IEnumerable<int> indexes)
+        {
+            _focusedTrackIndexes.Clear();
+            if (indexes != null)
+                foreach (var i in indexes)
+                    if (i >= 0)
+                        _focusedTrackIndexes.Add(i);
+            _focusedTrackIndex =
+                _focusedTrackIndexes.Count == 1 ? _focusedTrackIndexes.First() : -1;
+            InvalidateVisual();
+        }
+
         // ═══════ 事件 ═══════
 
         /// <summary>关键帧选中, 参数: (trackIndex, clipIndex, kfIndex)</summary>
@@ -108,10 +164,94 @@ namespace IOStudio.Controls.Timeline
         /// <summary>Shift+滚轮调整轨道高度请求, 参数: delta pixels</summary>
         public event Action<double>? TrackHeightChangeRequested;
 
+        /// <summary>请求缩放时间轴 (Ctrl+滚轮), 参数: (newPixelsPerMs, newScrollOffsetX)。保持鼠标下时间不变。</summary>
+        public event Action<double, double>? ZoomRequested;
+
+        /// <summary>请求平移时间轴 (中键拖拽), 参数: newScrollOffsetX。</summary>
+        public event Action<double>? PanRequested;
+
         /// <summary>批量移动选中关键帧完成, 参数: List of (trackIdx, clipIdx, kfIdx, newAbsTimeMs, newValue)</summary>
         public event Action<
             List<(int TrackIdx, int ClipIdx, int KfIdx, double AbsTimeMs, float Value)>
         >? MultiKeyframeMoved;
+
+        /// <summary>
+        /// 曲线视图多选集合变化时触发, 参数: 当前多选列表 (trackIdx, clipIdx, kfIdx)。
+        /// 用于把曲线多选同步到全局 VM 多选集 (Delete/批量插值统一)。
+        /// </summary>
+        public event Action<IReadOnlyList<(int Ti, int Ci, int Ki)>>? MultiSelectionChanged;
+
+        /// <summary>批量设置插值请求 (来自多选右键菜单), 参数: interpolation 名称。</summary>
+        public event Action<string>? BatchInterpolationRequested;
+
+        /// <summary>批量应用曲线预设请求 (来自多选右键菜单), 参数: presetName。</summary>
+        public event Action<string>? BatchPresetApplyRequested;
+
+        /// <summary>
+        /// 关键帧编辑提交 (拖拽释放时), 供撤销: 参数为 (kf引用, beforeTimeMs, beforeValue, afterTimeMs, afterValue)。
+        /// 时间均为相对 clip 起点。仅在实际发生移动时触发。
+        /// </summary>
+        public event Action<
+            List<(MotionKeyframe Kf, double T0, float V0, double T1, float V1)>
+        >? KeyframeEditCommitted;
+
+        /// <summary>空窗双击请求添加 Overlay 覆盖关键帧, 参数: (trackIndex, 绝对timeMs, value)。</summary>
+        public event Action<int, double, float>? OverrideKeyframeAddRequested;
+
+        /// <summary>空窗双击请求添加 idle 待机循环关键帧 (轨道已启用 idle 时), 参数: (trackIndex, 相位ms, value)。</summary>
+        public event Action<int, double, float>? IdleKeyframeAddRequested;
+
+        /// <summary>Overlay 覆盖关键帧移动完成, 参数: (trackIndex, 绝对timeMs, value)。</summary>
+        public event Action<int, double, float>? OverrideKeyframeMoved;
+
+        /// <summary>
+        /// Overlay 覆盖关键帧编辑提交 (拖拽释放时), 供撤销:
+        /// 参数 (trackIndex, kf引用, beforeTimeMs, beforeValue, afterTimeMs, afterValue)。
+        /// </summary>
+        public event Action<
+            int,
+            MotionKeyframe,
+            double,
+            float,
+            double,
+            float
+        >? OverrideKeyframeEditCommitted;
+
+        /// <summary>Overlay 覆盖关键帧删除请求, 参数: (trackIndex, 绝对timeMs, value)。</summary>
+        public event Action<int, double, float>? OverrideKeyframeDeleteRequested;
+
+        /// <summary>
+        /// idle 幽灵曲线关键帧编辑提交 (拖拽释放时), 供撤销:
+        /// 参数 (trackIndex, kf引用, beforePhaseMs, beforeValue, afterPhaseMs, afterValue)。
+        /// </summary>
+        public event Action<
+            int,
+            MotionKeyframe,
+            double,
+            float,
+            double,
+            float
+        >? IdleKeyframeEditCommitted;
+
+        /// <summary>idle 幽灵曲线关键帧删除请求, 参数: (trackIndex, phaseMs, value)。</summary>
+        public event Action<int, double, float>? IdleKeyframeDeleteRequested;
+
+        /// <summary>
+        /// 贝塞尔切线编辑提交 (拖拽释放时), 供撤销: 参数为 (ti, ci, ki, before四值, after四值)。
+        /// </summary>
+        public event Action<(
+            int Ti,
+            int Ci,
+            int Ki,
+            float Tin0,
+            float Tout0,
+            float Cp10,
+            float Cp20,
+            float Tin1,
+            float Tout1,
+            float Cp11,
+            float Cp21
+        )>? TangentEditCommitted;
 
         // ═══════ 视觉常量 ═══════
 
@@ -163,6 +303,12 @@ namespace IOStudio.Controls.Timeline
         private int _selectedClipIdx = -1;
         private int _selectedKfIdx = -1;
 
+        /// <summary>选中的 Overlay 覆盖关键帧索引 (空窗自由数值点, -1=未选)。</summary>
+        private int _selectedOverrideKfIdx = -1;
+
+        /// <summary>选中的 idle 幽灵曲线关键帧索引 (循环相位, -1=未选)。</summary>
+        private int _selectedIdleKfIdx = -1;
+
         /// <summary>从轨道面板同步的选中轨道 (不会被空白点击清除)</summary>
         private int _trackPanelSelectedIdx = -1;
         private DragMode _dragMode = DragMode.None;
@@ -183,6 +329,8 @@ namespace IOStudio.Controls.Timeline
             None,
             Keyframe,
             MultiKeyframe,
+            OverrideKeyframe, // 空窗 Overlay 覆盖关键帧拖拽
+            IdleKeyframe, // idle 幽灵曲线关键帧拖拽 (循环相位)
             TangentIn,
             TangentOut,
             Pan,
@@ -234,7 +382,8 @@ namespace IOStudio.Controls.Timeline
                 CurrentTimeMsProperty,
                 CurveTracksProperty,
                 ValueZoomProperty,
-                ValueOffsetProperty
+                ValueOffsetProperty,
+                ShowIdleOverlaysInCurveProperty
             );
         }
 
@@ -254,6 +403,16 @@ namespace IOStudio.Controls.Timeline
         public bool IsMuted { get; set; }
         public bool IsSolo { get; set; }
         public bool IsEnabled { get; set; } = true;
+        public bool IsLocked { get; set; }
+
+        /// <summary>中性/空闲值 (null=按类型默认)。用于曲线无覆盖区渲染与求值。</summary>
+        public float? NeutralValue { get; set; }
+
+        /// <summary>Idle 循环 (gap 填充) — 无 clip 覆盖时的待机循环动作。null=无 idle。</summary>
+        public IdleLoop? IdleLoop { get; set; }
+
+        /// <summary>Overlay 覆盖关键帧 (空窗自由数值点, 绝对时间)。优先级高于 idle。</summary>
+        public List<MotionKeyframe>? OverrideKeyframes { get; set; }
 
         /// <summary>UX-B1: 是否在曲线编辑器中显示 (焦点模式)</summary>
         public bool ShowInCurve { get; set; } = true;

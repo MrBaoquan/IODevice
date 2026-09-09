@@ -27,6 +27,17 @@ namespace IOStudio.ViewModels.Timeline
         /// </summary>
         public ObservableCollection<object> DisplayItems { get; } = new();
 
+        public bool IsDisplayEmpty => DisplayItems.Count == 0;
+
+        public bool HasNoTracks => Tracks.Count == 0;
+
+        public string DisplayEmptyMessage =>
+            HasNoTracks
+                ? "尚未添加轨道"
+                : DisplayFilter?.Mode == DisplayFilterMode.ActiveGroupOnly
+                    ? "当前没有分组轨道"
+                    : "没有符合当前筛选的轨道";
+
         // ---- UX-B2: 显示过滤 ----
 
         /// <summary>显示过滤模式</summary>
@@ -43,20 +54,30 @@ namespace IOStudio.ViewModels.Timeline
         {
             public DisplayFilterMode Mode { get; set; }
             public string Label { get; set; } = "";
+
             public override string ToString() => Label;
         }
 
-        public List<DisplayFilterOption> DisplayFilterOptions { get; } = new()
-        {
-            new DisplayFilterOption { Mode = DisplayFilterMode.All, Label = "全部轨道" },
-            new DisplayFilterOption { Mode = DisplayFilterMode.SelectedTrackOnly, Label = "仅选中轨道" },
-            new DisplayFilterOption { Mode = DisplayFilterMode.ActiveGroupOnly, Label = "仅当前分组" },
-            new DisplayFilterOption
+        public List<DisplayFilterOption> DisplayFilterOptions { get; } =
+            new()
             {
-                Mode = DisplayFilterMode.HasKeyframesInWorkArea,
-                Label = "工作区内有关键帧",
-            },
-        };
+                new DisplayFilterOption { Mode = DisplayFilterMode.All, Label = "全部轨道" },
+                new DisplayFilterOption
+                {
+                    Mode = DisplayFilterMode.SelectedTrackOnly,
+                    Label = "仅选中轨道"
+                },
+                new DisplayFilterOption
+                {
+                    Mode = DisplayFilterMode.ActiveGroupOnly,
+                    Label = "仅当前分组"
+                },
+                new DisplayFilterOption
+                {
+                    Mode = DisplayFilterMode.HasKeyframesInWorkArea,
+                    Label = "工作区内有关键帧",
+                },
+            };
 
         private DisplayFilterOption? _displayFilter;
 
@@ -115,16 +136,16 @@ namespace IOStudio.ViewModels.Timeline
 
             // UX-B2: 计算当前过滤模式下, 哪些轨道应可见
             var mode = DisplayFilter?.Mode ?? DisplayFilterMode.All;
-            string? activeGroup = mode == DisplayFilterMode.ActiveGroupOnly
-                ? SelectedTrack?.Group
-                : null;
+            string? activeGroup =
+                mode == DisplayFilterMode.ActiveGroupOnly ? SelectedTrack?.Group : null;
             bool TrackPassesFilter(TrackViewModel track) =>
                 mode switch
                 {
                     DisplayFilterMode.All => true,
-                    DisplayFilterMode.SelectedTrackOnly => SelectedTrack != null && track == SelectedTrack,
-                    DisplayFilterMode.ActiveGroupOnly =>
-                        !string.IsNullOrEmpty(activeGroup) && track.Group == activeGroup,
+                    DisplayFilterMode.SelectedTrackOnly
+                        => SelectedTrack != null && track == SelectedTrack,
+                    DisplayFilterMode.ActiveGroupOnly
+                        => !string.IsNullOrEmpty(activeGroup) && track.Group == activeGroup,
                     DisplayFilterMode.HasKeyframesInWorkArea => TrackHasKeyframesInWorkArea(track),
                     _ => true,
                 };
@@ -148,9 +169,10 @@ namespace IOStudio.ViewModels.Timeline
                 header.IsCollapsed = group.Collapsed;
 
                 // UX-B2: 分组内无可见轨道时隐藏分组头 (All 模式保持原行为)
-                var visibleGroupTracks = mode == DisplayFilterMode.All
-                    ? groupTracks
-                    : groupTracks.Where(TrackPassesFilter).ToList();
+                var visibleGroupTracks =
+                    mode == DisplayFilterMode.All
+                        ? groupTracks
+                        : groupTracks.Where(TrackPassesFilter).ToList();
                 if (mode != DisplayFilterMode.All && visibleGroupTracks.Count == 0)
                 {
                     foreach (var t in groupTracks)
@@ -189,6 +211,9 @@ namespace IOStudio.ViewModels.Timeline
                 track.IsVisibleInTimeline = true;
                 DisplayItems.Add(track);
             }
+            this.RaisePropertyChanged(nameof(IsDisplayEmpty));
+            this.RaisePropertyChanged(nameof(HasNoTracks));
+            this.RaisePropertyChanged(nameof(DisplayEmptyMessage));
         }
 
         /// <summary>UX-B2: 判断轨道在当前工作区域范围内是否有关键帧 (无工作区时等价于有关键帧)</summary>
@@ -230,7 +255,10 @@ namespace IOStudio.ViewModels.Timeline
                         if (!_groups.Contains(group))
                             _groups.Add(group);
                         SyncGroupsToTimeline();
-                        header = new GroupHeaderViewModel(group) { SoloMuteChanged = ApplyGroupSoloMute };
+                        header = new GroupHeaderViewModel(group)
+                        {
+                            SoloMuteChanged = ApplyGroupSoloMute
+                        };
                         _groupHeaders[name] = header;
                         RefreshDisplayList();
                     },
@@ -392,9 +420,13 @@ namespace IOStudio.ViewModels.Timeline
         public void ToggleGroupLock(string groupName)
         {
             var groupTracks = Tracks.Where(t => t.Group == groupName).ToList();
+            if (groupTracks.Count == 0)
+                return;
             bool anyUnlocked = groupTracks.Any(t => !t.IsLocked);
             foreach (var t in groupTracks)
                 t.IsLocked = anyUnlocked;
+            MarkDirty();
+            PushStatus(anyUnlocked ? $"已锁定分组“{groupName}”" : $"已解锁分组“{groupName}”");
         }
 
         /// <summary>
@@ -454,6 +486,18 @@ namespace IOStudio.ViewModels.Timeline
 
         private void LoadTimeline(MotionTimeline timeline)
         {
+            // 快照替换会重建全部 TrackViewModel，先清理旧对象选择，避免属性面板
+            // 或快捷键继续持有已脱离当前时间轴的引用。
+            SelectedTrack = null;
+            ClearMultiSelection();
+            ClearKeyframeSelection();
+            SelectedActionInstanceId = null;
+            SelectedEvent = null;
+
+            // v2 文件没有动作编排元数据，加载时补齐为空集合并保持向后兼容。
+            timeline.ActionInstances ??= new List<ActionInstance>();
+            timeline.RoleTrackBindings ??= new Dictionary<string, string>();
+            timeline.EmbeddedPresets ??= new List<EffectPreset>();
             Timeline = timeline;
             DurationMs = timeline.DurationMs;
             CurrentTimeMs = 0;
@@ -579,37 +623,68 @@ namespace IOStudio.ViewModels.Timeline
         {
             if (Timeline == null)
                 return;
+            if (!TryBeginTrackEdit(trackVm, "删除轨道"))
+                return;
+            if (!Timeline.Tracks.Contains(trackVm.Track))
+                return;
 
-            int trackIdx = Tracks.IndexOf(trackVm);
-            int modelIdx = Timeline.Tracks.IndexOf(trackVm.Track);
+            double playhead = CurrentTimeMs;
+            string beforeJson = MotionFileReader.ToJson(Timeline);
+            var candidate = MotionFileReader.ReadFromJson(beforeJson);
+            if (candidate == null)
+                return;
 
+            candidate.ActionInstances ??= new List<ActionInstance>();
+            candidate.RoleTrackBindings ??= new Dictionary<string, string>();
+
+            var affectedActionIds = candidate.Tracks
+                .Where(track => track.Id == trackVm.Id)
+                .SelectMany(track => track.Clips)
+                .Select(clip => clip.ActionInstanceId)
+                .Where(id => !string.IsNullOrWhiteSpace(id))
+                .Cast<string>()
+                .Concat(
+                    candidate.ActionInstances
+                        .Where(instance => instance.RoleTrackIds.Values.Contains(trackVm.Id))
+                        .Select(instance => instance.Id)
+                )
+                .ToHashSet(StringComparer.Ordinal);
+
+            foreach (var track in candidate.Tracks)
+            {
+                track.Clips.RemoveAll(
+                    clip =>
+                        clip.ActionInstanceId != null
+                        && affectedActionIds.Contains(clip.ActionInstanceId)
+                );
+            }
+            candidate.ActionInstances.RemoveAll(instance => affectedActionIds.Contains(instance.Id));
+            candidate.Tracks.RemoveAll(track => track.Id == trackVm.Id);
+
+            foreach (
+                var role in candidate.RoleTrackBindings
+                    .Where(binding => binding.Value == trackVm.Id)
+                    .Select(binding => binding.Key)
+                    .ToList()
+            )
+            {
+                candidate.RoleTrackBindings.Remove(role);
+            }
+
+            string afterJson = MotionFileReader.ToJson(candidate);
             _undoRedo.Execute(
                 new LambdaCommand(
                     $"删除轨道 {trackVm.Label}",
-                    () =>
-                    {
-                        Timeline.Tracks.Remove(trackVm.Track);
-                        Tracks.Remove(trackVm);
-                        if (SelectedTrack == trackVm)
-                        {
-                            SelectedTrack = null;
-                            ClearKeyframeSelection();
-                        }
-                        RecalculateDuration();
-                        RefreshDisplayList();
-                    },
-                    () =>
-                    {
-                        int insertIdx = Math.Min(modelIdx, Timeline.Tracks.Count);
-                        Timeline.Tracks.Insert(insertIdx, trackVm.Track);
-                        int vmInsertIdx = Math.Min(trackIdx, Tracks.Count);
-                        Tracks.Insert(vmInsertIdx, trackVm);
-                        RecalculateDuration();
-                        RefreshDisplayList();
-                    }
+                    () => RestoreTimelineSnapshot(afterJson, playhead),
+                    () => RestoreTimelineSnapshot(beforeJson, playhead)
                 )
             );
             MarkDirty();
+            PushStatus(
+                affectedActionIds.Count > 0
+                    ? $"已删除轨道“{trackVm.Label}”，并移除 {affectedActionIds.Count} 个关联动作"
+                    : $"已删除轨道“{trackVm.Label}”"
+            );
         }
 
         /// <summary>
@@ -720,12 +795,62 @@ namespace IOStudio.ViewModels.Timeline
                 Pause();
 
             double snapped = ApplySnap(timeMs);
-            CurrentTimeMs = Math.Max(0, snapped);
+            CurrentTimeMs = ClampTime(snapped);
             // 确保引擎持有 Timeline 引用 (拖拽播放头时可能未按过 Play)
             if (Timeline != null)
                 _engine.EnsureTimelineLoaded(Timeline);
             _engine.Seek(CurrentTimeMs);
             this.RaisePropertyChanged(nameof(CurrentTimeDisplay));
+        }
+
+        /// <summary>原子更新轨道属性并纳入撤销栈。</summary>
+        public void UpdateTrackProperties(TrackViewModel trackVm, AddTrackResult result)
+        {
+            if (trackVm == null || result == null)
+                return;
+
+            var old = new AddTrackResult
+            {
+                DeviceName = trackVm.DeviceName,
+                OActionName = trackVm.OActionName,
+                OutputType = trackVm.Track.OutputType,
+                OAxisChannel = trackVm.Track.OAxisChannel,
+                Label = trackVm.Label,
+                Color = trackVm.Color,
+                ValueType = trackVm.ValueType
+            };
+
+            void Apply(AddTrackResult value)
+            {
+                trackVm.Label = value.Label;
+                trackVm.Color = value.Color;
+                trackVm.DeviceName = value.DeviceName;
+                trackVm.OActionName = value.OActionName;
+                trackVm.Track.OutputType = value.OutputType;
+                trackVm.Track.OAxisChannel = value.OAxisChannel;
+                if (trackVm.ValueType != value.ValueType)
+                {
+                    trackVm.ValueType = value.ValueType;
+                    if (value.ValueType == "bool")
+                    {
+                        foreach (var clip in trackVm.Track.Clips)
+                            foreach (var kf in clip.Keyframes)
+                            {
+                                kf.Value = kf.Value >= 0.5f ? 1f : 0f;
+                                kf.Interpolation = "step";
+                            }
+                    }
+                }
+                // 注意: 不写 IdleLoop — 待机循环已由时间轴专项编辑器管理,
+                // 属性对话框不再触碰 idle, 避免保存时误清空已有待机配置。
+                trackVm.RaiseAllBindingsChanged();
+                trackVm.RaiseClipsChanged();
+                NotifyTrackDataChanged(trackVm);
+                InvalidateTrackChannelIndex();
+            }
+
+            _undoRedo.Execute(new LambdaCommand("修改轨道属性", () => Apply(result), () => Apply(old)));
+            MarkDirty();
         }
 
         /// <summary>

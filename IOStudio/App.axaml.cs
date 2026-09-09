@@ -46,6 +46,12 @@ namespace IOStudio
             // ── UI 层服务 ──
             services.AddSingleton<IDialogService, AvaloniaDialogService>();
 
+            // ── 工具窗口管理器 (单例窗口 + 聚焦, 驱动"窗口"菜单复选态) ──
+            services.AddSingleton<IWindowManager, AvaloniaWindowManager>();
+
+            // ── HiMind 软件分发更新服务 (Singleton) ──
+            services.AddSingleton<ISoftwareUpdateService, SoftwareUpdateService>();
+
             // ── 每时间轴实例的服务 (Transient) ──
             services.AddTransient<IUndoRedoService, UndoRedoService>();
             services.AddTransient<IPlaybackEngine, NativeMotionPlaybackEngine>();

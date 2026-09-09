@@ -50,6 +50,131 @@ namespace IOStudio.ViewModels.Timeline
                 t => t.IsMuted = !t.IsMuted
             );
 
+        private ReactiveCommand<TrackViewModel, Unit>? _toggleTrackIdleCmd;
+
+        /// <summary>启用/停用轨道 idle 待机循环命令。</summary>
+        public ReactiveCommand<TrackViewModel, Unit> ToggleTrackIdleCommand =>
+            _toggleTrackIdleCmd ??= ReactiveCommand.Create<TrackViewModel>(t =>
+            {
+                if (t.IdleLoop == null)
+                {
+                    // 首次启用: 给一个默认呼吸循环 (与轨道属性对话框默认一致)
+                    t.IdleLoop = new IdleLoop
+                    {
+                        Enabled = true,
+                        PeriodMs = 1600.0,
+                        BlendMs = 300.0,
+                        PhaseMode = "continuous",
+                        Keyframes =
+                        {
+                            new MotionKeyframe
+                            {
+                                TimeMs = 0,
+                                Value = 0.5f,
+                                Interpolation = "bezier"
+                            },
+                            new MotionKeyframe
+                            {
+                                TimeMs = 800,
+                                Value = 0.6f,
+                                Interpolation = "bezier"
+                            },
+                            new MotionKeyframe
+                            {
+                                TimeMs = 1600,
+                                Value = 0.5f,
+                                Interpolation = "bezier"
+                            },
+                        },
+                    };
+                }
+                else
+                {
+                    t.IdleLoop.Enabled = !t.IdleLoop.Enabled;
+                }
+                NotifyTrackDataChanged(t);
+                MarkDirty();
+            });
+
+        private ReactiveCommand<string, Unit>? _applyIdleTemplateCmd;
+
+        /// <summary>一键应用待机模板到指定轨道 (右键菜单调用, 模板名参数)。</summary>
+        public void ApplyIdleTemplateToTrack(TrackViewModel t, string template)
+        {
+            if (t == null)
+                return;
+            var period = t.IdleLoop?.PeriodMs ?? 1600.0;
+            if (period < 100)
+                period = 1600.0;
+            (double t0, float v)[] pts = template switch
+            {
+                "breathing"
+                    => new[]
+                    {
+                        (0.0, 0.5f),
+                        (period * 0.25, 0.62f),
+                        (period * 0.55, 0.55f),
+                        (period * 0.8, 0.68f),
+                        (period, 0.5f)
+                    },
+                "sway"
+                    => new[]
+                    {
+                        (0.0, 0.5f),
+                        (period * 0.2, 0.75f),
+                        (period * 0.5, 0.45f),
+                        (period * 0.8, 0.7f),
+                        (period, 0.5f)
+                    },
+                "micro"
+                    => new[]
+                    {
+                        (0.0, 0.52f),
+                        (period * 0.3, 0.5f),
+                        (period * 0.6, 0.54f),
+                        (period, 0.52f)
+                    },
+                _ => new[] { (0.0, 0.5f), (period, 0.5f) },
+            };
+            t.IdleLoop ??= new IdleLoop { Enabled = true };
+            t.IdleLoop.Enabled = true;
+            t.IdleLoop.PeriodMs = period;
+            t.IdleLoop.Keyframes = pts.Select(
+                    p =>
+                        new MotionKeyframe
+                        {
+                            TimeMs = p.t0,
+                            Value = p.v,
+                            Interpolation = "bezier"
+                        }
+                )
+                .ToList();
+            NotifyTrackDataChanged(t);
+            MarkDirty();
+        }
+
+        /// <summary>一键应用待机模板到当前选中轨道 (属性面板按钮绑定, CommandParameter=模板名)。</summary>
+        public ReactiveCommand<string, Unit> ApplyIdleTemplateToTrackCommand =>
+            _applyIdleTemplateCmd ??= ReactiveCommand.Create<string>(template =>
+            {
+                if (SelectedTrack != null)
+                    ApplyIdleTemplateToTrack(SelectedTrack, template);
+            });
+
+        private ReactiveCommand<TrackViewModel, Unit>? _editTrackIdleCmd;
+
+        /// <summary>编辑待机循环曲线命令 — 选中该轨并切到曲线视图聚焦 idle (由 View 层联动)。</summary>
+        public ReactiveCommand<TrackViewModel, Unit> EditTrackIdleCommand =>
+            _editTrackIdleCmd ??= ReactiveCommand.Create<TrackViewModel>(t =>
+            {
+                SelectedTrack = t;
+                // View 层监听 IdleCurveEditRequested 切换视图/聚焦 (见 TimelineEditorWindow)
+                IdleCurveEditRequested?.Invoke(t);
+            });
+
+        /// <summary>请求编辑某轨道的 idle 待机循环曲线 (View 层联动切换视图/聚焦)。</summary>
+        public event Action<TrackViewModel>? IdleCurveEditRequested;
+
         private ReactiveCommand<TrackViewModel, Unit>? _removeFromGroupCmd;
 
         /// <summary>移出分组命令。</summary>

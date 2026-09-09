@@ -84,7 +84,7 @@ namespace IOStudio.Services.Motion
                     Directory.CreateDirectory(dir);
 
                 var json = ToJson(timeline);
-                File.WriteAllText(filePath, json);
+                AtomicWriteAllText(filePath, json);
                 return true;
             }
             catch (Exception ex)
@@ -93,6 +93,28 @@ namespace IOStudio.Services.Motion
                     $"[MotionFileReader] Write failed: {ex.Message}"
                 );
                 return false;
+            }
+        }
+
+        /// <summary>
+        /// 原子写入: 先写同目录临时文件, 再替换目标, 避免中途崩溃损坏原文件。
+        /// 优先 File.Replace (NTFS 原子替换), 失败回退 File.Move 覆盖。
+        /// </summary>
+        private static void AtomicWriteAllText(string filePath, string content)
+        {
+            var tmpPath = filePath + ".tmp";
+            File.WriteAllText(tmpPath, content);
+            try
+            {
+                if (File.Exists(filePath))
+                    File.Replace(tmpPath, filePath, null);
+                else
+                    File.Move(tmpPath, filePath);
+            }
+            catch (PlatformNotSupportedException)
+            {
+                // 目标文件系统不支持 File.Replace (如 FAT32): 回退到移动覆盖
+                File.Move(tmpPath, filePath, overwrite: true);
             }
         }
 

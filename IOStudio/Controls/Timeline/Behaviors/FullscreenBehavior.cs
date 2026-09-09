@@ -43,19 +43,19 @@ namespace IOStudio.Controls.Timeline.Behaviors
             var upperGrid = _window.FindControl<Grid>("UpperGrid");
             var splitter = _window.FindControl<GridSplitter>("MainHorizontalSplitter");
             var lowerPanel = _window.FindControl<DockPanel>("LowerPanel");
-            var kfPanel = _window.FindControl<Control>("KfPropertyPanel");
-            var vertSplitter = _window.FindControl<GridSplitter>("UpperVerticalSplitter");
+            var inspectorDock = _window.FindControl<Control>("InspectorDock");
+            var dockSplitter = _window.FindControl<GridSplitter>("WorkspaceDockSplitter");
 
             if (mainGrid == null || upperGrid == null)
                 return;
 
             if (enterFullscreen)
             {
-                EnterFullscreen(mainGrid, upperGrid, splitter, lowerPanel, kfPanel, vertSplitter);
+                EnterFullscreen(mainGrid, upperGrid, splitter, lowerPanel, inspectorDock, dockSplitter);
             }
             else
             {
-                ExitFullscreen(mainGrid, upperGrid, splitter, lowerPanel, kfPanel, vertSplitter);
+                ExitFullscreen(mainGrid, upperGrid, splitter, lowerPanel, inspectorDock, dockSplitter);
             }
         }
 
@@ -64,14 +64,14 @@ namespace IOStudio.Controls.Timeline.Behaviors
             Grid upperGrid,
             GridSplitter? splitter,
             DockPanel? lowerPanel,
-            Control? kfPanel,
-            GridSplitter? vertSplitter
+            Control? inspectorDock,
+            GridSplitter? dockSplitter
         )
         {
             // 保存当前布局和窗口状态
             _savedUpperRowHeight = mainGrid.RowDefinitions[0].Height;
             _savedLowerRowHeight = mainGrid.RowDefinitions[2].Height;
-            _savedPropertyColWidth = upperGrid.ColumnDefinitions[2].Width;
+            _savedPropertyColWidth = mainGrid.ColumnDefinitions[2].Width;
             _savedWindowState = _window.WindowState;
             _savedSystemDecorations = _window.SystemDecorations;
 
@@ -85,13 +85,14 @@ namespace IOStudio.Controls.Timeline.Behaviors
             mainGrid.RowDefinitions[2].Height = new GridLength(0);
             mainGrid.RowDefinitions[2].MinHeight = 0;
 
-            // 隐藏右侧属性面板
-            if (kfPanel != null)
-                kfPanel.IsVisible = false;
-            if (vertSplitter != null)
-                vertSplitter.IsVisible = false;
-            upperGrid.ColumnDefinitions[2].Width = new GridLength(0);
-            upperGrid.ColumnDefinitions[2].MinWidth = 0;
+            // 隐藏贯穿工作区的右侧 Dock
+            if (inspectorDock != null)
+                inspectorDock.IsVisible = false;
+            if (dockSplitter != null)
+                dockSplitter.IsVisible = false;
+            mainGrid.ColumnDefinitions[1].Width = new GridLength(0);
+            mainGrid.ColumnDefinitions[2].Width = new GridLength(0);
+            mainGrid.ColumnDefinitions[2].MinWidth = 0;
 
             // 真全屏: 去掉标题栏, 窗口撑满屏幕
             _window.SystemDecorations = SystemDecorations.None;
@@ -103,8 +104,8 @@ namespace IOStudio.Controls.Timeline.Behaviors
             Grid upperGrid,
             GridSplitter? splitter,
             DockPanel? lowerPanel,
-            Control? kfPanel,
-            GridSplitter? vertSplitter
+            Control? inspectorDock,
+            GridSplitter? dockSplitter
         )
         {
             // 恢复窗口状态
@@ -121,13 +122,14 @@ namespace IOStudio.Controls.Timeline.Behaviors
             mainGrid.RowDefinitions[2].Height = _savedLowerRowHeight;
             mainGrid.RowDefinitions[2].MinHeight = 180;
 
-            // 恢复右侧属性面板
-            if (kfPanel != null)
-                kfPanel.IsVisible = true;
-            if (vertSplitter != null)
-                vertSplitter.IsVisible = true;
-            upperGrid.ColumnDefinitions[2].Width = _savedPropertyColWidth;
-            upperGrid.ColumnDefinitions[2].MinWidth = 220;
+            // 恢复右侧 Dock
+            if (inspectorDock != null)
+                inspectorDock.IsVisible = true;
+            if (dockSplitter != null)
+                dockSplitter.IsVisible = true;
+            mainGrid.ColumnDefinitions[1].Width = new GridLength(4);
+            mainGrid.ColumnDefinitions[2].Width = _savedPropertyColWidth;
+            mainGrid.ColumnDefinitions[2].MinWidth = 260;
         }
     }
 }

@@ -22,6 +22,11 @@ namespace IOStudio.Controls.Timeline
 
         private KeyframePropertyViewModel? Vm => DataContext as KeyframePropertyViewModel;
 
+        public event Action? DuplicateActionRequested;
+        public event Action? MoveActionRequested;
+        public event Action? SaveActionAsPresetRequested;
+        public event Action? DeleteActionRequested;
+
         private void OnDataContextChanged(object? sender, EventArgs e)
         {
             var vm = Vm;
@@ -75,6 +80,18 @@ namespace IOStudio.Controls.Timeline
             if (Vm is { } vm)
                 vm.RaiseToggleKeyframe(vm.TimeMs);
         }
+
+        private void OnDuplicateActionClick(object? sender, RoutedEventArgs e) =>
+            DuplicateActionRequested?.Invoke();
+
+        private void OnMoveActionClick(object? sender, RoutedEventArgs e) =>
+            MoveActionRequested?.Invoke();
+
+        private void OnSaveActionAsPresetClick(object? sender, RoutedEventArgs e) =>
+            SaveActionAsPresetRequested?.Invoke();
+
+        private void OnDeleteActionClick(object? sender, RoutedEventArgs e) =>
+            DeleteActionRequested?.Invoke();
 
         // ── 值编辑 (Float) ──
 

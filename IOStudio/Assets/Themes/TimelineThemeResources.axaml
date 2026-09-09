@@ -8,30 +8,80 @@
 
         <!-- ═══ Light Theme ═══ -->
         <ResourceDictionary x:Key="Light">
-            <!-- 面板背景 -->
-            <SolidColorBrush x:Key="TlPanelBg" Color="#f9fafb"/>
-            <SolidColorBrush x:Key="TlToolbarBg" Color="#f3f4f6"/>
-            <SolidColorBrush x:Key="TlMenuBg" Color="#f9fafb"/>
-            <SolidColorBrush x:Key="TlBorderBrush" Color="#e5e7eb"/>
-            <SolidColorBrush x:Key="TlBorderLight" Color="#d1d5db"/>
+            <!-- Neutral workstation surface scale -->
+            <SolidColorBrush x:Key="TlWindowBg" Color="#e9ebee"/>
+            <SolidColorBrush x:Key="TlPanelBg" Color="#f4f5f6"/>
+            <SolidColorBrush x:Key="TlToolbarBg" Color="#eceef0"/>
+            <SolidColorBrush x:Key="TlMenuBg" Color="#f4f5f6"/>
+            <SolidColorBrush x:Key="TlBorderBrush" Color="#d4d7db"/>
+            <SolidColorBrush x:Key="TlBorderLight" Color="#c5c9ce"/>
+            <SolidColorBrush x:Key="TlInputBg" Color="#ffffff"/>
+            <SolidColorBrush x:Key="TlSurfaceRaised" Color="#ffffff"/>
+            <SolidColorBrush x:Key="TlSurfaceSubtle" Color="#f7f8fa"/>
+            <SolidColorBrush x:Key="TlSectionHeaderBg" Color="#f1f3f5"/>
+            <SolidColorBrush x:Key="TlCardBg" Color="#ffffff"/>
+            <SolidColorBrush x:Key="TlCardBorder" Color="#d9dde2"/>
+            <SolidColorBrush x:Key="TlControlBg" Color="#eef1f4"/>
+            <SolidColorBrush x:Key="TlControlActiveBg" Color="#238b62"/>
+            <SolidColorBrush x:Key="TlControlActiveFg" Color="#ffffff"/>
+            <SolidColorBrush x:Key="TlStatusOnlineBg" Color="#dceee7"/>
+            <SolidColorBrush x:Key="TlStatusOnlineFg" Color="#176b4b"/>
+            <SolidColorBrush x:Key="TlStatusOfflineBg" Color="#fff1dc"/>
+            <SolidColorBrush x:Key="TlStatusOfflineFg" Color="#8b5a16"/>
+            <SolidColorBrush x:Key="TlStatusNeutralBg" Color="#e8ebee"/>
+            <SolidColorBrush x:Key="TlStatusNeutralFg" Color="#5d6670"/>
+            <SolidColorBrush x:Key="TlEmptyBg" Color="#f7f8fa"/>
 
             <!-- 轨道头 -->
-            <SolidColorBrush x:Key="TlTrackHeaderBg" Color="#f9fafb"/>
-            <SolidColorBrush x:Key="TlTrackHeaderSelectedBg" Color="#eff6ff"/>
-            <SolidColorBrush x:Key="TlTrackHeaderSelectedBorder" Color="#3b82f6"/>
+            <SolidColorBrush x:Key="TlTrackHeaderBg" Color="#f4f5f6"/>
+            <SolidColorBrush x:Key="TlTrackHeaderSelectedBg" Color="#dfe8f7"/>
+            <SolidColorBrush x:Key="TlTrackHeaderSelectedBorder" Color="#3978d4"/>
 
             <!-- 文本 -->
-            <SolidColorBrush x:Key="TlTextPrimary" Color="#1f2937"/>
-            <SolidColorBrush x:Key="TlTextSecondary" Color="#6b7280"/>
-            <SolidColorBrush x:Key="TlTextMuted" Color="#9ca3af"/>
+            <SolidColorBrush x:Key="TlTextPrimary" Color="#20242a"/>
+            <SolidColorBrush x:Key="TlTextSecondary" Color="#4f565f"/>
+            <SolidColorBrush x:Key="TlTextMuted" Color="#747c86"/>
 
             <!-- 工具栏按钮 hover -->
-            <SolidColorBrush x:Key="TlBtnHover" Color="#e5e7eb"/>
+            <SolidColorBrush x:Key="TlBtnHover" Color="#dde0e4"/>
+            <SolidColorBrush x:Key="TlHoverBg" Color="#dde0e4"/>
+
+            <!-- 统一主色 (Accent) — 全产品单一强调色来源 -->
+            <SolidColorBrush x:Key="TlAccent" Color="#3978d4"/>
+            <SolidColorBrush x:Key="TlAccentHover" Color="#2f66b5"/>
+            <SolidColorBrush x:Key="TlAccentFg" Color="#ffffff"/>
+            <SolidColorBrush x:Key="TlAccentSoftBg" Color="#dfe8f7"/>
+            <SolidColorBrush x:Key="TlAccentSoftFg" Color="#285a9f"/>
+
+            <!-- Transport is part of the same workspace, not an embedded dark island -->
+            <SolidColorBrush x:Key="TlTransportBg" Color="#e4e7ea"/>
+            <SolidColorBrush x:Key="TlTransportBorder" Color="#c5c9ce"/>
+            <SolidColorBrush x:Key="TlTransportBtn" Color="#353b43"/>
+            <SolidColorBrush x:Key="TlTransportBtnHover" Color="#d3d7dc"/>
+            <SolidColorBrush x:Key="TlTransportInputBg" Color="#f8f9fa"/>
+            <SolidColorBrush x:Key="TlTransportTimeText" Color="#285a9f"/>
+            <SolidColorBrush x:Key="TlTransportSeparator" Color="#bcc1c7"/>
+            <SolidColorBrush x:Key="TlTransportAccent" Color="#238b62"/>
+            <SolidColorBrush x:Key="TlTransportWarn" Color="#b87916"/>
+            <SolidColorBrush x:Key="TlTransportTextDim" Color="#747c86"/>
+            <SolidColorBrush x:Key="TlTransportTextSoft" Color="#5f6771"/>
+            <SolidColorBrush x:Key="TlTransportCheckedBg" Color="#cbdcf3"/>
+
+            <!-- Semantic colors are reserved for meaning -->
+            <SolidColorBrush x:Key="TlSuccess" Color="#238b62"/>
+            <SolidColorBrush x:Key="TlWarning" Color="#b87916"/>
+            <SolidColorBrush x:Key="TlDanger" Color="#c84f4f"/>
+            <SolidColorBrush x:Key="TlEvent" Color="#b87916"/>
+            <SolidColorBrush x:Key="TlMarker" Color="#7356a8"/>
+
+            <!-- Role 徽章 -->
+            <SolidColorBrush x:Key="TlRoleBadgeBg" Color="#e1e4e8"/>
+            <SolidColorBrush x:Key="TlRoleBadgeText" Color="#59616b"/>
 
             <!-- 标签 / 徽章 -->
-            <SolidColorBrush x:Key="TlBadgeBg" Color="#f0f9ff"/>
-            <SolidColorBrush x:Key="TlBadgeGroupBg" Color="#faf5ff"/>
-            <SolidColorBrush x:Key="TlBadgeLiveBg" Color="#ecfdf5"/>
+            <SolidColorBrush x:Key="TlBadgeBg" Color="#e8eaed"/>
+            <SolidColorBrush x:Key="TlBadgeGroupBg" Color="#e5e7ea"/>
+            <SolidColorBrush x:Key="TlBadgeLiveBg" Color="#dceee7"/>
 
             <!-- 轨道头标题区 -->
             <SolidColorBrush x:Key="TlTrackPanelTitleBg" Color="#f3f4f6"/>
@@ -40,66 +90,116 @@
             <SolidColorBrush x:Key="TlContentBg" Color="White"/>
 
             <!-- 视频预览区 -->
-            <SolidColorBrush x:Key="TlVideoViewerBg" Color="#e5e7eb"/>
-            <SolidColorBrush x:Key="TlVideoTitleBg" Color="#f3f4f6"/>
-            <SolidColorBrush x:Key="TlVideoSidebarBg" Color="#f0f1f3"/>
-            <SolidColorBrush x:Key="TlVideoToolbarBg" Color="#f3f4f6"/>
+            <SolidColorBrush x:Key="TlVideoViewerBg" Color="#252a30"/>
+            <SolidColorBrush x:Key="TlVideoTitleBg" Color="#eceef0"/>
+            <SolidColorBrush x:Key="TlVideoSidebarBg" Color="#e7e9ec"/>
+            <SolidColorBrush x:Key="TlVideoToolbarBg" Color="#e7e9ec"/>
             <SolidColorBrush x:Key="TlVideoOverlayBg" Color="#80ffffff"/>
             <SolidColorBrush x:Key="TlVideoOverlayText" Color="#6b7280"/>
             <SolidColorBrush x:Key="TlVideoPlaceholderIcon" Color="#d1d5db"/>
 
             <!-- 属性面板区 -->
-            <SolidColorBrush x:Key="TlPropSectionBg" Color="#f3f4f6"/>
-            <SolidColorBrush x:Key="TlPropSectionDot" Color="#3b82f6"/>
-            <SolidColorBrush x:Key="TlPropSectionDotInactive" Color="#9ca3af"/>
+            <SolidColorBrush x:Key="TlPropSectionBg" Color="#eceef0"/>
+            <SolidColorBrush x:Key="TlPropSectionDot" Color="#3978d4"/>
+            <SolidColorBrush x:Key="TlPropSectionDotInactive" Color="#747c86"/>
         </ResourceDictionary>
 
         <!-- ═══ Dark Theme ═══ -->
         <ResourceDictionary x:Key="Dark">
-            <!-- 面板背景 -->
-            <SolidColorBrush x:Key="TlPanelBg" Color="#111827"/>
-            <SolidColorBrush x:Key="TlToolbarBg" Color="#1f2937"/>
-            <SolidColorBrush x:Key="TlMenuBg" Color="#111827"/>
-            <SolidColorBrush x:Key="TlBorderBrush" Color="#374151"/>
-            <SolidColorBrush x:Key="TlBorderLight" Color="#4b5563"/>
+            <!-- Neutral workstation surface scale -->
+            <SolidColorBrush x:Key="TlWindowBg" Color="#141619"/>
+            <SolidColorBrush x:Key="TlPanelBg" Color="#1b1e22"/>
+            <SolidColorBrush x:Key="TlToolbarBg" Color="#20242a"/>
+            <SolidColorBrush x:Key="TlMenuBg" Color="#1b1e22"/>
+            <SolidColorBrush x:Key="TlBorderBrush" Color="#30353b"/>
+            <SolidColorBrush x:Key="TlBorderLight" Color="#3b4148"/>
+            <SolidColorBrush x:Key="TlInputBg" Color="#252a30"/>
+            <SolidColorBrush x:Key="TlSurfaceRaised" Color="#252a30"/>
+            <SolidColorBrush x:Key="TlSurfaceSubtle" Color="#1f2328"/>
+            <SolidColorBrush x:Key="TlSectionHeaderBg" Color="#24292f"/>
+            <SolidColorBrush x:Key="TlCardBg" Color="#252a30"/>
+            <SolidColorBrush x:Key="TlCardBorder" Color="#3a4149"/>
+            <SolidColorBrush x:Key="TlControlBg" Color="#30353b"/>
+            <SolidColorBrush x:Key="TlControlActiveBg" Color="#45b987"/>
+            <SolidColorBrush x:Key="TlControlActiveFg" Color="#101b16"/>
+            <SolidColorBrush x:Key="TlStatusOnlineBg" Color="#203c33"/>
+            <SolidColorBrush x:Key="TlStatusOnlineFg" Color="#7bd1ac"/>
+            <SolidColorBrush x:Key="TlStatusOfflineBg" Color="#493720"/>
+            <SolidColorBrush x:Key="TlStatusOfflineFg" Color="#f0c476"/>
+            <SolidColorBrush x:Key="TlStatusNeutralBg" Color="#30353b"/>
+            <SolidColorBrush x:Key="TlStatusNeutralFg" Color="#aeb5bd"/>
+            <SolidColorBrush x:Key="TlEmptyBg" Color="#20242a"/>
 
             <!-- 轨道头 -->
-            <SolidColorBrush x:Key="TlTrackHeaderBg" Color="#111827"/>
-            <SolidColorBrush x:Key="TlTrackHeaderSelectedBg" Color="#1e3a5f"/>
-            <SolidColorBrush x:Key="TlTrackHeaderSelectedBorder" Color="#3b82f6"/>
+            <SolidColorBrush x:Key="TlTrackHeaderBg" Color="#1b1e22"/>
+            <SolidColorBrush x:Key="TlTrackHeaderSelectedBg" Color="#26364c"/>
+            <SolidColorBrush x:Key="TlTrackHeaderSelectedBorder" Color="#5794e6"/>
 
             <!-- 文本 -->
-            <SolidColorBrush x:Key="TlTextPrimary" Color="#f3f4f6"/>
-            <SolidColorBrush x:Key="TlTextSecondary" Color="#d1d5db"/>
-            <SolidColorBrush x:Key="TlTextMuted" Color="#9ca3af"/>
+            <SolidColorBrush x:Key="TlTextPrimary" Color="#e6e8eb"/>
+            <SolidColorBrush x:Key="TlTextSecondary" Color="#b8bec6"/>
+            <SolidColorBrush x:Key="TlTextMuted" Color="#858d97"/>
 
             <!-- 工具栏按钮 hover -->
-            <SolidColorBrush x:Key="TlBtnHover" Color="#374151"/>
+            <SolidColorBrush x:Key="TlBtnHover" Color="#30353b"/>
+            <SolidColorBrush x:Key="TlHoverBg" Color="#30353b"/>
 
-            <!-- 标签 / 徽章 -->
-            <SolidColorBrush x:Key="TlBadgeBg" Color="#1e3a5f"/>
-            <SolidColorBrush x:Key="TlBadgeGroupBg" Color="#2e1065"/>
-            <SolidColorBrush x:Key="TlBadgeLiveBg" Color="#064e3b"/>
+            <!-- 统一主色 (Accent) — 全产品单一强调色来源 -->
+            <SolidColorBrush x:Key="TlAccent" Color="#5794e6"/>
+            <SolidColorBrush x:Key="TlAccentHover" Color="#6ca4ee"/>
+            <SolidColorBrush x:Key="TlAccentFg" Color="#ffffff"/>
+            <SolidColorBrush x:Key="TlAccentSoftBg" Color="#26364c"/>
+            <SolidColorBrush x:Key="TlAccentSoftFg" Color="#8bb7ef"/>
+
+            <!-- 运输栏 (Transport Bar) — 固定深色风格, 但可主题化 -->
+            <SolidColorBrush x:Key="TlTransportBg" Color="#20242a"/>
+            <SolidColorBrush x:Key="TlTransportBorder" Color="#30353b"/>
+            <SolidColorBrush x:Key="TlTransportBtn" Color="#cbd0d6"/>
+            <SolidColorBrush x:Key="TlTransportBtnHover" Color="#343a41"/>
+            <SolidColorBrush x:Key="TlTransportInputBg" Color="#16191d"/>
+            <SolidColorBrush x:Key="TlTransportTimeText" Color="#8bb7ef"/>
+            <SolidColorBrush x:Key="TlTransportSeparator" Color="#41474f"/>
+            <SolidColorBrush x:Key="TlTransportAccent" Color="#45b987"/>
+            <SolidColorBrush x:Key="TlTransportWarn" Color="#d8a34c"/>
+            <SolidColorBrush x:Key="TlTransportTextDim" Color="#6f7781"/>
+            <SolidColorBrush x:Key="TlTransportTextSoft" Color="#9ba2ab"/>
+            <SolidColorBrush x:Key="TlTransportCheckedBg" Color="#26364c"/>
+
+            <!-- Semantic colors are reserved for meaning -->
+            <SolidColorBrush x:Key="TlSuccess" Color="#45b987"/>
+            <SolidColorBrush x:Key="TlWarning" Color="#d8a34c"/>
+            <SolidColorBrush x:Key="TlDanger" Color="#e36a6a"/>
+            <SolidColorBrush x:Key="TlEvent" Color="#d8a34c"/>
+            <SolidColorBrush x:Key="TlMarker" Color="#a98adb"/>
+
+            <!-- Role 徽章 -->
+            <SolidColorBrush x:Key="TlRoleBadgeBg" Color="#30353b"/>
+            <SolidColorBrush x:Key="TlRoleBadgeText" Color="#aeb5bd"/>
+
+            <!-- 标签 / 徽章 (与 Role 徽章分离, 保留通用 Badge) -->
+            <SolidColorBrush x:Key="TlBadgeBg" Color="#252a30"/>
+            <SolidColorBrush x:Key="TlBadgeGroupBg" Color="#23272c"/>
+            <SolidColorBrush x:Key="TlBadgeLiveBg" Color="#203c33"/>
 
             <!-- 轨道头标题区 -->
-            <SolidColorBrush x:Key="TlTrackPanelTitleBg" Color="#1f2937"/>
+            <SolidColorBrush x:Key="TlTrackPanelTitleBg" Color="#20242a"/>
 
             <!-- 时间轴内容区背景 -->
-            <SolidColorBrush x:Key="TlContentBg" Color="#0f172a"/>
+            <SolidColorBrush x:Key="TlContentBg" Color="#171a1e"/>
 
             <!-- 视频预览区 -->
-            <SolidColorBrush x:Key="TlVideoViewerBg" Color="#0a0e17"/>
-            <SolidColorBrush x:Key="TlVideoTitleBg" Color="#141a26"/>
-            <SolidColorBrush x:Key="TlVideoSidebarBg" Color="#111723"/>
-            <SolidColorBrush x:Key="TlVideoToolbarBg" Color="#141a26"/>
+            <SolidColorBrush x:Key="TlVideoViewerBg" Color="#101215"/>
+            <SolidColorBrush x:Key="TlVideoTitleBg" Color="#20242a"/>
+            <SolidColorBrush x:Key="TlVideoSidebarBg" Color="#191c20"/>
+            <SolidColorBrush x:Key="TlVideoToolbarBg" Color="#20242a"/>
             <SolidColorBrush x:Key="TlVideoOverlayBg" Color="#80000000"/>
             <SolidColorBrush x:Key="TlVideoOverlayText" Color="#ffffff60"/>
             <SolidColorBrush x:Key="TlVideoPlaceholderIcon" Color="#374151"/>
 
             <!-- 属性面板区 -->
-            <SolidColorBrush x:Key="TlPropSectionBg" Color="#1a2235"/>
-            <SolidColorBrush x:Key="TlPropSectionDot" Color="#ef4444"/>
-            <SolidColorBrush x:Key="TlPropSectionDotInactive" Color="#6b7280"/>
+            <SolidColorBrush x:Key="TlPropSectionBg" Color="#20242a"/>
+            <SolidColorBrush x:Key="TlPropSectionDot" Color="#5794e6"/>
+            <SolidColorBrush x:Key="TlPropSectionDotInactive" Color="#6f7781"/>
         </ResourceDictionary>
 
     </ResourceDictionary.ThemeDictionaries>

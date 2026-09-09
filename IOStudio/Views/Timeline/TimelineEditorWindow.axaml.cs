@@ -29,6 +29,7 @@ namespace IOStudio.Views.Timeline
             InitializeComponent();
             SetupRulerEvents();
             SetupPropertyPanelEvents();
+            SetupPresetDockEvents();
             SetupVideoPreviewEvents();
             SetupScrollSync();
         }
@@ -90,6 +91,32 @@ namespace IOStudio.Views.Timeline
             {
                 Avalonia.Threading.Dispatcher.UIThread.Post(() => RefreshAllTrackLiveValues());
             };
+
+            // 编辑待机循环: 打开独立待机编辑器窗口 (单周期曲线, 复用关键帧编辑体验)
+            ViewModel.IdleCurveEditRequested += trackVm =>
+            {
+                Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+                {
+                    if (ViewModel == null || trackVm == null)
+                        return;
+                    OpenIdleEditor(trackVm);
+                });
+            };
+        }
+
+        private IOStudio.Views.Timeline.IdleEditorWindow? _idleEditorWindow;
+
+        /// <summary>打开独立待机编辑器 (已开则聚焦并重载目标轨道)。</summary>
+        private void OpenIdleEditor(ViewModels.Timeline.TrackViewModel trackVm)
+        {
+            if (_idleEditorWindow == null || !_idleEditorWindow.IsVisible)
+            {
+                _idleEditorWindow = new IOStudio.Views.Timeline.IdleEditorWindow();
+                _idleEditorWindow.Closed += (_, _) => _idleEditorWindow = null;
+                _idleEditorWindow.Show(this);
+            }
+            _idleEditorWindow.LoadTrack(trackVm, ViewModel!);
+            _idleEditorWindow.Activate();
         }
 
         private void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs args)
@@ -126,6 +153,8 @@ namespace IOStudio.Views.Timeline
             {
                 // 选中轨道时立即刷新检查器 (不等待播放头移动)
                 RefreshPropertyPanel();
+                // 方案A: 曲线视图焦点轨跟随选中/多选轨道
+                UpdateCurveFocusIndexes();
             }
             else if (args.PropertyName == nameof(TimelineEditorViewModel.IsPlaying))
             {
@@ -148,6 +177,51 @@ namespace IOStudio.Views.Timeline
                     videoPreview.Stop();
                 }
             }
+            else if (
+                args.PropertyName == nameof(TimelineEditorViewModel.PixelsPerMs)
+                || args.PropertyName == nameof(TimelineEditorViewModel.ScrollOffsetX)
+                || args.PropertyName == nameof(TimelineEditorViewModel.DurationMs)
+            )
+            {
+                UpdateHScrollRange();
+            }
+            else if (
+                args.PropertyName == nameof(TimelineEditorViewModel.WorkAreaInMs)
+                || args.PropertyName == nameof(TimelineEditorViewModel.WorkAreaOutMs)
+            )
+            {
+                SyncWorkAreaToRuler();
+            }
+        }
+
+        // ═══════ 时间轴横向滚动条 ═══════
+
+        private bool _isSyncingHScroll;
+
+        private void UpdateHScrollRange()
+        {
+            var bar = this.FindControl<Avalonia.Controls.Primitives.ScrollBar>("HScrollBar");
+            if (bar == null || ViewModel == null)
+                return;
+            double viewW = ViewModel.TimelineViewportWidth;
+            if (viewW <= 0)
+                viewW = this.FindControl<ScrollViewer>("TrackClipScroller")?.Bounds.Width ?? 400;
+            double total = Math.Max(1, ViewModel.DurationMs * ViewModel.PixelsPerMs);
+            _isSyncingHScroll = true;
+            bar.Maximum = total;
+            bar.ViewportSize = Math.Max(1, viewW);
+            bar.Value = Math.Clamp(ViewModel.ScrollOffsetX, 0, Math.Max(0, total - viewW));
+            _isSyncingHScroll = false;
+        }
+
+        private void OnHScrollBarScroll(
+            object? sender,
+            Avalonia.Controls.Primitives.ScrollEventArgs e
+        )
+        {
+            if (_isSyncingHScroll || ViewModel == null)
+                return;
+            ViewModel.ScrollOffsetX = Math.Max(0, e.NewValue);
         }
 
         /// <summary>
@@ -175,6 +249,15 @@ namespace IOStudio.Views.Timeline
                 {
                     if (ViewModel != null)
                         ViewModel.ScrollOffsetX = offset;
+                };
+
+                // 工作区条带拖动 → 同步 VM (实时)
+                ruler.WorkAreaChanged += (inMs, outMs) =>
+                {
+                    if (ViewModel == null)
+                        return;
+                    ViewModel.WorkAreaInMs = inMs;
+                    ViewModel.WorkAreaOutMs = outMs;
                 };
 
                 // 事件选中
@@ -304,6 +387,27 @@ namespace IOStudio.Views.Timeline
                 WirePropertyVmEvents(ViewModel.KeyframePropertyVm);
             }
 
+            panel.DuplicateActionRequested += () =>
+                ExecuteSelectedActionCommand(
+                    instanceId => ViewModel?.DuplicateActionInstanceAtPlayhead(instanceId),
+                    refreshInspector: true
+                );
+            panel.MoveActionRequested += () =>
+                ExecuteSelectedActionCommand(
+                    instanceId => ViewModel?.MoveActionInstanceToPlayhead(instanceId),
+                    refreshInspector: true
+                );
+            panel.SaveActionAsPresetRequested += () =>
+                ExecuteSelectedActionCommand(
+                    instanceId => ViewModel?.SaveActionInstanceAsPreset(instanceId),
+                    refreshInspector: false
+                );
+            panel.DeleteActionRequested += () =>
+                ExecuteSelectedActionCommand(
+                    instanceId => ViewModel?.DeleteActionInstance(instanceId),
+                    refreshInspector: true
+                );
+
             // DataContext 变更时重新连接
             this.GetObservable(DataContextProperty)
                 .Subscribe(_ =>
@@ -314,6 +418,83 @@ namespace IOStudio.Views.Timeline
                         WirePropertyVmEvents(ViewModel.KeyframePropertyVm);
                     }
                 });
+        }
+
+        private void ExecuteSelectedActionCommand(Action<string> command, bool refreshInspector)
+        {
+            string? instanceId = ViewModel?.SelectedActionInstanceId;
+            if (string.IsNullOrWhiteSpace(instanceId))
+                return;
+
+            command(instanceId);
+            RefreshAllTrackControls();
+            SyncCurveEditorData();
+            if (refreshInspector)
+                RefreshPropertyPanel();
+        }
+
+        private void SetupPresetDockEvents()
+        {
+            var presetPanel = this.FindControl<PresetLibraryPanel>("PresetLibraryDockPanel");
+            if (presetPanel == null)
+                return;
+
+            presetPanel.CloseRequested += () =>
+            {
+                var tabs = this.FindControl<TabControl>("WorkspaceDockTabs");
+                if (tabs != null)
+                    tabs.SelectedIndex = 0;
+            };
+            presetPanel.EditPresetRequested += async preset =>
+            {
+                if (ViewModel == null)
+                    return;
+
+                // 优先编辑时间轴中"来自该预设的任意动作实例"的关键帧 — 保存后立即写回、可播放预览；
+                // 不再局限于播放头所在实例, 避免"编辑模板后时间轴没变化"的困惑。
+                var instanceId = ViewModel.FindInstanceByPreset(preset.Id);
+                var instanceEdit =
+                    instanceId != null ? ViewModel.BuildInstanceCurvePreset(instanceId) : null;
+                bool editingInstance = instanceEdit != null;
+
+                var dialog = new PresetCurveEditorWindow(
+                    instanceEdit ?? preset,
+                    editingInstance ? "动作曲线" : null
+                );
+                var saved = await dialog.ShowDialog<bool>(this);
+                if (saved != true || ViewModel == null)
+                    return;
+
+                if (editingInstance)
+                {
+                    ViewModel.UpdateInstanceCurve(instanceId!, dialog.EditedPreset);
+                    RefreshAllTrackControls();
+                    SyncCurveEditorData();
+                    ViewModel.PresetPanelVm.OperationStatus =
+                        $"已更新动作曲线“{dialog.EditedPreset.Name}”，可在时间轴预览";
+                }
+                else
+                {
+                    ViewModel.PresetPanelVm.Library.Upsert(dialog.EditedPreset);
+                    ViewModel.PresetPanelVm.Library.SaveAll();
+                    ViewModel.PresetPanelVm.RefreshPresets();
+                    ViewModel.PresetPanelVm.RefreshCategories();
+                    ViewModel.PresetPanelVm.OperationStatus =
+                        $"已保存预设“{dialog.EditedPreset.Name}” · 修订 {dialog.EditedPreset.Revision}（时间轴已有实例不变，重新应用预设生效）";
+                }
+            };
+        }
+
+        private void OnPresetPanelToggleClick(object? sender, RoutedEventArgs e)
+        {
+            var tabs = this.FindControl<TabControl>("WorkspaceDockTabs");
+            if (tabs == null)
+                return;
+
+            tabs.SelectedIndex = sender
+                is Avalonia.Controls.Primitives.ToggleButton { IsChecked: true }
+                ? 1
+                : 0;
         }
 
         /// <summary>
@@ -600,8 +781,8 @@ namespace IOStudio.Views.Timeline
             var upperGrid = this.FindControl<Grid>("UpperGrid");
             var splitter = this.FindControl<GridSplitter>("MainHorizontalSplitter");
             var lowerPanel = this.FindControl<DockPanel>("LowerPanel");
-            var kfPanel = this.FindControl<Control>("KfPropertyPanel");
-            var vertSplitter = this.FindControl<GridSplitter>("UpperVerticalSplitter");
+            var inspectorDock = this.FindControl<Control>("InspectorDock");
+            var dockSplitter = this.FindControl<GridSplitter>("WorkspaceDockSplitter");
             var menu = this.FindControl<Menu>("MainMenu");
 
             if (mainGrid == null || upperGrid == null)
@@ -612,7 +793,7 @@ namespace IOStudio.Views.Timeline
                 // 保存当前布局和窗口状态
                 _savedUpperRowHeight = mainGrid.RowDefinitions[0].Height;
                 _savedLowerRowHeight = mainGrid.RowDefinitions[2].Height;
-                _savedPropertyColWidth = upperGrid.ColumnDefinitions[2].Width;
+                _savedPropertyColWidth = mainGrid.ColumnDefinitions[2].Width;
                 _savedWindowState = this.WindowState;
                 _savedSystemDecorations = this.SystemDecorations;
 
@@ -630,13 +811,14 @@ namespace IOStudio.Views.Timeline
                 mainGrid.RowDefinitions[2].Height = new GridLength(0);
                 mainGrid.RowDefinitions[2].MinHeight = 0;
 
-                // 隐藏右侧属性面板
-                if (kfPanel != null)
-                    kfPanel.IsVisible = false;
-                if (vertSplitter != null)
-                    vertSplitter.IsVisible = false;
-                upperGrid.ColumnDefinitions[2].Width = new GridLength(0);
-                upperGrid.ColumnDefinitions[2].MinWidth = 0;
+                // 隐藏贯穿工作区的右侧 Dock
+                if (inspectorDock != null)
+                    inspectorDock.IsVisible = false;
+                if (dockSplitter != null)
+                    dockSplitter.IsVisible = false;
+                mainGrid.ColumnDefinitions[1].Width = new GridLength(0);
+                mainGrid.ColumnDefinitions[2].Width = new GridLength(0);
+                mainGrid.ColumnDefinitions[2].MinWidth = 0;
 
                 // 真全屏: 去掉标题栏, 窗口撑满屏幕
                 this.SystemDecorations = SystemDecorations.None;
@@ -662,13 +844,14 @@ namespace IOStudio.Views.Timeline
                 mainGrid.RowDefinitions[2].Height = _savedLowerRowHeight;
                 mainGrid.RowDefinitions[2].MinHeight = 180;
 
-                // 恢复右侧属性面板
-                if (kfPanel != null)
-                    kfPanel.IsVisible = true;
-                if (vertSplitter != null)
-                    vertSplitter.IsVisible = true;
-                upperGrid.ColumnDefinitions[2].Width = _savedPropertyColWidth;
-                upperGrid.ColumnDefinitions[2].MinWidth = 220;
+                // 恢复右侧 Dock
+                if (inspectorDock != null)
+                    inspectorDock.IsVisible = true;
+                if (dockSplitter != null)
+                    dockSplitter.IsVisible = true;
+                mainGrid.ColumnDefinitions[1].Width = new GridLength(4);
+                mainGrid.ColumnDefinitions[2].Width = _savedPropertyColWidth;
+                mainGrid.ColumnDefinitions[2].MinWidth = 260;
             }
         }
 
@@ -815,6 +998,18 @@ namespace IOStudio.Views.Timeline
                     NavigateToNextKeyframe();
                     e.Handled = true;
                     return;
+                case ShortcutAction.SelectPreviousTrack:
+                    SelectAdjacentTrack(-1);
+                    e.Handled = true;
+                    return;
+                case ShortcutAction.SelectNextTrack:
+                    SelectAdjacentTrack(1);
+                    e.Handled = true;
+                    return;
+                case ShortcutAction.DuplicateKeyframe:
+                    ViewModel.DuplicateKeyframeAtPlayhead();
+                    e.Handled = true;
+                    return;
             }
 
             // UX-D1: F2 重命名 — 根据当前选中项路由 (轨道→属性对话框; 事件/标记→属性面板聚焦名称输入)
@@ -927,8 +1122,9 @@ namespace IOStudio.Views.Timeline
 
                 if (choice == 2)
                 {
-                    // 保存并退出
-                    ViewModel.SaveFileCommand.Execute().Subscribe();
+                    // 保存并退出必须等待真实写入结果；取消另存为或写入失败时保留窗口。
+                    if (!await ViewModel.SaveAsync())
+                        return;
                 }
 
                 if (choice == 1 || choice == 2)

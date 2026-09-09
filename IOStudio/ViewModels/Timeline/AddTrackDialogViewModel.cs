@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
@@ -43,8 +44,41 @@ namespace IOStudio.ViewModels.Timeline
             "Bool 开关值 (0 / 1)"
         };
 
+        // ── Idle 相位模式选项 ──
+        public static readonly string[] IdlePhaseModeOptions = { "continuous", "restart" };
+        public static readonly string[] IdlePhaseModeDisplayNames =
+        {
+            "连续 (跨空窗连贯同步)",
+            "重置 (每个空窗从头播放)"
+        };
+
+        // Idle 插值选项 (行内下拉)
+        public static readonly string[] IdleInterpolationOptions =
+        {
+            "bezier",
+            "linear",
+            "step",
+            "ease_in_out"
+        };
+        public static readonly string[] IdleInterpolationDisplayNames =
+        {
+            "贝塞尔",
+            "线性",
+            "阶梯",
+            "缓入缓出"
+        };
+
         // ── 内部数据 ──
         private readonly List<DeviceSchemaInfo> _devices;
+
+        // ── Idle 循环配置 ──
+        private bool _idleEnabled;
+        private double _idlePeriodMs = 1600.0;
+        private double _idleBlendMs = 300.0;
+        private int _idlePhaseModeIndex;
+        private double _idlePhaseOffsetMs;
+        private string? _idleGroupId;
+        private readonly ObservableCollection<IdleKeyframeItem> _idleKeyframes = new();
 
         // ── 属性 (ReactiveUI) ──
         private string? _selectedDeviceName;
@@ -83,6 +117,16 @@ namespace IOStudio.ViewModels.Timeline
 
         /// <summary>当前输出列表 (根据设备+输出类型过滤)。</summary>
         public ObservableCollection<string> OutputItems { get; } = new();
+
+        public bool HasOutputItems => OutputItems.Count > 0;
+
+        public string OutputEmptyMessage =>
+            string.IsNullOrEmpty(SelectedDeviceName)
+                ? "请先选择目标设备"
+                : $"设备“{SelectedDeviceName}”没有可用的 {SelectedOutputTypeDisplayName}，请切换设备或输出类型";
+
+        public string SelectedOutputTypeDisplayName =>
+            SelectedOutputType == "oaxis" ? "OAxis 输出通道" : "OAction 输出动作";
 
         /// <summary>选中的设备名称。</summary>
         public string? SelectedDeviceName
@@ -146,6 +190,60 @@ namespace IOStudio.ViewModels.Timeline
                 ? ValueTypeOptions[_selectedValueTypeIndex]
                 : "float";
 
+        // ── Idle 循环配置属性 ──
+
+        /// <summary>是否启用 Idle 循环 (空窗期填充待机循环动作)。</summary>
+        public bool IdleEnabled
+        {
+            get => _idleEnabled;
+            set => this.RaiseAndSetIfChanged(ref _idleEnabled, value);
+        }
+
+        /// <summary>Idle 循环周期 (毫秒)。</summary>
+        public double IdlePeriodMs
+        {
+            get => _idlePeriodMs;
+            set
+            {
+                this.RaiseAndSetIfChanged(ref _idlePeriodMs, value);
+                this.RaisePropertyChanged(nameof(IdlePeriodSeconds));
+            }
+        }
+
+        /// <summary>周期 (秒, 显示友好)。</summary>
+        public double IdlePeriodSeconds => IdlePeriodMs / 1000.0;
+
+        /// <summary>与相邻 clip 的交叉淡化窗口 (毫秒)。</summary>
+        public double IdleBlendMs
+        {
+            get => _idleBlendMs;
+            set => this.RaiseAndSetIfChanged(ref _idleBlendMs, value);
+        }
+
+        /// <summary>Idle 相位模式索引 (0=continuous, 1=restart)。</summary>
+        public int IdlePhaseModeIndex
+        {
+            get => _idlePhaseModeIndex;
+            set => this.RaiseAndSetIfChanged(ref _idlePhaseModeIndex, value);
+        }
+
+        /// <summary>Idle 相位偏移 (毫秒) — 同组多轨错相编排。</summary>
+        public double IdlePhaseOffsetMs
+        {
+            get => _idlePhaseOffsetMs;
+            set => this.RaiseAndSetIfChanged(ref _idlePhaseOffsetMs, value);
+        }
+
+        /// <summary>Idle 节奏组标识 — 同组多轨 continuous 下共享全局时钟同步 (空=独立)。</summary>
+        public string? IdleGroupId
+        {
+            get => _idleGroupId;
+            set => this.RaiseAndSetIfChanged(ref _idleGroupId, value);
+        }
+
+        /// <summary>Idle 单周期关键帧列表 (行编辑模型)。</summary>
+        public ObservableCollection<IdleKeyframeItem> IdleKeyframes => _idleKeyframes;
+
         // ── 命令 ──
 
         /// <summary>确认添加 — 构建 <see cref="AddTrackResult"/> 并关闭对话框。</summary>
@@ -153,6 +251,15 @@ namespace IOStudio.ViewModels.Timeline
 
         /// <summary>取消 — 返回 null 结果并关闭对话框。</summary>
         public ReactiveCommand<Unit, AddTrackResult?> CancelCommand { get; }
+
+        /// <summary>添加 idle 关键帧行。</summary>
+        public ReactiveCommand<Unit, Unit> AddIdleKeyframeCommand { get; }
+
+        /// <summary>移除 idle 关键帧行。</summary>
+        public ReactiveCommand<IdleKeyframeItem, Unit> RemoveIdleKeyframeCommand { get; }
+
+        /// <summary>应用待机模板 (breathing/sway/micro) 一键填充 idle 关键帧。</summary>
+        public ReactiveCommand<string, Unit> ApplyIdleTemplateCommand { get; }
 
         /// <summary>对话框结果 — 确认后非 null, 取消后 null。</summary>
         public AddTrackResult? Result { get; private set; }
@@ -196,10 +303,93 @@ namespace IOStudio.ViewModels.Timeline
                 return null;
             });
 
-            // 初始选中第一个设备
-            if (DeviceNames.Count > 0)
+            // Idle 关键帧行编辑命令
+            AddIdleKeyframeCommand = ReactiveCommand.Create(() =>
             {
-                SelectedDeviceName = DeviceNames[0];
+                double t =
+                    IdleKeyframes.Count > 0 ? IdleKeyframes[^1].TimeMs + IdlePeriodMs / 4 : 0;
+                IdleKeyframes.Add(
+                    new IdleKeyframeItem
+                    {
+                        TimeMs = Math.Min(t, IdlePeriodMs),
+                        Value = 0.5f,
+                        InterpolationIndex = 0
+                    }
+                );
+                return Unit.Default;
+            });
+
+            RemoveIdleKeyframeCommand = ReactiveCommand.Create<IdleKeyframeItem, Unit>(item =>
+            {
+                IdleKeyframes.Remove(item);
+                return Unit.Default;
+            });
+
+            // 待机模板一键填充 (呼吸/摇摆/微幅)
+            ApplyIdleTemplateCommand = ReactiveCommand.Create<string, Unit>(template =>
+            {
+                ApplyIdleTemplate(template);
+                return Unit.Default;
+            });
+
+            // 默认选择第一个真正提供当前输出类型的设备，避免打开对话框即进入不可提交状态。
+            var firstUsable =
+                _devices.FirstOrDefault(d => d.OActions.Count > 0)?.DeviceName
+                ?? _devices.FirstOrDefault()?.DeviceName;
+            if (firstUsable != null)
+                SelectedDeviceName = firstUsable;
+        }
+
+        /// <summary>按模板填充 idle 关键帧 (覆盖现有)。</summary>
+        private void ApplyIdleTemplate(string template)
+        {
+            _idleKeyframes.Clear();
+            double period = IdlePeriodMs > 100 ? IdlePeriodMs : 1600.0;
+            // 关键帧 (timeMs 相对周期, value 归一化, interp=bezier)
+            (double t, float v)[] pts = template switch
+            {
+                // 呼吸: 中位 → 缓起缓落 (类似正弦)
+                "breathing"
+                    => new (double, float)[]
+                    {
+                        (0, 0.5f),
+                        (period * 0.25, 0.62f),
+                        (period * 0.55, 0.55f),
+                        (period * 0.8, 0.68f),
+                        (period, 0.5f)
+                    },
+                // 摇摆: 高 ✓ 低往还 (类似三角/缓动)
+                "sway"
+                    => new (double, float)[]
+                    {
+                        (0, 0.5f),
+                        (period * 0.2, 0.75f),
+                        (period * 0.5, 0.45f),
+                        (period * 0.8, 0.7f),
+                        (period, 0.5f)
+                    },
+                // 微幅: 贴近中性位的小扰动 (减少体感干扰)
+                "micro"
+                    => new (double, float)[]
+                    {
+                        (0, 0.52f),
+                        (period * 0.3, 0.5f),
+                        (period * 0.6, 0.54f),
+                        (period, 0.52f)
+                    },
+                _ => new (double, float)[] { (0, 0.5f), (period, 0.5f) },
+            };
+
+            foreach (var (t, v) in pts)
+            {
+                _idleKeyframes.Add(
+                    new IdleKeyframeItem
+                    {
+                        TimeMs = t,
+                        Value = v,
+                        InterpolationIndex = 0
+                    }
+                );
             }
         }
 
@@ -246,6 +436,67 @@ namespace IOStudio.ViewModels.Timeline
             Label = track.Label;
             SelectedColor = track.Color;
             SelectedValueTypeIndex = track.ValueType == "bool" ? 1 : 0;
+
+            // Idle 循环配置
+            _idleKeyframes.Clear();
+            if (track.IdleLoop is { } idle)
+            {
+                IdleEnabled = idle.Enabled;
+                IdlePeriodMs = idle.PeriodMs;
+                IdleBlendMs = idle.BlendMs;
+                IdlePhaseModeIndex = idle.PhaseMode == "restart" ? 1 : 0;
+                IdlePhaseOffsetMs = idle.PhaseOffsetMs;
+                IdleGroupId = idle.GroupId;
+                foreach (var kf in idle.Keyframes)
+                {
+                    int interpIdx = Math.Max(
+                        0,
+                        Array.IndexOf(IdleInterpolationOptions, kf.Interpolation ?? "bezier")
+                    );
+                    _idleKeyframes.Add(
+                        new IdleKeyframeItem
+                        {
+                            TimeMs = kf.TimeMs,
+                            Value = kf.Value,
+                            InterpolationIndex = interpIdx
+                        }
+                    );
+                }
+            }
+            else
+            {
+                IdleEnabled = false;
+                IdlePeriodMs = 1600.0;
+                IdleBlendMs = 300.0;
+                IdlePhaseModeIndex = 0;
+                IdlePhaseOffsetMs = 0;
+                IdleGroupId = null;
+                // 默认给一个简单的呼吸循环, 用户可在此基础上编辑
+                _idleKeyframes.Add(
+                    new IdleKeyframeItem
+                    {
+                        TimeMs = 0,
+                        Value = 0.5f,
+                        InterpolationIndex = 0
+                    }
+                );
+                _idleKeyframes.Add(
+                    new IdleKeyframeItem
+                    {
+                        TimeMs = 800,
+                        Value = 0.6f,
+                        InterpolationIndex = 0
+                    }
+                );
+                _idleKeyframes.Add(
+                    new IdleKeyframeItem
+                    {
+                        TimeMs = 1600,
+                        Value = 0.5f,
+                        InterpolationIndex = 0
+                    }
+                );
+            }
         }
 
         // ── 私有方法 ──
@@ -282,12 +533,48 @@ namespace IOStudio.ViewModels.Timeline
             {
                 SelectedOutputDisplay = OutputItems[0];
             }
+            this.RaisePropertyChanged(nameof(HasOutputItems));
+            this.RaisePropertyChanged(nameof(OutputEmptyMessage));
+            this.RaisePropertyChanged(nameof(SelectedOutputTypeDisplayName));
         }
 
         /// <summary>从当前选择构建 <see cref="AddTrackResult"/>。</summary>
         private AddTrackResult BuildResult()
         {
             var device = _devices.FirstOrDefault(d => d.DeviceName == SelectedDeviceName);
+
+            IdleLoop? idle = null;
+            if (IdleEnabled)
+            {
+                var kfs = _idleKeyframes
+                    .OrderBy(k => k.TimeMs)
+                    .Select(
+                        k =>
+                            new MotionKeyframe
+                            {
+                                TimeMs = Math.Clamp(k.TimeMs, 0, IdlePeriodMs),
+                                Value = Math.Clamp(k.Value, 0f, 1f),
+                                Interpolation = IdleInterpolationOptions[
+                                    Math.Clamp(
+                                        k.InterpolationIndex,
+                                        0,
+                                        IdleInterpolationOptions.Length - 1
+                                    )
+                                ]
+                            }
+                    )
+                    .ToList();
+                idle = new IdleLoop
+                {
+                    Enabled = true,
+                    PeriodMs = Math.Max(100, IdlePeriodMs),
+                    BlendMs = Math.Max(0, IdleBlendMs),
+                    PhaseMode = IdlePhaseModeIndex == 1 ? "restart" : "continuous",
+                    PhaseOffsetMs = IdlePhaseOffsetMs,
+                    GroupId = string.IsNullOrWhiteSpace(IdleGroupId) ? null : IdleGroupId.Trim(),
+                    Keyframes = kfs
+                };
+            }
 
             if (SelectedOutputType == "oaxis")
             {
@@ -303,7 +590,8 @@ namespace IOStudio.ViewModels.Timeline
                     OAxisChannel = channel?.ChannelName ?? "OAxis_00",
                     Label = string.IsNullOrWhiteSpace(Label) ? channel?.ChannelName ?? "" : Label,
                     Color = SelectedColor,
-                    ValueType = SelectedValueType
+                    ValueType = SelectedValueType,
+                    IdleLoop = idle
                 };
             }
             else
@@ -320,9 +608,39 @@ namespace IOStudio.ViewModels.Timeline
                     OAxisChannel = "",
                     Label = string.IsNullOrWhiteSpace(Label) ? oaction?.Label ?? "" : Label,
                     Color = SelectedColor,
-                    ValueType = SelectedValueType
+                    ValueType = SelectedValueType,
+                    IdleLoop = idle
                 };
             }
+        }
+    }
+
+    /// <summary>Idle 关键帧行编辑模型 (对话框表格行)。</summary>
+    public class IdleKeyframeItem : ReactiveUI.ReactiveObject
+    {
+        private double _timeMs;
+        private float _value;
+        private int _interpolationIndex;
+
+        /// <summary>时间偏移 (相对循环起始, 0 ~ PeriodMs)。</summary>
+        public double TimeMs
+        {
+            get => _timeMs;
+            set => this.RaiseAndSetIfChanged(ref _timeMs, value);
+        }
+
+        /// <summary>归一化值 (0~1)。</summary>
+        public float Value
+        {
+            get => _value;
+            set => this.RaiseAndSetIfChanged(ref _value, value);
+        }
+
+        /// <summary>插值类型索引 (对应 AddTrackDialogViewModel.IdleInterpolationOptions)。</summary>
+        public int InterpolationIndex
+        {
+            get => _interpolationIndex;
+            set => this.RaiseAndSetIfChanged(ref _interpolationIndex, value);
         }
     }
 }

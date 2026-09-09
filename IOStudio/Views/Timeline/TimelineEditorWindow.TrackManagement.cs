@@ -159,6 +159,36 @@ namespace IOStudio.Views.Timeline
             }
         }
 
+        /// <summary>轨道锁定状态变化后持久化 dirty 状态并反馈当前语义。</summary>
+        private void OnToggleTrackLock(object? sender, RoutedEventArgs e)
+        {
+            if (
+                sender is Avalonia.Controls.Primitives.ToggleButton tb
+                && tb.DataContext is TrackViewModel trackVm
+            )
+            {
+                ViewModel?.MarkDirty();
+                SyncCurveEditorData();
+                RefreshAllTrackControls();
+                // The inspector caches ActionEditLocked when the action is selected.
+                // Rebuild it immediately so action-level commands follow the new lock state.
+                RefreshPropertyPanel();
+                if (ReferenceEquals(ViewModel?.SelectedTrack, trackVm))
+                {
+                    ViewModel?.PresetPanelVm.SetTargetTrack(
+                        trackVm.Id,
+                        trackVm.Label,
+                        trackVm.IsLocked
+                    );
+                }
+                ViewModel?.PushStatus(
+                    trackVm.IsLocked
+                        ? $"已锁定轨道“{trackVm.Label}”"
+                        : $"已解锁轨道“{trackVm.Label}”"
+                );
+            }
+        }
+
         private void OnDeleteTrack(object? sender, RoutedEventArgs e)
         {
             if (sender is Button btn && btn.Tag is TrackViewModel trackVm)
@@ -246,6 +276,23 @@ namespace IOStudio.Views.Timeline
                 // 同步颜色到曲线编辑器
                 SyncCurveEditorData();
                 ViewModel?.MarkDirty();
+            }
+        }
+
+        /// <summary>一键应用待机模板 (右键菜单: 呼吸/摇摆/微幅)。</summary>
+        private void OnCtxApplyIdleTemplate(object? sender, RoutedEventArgs e)
+        {
+            if (
+                sender is MenuItem mi
+                && mi.Tag is TrackViewModel trackVm
+                && mi.CommandParameter is string template
+                && ViewModel != null
+            )
+            {
+                ViewModel.ApplyIdleTemplateToTrack(trackVm, template);
+                SyncCurveEditorData();
+                RefreshAllTrackControls();
+                RefreshPropertyPanel();
             }
         }
 
@@ -638,13 +685,28 @@ namespace IOStudio.Views.Timeline
         {
             if (sender is Border border && border.Tag is TrackViewModel trackVm)
             {
-                // 选中此轨道 (更新 ViewModel.IsSelected + TrackClipControl.IsTrackSelected)
+                var props = e.GetCurrentPoint(border).Properties;
+                bool ctrl = e.KeyModifiers.HasFlag(KeyModifiers.Control);
+
+                // Ctrl+左键: 多选切换 (不启动拖拽排序)
+                if (props.IsLeftButtonPressed && ctrl && ViewModel != null)
+                {
+                    ViewModel.ToggleTrackMultiSelect(trackVm);
+                    SyncTrackSelectionVisual();
+                    e.Handled = true;
+                    return;
+                }
+
+                // 普通点击: 单选此轨道
                 if (ViewModel != null)
                 {
+                    ViewModel.ClearMultiSelection();
+                    ViewModel.SelectedActionInstanceId = null;
                     ViewModel.SelectedTrack = trackVm;
                     foreach (var t in ViewModel.Tracks)
                         t.IsSelected = (t == trackVm);
                     SyncSelectedTrackToCurveEditor(trackVm);
+                    RefreshPropertyPanel();
                 }
 
                 // 标记右侧轨道片段高亮
@@ -654,7 +716,6 @@ namespace IOStudio.Views.Timeline
                     tcc.IsTrackSelected = match;
                 }
 
-                var props = e.GetCurrentPoint(border).Properties;
                 if (props.IsLeftButtonPressed)
                 {
                     _dragTrack = trackVm;
@@ -665,6 +726,18 @@ namespace IOStudio.Views.Timeline
                     border.PointerReleased += OnTrackHeaderPointerReleased;
                 }
             }
+        }
+
+        /// <summary>多选: 同步轨道头与轨道片段高亮。</summary>
+        private void SyncTrackSelectionVisual()
+        {
+            if (ViewModel == null)
+                return;
+            var multi = ViewModel.MultiSelectedTracks;
+            foreach (var t in ViewModel.Tracks)
+                t.IsSelected = multi.Contains(t);
+            foreach (var tcc in this.GetVisualDescendants().OfType<TrackClipControl>())
+                tcc.IsTrackSelected = tcc.DataContext is TrackViewModel vm && multi.Contains(vm);
         }
 
         /// <summary>UX-A2: 双击轨道头打开属性对话框</summary>
@@ -702,9 +775,14 @@ namespace IOStudio.Views.Timeline
             // 选中的事件 / 标记目前由属性面板显示, 这里简单地聚焦其名称输入框即可
             if (ViewModel.SelectedEvent != null || ViewModel.MarkerService?.SelectedMarker != null)
             {
-                var panel = this.FindControl<IOStudio.Controls.Timeline.KeyframePropertyPanel>("KfPropertyPanel");
+                var panel = this.FindControl<IOStudio.Controls.Timeline.KeyframePropertyPanel>(
+                    "KfPropertyPanel"
+                );
                 // 尝试查找名称 TextBox 并聚焦 (面板内第一个可聚焦 TextBox 视为名称字段)
-                var tb = panel?.GetVisualDescendants().OfType<Avalonia.Controls.TextBox>().FirstOrDefault();
+                var tb = panel
+                    ?.GetVisualDescendants()
+                    .OfType<Avalonia.Controls.TextBox>()
+                    .FirstOrDefault();
                 tb?.Focus();
                 tb?.SelectAll();
                 return;
@@ -725,42 +803,20 @@ namespace IOStudio.Views.Timeline
             dialog.ViewModel?.LoadFromTrack(trackVm.Track);
             await dialog.ShowDialog(this);
 
+            if (dialog.RequestEditIdleInTimeline)
+            {
+                // 用户在属性对话框选择"在时间轴编辑待机…" → 切曲线视图聚焦该轨 idle
+                ViewModel?.EditTrackIdleCommand.Execute(trackVm);
+                SyncCurveEditorData();
+                UpdateCurveFocusIndexes();
+                return;
+            }
+
             if (dialog.Result != null)
             {
-                // 应用修改到轨道 (undo 记录完整前后状态)
-                var result = dialog.Result;
-                string oldValueType = trackVm.ValueType;
-                string newValueType = result.ValueType;
-
-                trackVm.Label = result.Label;
-                trackVm.Color = result.Color;
-                trackVm.DeviceName = result.DeviceName;
-                trackVm.OActionName = result.OActionName;
-                trackVm.Track.OutputType = result.OutputType;
-                trackVm.Track.OAxisChannel = result.OAxisChannel;
-
-                // ValueType 切换: float → bool 时将所有关键帧二值化
-                if (oldValueType != newValueType)
-                {
-                    trackVm.ValueType = newValueType;
-                    if (newValueType == "bool")
-                    {
-                        foreach (var clip in trackVm.Track.Clips)
-                        {
-                            foreach (var kf in clip.Keyframes)
-                            {
-                                kf.Value = kf.Value >= 0.5f ? 1f : 0f;
-                                kf.Interpolation = "step";
-                            }
-                        }
-                    }
-                }
-
-                trackVm.RaiseAllBindingsChanged();
-                trackVm.RaiseClipsChanged();
+                ViewModel?.UpdateTrackProperties(trackVm, dialog.Result);
                 SyncCurveEditorData();
                 RefreshAllTrackControls();
-                ViewModel?.MarkDirty();
             }
         }
 
@@ -951,6 +1007,31 @@ namespace IOStudio.Views.Timeline
                 ViewModel.ViewMode = TimelineViewMode.Dopesheet;
         }
 
+        /// <summary>曲线焦点跟随单选/多选轨道 (Ctrl 多选后多条同时显示)。</summary>
+        private void UpdateCurveFocusIndexes()
+        {
+            var curveEditor = this.FindControl<CurveEditorControl>("CurveEditor");
+            if (curveEditor == null || ViewModel == null)
+                return;
+            var indexes = new HashSet<int>();
+            if (ViewModel.MultiSelectedTracks.Count > 0)
+            {
+                foreach (var t in ViewModel.MultiSelectedTracks)
+                {
+                    int idx = ViewModel.Tracks.IndexOf(t);
+                    if (idx >= 0)
+                        indexes.Add(idx);
+                }
+            }
+            else if (ViewModel.SelectedTrack != null)
+            {
+                int idx = ViewModel.Tracks.IndexOf(ViewModel.SelectedTrack);
+                if (idx >= 0)
+                    indexes.Add(idx);
+            }
+            curveEditor.SetFocusedTrackIndexes(indexes);
+        }
+
         private void OnCurvesClick(object? sender, RoutedEventArgs e)
         {
             if (ViewModel != null)
@@ -970,6 +1051,9 @@ namespace IOStudio.Views.Timeline
             // 通过 CurveEditorViewModel 同步数据
             ViewModel.CurveEditorVm.SyncFromTimeline();
             curveEditor.CurveTracks = ViewModel.CurveEditorVm.CurveTracks;
+
+            // 方案A 焦点模式: 曲线视图只显示选中轨道 (支持多选)
+            UpdateCurveFocusIndexes();
 
             // 传入吸附信息
             curveEditor.SetSnapInfo(ViewModel.IsSnapEnabled, ViewModel.GetSnapPoints());
@@ -999,8 +1083,10 @@ namespace IOStudio.Views.Timeline
                     // 更新吸附信息
                     curveEditor.SetSnapInfo(ViewModel.IsSnapEnabled, ViewModel.GetSnapPoints());
                     ViewModel.CurveEditorVm.OnKeyframeMoved(ti, ci, ki, absTimeMs, value);
-                    // 排序后索引可能变化, 刷新曲线数据并同步选中索引
-                    SyncCurveEditorData();
+                    // 排序后索引可能变化, 同步曲线数据与选中索引。
+                    // 注意: 不能再额外调用 SyncCurveEditorData() — RefreshAllTrackControls 在
+                    // Curves 模式下已会再次同步, 重复调用会导致每次拖拽都重建两次 CurveTracks,
+                    // 造成曲线视图"拖拽后就刷新"的抖动。
                     if (ViewModel.SelectedKeyframeIndex >= 0)
                         curveEditor.SetSelectedKeyframeIndex(
                             ti,
@@ -1025,11 +1111,131 @@ namespace IOStudio.Views.Timeline
                     RefreshPropertyPanel();
                 };
 
+                // 撤销集成: 拖拽/切线释放时注册 UndoRedo 命令
+                curveEditor.KeyframeEditCommitted += edits =>
+                    ViewModel.CurveEditorVm.CommitKeyframeEdit(edits);
+                curveEditor.TangentEditCommitted += e =>
+                    ViewModel.CurveEditorVm.CommitTangentEdit(e);
+
                 curveEditor.AddKeyframeRequested += (ti, absTimeMs, value) =>
                 {
                     ViewModel.CurveEditorVm.OnAddKeyframeRequested(ti, absTimeMs, value);
                     SyncCurveEditorData(); // 重新同步数据
                     RefreshPropertyPanel();
+                };
+
+                // 空窗双击 → 添加 Overlay 覆盖关键帧 (带 Undo, 优先级高于 idle)
+                curveEditor.OverrideKeyframeAddRequested += (ti, absTimeMs, value) =>
+                {
+                    if (ViewModel == null)
+                        return;
+                    ViewModel.CurveEditorVm.OnOverrideKeyframeAddRequested(ti, absTimeMs, value);
+                    SyncCurveEditorData();
+                    RefreshAllTrackControls();
+                    RefreshPropertyPanel();
+                };
+
+                // 空窗双击 → 添加 idle 待机循环关键帧 (轨道已启用 idle 时, 带 Undo)
+                curveEditor.IdleKeyframeAddRequested += (ti, phaseMs, value) =>
+                {
+                    if (ViewModel == null)
+                        return;
+                    ViewModel.CurveEditorVm.OnIdleKeyframeAddRequested(ti, phaseMs, value);
+                    SyncCurveEditorData();
+                    RefreshAllTrackControls();
+                    RefreshPropertyPanel();
+                };
+
+                // Overlay 覆盖关键帧拖拽移动完成 → 同步到 VM (模型已由共享引用更新)
+                curveEditor.OverrideKeyframeMoved += (ti, absTimeMs, value) =>
+                {
+                    if (ViewModel == null || ti < 0 || ti >= ViewModel.Tracks.Count)
+                        return;
+                    var trackVm = ViewModel.Tracks[ti];
+                    ViewModel.NotifyTrackDataChanged(trackVm);
+                    RefreshAllTrackControls();
+                    RefreshPropertyPanel();
+                };
+
+                // Overlay 覆盖关键帧拖拽提交 → 注册 Undo (before 按下时快照 / after 拖后值)
+                curveEditor.OverrideKeyframeEditCommitted += (ti, kf, t0, v0, t1, v1) =>
+                {
+                    if (ViewModel == null || ti < 0 || ti >= ViewModel.Tracks.Count || kf == null)
+                        return;
+                    ViewModel.CurveEditorVm.CommitOverrideKeyframeEdit(
+                        ViewModel.Tracks[ti],
+                        kf,
+                        t0,
+                        v0,
+                        t1,
+                        v1
+                    );
+                    SyncCurveEditorData();
+                    RefreshAllTrackControls();
+                    RefreshPropertyPanel();
+                };
+
+                // Overlay 覆盖关键帧删除 → 带 Undo 删除
+                curveEditor.OverrideKeyframeDeleteRequested += (ti, absTimeMs, value) =>
+                {
+                    if (ViewModel == null || ti < 0 || ti >= ViewModel.Tracks.Count)
+                        return;
+                    ViewModel.CurveEditorVm.OnOverrideKeyframeDeleteRequested(
+                        ViewModel.Tracks[ti],
+                        absTimeMs,
+                        value
+                    );
+                    SyncCurveEditorData();
+                    RefreshAllTrackControls();
+                    RefreshPropertyPanel();
+                };
+
+                // idle 幽灵曲线关键帧拖拽提交 → 注册 Undo (before 按下相位/值 / after 拖后相位/值)
+                curveEditor.IdleKeyframeEditCommitted += (ti, kf, t0, v0, t1, v1) =>
+                {
+                    if (ViewModel == null || ti < 0 || ti >= ViewModel.Tracks.Count || kf == null)
+                        return;
+                    ViewModel.CurveEditorVm.CommitIdleKeyframeEdit(
+                        ViewModel.Tracks[ti],
+                        kf,
+                        t0,
+                        v0,
+                        t1,
+                        v1
+                    );
+                    SyncCurveEditorData();
+                    RefreshAllTrackControls();
+                    RefreshPropertyPanel();
+                };
+
+                // idle 幽灵曲线关键帧删除 → 带 Undo 删除
+                curveEditor.IdleKeyframeDeleteRequested += (ti, phaseMs, value) =>
+                {
+                    if (ViewModel == null || ti < 0 || ti >= ViewModel.Tracks.Count)
+                        return;
+                    ViewModel.CurveEditorVm.OnIdleKeyframeDeleteRequested(
+                        ViewModel.Tracks[ti],
+                        phaseMs,
+                        value
+                    );
+                    SyncCurveEditorData();
+                    RefreshAllTrackControls();
+                    RefreshPropertyPanel();
+                };
+
+                // 曲线视图缩放/平移同步到时间轴 (保持标尺与曲线一致, 避免断裂)
+                curveEditor.ZoomRequested += (newPpm, newScroll) =>
+                {
+                    if (ViewModel == null)
+                        return;
+                    ViewModel.PixelsPerMs = newPpm;
+                    ViewModel.ScrollOffsetX = newScroll;
+                };
+                curveEditor.PanRequested += newScroll =>
+                {
+                    if (ViewModel == null)
+                        return;
+                    ViewModel.ScrollOffsetX = Math.Max(0, newScroll);
                 };
 
                 curveEditor.InterpolationChanged += (ti, ci, ki, interp) =>
@@ -1072,14 +1278,41 @@ namespace IOStudio.Views.Timeline
                 {
                     if (ViewModel == null || selections.Count == 0)
                         return;
-                    // 将曲线编辑器的 trackIndex 转换为 TrackViewModel, 同步到 ViewModel
-                    ViewModel.ClearKeyframeSelection();
-                    foreach (var (ti, ci, ki) in selections)
-                    {
-                        if (ti >= 0 && ti < ViewModel.Tracks.Count)
-                            ViewModel.AddToSelection(ViewModel.Tracks[ti], ci, ki);
-                    }
+                    // 先按 Model→VM 引用映射同步到 VM 多选集 (与 MultiSelectionChanged 同一映射逻辑),
+                    // 再批量删除, 避免模型/VM 索引不一致导致删错帧。
+                    ViewModel.CurveEditorVm.OnMultiSelectionChanged(selections);
                     ViewModel.DeleteSelectedKeyframes();
+                    SyncCurveEditorData();
+                    RefreshAllTrackControls();
+                    RefreshPropertyPanel();
+                };
+
+                // 曲线多选变化 → 同步到 VM 全局多选集 (Delete/批量插值/属性面板统一)
+                curveEditor.MultiSelectionChanged += (selections) =>
+                {
+                    if (ViewModel == null)
+                        return;
+                    ViewModel.CurveEditorVm.OnMultiSelectionChanged(selections);
+                    RefreshPropertyPanel();
+                };
+
+                // 批量设置插值 (多选右键菜单) → 走 BatchSetInterpolation (带 Undo/MarkDirty/刷新)
+                curveEditor.BatchInterpolationRequested += (interpolation) =>
+                {
+                    if (ViewModel == null)
+                        return;
+                    ViewModel.BatchSetInterpolation(interpolation);
+                    SyncCurveEditorData();
+                    RefreshAllTrackControls();
+                    RefreshPropertyPanel();
+                };
+
+                // 批量应用预设 (多选右键菜单) → 走 BatchApplyPreset (带 Undo/MarkDirty/刷新)
+                curveEditor.BatchPresetApplyRequested += (presetName) =>
+                {
+                    if (ViewModel == null)
+                        return;
+                    ViewModel.BatchApplyPreset(presetName);
                     SyncCurveEditorData();
                     RefreshAllTrackControls();
                     RefreshPropertyPanel();

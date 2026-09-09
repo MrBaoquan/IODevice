@@ -1,12 +1,12 @@
 <UserControl xmlns="https://github.com/avaloniaui"
-             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-             mc:Ignorable="d" d:DesignWidth="1280" d:DesignHeight="720"
+			 xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+			 xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+			 xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+			 mc:Ignorable="d" d:DesignWidth="1280" d:DesignHeight="720"
 			 xmlns:vm="using:IOStudio.ViewModels"
 			 xmlns:iconPacks="https://github.com/MahApps/IconPacks.Avalonia"
 			 xmlns:controls="using:IOStudio.Controls"
-             x:Class="IOStudio.Controls.IODeviceView"
+			 x:Class="IOStudio.Controls.IODeviceView"
 			 x:DataType="vm:Device">
 
 	<Design.DataContext>
@@ -24,134 +24,146 @@
 
 
 	<UserControl.Styles>
-		<!-- IO 控制按钮样式 -->
-		<Style Selector="Button.IOControl">
-			<Setter Property="Background" Value="#e2e8f0"></Setter>
+		<!-- 实时通道按钮：中性待机、绿色激活，颜色随主题变化 -->
+		<Style Selector="Button.IOControl, Button.DIButton">
+			<Setter Property="Background" Value="{DynamicResource TlControlBg}" />
+			<Setter Property="Foreground" Value="{DynamicResource TlTextPrimary}" />
+			<Setter Property="BorderBrush" Value="{DynamicResource TlBorderLight}" />
+			<Setter Property="BorderThickness" Value="1" />
+			<Setter Property="CornerRadius" Value="4" />
+		</Style>
+		<Style Selector="Button.IOControl:pointerover, Button.DIButton:pointerover">
+			<Setter Property="Background" Value="{DynamicResource TlBtnHover}" />
+		</Style>
+		<Style Selector="Button.IOControl.active, Button.DIButton.active">
+			<Setter Property="Background" Value="{DynamicResource TlControlActiveBg}" />
+			<Setter Property="Foreground" Value="{DynamicResource TlControlActiveFg}" />
+			<Setter Property="BorderBrush" Value="{DynamicResource TlControlActiveBg}" />
+		</Style>
+		<Style Selector="Button.IOControl.active:pointerover, Button.DIButton.active:pointerover">
+			<Setter Property="Background" Value="{DynamicResource TlSuccess}" />
+			<Setter Property="Foreground" Value="{DynamicResource TlControlActiveFg}" />
 		</Style>
 
-		<Style Selector="Button.IOControl:pointerover /template/ ContentPresenter#PART_ContentPresenter">
-			<Setter Property="Background" Value="#e2e8f0"></Setter>
-		</Style>
-		<Style Selector="Button.IOControl.active:pointerover /template/ ContentPresenter#PART_ContentPresenter">
-			<Setter Property="Background" Value="#059669"></Setter>
-			<Setter Property="Foreground" Value="White"></Setter>
-		</Style>
-
-
-		<Style Selector="Button.IOControl.active">
-			<Setter Property="Background" Value="#059669"></Setter>
-			<Setter Property="Foreground" Value="White"></Setter>
-		</Style>
-		
-		
-		<!-- IO Key 按钮样式 -->
-		<Style Selector="Button.DIButton">
-			<Setter Property="Background" Value="#e2e8f0"></Setter>
-		</Style>
-		
-		<Style Selector="Button.DIButton:pointerover /template/ ContentPresenter#PART_ContentPresenter">
-			<Setter Property="Background" Value="#e2e8f0"></Setter>
-		</Style>
-		<Style Selector="Button.DIButton.active:pointerover /template/ ContentPresenter#PART_ContentPresenter">
-			<Setter Property="Background" Value="#059669"></Setter>
-			<Setter Property="Foreground" Value="White"></Setter>
-		</Style>
-		
-
-		<Style Selector="Button.DIButton.active">
-			<Setter Property="Background" Value="#059669"></Setter>
-			<Setter Property="Foreground" Value="White"></Setter>
-		</Style>
-		
-		<!-- img-btn 按钮 hover 样式 -->
 		<Style Selector="Button.img-btn">
-			<Setter Property="Background" Value="Transparent"/>
-		</Style>
-		
-		<Style Selector="Button.img-btn:pointerover /template/ ContentPresenter#PART_ContentPresenter">
-			<Setter Property="Background" Value="#f3f4f6"/>
-		</Style>
-
-		<Style Selector="Expander /template/ ToggleButton#ExpanderHeader:pointerover">
-			<Setter Property="Background" Value="LightBlue" />
-		</Style>
-		<Style Selector="Expander /template/ ToggleButton#ExpanderHeader">
-			<Setter Property="Background" Value="#e0f2fe" />
-		</Style>
-
-		<Style Selector="Expander /template/ ToggleButton#ExpanderHeader /template/ Border#ToggleButtonBackground:pointerover">
-			<Setter Property="Background" Value="#e0f2fe" />
-		</Style>
-
-		<Style Selector="Expander /template/ ToggleButton#ExpanderHeader">
+			<Setter Property="Background" Value="Transparent" />
+			<Setter Property="BorderBrush" Value="Transparent" />
 			<Setter Property="BorderThickness" Value="0" />
+			<Setter Property="Foreground" Value="{DynamicResource TlTextSecondary}" />
+			<Setter Property="Width" Value="28" />
+			<Setter Property="Height" Value="28" />
+			<Setter Property="Padding" Value="0" />
+			<Setter Property="CornerRadius" Value="4" />
+			<Setter Property="HorizontalContentAlignment" Value="Center" />
+			<Setter Property="VerticalContentAlignment" Value="Center" />
 		</Style>
-		
+		<Style Selector="Button.img-btn:pointerover">
+			<Setter Property="Background" Value="{DynamicResource TlBtnHover}"/>
+			<Setter Property="Foreground" Value="{DynamicResource TlTextPrimary}"/>
+		</Style>
+		<Style Selector="Button.img-btn:disabled">
+			<Setter Property="Background" Value="Transparent" />
+			<Setter Property="BorderBrush" Value="Transparent" />
+			<Setter Property="Opacity" Value="0.45" />
+		</Style>
+		<Style Selector="Button.img-btn:disabled /template/ ContentPresenter#PART_ContentPresenter">
+			<Setter Property="Background" Value="Transparent" />
+			<Setter Property="BorderBrush" Value="Transparent" />
+		</Style>
+
+		<Style Selector="Border.availability-banner">
+			<Setter Property="MinHeight" Value="34" />
+		</Style>
+
+		<!-- 全屏切换 ToggleButton: checked 时显示强调色 -->
+		<Style Selector="ToggleButton.fullscreen-toggle">
+			<Setter Property="Background" Value="Transparent" />
+			<Setter Property="Width" Value="32" />
+			<Setter Property="Height" Value="32" />
+			<Setter Property="Padding" Value="7" />
+			<Setter Property="BorderThickness" Value="0" />
+			<Setter Property="CornerRadius" Value="4" />
+			<Setter Property="Foreground" Value="{DynamicResource TlTextSecondary}" />
+		</Style>
+		<Style Selector="ToggleButton.fullscreen-toggle:pointerover">
+			<Setter Property="Background" Value="{DynamicResource TlBtnHover}" />
+		</Style>
+		<Style Selector="ToggleButton.fullscreen-toggle:checked">
+			<Setter Property="Background" Value="{DynamicResource TlAccent}" />
+			<Setter Property="Foreground" Value="{DynamicResource TlAccentFg}" />
+		</Style>
+
 	</UserControl.Styles>
-	
+
 	<DockPanel>
-		<Border DockPanel.Dock="Top" BorderBrush="#e5e7eb" BorderThickness="0 0 0 0" Padding="0 0 0 0">
+		<Border DockPanel.Dock="Top" Background="{DynamicResource TlSurfaceSubtle}" BorderBrush="{DynamicResource TlBorderBrush}" BorderThickness="0 0 0 1" Padding="0">
 			<StackPanel>
-				<Separator Background="#e2e8f0" HorizontalAlignment="Stretch" Margin="0 0 0 0" />
-				<!-- 配置摘要区域 -->
-				<Border Background="#f8fafc" 
-						BorderBrush="#e2e8f0" 
-						BorderThickness="0 0 0 1" 
+				<!-- 配置摘要区域 (纯信息展示, 设备配置入口收敛到右上操作区) -->
+				<Border Background="{DynamicResource TlSurfaceRaised}"
+						BorderBrush="{DynamicResource TlBorderBrush}"
+						BorderThickness="0 0 0 1"
 						Padding="16 10"
 						IsVisible="{Binding ConfigSummaryText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
-					<Grid ColumnDefinitions="Auto,*,Auto" VerticalAlignment="Center">
+					<Grid ColumnDefinitions="Auto,*" VerticalAlignment="Center">
 						<StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
-							<iconPacks:PackIconIonicons Kind="InformationCircleiOS" Width="14" Height="14" Foreground="#64748b" Margin="0 0 8 0" VerticalAlignment="Center"/>
-							<TextBlock Text="配置摘要" FontSize="12" FontWeight="Medium" Foreground="#475569" Margin="0 0 16 0" VerticalAlignment="Center"/>
+							<iconPacks:PackIconIonicons Kind="InformationCircleiOS" Width="14" Height="14" Foreground="{DynamicResource TlTextMuted}" Margin="0 0 8 0" VerticalAlignment="Center"/>
+							<TextBlock Text="配置摘要" FontSize="12" FontWeight="Medium" Foreground="{DynamicResource TlTextSecondary}" Margin="0 0 16 0" VerticalAlignment="Center"/>
 						</StackPanel>
-						<TextBlock Grid.Column="1" 
-								   Text="{Binding ConfigSummaryText}" 
-								   Foreground="#64748b"
+						<TextBlock Grid.Column="1"
+								   Text="{Binding ConfigSummaryText}"
+								   Foreground="{DynamicResource TlTextSecondary}"
 								   FontSize="12"
 								   VerticalAlignment="Center"
 								   TextTrimming="CharacterEllipsis"
 								   ToolTip.Tip="{Binding ConfigSummaryText}"/>
-						<Button Grid.Column="2" 
-								Classes="img-btn" 
-								ToolTip.Tip="设备配置" 
-								Command="{Binding EditDevicePropertiesCommand}" 
-								Width="24" Height="24" 
-								Padding="0"
-								Margin="12 0 0 0"
-								VerticalAlignment="Center"
-								HorizontalContentAlignment="Center"
-								VerticalContentAlignment="Center">
-							<iconPacks:PackIconIonicons Kind="SettingsiOS" Width="14" Height="14" Foreground="#64748b" VerticalAlignment="Center" HorizontalAlignment="Center"/>
-						</Button>
 					</Grid>
 				</Border>
-				<Grid ColumnDefinitions="24,*,24" Margin="0 8 0 0">
-					<ToggleButton IsChecked="{Binding UserIOFullscreen}" Grid.Column="0" Width="24" Height="24" Padding="4" ToolTip.Tip="左侧全屏">
-						<Image Source="avares://IOStudio/Assets/fullscreen.png" />
+				<Grid ColumnDefinitions="32,*,Auto,32" Margin="12 8 12 0">
+					<ToggleButton IsChecked="{Binding UserIOFullscreen}" Grid.Column="0" Classes="fullscreen-toggle" AutomationProperties.Name="{Binding UserIOFullscreenTip}">
+						<iconPacks:PackIconIonicons Kind="ResizeiOS" Width="15" Height="15"/>
+						<ToolTip.Tip>
+							<TextBlock Text="{Binding UserIOFullscreenTip}" />
+						</ToolTip.Tip>
 					</ToggleButton>
-					<StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Grid.Column="1">
-						<!-- 设备配置按钮 -->
-						<Button Classes="img-btn" ToolTip.Tip="设备配置" 
-								Command="{Binding EditDevicePropertiesCommand}" 
-								Width="24" Height="24" Padding="0"
-								Margin="0 0 8 0">
-							<iconPacks:PackIconIonicons Kind="SettingsiOS" Width="16" Height="16" Foreground="#64748b"/>
+					<StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Grid.Column="2" Spacing="4">
+						<!-- 设备配置按钮 (唯一设备配置入口) -->
+						<Button Classes="icon-button" ToolTip.Tip="设备配置（仅编辑模式）" AutomationProperties.Name="设备配置（仅编辑模式）"
+								Command="{Binding EditDevicePropertiesCommand}"
+								IsEnabled="{Binding IsEditMode}"
+								Width="32" Height="32" Padding="6">
+							<iconPacks:PackIconIonicons Kind="SettingsiOS" Width="16" Height="16"/>
 						</Button>
-						<Button Classes="img-btn" ToolTip.Tip="修改配置文件" Command="{Binding EditConfigCommand}" 
-								Width="24" Height="24" Padding="0"
-								Margin="8 0" >
-							<Image Source="avares://IOStudio/Assets/edit-config.png" />
+						<Button Classes="icon-button" ToolTip.Tip="编辑设备级配置文件（仅编辑模式）" AutomationProperties.Name="编辑设备级配置文件（仅编辑模式）" Command="{Binding EditConfigCommand}"
+								IsEnabled="{Binding IsEditMode}"
+								Width="32" Height="32" Padding="6" >
+							<iconPacks:PackIconIonicons Kind="DocumentiOS" Width="16" Height="16"/>
 						</Button>
 					</StackPanel>
 
-					<ToggleButton IsChecked="{Binding StandardIOFullscreen}" Grid.Column="2" Width="24" Height="24" Padding="4" ToolTip.Tip="右侧全屏">
-						<Image Source="avares://IOStudio/Assets/fullscreen.png" />
+					<ToggleButton IsChecked="{Binding StandardIOFullscreen}" Grid.Column="3" Classes="fullscreen-toggle" AutomationProperties.Name="{Binding StandardIOFullscreenTip}">
+						<iconPacks:PackIconIonicons Kind="ResizeiOS" Width="15" Height="15"/>
+						<ToolTip.Tip>
+							<TextBlock Text="{Binding StandardIOFullscreenTip}" />
+						</ToolTip.Tip>
 					</ToggleButton>
 				</Grid>
-				<Separator Background="#e2e8f0" HorizontalAlignment="Stretch" Padding="0" Margin="0 8 0 0" />
+				<Border Background="{DynamicResource TlSurfaceSubtle}" Padding="16 8" BorderBrush="{DynamicResource TlBorderBrush}" BorderThickness="0 1 0 0">
+					<Grid ColumnDefinitions="*,*">
+						<StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8">
+							<Border Width="3" Height="16" Background="{DynamicResource TlAccent}" CornerRadius="2" />
+							<TextBlock Text="映射通道" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TlTextSecondary}" />
+							<TextBlock Text="Action · Axis · OAction" FontSize="11" Foreground="{DynamicResource TlTextMuted}" />
+						</StackPanel>
+						<StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
+							<Border Width="3" Height="16" Background="{DynamicResource TlTextMuted}" CornerRadius="2" />
+							<TextBlock Text="原始 I/O" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TlTextSecondary}" />
+							<TextBlock Text="DI · AD · DO" FontSize="11" Foreground="{DynamicResource TlTextMuted}" />
+						</StackPanel>
+					</Grid>
+				</Border>
 			</StackPanel>
 		</Border>
-		
+
 		<Grid>
 			<Grid.ColumnDefinitions>
 				<ColumnDefinition Width="{Binding CustomWidth}" />
@@ -159,97 +171,109 @@
 				<ColumnDefinition Width="{Binding StandardWidth}" />
 			</Grid.ColumnDefinitions>
 			<ScrollViewer Grid.Column="0" MinWidth="1">
-			<StackPanel Margin="0 0 0 24">
-				<!-- Action 输入 -->
-				<StackPanel>
-					<controls:CollapsibleHeader Title="Action 输入" 
-												ItemCount="{Binding ActionList.Count}"
-												ShowItemCount="True"
-												IsExpanded="{Binding IsActionExpanded, Mode=TwoWay}"
-												ShowEditButtons="{Binding IsEditMode}"
-												AddCommand="{Binding AddActionCommand}"
-												ClearCommand="{Binding ClearActionCommand}"
-												AddTooltip="添加新的Action节点"
-												ClearTooltip="清空所有Action节点" />
-					<ItemsRepeater ItemsSource="{Binding ActionList}" IsVisible="{Binding IsActionExpanded}">
-						<ItemsRepeater.Layout>
-							<WrapLayout Orientation="Horizontal" />
-						</ItemsRepeater.Layout>
-						<ItemsRepeater.ItemTemplate>
-							<DataTemplate>
-								<controls:IONodeView MaxWidth="250" />
-							</DataTemplate>
-						</ItemsRepeater.ItemTemplate>
-					</ItemsRepeater>
-				</StackPanel>
+				<StackPanel Margin="0 0 0 24">
+					<!-- Action 输入 -->
+					<StackPanel>
+						<controls:CollapsibleHeader Title="Action 输入"
+													ItemCount="{Binding ActionList.Count}"
+													ShowItemCount="True"
+													IsExpanded="{Binding IsActionExpanded, Mode=TwoWay}"
+													ShowEditButtons="{Binding IsEditMode}"
+													AddCommand="{Binding AddActionCommand}"
+													ClearCommand="{Binding ClearActionCommand}"
+													AddTooltip="添加新的Action节点"
+													ClearTooltip="清空所有Action节点" />
+						<ItemsRepeater ItemsSource="{Binding ActionList}" IsVisible="{Binding IsActionExpanded}">
+							<ItemsRepeater.Layout>
+								<WrapLayout Orientation="Horizontal" />
+							</ItemsRepeater.Layout>
+							<ItemsRepeater.ItemTemplate>
+								<DataTemplate>
+									<controls:IONodeView MaxWidth="250" />
+								</DataTemplate>
+							</ItemsRepeater.ItemTemplate>
+						</ItemsRepeater>
+					</StackPanel>
 
-				<!-- Axis 输入 -->
-				<StackPanel Margin="0 12 0 0">
-					<controls:CollapsibleHeader Title="Axis 输入" 
-												ItemCount="{Binding AxisList.Count}"
-												ShowItemCount="True"
-												IsExpanded="{Binding IsAxisExpanded, Mode=TwoWay}"
-												ShowEditButtons="{Binding IsEditMode}"
-												AddCommand="{Binding AddAxisCommand}"
-												ClearCommand="{Binding ClearAxisCommand}"
-												AddTooltip="添加新的Axis节点"
-												ClearTooltip="清空所有Axis节点" />
-					<ItemsRepeater ItemsSource="{Binding AxisList}" IsVisible="{Binding IsAxisExpanded}">
-						<ItemsRepeater.Layout>
-							<WrapLayout Orientation="Horizontal" />
-						</ItemsRepeater.Layout>
-						<ItemsRepeater.ItemTemplate>
-							<DataTemplate>
-								<controls:IONodeView MaxWidth="250" />
-							</DataTemplate>
-						</ItemsRepeater.ItemTemplate>
-					</ItemsRepeater>
+					<!-- Axis 输入 -->
+					<StackPanel Margin="0 12 0 0">
+						<controls:CollapsibleHeader Title="Axis 输入"
+													ItemCount="{Binding AxisList.Count}"
+													ShowItemCount="True"
+													IsExpanded="{Binding IsAxisExpanded, Mode=TwoWay}"
+													ShowEditButtons="{Binding IsEditMode}"
+													AddCommand="{Binding AddAxisCommand}"
+													ClearCommand="{Binding ClearAxisCommand}"
+													AddTooltip="添加新的Axis节点"
+													ClearTooltip="清空所有Axis节点" />
+						<ItemsRepeater ItemsSource="{Binding AxisList}" IsVisible="{Binding IsAxisExpanded}">
+							<ItemsRepeater.Layout>
+								<WrapLayout Orientation="Horizontal" />
+							</ItemsRepeater.Layout>
+							<ItemsRepeater.ItemTemplate>
+								<DataTemplate>
+									<controls:IONodeView MaxWidth="250" />
+								</DataTemplate>
+							</ItemsRepeater.ItemTemplate>
+						</ItemsRepeater>
+					</StackPanel>
+
+					<!-- OAction 输出 -->
+					<StackPanel Margin="0 12 0 0">
+						<controls:CollapsibleHeader Title="OAction 输出"
+													ItemCount="{Binding OActionList.Count}"
+													ShowItemCount="True"
+													IsExpanded="{Binding IsOActionExpanded, Mode=TwoWay}"
+													ShowEditButtons="{Binding IsEditMode}"
+													AddCommand="{Binding AddOActionCommand}"
+													ClearCommand="{Binding ClearOActionCommand}"
+													AddTooltip="添加新的OAction节点"
+													ClearTooltip="清空所有OAction节点">
+							<controls:CollapsibleHeader.ExtraContent>
+								<Button Classes="img-btn" ToolTip.Tip="输出测试（模拟量/脉冲/跑马灯）" AutomationProperties.Name="输出测试"
+																Command="{Binding OpenOActionTestCommand}"
+																IsEnabled="{Binding CanWriteOutputs}"
+																Width="28" Height="28" Padding="0" Margin="8 0 0 0"
+																Background="Transparent" BorderBrush="Transparent">
+																<Panel Width="16" Height="16" HorizontalAlignment="Center" VerticalAlignment="Center">
+																	<iconPacks:PackIconIonicons Kind="PulseiOS" Width="16" Height="16" Foreground="{DynamicResource TlTextSecondary}"
+																								HorizontalAlignment="Center" VerticalAlignment="Center"/>
+																</Panel>
+								</Button>
+							</controls:CollapsibleHeader.ExtraContent>
+						</controls:CollapsibleHeader>
+						<Border Classes="availability-banner" IsVisible="{Binding OutputAvailabilityText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+								Background="{DynamicResource TlStatusOfflineBg}" Padding="12 7" Margin="0 0 0 4">
+							<StackPanel Orientation="Horizontal" Spacing="7" HorizontalAlignment="Center" VerticalAlignment="Center">
+								<iconPacks:PackIconIonicons Kind="InformationCircleiOS" Width="15" Height="15" Foreground="{DynamicResource TlStatusOfflineFg}" />
+								<TextBlock Text="{Binding OutputAvailabilityText}" FontSize="11" Foreground="{DynamicResource TlStatusOfflineFg}" VerticalAlignment="Center" />
+							</StackPanel>
+						</Border>
+						<ItemsRepeater ItemsSource="{Binding OActionList}" IsVisible="{Binding IsOActionExpanded}" IsEnabled="{Binding CanWriteOutputs}">
+							<ItemsRepeater.Layout>
+								<WrapLayout Orientation="Horizontal" />
+							</ItemsRepeater.Layout>
+							<ItemsRepeater.ItemTemplate>
+								<DataTemplate>
+									<controls:IONodeView MaxWidth="250" />
+								</DataTemplate>
+							</ItemsRepeater.ItemTemplate>
+						</ItemsRepeater>
+					</StackPanel>
 				</StackPanel>
-					
-				<!-- OAction 输出 -->
-				<StackPanel Margin="0 12 0 0">
-					<controls:CollapsibleHeader Title="OAction 输出" 
-												ItemCount="{Binding OActionList.Count}"
-												ShowItemCount="True"
-												IsExpanded="{Binding IsOActionExpanded, Mode=TwoWay}"
-												ShowEditButtons="{Binding IsEditMode}"
-												AddCommand="{Binding AddOActionCommand}"
-												ClearCommand="{Binding ClearOActionCommand}"
-												AddTooltip="添加新的OAction节点"
-												ClearTooltip="清空所有OAction节点">
-						<controls:CollapsibleHeader.ExtraContent>
-							<Button Classes="img-btn" ToolTip.Tip="输出测试（模拟量/脉冲/跑马灯）" 
-										Command="{Binding OpenOActionTestCommand}"
-										Width="28" Height="28" Padding="0" Margin="8 0 0 0">
-										<iconPacks:PackIconIonicons Kind="PulseiOS" Width="16" Height="16" Foreground="#64748b"/>
-							</Button>
-						</controls:CollapsibleHeader.ExtraContent>
-					</controls:CollapsibleHeader>
-					<ItemsRepeater ItemsSource="{Binding OActionList}" IsVisible="{Binding IsOActionExpanded}">
-						<ItemsRepeater.Layout>
-							<WrapLayout Orientation="Horizontal" />
-						</ItemsRepeater.Layout>
-						<ItemsRepeater.ItemTemplate>
-							<DataTemplate>
-								<controls:IONodeView MaxWidth="250" />
-							</DataTemplate>
-						</ItemsRepeater.ItemTemplate>
-					</ItemsRepeater>
-				</StackPanel>
-			</StackPanel>
-		</ScrollViewer>
-		<GridSplitter Grid.Column="1" Background="WhiteSmoke" ResizeDirection="Columns" />
-		<ScrollViewer Grid.Column="2" Margin="0" MinWidth="1">
+			</ScrollViewer>
+			<GridSplitter Grid.Column="1" Background="{DynamicResource TlBorderBrush}" ResizeDirection="Columns" Width="4" />
+			<ScrollViewer Grid.Column="2" Margin="0" MinWidth="1">
 				<StackPanel Orientation="Vertical" Margin="0 0 0 24">
 					<!-- DI 输入 -->
 					<StackPanel>
-						<controls:CollapsibleHeader Title="DI 输入" 
+						<controls:CollapsibleHeader Title="DI 输入"
 													IsExpanded="{Binding DIExpand, Mode=TwoWay}">
 							<controls:CollapsibleHeader.ExtraContent>
 								<StackPanel Orientation="Horizontal">
 									<ComboBox SelectedIndex="{Binding SelectedDICountIndex}"
 											  Width="100"
-											  MaxDropDownHeight="200" BorderThickness="1" BorderBrush="#e2e8f0">
+												  MaxDropDownHeight="200" BorderThickness="1" BorderBrush="{DynamicResource TlBorderLight}">
 										<ComboBoxItem>8 通道</ComboBoxItem>
 										<ComboBoxItem>16 通道</ComboBoxItem>
 										<ComboBoxItem>32 通道</ComboBoxItem>
@@ -258,7 +282,7 @@
 										<ComboBoxItem>256 通道</ComboBoxItem>
 									</ComboBox>
 									<TextBlock Text="偏移" VerticalAlignment="Center" Margin="16 0 0 0" />
-									<NumericUpDown Value="{Binding OffsetDIIndex}" BorderBrush="#e2e8f0"
+													   <NumericUpDown Value="{Binding OffsetDIIndex}" BorderBrush="{DynamicResource TlBorderLight}"
 												   Minimum="0" Maximum="{Binding OffsetDIMaxIndex}"
 												   Width="100" Margin="8 0 0 0" FormatString="0" />
 								</StackPanel>
@@ -280,13 +304,13 @@
 
 					<!-- AD 输入 -->
 					<StackPanel Margin="0 16 0 0">
-						<controls:CollapsibleHeader Title="AD 输入" 
+						<controls:CollapsibleHeader Title="AD 输入"
 													IsExpanded="{Binding ADExpand, Mode=TwoWay}">
 							<controls:CollapsibleHeader.ExtraContent>
 								<StackPanel Orientation="Horizontal">
-									<ComboBox SelectedIndex="{Binding SelectedADCountIndex}" 
+									<ComboBox SelectedIndex="{Binding SelectedADCountIndex}"
 											  Width="100"
-											  MaxDropDownHeight="200" BorderThickness="1" BorderBrush="#e2e8f0">
+												  MaxDropDownHeight="200" BorderThickness="1" BorderBrush="{DynamicResource TlBorderLight}">
 										<ComboBoxItem>8 通道</ComboBoxItem>
 										<ComboBoxItem>16 通道</ComboBoxItem>
 										<ComboBoxItem>32 通道</ComboBoxItem>
@@ -295,7 +319,7 @@
 										<ComboBoxItem>256 通道</ComboBoxItem>
 									</ComboBox>
 									<TextBlock Text="偏移" VerticalAlignment="Center" Margin="16 0 0 0" />
-									<NumericUpDown Value="{Binding OffsetADIndex}" BorderBrush="#e2e8f0"
+													   <NumericUpDown Value="{Binding OffsetADIndex}" BorderBrush="{DynamicResource TlBorderLight}"
 												   Minimum="0" Maximum="{Binding OffsetADMaxIndex}"
 												   Width="100" Margin="8 0 0 0" FormatString="0" />
 								</StackPanel>
@@ -317,15 +341,15 @@
 							</ItemsRepeater.ItemTemplate>
 						</ItemsRepeater>
 					</StackPanel>
-					
+
 					<!-- DO 输出 -->
 					<StackPanel Margin="0 16 0 0">
-						<controls:CollapsibleHeader Title="DO 输出" 
+						<controls:CollapsibleHeader Title="DO 输出"
 													IsExpanded="{Binding DOExpand, Mode=TwoWay}">
 							<controls:CollapsibleHeader.ExtraContent>
 								<StackPanel Orientation="Horizontal">
-									<ComboBox SelectedIndex="{Binding SelectedDOCountIndex}" MaxDropDownHeight="200" 
-											  BorderThickness="1" Width="100" BorderBrush="#e2e8f0">
+									<ComboBox SelectedIndex="{Binding SelectedDOCountIndex}" MaxDropDownHeight="200"
+													  BorderThickness="1" Width="100" BorderBrush="{DynamicResource TlBorderLight}">
 										<ComboBoxItem>8 通道</ComboBoxItem>
 										<ComboBoxItem>16 通道</ComboBoxItem>
 										<ComboBoxItem>32 通道</ComboBoxItem>
@@ -334,23 +358,35 @@
 										<ComboBoxItem>256 通道</ComboBoxItem>
 									</ComboBox>
 									<TextBlock Text="偏移" VerticalAlignment="Center" Margin="16 0 0 0" />
-									<NumericUpDown Value="{Binding OffsetDOIndex}" BorderBrush="#e2e8f0"
-												   Minimum="0" Maximum="{Binding OffsetDOMaxIndex}" 
+													   <NumericUpDown Value="{Binding OffsetDOIndex}" BorderBrush="{DynamicResource TlBorderLight}"
+												   Minimum="0" Maximum="{Binding OffsetDOMaxIndex}"
 												   Width="100" Margin="8 0 0 0" FormatString="0" />
-									<Button Classes.active="{Binding AllOn}" Classes="IOControl"
-											Margin="16 0 0 0"
-											Width="60" Height="28" Command="{Binding ToggleAllDOCommand}">
+											<Button Classes.active="{Binding AllOn}" Classes="IOControl"
+													Margin="16 0 0 0"
+													Width="60" Height="28" Command="{Binding ToggleAllDOCommand}">
 										<TextBlock Text="{Binding ToggleAllDOText}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
 									</Button>
-									<Button Classes="img-btn" ToolTip.Tip="输出测试（模拟量/脉冲/跑马灯）" 
-											Command="{Binding OpenDOTestCommand}"
-											Width="28" Height="28" Padding="0" Margin="8 0 0 0">
-										<iconPacks:PackIconIonicons Kind="PulseiOS" Width="16" Height="16" Foreground="#64748b"/>
+									<Button Classes="img-btn" ToolTip.Tip="输出测试（模拟量/脉冲/跑马灯）" AutomationProperties.Name="输出测试"
+																Command="{Binding OpenDOTestCommand}"
+																IsEnabled="{Binding CanWriteOutputs}"
+																Width="28" Height="28" Padding="0" Margin="8 0 0 0"
+																Background="Transparent" BorderBrush="Transparent">
+																<Panel Width="18" Height="18" HorizontalAlignment="Center" VerticalAlignment="Center">
+																	<iconPacks:PackIconMaterial Kind="Waveform" Width="18" Height="18" Foreground="{DynamicResource TlAccent}"
+																									HorizontalAlignment="Center" VerticalAlignment="Center"/>
+																</Panel>
 									</Button>
 								</StackPanel>
 							</controls:CollapsibleHeader.ExtraContent>
 						</controls:CollapsibleHeader>
-						<ItemsRepeater ItemsSource="{Binding DOKeys}" x:Name="DORepeater" IsVisible="{Binding DOExpand}">
+						<Border Classes="availability-banner" IsVisible="{Binding OutputAvailabilityText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+								Background="{DynamicResource TlStatusOfflineBg}" Padding="12 7" Margin="0 0 0 4">
+							<StackPanel Orientation="Horizontal" Spacing="7" HorizontalAlignment="Center" VerticalAlignment="Center">
+								<iconPacks:PackIconIonicons Kind="InformationCircleiOS" Width="15" Height="15" Foreground="{DynamicResource TlStatusOfflineFg}" />
+								<TextBlock Text="{Binding OutputAvailabilityText}" FontSize="11" Foreground="{DynamicResource TlStatusOfflineFg}" VerticalAlignment="Center" />
+							</StackPanel>
+						</Border>
+						<ItemsRepeater ItemsSource="{Binding DOKeys}" x:Name="DORepeater" IsVisible="{Binding DOExpand}" IsEnabled="{Binding CanWriteOutputs}">
 							<ItemsRepeater.Layout>
 								<WrapLayout Orientation="Horizontal" />
 							</ItemsRepeater.Layout>
@@ -363,7 +399,7 @@
 							</ItemsRepeater.ItemTemplate>
 						</ItemsRepeater>
 					</StackPanel>
-				
+
 				</StackPanel>
 			</ScrollViewer>
 		</Grid>

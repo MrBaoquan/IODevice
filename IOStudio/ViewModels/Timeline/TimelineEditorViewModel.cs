@@ -83,8 +83,16 @@ namespace IOStudio.ViewModels.Timeline
 
             PlayCommand = ReactiveCommand.Create(Play);
             PauseCommand = ReactiveCommand.Create(Pause);
+            PlayPauseCommand = ReactiveCommand.Create(() =>
+            {
+                if (IsPlaying)
+                    Pause();
+                else
+                    Play();
+            });
             StopCommand = ReactiveCommand.Create(Stop);
             ToggleLoopCommand = ReactiveCommand.Create(ToggleLoop);
+            DeleteKeyframeCommand = ReactiveCommand.Create(DeleteSelectedKeyframe);
             AddTrackCommand = ReactiveCommand.Create(() => { }); // View 层通过事件处理
             RemoveTrackCommand = ReactiveCommand.Create<TrackViewModel>(RemoveTrack);
             UndoCommand = ReactiveCommand.Create(Undo);
@@ -102,8 +110,12 @@ namespace IOStudio.ViewModels.Timeline
             // 初始化标记服务
             _markerService = new MarkerService(this);
 
-            // Tracks 集合变更时失效通道索引
-            _tracks.CollectionChanged += (_, _) => InvalidateTrackChannelIndex();
+            // Tracks 集合变更时失效通道索引 + 更新状态栏轨道计数
+            _tracks.CollectionChanged += (_, _) =>
+            {
+                InvalidateTrackChannelIndex();
+                this.RaisePropertyChanged(nameof(TrackCountLabel));
+            };
 
             // 自动初始化一个默认项目, 确保 Timeline 始终不为 null
             NewProject();
@@ -129,14 +141,37 @@ namespace IOStudio.ViewModels.Timeline
         public double CurrentTimeMs
         {
             get => _currentTimeMs;
-            set => this.RaiseAndSetIfChanged(ref _currentTimeMs, value);
+            set
+            {
+                var bounded = ClampTime(value);
+                this.RaiseAndSetIfChanged(ref _currentTimeMs, bounded);
+            }
+        }
+
+        /// <summary>将时间限制在当前项目时间轴范围内。</summary>
+        public double ClampTime(double timeMs)
+        {
+            if (double.IsNaN(timeMs) || double.IsInfinity(timeMs))
+                return 0;
+            var max =
+                DurationMs > 0
+                    ? DurationMs
+                    : (Timeline?.DurationMs > 0 ? Timeline.DurationMs : double.MaxValue);
+            return Math.Clamp(timeMs, 0, max);
         }
 
         private double _durationMs;
         public double DurationMs
         {
             get => _durationMs;
-            set => this.RaiseAndSetIfChanged(ref _durationMs, value);
+            set
+            {
+                var bounded =
+                    double.IsNaN(value) || double.IsInfinity(value) ? 0 : Math.Max(0, value);
+                this.RaiseAndSetIfChanged(ref _durationMs, bounded);
+                if (bounded > 0 && CurrentTimeMs > bounded)
+                    CurrentTimeMs = bounded;
+            }
         }
 
         /// <summary>用户手动设置的总时长 (ms), 0 表示自动计算</summary>
@@ -265,14 +300,79 @@ namespace IOStudio.ViewModels.Timeline
             {
                 var changed = !ReferenceEquals(_selectedTrack, value);
                 this.RaiseAndSetIfChanged(ref _selectedTrack, value);
+                if (changed && _presetPanelVm != null)
+                    _presetPanelVm.SetTargetTrack(value?.Id, value?.Label, value?.IsLocked == true);
                 // UX-B2: 仅选中 / 仅当前分组模式需随选择变化刷新显示列表
-                if (changed && _displayFilter != null &&
-                    (_displayFilter.Mode == DisplayFilterMode.SelectedTrackOnly
-                     || _displayFilter.Mode == DisplayFilterMode.ActiveGroupOnly))
+                if (
+                    changed
+                    && _displayFilter != null
+                    && (
+                        _displayFilter.Mode == DisplayFilterMode.SelectedTrackOnly
+                        || _displayFilter.Mode == DisplayFilterMode.ActiveGroupOnly
+                    )
+                )
                 {
                     RefreshDisplayList();
                 }
             }
+        }
+
+        /// <summary>验证轨道是否允许内容编辑，并向状态栏解释被拒绝的原因。</summary>
+        internal bool TryBeginTrackEdit(TrackViewModel? track, string operation)
+        {
+            if (track == null)
+                return false;
+            if (!track.IsLocked)
+                return true;
+
+            PushStatus($"轨道“{track.Label}”已锁定，无法{operation}");
+            return false;
+        }
+
+        /// <summary>批量编辑必须保证所有涉及轨道均未锁定，避免产生部分提交。</summary>
+        internal bool TryBeginTrackEdit(IEnumerable<TrackViewModel> tracks, string operation)
+        {
+            var locked = tracks.Distinct().FirstOrDefault(track => track.IsLocked);
+            if (locked == null)
+                return true;
+
+            PushStatus($"轨道“{locked.Label}”已锁定，无法{operation}");
+            return false;
+        }
+
+        // ---- 轨道多选状态 (Ctrl+点击轨道头切换) ----
+
+        private readonly ObservableCollection<TrackViewModel> _multiSelectedTracks = new();
+
+        /// <summary>多选轨道集合 (Ctrl+点击轨道头切换)。</summary>
+        public ObservableCollection<TrackViewModel> MultiSelectedTracks => _multiSelectedTracks;
+
+        /// <summary>切换轨道多选状态 (Ctrl 点击轨道头)。首次进入多选时保留当前激活轨道。</summary>
+        public void ToggleTrackMultiSelect(TrackViewModel trackVm)
+        {
+            if (trackVm == null)
+                return;
+            // 从单选过渡到多选: 首次 Ctrl 点击时, 把当前已经激活的轨道一并纳入多选, 避免它被取消选择
+            if (
+                _multiSelectedTracks.Count == 0
+                && SelectedTrack != null
+                && !ReferenceEquals(SelectedTrack, trackVm)
+            )
+                _multiSelectedTracks.Add(SelectedTrack);
+
+            if (_multiSelectedTracks.Contains(trackVm))
+                _multiSelectedTracks.Remove(trackVm);
+            else
+                _multiSelectedTracks.Add(trackVm);
+
+            if (_multiSelectedTracks.Count > 0)
+                SelectedTrack = _multiSelectedTracks[^1];
+        }
+
+        /// <summary>清空多选 (单选时调用)。</summary>
+        public void ClearMultiSelection()
+        {
+            _multiSelectedTracks.Clear();
         }
 
         // ---- 关键帧选中状态 ----
@@ -289,6 +389,15 @@ namespace IOStudio.ViewModels.Timeline
         {
             get => _selectedKeyframeIndex;
             set => this.RaiseAndSetIfChanged(ref _selectedKeyframeIndex, value);
+        }
+
+        private string? _selectedActionInstanceId;
+
+        /// <summary>当前作为整体选中的影片动作实例。</summary>
+        public string? SelectedActionInstanceId
+        {
+            get => _selectedActionInstanceId;
+            set => this.RaiseAndSetIfChanged(ref _selectedActionInstanceId, value);
         }
 
         /// <summary>当前选中的关键帧 ViewModel (用于属性面板绑定)</summary>
@@ -401,6 +510,17 @@ namespace IOStudio.ViewModels.Timeline
 
         /// <summary>是否为曲线视图 (Curves)</summary>
         public bool IsCurvesMode => ViewMode == TimelineViewMode.Curves;
+
+        /// <summary>
+        /// 曲线视图是否叠加显示待机循环 (幽灵) 曲线。
+        /// 独立待机编辑器接管后默认 false (减负); 用户在曲线视图工具栏可随时切换"可控查看"。
+        /// </summary>
+        private bool _showIdleOverlaysInCurve;
+        public bool ShowIdleOverlaysInCurve
+        {
+            get => _showIdleOverlaysInCurve;
+            set => this.RaiseAndSetIfChanged(ref _showIdleOverlaysInCurve, value);
+        }
 
         /// <summary>轨道高度级别: 0=紧凑(28/60), 1=标准(36/80), 2=展开(52/120)</summary>
         private int _trackHeightLevel = 1;
@@ -545,19 +665,48 @@ namespace IOStudio.ViewModels.Timeline
         }
 
         /// <summary>设置工作区域入点为当前播放头位置</summary>
-        public void SetWorkAreaIn()
+        public void SetWorkAreaIn() => SetWorkAreaInAt(CurrentTimeMs);
+
+        /// <summary>设置工作区域出点为当前播放头位置</summary>
+        public void SetWorkAreaOut() => SetWorkAreaOutAt(CurrentTimeMs);
+
+        /// <summary>在指定时间设置入点 (支持拖动工作区条带边界到任意时间)。</summary>
+        public void SetWorkAreaInAt(double ms)
         {
-            WorkAreaInMs = CurrentTimeMs;
-            if (_workAreaOutMs.HasValue && _workAreaOutMs.Value <= CurrentTimeMs)
+            WorkAreaInMs = Math.Max(0, ms);
+            if (_workAreaOutMs.HasValue && _workAreaOutMs.Value <= WorkAreaInMs)
                 WorkAreaOutMs = null;
         }
 
-        /// <summary>设置工作区域出点为当前播放头位置</summary>
-        public void SetWorkAreaOut()
+        /// <summary>在指定时间设置出点 (支持拖动工作区条带边界到任意时间)。</summary>
+        public void SetWorkAreaOutAt(double ms)
         {
-            WorkAreaOutMs = CurrentTimeMs;
-            if (_workAreaInMs.HasValue && _workAreaInMs.Value >= CurrentTimeMs)
+            WorkAreaOutMs = Math.Max(0, ms);
+            if (_workAreaInMs.HasValue && _workAreaInMs.Value >= WorkAreaOutMs)
                 WorkAreaInMs = null;
+        }
+
+        /// <summary>整体移动工作区 (保持时长), deltaMs 为正向右, 自动夹在时间轴范围内。</summary>
+        public void MoveWorkArea(double deltaMs)
+        {
+            if (!HasWorkArea || Math.Abs(deltaMs) < 0.1)
+                return;
+            double len = _workAreaOutMs!.Value - _workAreaInMs!.Value;
+            double inMs = _workAreaInMs.Value + deltaMs;
+            double outMs = inMs + len;
+            double max = DurationMs > 0 ? DurationMs : 60000;
+            if (inMs < 0)
+            {
+                inMs = 0;
+                outMs = len;
+            }
+            if (outMs > max)
+            {
+                outMs = max;
+                inMs = Math.Max(0, max - len);
+            }
+            WorkAreaInMs = inMs;
+            WorkAreaOutMs = outMs;
         }
 
         /// <summary>清除工作区域标记</summary>
@@ -659,8 +808,10 @@ namespace IOStudio.ViewModels.Timeline
         public ReactiveCommand<Unit, Unit> SaveAsCommand { get; }
         public ReactiveCommand<Unit, Unit> PlayCommand { get; }
         public ReactiveCommand<Unit, Unit> PauseCommand { get; }
+        public ReactiveCommand<Unit, Unit> PlayPauseCommand { get; }
         public ReactiveCommand<Unit, Unit> StopCommand { get; }
         public ReactiveCommand<Unit, Unit> ToggleLoopCommand { get; }
+        public ReactiveCommand<Unit, Unit> DeleteKeyframeCommand { get; }
         public ReactiveCommand<Unit, Unit> AddTrackCommand { get; }
         public ReactiveCommand<TrackViewModel, Unit> RemoveTrackCommand { get; }
         public ReactiveCommand<Unit, Unit> UndoCommand { get; }
@@ -821,6 +972,38 @@ namespace IOStudio.ViewModels.Timeline
 
         /// <summary>重做描述 (Tooltip 用)</summary>
         public string? RedoDescription => _undoRedo.RedoDescription;
+
+        // ---- 状态反馈 (状态栏 / 操作日志) ----
+
+        /// <summary>最近操作日志 (最多保留 6 条, 最新在前)</summary>
+        public ObservableCollection<string> RecentOperations { get; } = new();
+
+        private string _statusMessage = "就绪";
+
+        /// <summary>当前状态提示 (状态栏主文本)</summary>
+        public string StatusMessage
+        {
+            get => _statusMessage;
+            set => this.RaiseAndSetIfChanged(ref _statusMessage, value);
+        }
+
+        /// <summary>
+        /// 推送一条操作反馈: 更新状态栏并写入最近操作日志。
+        /// 供执行命令、保存、自动保存等用户可见事件调用。
+        /// </summary>
+        public void PushStatus(string message)
+        {
+            if (string.IsNullOrEmpty(message))
+                return;
+            StatusMessage = message;
+            var line = $"[{DateTime.Now:HH:mm:ss}] {message}";
+            RecentOperations.Insert(0, line);
+            while (RecentOperations.Count > 6)
+                RecentOperations.RemoveAt(RecentOperations.Count - 1);
+        }
+
+        /// <summary>状态栏轨道计数标签</summary>
+        public string TrackCountLabel => $"轨道: {Tracks.Count} · 时长: {DurationDisplay}";
 
         /// <summary>时间轴视口宽度 (由 View 层同步, 用于 ZoomToFit 计算)</summary>
         private double _timelineViewportWidth = 800;

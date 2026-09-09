@@ -8,7 +8,7 @@
     "version": {
       "type": "string",
       "description": "格式版本号",
-      "enum": ["1.0"]
+      "enum": ["1.0", "3.0"]
     },
     "name": {
       "type": "string",
@@ -30,25 +30,69 @@
       "type": "array",
       "description": "轨道列表",
       "items": { "$ref": "#/definitions/track" }
+    },
+    "action_instances": {
+      "type": "array",
+      "description": "影片级可复用动作实例",
+      "items": { "$ref": "#/definitions/action_instance" }
+    },
+    "role_track_bindings": {
+      "type": "object",
+      "description": "逻辑角色到轨道 ID 的绑定",
+      "additionalProperties": { "type": "string" }
+    },
+    "embedded_presets": {
+      "type": "array",
+      "description": "项目内嵌预设快照",
+      "items": { "$ref": "#/definitions/effect_preset" }
+    },
+    "groups": {
+      "type": "array",
+      "description": "轨道分组",
+      "items": { "$ref": "#/definitions/group" }
+    },
+    "events": {
+      "type": "array",
+      "description": "独立事件列表",
+      "items": { "$ref": "#/definitions/event" }
+    },
+    "markers": {
+      "type": "array",
+      "description": "时间轴标记列表",
+      "items": { "$ref": "#/definitions/marker" }
+    },
+    "event_lanes": {
+      "type": "array",
+      "items": { "$ref": "#/definitions/lane" }
+    },
+    "marker_lanes": {
+      "type": "array",
+      "items": { "$ref": "#/definitions/lane" }
     }
   },
   "definitions": {
     "track": {
       "type": "object",
-      "required": ["id", "device_name", "oaction_name", "clips"],
+      "required": ["id", "device", "oaction", "clips"],
       "properties": {
         "id": {
           "type": "string",
           "description": "轨道唯一 ID (8 位 hex)"
         },
-        "device_name": {
+        "device": {
           "type": "string",
           "description": "IODevice.xml 中的设备名"
         },
-        "oaction_name": {
+        "oaction": {
           "type": "string",
           "description": "OAction 输出动作名 (对应 IODevice.xml OAction.Name)"
         },
+        "output_type": {
+          "type": "string",
+          "enum": ["oaction", "oaxis", "axis"]
+        },
+        "oaxis_channel": { "type": "string" },
+        "axis_name": { "type": "string" },
         "label": {
           "type": "string",
           "description": "显示名称 (如 '俯仰')"
@@ -74,6 +118,11 @@
           "enum": ["float", "bool"],
           "default": "float"
         },
+        "solo": { "type": "boolean" },
+        "enabled": { "type": "boolean" },
+        "group": { "type": "string" },
+        "role": { "type": "string" },
+        "show_in_curve": { "type": "boolean" },
         "clips": {
           "type": "array",
           "description": "片段列表",
@@ -103,7 +152,98 @@
           "type": "array",
           "description": "关键帧列表 (按 time_ms 升序)",
           "items": { "$ref": "#/definitions/keyframe" }
-        }
+        },
+        "action_instance_id": { "type": "string" },
+        "source_definition_id": { "type": "string" },
+        "source_role": { "type": "string" },
+        "source_action_name": { "type": "string" }
+      }
+    },
+    "action_instance": {
+      "type": "object",
+      "required": ["id", "definition_id", "name", "start_ms", "duration_ms"],
+      "properties": {
+        "id": { "type": "string" },
+        "definition_id": { "type": "string" },
+        "definition_revision": { "type": "integer", "minimum": 1 },
+        "name": { "type": "string" },
+        "start_ms": { "type": "number", "minimum": 0 },
+        "duration_ms": { "type": "number", "exclusiveMinimum": 0 },
+        "intensity": { "type": "number", "minimum": 0 },
+        "playback_rate": { "type": "number", "exclusiveMinimum": 0 },
+        "loop_count": { "type": "integer", "minimum": 1 },
+        "enabled": { "type": "boolean" },
+        "role_track_ids": { "type": "object", "additionalProperties": { "type": "string" } }
+      }
+    },
+    "effect_preset": {
+      "type": "object",
+      "required": ["id", "name", "category", "duration_ms", "channels"],
+      "properties": {
+        "id": { "type": "string" },
+        "revision": { "type": "integer", "minimum": 1 },
+        "name": { "type": "string" },
+        "category": { "type": "string" },
+        "description": { "type": "string" },
+        "duration_ms": { "type": "number", "exclusiveMinimum": 0 },
+        "default_intensity": { "type": "number", "minimum": 0 },
+        "min_intensity": { "type": "number", "minimum": 0 },
+        "max_intensity": { "type": "number", "minimum": 0 },
+        "base_id": { "type": "string" },
+        "channels": { "type": "array", "items": { "$ref": "#/definitions/channel" } }
+      }
+    },
+    "channel": {
+      "type": "object",
+      "required": ["role"],
+      "properties": {
+        "role": { "type": "string" },
+        "scale": { "type": "number" },
+        "phase_offset_ms": { "type": "number" },
+        "template_ref": { "type": "string" },
+        "keyframes": { "type": "array", "items": { "$ref": "#/definitions/keyframe" } }
+      }
+    },
+    "group": {
+      "type": "object",
+      "required": ["name", "color"],
+      "properties": {
+        "name": { "type": "string" },
+        "color": { "type": "string", "pattern": "^#[0-9A-Fa-f]{6}$" },
+        "collapsed": { "type": "boolean" }
+      }
+    },
+    "event": {
+      "type": "object",
+      "required": ["time_ms", "event_name"],
+      "properties": {
+        "time_ms": { "type": "number", "minimum": 0 },
+        "event_name": { "type": "string" },
+        "event_data": { "type": "string" },
+        "color": { "type": "string", "pattern": "^#[0-9A-Fa-f]{6}$" },
+        "data_type": { "type": "string", "enum": ["string", "json", "number"] },
+        "lane": { "type": "string" }
+      }
+    },
+    "marker": {
+      "type": "object",
+      "required": ["time_ms", "name"],
+      "properties": {
+        "time_ms": { "type": "number", "minimum": 0 },
+        "name": { "type": "string" },
+        "color": { "type": "string", "pattern": "^#[0-9A-Fa-f]{6}$" },
+        "note": { "type": "string" },
+        "lane": { "type": "string" }
+      }
+    },
+    "lane": {
+      "type": "object",
+      "required": ["id", "name", "color"],
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "color": { "type": "string", "pattern": "^#[0-9A-Fa-f]{6}$" },
+        "collapsed": { "type": "boolean" }
       }
     },
     "keyframe": {
@@ -127,13 +267,23 @@
           "enum": ["linear", "bezier", "step", "ease_in_out"],
           "default": "linear"
         },
-        "tangent_in": {
+        "cp1y": {
           "type": "number",
           "description": "贝塞尔入切线 (仅 bezier 类型)"
         },
-        "tangent_out": {
+        "cp2y": {
           "type": "number",
           "description": "贝塞尔出切线 (仅 bezier 类型)"
+        },
+        "cp1x": { "type": "number" },
+        "cp2x": { "type": "number" },
+        "event": {
+          "type": "object",
+          "required": ["event_name"],
+          "properties": {
+            "event_name": { "type": "string" },
+            "event_data": { "type": "string" }
+          }
         }
       }
     }

@@ -27,6 +27,7 @@ namespace IOStudio.ViewModels.Timeline
         public TrackViewModel(MotionTrack track)
         {
             Track = track;
+            _isLocked = track.Locked;
 
             // 从模型同步片段 ViewModel
             foreach (var clip in track.Clips)
@@ -107,6 +108,66 @@ namespace IOStudio.ViewModels.Timeline
         /// <summary>值类型显示文本</summary>
         public string ValueTypeDisplay => ValueType == "bool" ? "Bool 开关" : "Float 连续";
 
+        /// <summary>中性/空闲值 (null=按类型默认)。用于无动作覆盖时的输出与曲线渲染。</summary>
+        public float? NeutralValue
+        {
+            get => Track.NeutralValue;
+            set
+            {
+                Track.NeutralValue = value;
+                this.RaisePropertyChanged();
+            }
+        }
+
+        /// <summary>Idle 循环 (gap 填充) — 无 clip 覆盖时的待机循环动作 (null=无 idle)。</summary>
+        public IdleLoop? IdleLoop
+        {
+            get => Track.IdleLoop;
+            set
+            {
+                Track.IdleLoop = value;
+                this.RaisePropertyChanged();
+                this.RaisePropertyChanged(nameof(HasIdleLoop));
+            }
+        }
+
+        /// <summary>是否已配置 idle 循环 (用于 UI 开关态)</summary>
+        public bool HasIdleLoop => Track.IdleLoop != null && Track.IdleLoop.Enabled;
+
+        /// <summary>
+        /// Overlay 覆盖关键帧 (空窗自由数值点, 绝对时间) — 优先级高于 idle, 用于在待机循环上打点。
+        /// </summary>
+        public List<MotionKeyframe>? OverrideKeyframes
+        {
+            get => Track.OverrideKeyframes;
+            set
+            {
+                Track.OverrideKeyframes = value;
+                this.RaisePropertyChanged();
+                this.RaisePropertyChanged(nameof(HasOverrideKeyframes));
+            }
+        }
+
+        /// <summary>是否已配置 overlay 覆盖关键帧</summary>
+        public bool HasOverrideKeyframes =>
+            Track.OverrideKeyframes != null && Track.OverrideKeyframes.Count > 0;
+
+        /// <summary>轨道逻辑角色标签 (自由字符串, 来自 Track.Role)</summary>
+        public string Role => Track.Role;
+
+        /// <summary>是否有 Role (用于显示/隐藏徽章)</summary>
+        public bool HasRole => !string.IsNullOrEmpty(Track.Role);
+
+        /// <summary>Role 显示文本 (截断为 8 字符)</summary>
+        public string RoleDisplay
+        {
+            get
+            {
+                string r = Track.Role ?? "";
+                return r.Length > 8 ? r[..8] + "…" : r;
+            }
+        }
+
         private bool _isMuted;
         public bool IsMuted
         {
@@ -159,8 +220,12 @@ namespace IOStudio.ViewModels.Timeline
             {
                 Track.Locked = value;
                 this.RaiseAndSetIfChanged(ref _isLocked, value);
+                this.RaisePropertyChanged(nameof(LockActionLabel));
             }
         }
+
+        /// <summary>锁定按钮的动作语义，随当前状态切换以保持提示和无障碍名称一致。</summary>
+        public string LockActionLabel => IsLocked ? "解锁轨道" : "锁定轨道";
 
         private bool _isSelected;
         public bool IsSelected

@@ -19,6 +19,7 @@ namespace IOStudio.ViewModels.Timeline
             Model = model;
             _isMuted = model.Muted;
             _isSolo = model.Soloed;
+            _isCollapsed = model.Collapsed;
         }
 
         /// <summary>分组名称</summary>
@@ -53,11 +54,15 @@ namespace IOStudio.ViewModels.Timeline
                 this.RaiseAndSetIfChanged(ref _isCollapsed, value);
                 Model.Collapsed = value;
                 this.RaisePropertyChanged(nameof(ExpandIcon));
+                this.RaisePropertyChanged(nameof(ExpandActionLabel));
             }
         }
 
         /// <summary>展开/折叠图标</summary>
         public string ExpandIcon => IsCollapsed ? "▶" : "▼";
+
+        /// <summary>展开/折叠动作提示</summary>
+        public string ExpandActionLabel => IsCollapsed ? "展开分组" : "折叠分组";
 
         /// <summary>组内轨道数</summary>
         private int _trackCount;
@@ -72,7 +77,7 @@ namespace IOStudio.ViewModels.Timeline
         }
 
         /// <summary>轨道数显示</summary>
-        public string TrackCountDisplay => $"({TrackCount})";
+        public string TrackCountDisplay => $"{TrackCount} 条轨道";
 
         /// <summary>标记: 这是分组头 (用于 DataTemplate 选择)</summary>
         public bool IsGroupHeader => true;
@@ -91,6 +96,7 @@ namespace IOStudio.ViewModels.Timeline
                 _isMuted = value;
                 Model.Muted = value;
                 this.RaisePropertyChanged();
+                this.RaisePropertyChanged(nameof(MuteActionLabel));
                 SoloMuteChanged?.Invoke(this);
             }
         }
@@ -107,8 +113,15 @@ namespace IOStudio.ViewModels.Timeline
                 _isSolo = value;
                 Model.Soloed = value;
                 this.RaisePropertyChanged();
+                this.RaisePropertyChanged(nameof(SoloActionLabel));
                 SoloMuteChanged?.Invoke(this);
             }
         }
+
+        /// <summary>分组静音动作提示</summary>
+        public string MuteActionLabel => IsMuted ? "取消分组静音" : "分组静音";
+
+        /// <summary>分组独奏动作提示</summary>
+        public string SoloActionLabel => IsSolo ? "取消分组独奏" : "分组独奏";
     }
 }

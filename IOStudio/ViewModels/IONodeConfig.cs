@@ -67,8 +67,52 @@ public class Device : ViewModelBase
     public bool IsValid
     {
         get => isValid;
-        set { this.RaiseAndSetIfChanged(ref isValid, value); }
+        set
+        {
+            this.RaiseAndSetIfChanged(ref isValid, value);
+            this.RaisePropertyChanged(nameof(ConnectionStateText));
+            this.RaisePropertyChanged(nameof(ConnectionStateColor));
+            this.RaisePropertyChanged(nameof(ConnectionStateBackground));
+            this.RaisePropertyChanged(nameof(ConnectionStateForeground));
+            this.RaisePropertyChanged(nameof(CanWriteOutputs));
+            this.RaisePropertyChanged(nameof(OutputAvailabilityText));
+        }
     }
+
+    private bool _isRuntimeActive;
+
+    /// <summary>主窗口设备服务是否处于运行状态。</summary>
+    [XmlIgnore]
+    public bool IsRuntimeActive
+    {
+        get => _isRuntimeActive;
+        set
+        {
+            this.RaiseAndSetIfChanged(ref _isRuntimeActive, value);
+            this.RaisePropertyChanged(nameof(CanWriteOutputs));
+            this.RaisePropertyChanged(nameof(OutputAvailabilityText));
+        }
+    }
+
+    [XmlIgnore]
+    public bool CanWriteOutputs => IsRuntimeActive && IsValid;
+
+    [XmlIgnore]
+    public string ConnectionStateText => IsValid ? "在线" : "离线";
+
+    [XmlIgnore]
+    public string ConnectionStateColor => IsValid ? "#238b62" : "#b87916";
+
+    [XmlIgnore]
+    public string ConnectionStateBackground => IsValid ? "#dceee7" : "#fff1dc";
+
+    [XmlIgnore]
+    public string ConnectionStateForeground => IsValid ? "#176b4b" : "#8b5a16";
+
+    [XmlIgnore]
+    public string OutputAvailabilityText => CanWriteOutputs
+        ? string.Empty
+        : IsRuntimeActive ? "设备离线，输出已禁用" : "设备服务未启动，输出已禁用";
 
     /// <summary>
     /// 获取设备的友好显示名称
@@ -301,7 +345,11 @@ public class Device : ViewModelBase
     public string DllName
     {
         get => _dllName;
-        set => this.RaiseAndSetIfChanged(ref _dllName, value);
+        set
+        {
+            this.RaiseAndSetIfChanged(ref _dllName, value);
+            this.RaisePropertyChanged(nameof(Title));
+        }
     }
 
     private int _index;
@@ -310,7 +358,11 @@ public class Device : ViewModelBase
     public int Index
     {
         get => _index;
-        set => this.RaiseAndSetIfChanged(ref _index, value);
+        set
+        {
+            this.RaiseAndSetIfChanged(ref _index, value);
+            this.RaisePropertyChanged(nameof(Title));
+        }
     }
 
     /// <summary>
@@ -480,8 +532,16 @@ public class Device : ViewModelBase
     public bool UserIOFullscreen
     {
         get => userIOFullscreen;
-        set => this.RaiseAndSetIfChanged(ref userIOFullscreen, value);
+        set
+        {
+            this.RaiseAndSetIfChanged(ref userIOFullscreen, value);
+            this.RaisePropertyChanged(nameof(UserIOFullscreenTip));
+        }
     }
+
+    /// <summary>左侧全屏按钮 ToolTip (进入/退出切换反馈)。</summary>
+    [XmlIgnore]
+    public string UserIOFullscreenTip => userIOFullscreen ? "退出左侧全屏" : "左侧全屏";
 
     private bool standardIOFullscreen = false;
 
@@ -489,8 +549,16 @@ public class Device : ViewModelBase
     public bool StandardIOFullscreen
     {
         get => standardIOFullscreen;
-        set => this.RaiseAndSetIfChanged(ref standardIOFullscreen, value);
+        set
+        {
+            this.RaiseAndSetIfChanged(ref standardIOFullscreen, value);
+            this.RaisePropertyChanged(nameof(StandardIOFullscreenTip));
+        }
     }
+
+    /// <summary>右侧全屏按钮 ToolTip (进入/退出切换反馈)。</summary>
+    [XmlIgnore]
+    public string StandardIOFullscreenTip => standardIOFullscreen ? "退出右侧全屏" : "右侧全屏";
 
     private GridLength customWidth = new GridLength(1, GridUnitType.Star);
 
@@ -551,9 +619,12 @@ public class Device : ViewModelBase
     public ICommand AddActionCommand =>
         ReactiveCommand.CreateFromTask(async () =>
         {
+            if (!IsEditMode)
+                return;
+
             var newAction = new Action
             {
-                Name = $"Action_{Actions.Count:D2}",
+                Name = GenerateUniqueNodeName("Action", Actions.Select(a => a.Name)),
                 Label = $"新Action_{Actions.Count + 1}",
                 Keys = new List<Key>
                 {
@@ -586,22 +657,31 @@ public class Device : ViewModelBase
 
     [XmlIgnore]
     public ICommand ClearActionCommand =>
-        ReactiveCommand.Create(() =>
+        ReactiveCommand.CreateFromTask(async () =>
         {
+            if (!IsEditMode)
+                return;
+
+            if (Actions.Count == 0)
+                return;
+            if (!await ConfirmDeleteAsync($"确定要清空全部 {Actions.Count} 个 Action 节点吗？\n此操作无法撤销。"))
+                return;
             Actions.Clear();
             actionSource.Clear();
+            IORoot.Instance.Save();
         });
 
     [XmlIgnore]
     public ReactiveCommand<Action, Unit> DeleteActionCommand =>
-        ReactiveCommand.Create<Action>(action =>
+        ReactiveCommand.CreateFromTask<Action>(async action =>
         {
-            if (action != null)
-            {
-                Actions.Remove(action);
-                actionSource.Remove(action);
-                IORoot.Instance.Save();
-            }
+            if (action == null || !IsEditMode)
+                return;
+            if (!await ConfirmDeleteAsync($"确定要删除节点 \"{action.Name}\" 吗？\n此操作无法撤销。"))
+                return;
+            Actions.Remove(action);
+            actionSource.Remove(action);
+            IORoot.Instance.Save();
         });
 
     // 添加/清空 Axis 命令
@@ -609,9 +689,12 @@ public class Device : ViewModelBase
     public ICommand AddAxisCommand =>
         ReactiveCommand.CreateFromTask(async () =>
         {
+            if (!IsEditMode)
+                return;
+
             var newAxis = new Axis
             {
-                Name = $"Axis_{Axes.Count:D2}",
+                Name = GenerateUniqueNodeName("Axis", Axes.Select(a => a.Name)),
                 Label = $"新Axis_{Axes.Count + 1}",
                 Keys = new List<Key>
                 {
@@ -643,22 +726,31 @@ public class Device : ViewModelBase
 
     [XmlIgnore]
     public ICommand ClearAxisCommand =>
-        ReactiveCommand.Create(() =>
+        ReactiveCommand.CreateFromTask(async () =>
         {
+            if (!IsEditMode)
+                return;
+
+            if (Axes.Count == 0)
+                return;
+            if (!await ConfirmDeleteAsync($"确定要清空全部 {Axes.Count} 个 Axis 节点吗？\n此操作无法撤销。"))
+                return;
             Axes.Clear();
             axisSource.Clear();
+            IORoot.Instance.Save();
         });
 
     [XmlIgnore]
     public ReactiveCommand<Axis, Unit> DeleteAxisCommand =>
-        ReactiveCommand.Create<Axis>(axis =>
+        ReactiveCommand.CreateFromTask<Axis>(async axis =>
         {
-            if (axis != null)
-            {
-                Axes.Remove(axis);
-                axisSource.Remove(axis);
-                IORoot.Instance.Save();
-            }
+            if (axis == null || !IsEditMode)
+                return;
+            if (!await ConfirmDeleteAsync($"确定要删除节点 \"{axis.Name}\" 吗？\n此操作无法撤销。"))
+                return;
+            Axes.Remove(axis);
+            axisSource.Remove(axis);
+            IORoot.Instance.Save();
         });
 
     // 添加/清空 OAction 命令
@@ -666,9 +758,12 @@ public class Device : ViewModelBase
     public ICommand AddOActionCommand =>
         ReactiveCommand.CreateFromTask(async () =>
         {
+            if (!IsEditMode)
+                return;
+
             var newOAction = new OAction
             {
-                Name = $"OAction_{OActions.Count:D2}",
+                Name = GenerateUniqueNodeName("OAction", OActions.Select(a => a.Name)),
                 Label = $"新OAction_{OActions.Count + 1}",
                 Keys = new List<Key>
                 {
@@ -700,28 +795,68 @@ public class Device : ViewModelBase
 
     [XmlIgnore]
     public ICommand ClearOActionCommand =>
-        ReactiveCommand.Create(() =>
+        ReactiveCommand.CreateFromTask(async () =>
         {
+            if (!IsEditMode)
+                return;
+
+            if (OActions.Count == 0)
+                return;
+            if (!await ConfirmDeleteAsync($"确定要清空全部 {OActions.Count} 个 OAction 节点吗？\n此操作无法撤销。"))
+                return;
             OActions.Clear();
             oactionSource.Clear();
+            IORoot.Instance.Save();
         });
 
     [XmlIgnore]
     public ReactiveCommand<OAction, Unit> DeleteOActionCommand =>
-        ReactiveCommand.Create<OAction>(oaction =>
+        ReactiveCommand.CreateFromTask<OAction>(async oaction =>
         {
-            if (oaction != null)
-            {
-                OActions.Remove(oaction);
-                oactionSource.Remove(oaction);
-                IORoot.Instance.Save();
-            }
+            if (oaction == null || !IsEditMode)
+                return;
+            if (!await ConfirmDeleteAsync($"确定要删除节点 \"{oaction.Name}\" 吗？\n此操作无法撤销。"))
+                return;
+            OActions.Remove(oaction);
+            oactionSource.Remove(oaction);
+            IORoot.Instance.Save();
         });
+
+    // ── 节点编辑辅助 (P0-2 删除确认统一 / P1-1 命名唯一) ──
+
+    /// <summary>删除/清空确认 — 统一走 IDialogService (与主窗口 MsBox 一致, 可测试)。</summary>
+    private async System.Threading.Tasks.Task<bool> ConfirmDeleteAsync(string message)
+    {
+        var dialog = Services.ServiceLocator.TryResolve<Services.IDialogService>();
+        if (dialog != null)
+            return await dialog.ConfirmAsync("确认删除", message);
+        return true; // 无对话框服务 (如纯测试环境) 时放行
+    }
+
+    /// <summary>生成唯一节点名: "Prefix_00, Prefix_01..." 跳过已有名称 (与 Key 命名规则一致)。</summary>
+    private string GenerateUniqueNodeName(string prefix, IEnumerable<string?> existingNames)
+    {
+        var taken = new HashSet<string>(
+            existingNames.Where(n => !string.IsNullOrEmpty(n)),
+            StringComparer.OrdinalIgnoreCase
+        );
+        for (int i = 0; i < 1000; i++)
+        {
+            var candidate = $"{prefix}_{i:D2}";
+            if (!taken.Contains(candidate))
+                return candidate;
+        }
+        // 理论不可达 (上限 1000 个节点足够), 兜底时间戳
+        return $"{prefix}_{DateTime.Now:HHmmss}";
+    }
 
     [XmlIgnore]
     public ICommand EditDevicePropertiesCommand =>
         ReactiveCommand.CreateFromTask(async () =>
         {
+            if (!IsEditMode)
+                return;
+
             var window = new Views.DevicePropertiesWindow();
             window.SetDevice(this);
             // Get the main window from application lifetime
@@ -862,6 +997,9 @@ public class Device : ViewModelBase
 
         EditConfigCommand = ReactiveCommand.Create(() =>
         {
+            if (!IsEditMode)
+                return;
+
             var _configDir = Path.Combine(AppRoot, "ExternalLibraries/Config", DllName);
             var _configPath = new List<string> { "config.ini", "config.xml" }
                 .Select(_ => Path.Combine(_configDir, _))
@@ -874,6 +1012,8 @@ public class Device : ViewModelBase
 
         ToggleAllDOCommand = ReactiveCommand.Create(() =>
         {
+            if (!CanWriteOutputs || this.devcie == null)
+                return;
             AllOn = !AllOn;
             ToggleAllDOText = AllOn ? "全关" : "全开";
             Enumerable
@@ -883,7 +1023,7 @@ public class Device : ViewModelBase
                     IOToolkit.Key _oKey = $"OAxis_{_idx:D2}";
                     this.devcie.SetDO(_oKey, AllOn ? 1 : 0);
                 });
-        });
+        }, this.WhenAnyValue(x => x.CanWriteOutputs));
 
         // 初始化 DO 输出测试命令
         OpenDOTestCommand = ReactiveCommand.CreateFromTask(async () =>
@@ -905,7 +1045,7 @@ public class Device : ViewModelBase
             {
                 await window.ShowDialog(mainWindow);
             }
-        });
+        }, this.WhenAnyValue(x => x.CanWriteOutputs));
 
         // 初始化 OAction 输出测试命令
         OpenOActionTestCommand = ReactiveCommand.CreateFromTask(async () =>
@@ -927,7 +1067,7 @@ public class Device : ViewModelBase
             {
                 await window.ShowDialog(mainWindow);
             }
-        });
+        }, this.WhenAnyValue(x => x.CanWriteOutputs));
 
         this.WhenAnyValue(x => x.UserIOFullscreen)
             .Subscribe(_fullScreen =>
@@ -964,9 +1104,9 @@ public class Device : ViewModelBase
         }
         else
         {
-            Random random = new Random();
-            StandardWidth = new GridLength(1 + random.Next(1, 4) / 1000f, GridUnitType.Star);
-            CustomWidth = new GridLength(1 + random.Next(1, 4) / 1000f, GridUnitType.Star);
+            // 映射通道包含节点卡片与编辑操作，默认略宽于原始 I/O 区，避免单卡片时大面积空洞。
+            CustomWidth = new GridLength(1.1, GridUnitType.Star);
+            StandardWidth = new GridLength(1, GridUnitType.Star);
         }
     }
 
@@ -1763,9 +1903,12 @@ public class IONodeBase : ReactiveObject
             return true;
         });
 
-        // 添加Key命令（运行时也可用）
+        // 添加Key命令（仅编辑模式）
         AddKeyCommand = ReactiveCommand.Create(() =>
         {
+            if (!IsEditMode)
+                return;
+
             // 根据节点类型生成默认键名
             var prefix = this switch
             {
@@ -1791,10 +1934,10 @@ public class IONodeBase : ReactiveObject
             OnEditKey.OnNext(newKey);
         });
 
-        // 删除Key命令（运行时也可用）
+        // 删除Key命令（仅编辑模式）
         DeleteKeyCommand = ReactiveCommand.Create<Key>(key =>
         {
-            if (key != null)
+            if (key != null && IsEditMode)
             {
                 Keys.Remove(key);
                 KeyList.Remove(key);
@@ -1807,10 +1950,10 @@ public class IONodeBase : ReactiveObject
             }
         });
 
-        // 编辑Key命令（运行时也可用）
+        // 编辑Key命令（仅编辑模式）
         EditKeyCommand = ReactiveCommand.Create<Key>(key =>
         {
-            if (key != null)
+            if (key != null && IsEditMode)
             {
                 OnEditKey.OnNext(key);
             }
@@ -1819,6 +1962,9 @@ public class IONodeBase : ReactiveObject
         // 录制Key命令（仅编辑模式且为Action节点时可用）
         RecordKeyCommand = ReactiveCommand.Create(() =>
         {
+            if (!IsEditMode)
+                return;
+
             IsRecording = !IsRecording;
             this.RaisePropertyChanged(nameof(RecordingToolTip));
         });

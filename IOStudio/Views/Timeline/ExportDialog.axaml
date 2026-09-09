@@ -10,35 +10,44 @@
         WindowStartupLocation="CenterOwner"
         ShowInTaskbar="False">
 
+    <Window.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceInclude Source="avares://IOStudio/Assets/Themes/TimelineThemeResources.axaml"/>
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </Window.Resources>
+
     <Window.Styles>
         <Style Selector="TextBlock.label">
             <Setter Property="FontSize" Value="12"/>
-            <Setter Property="Foreground" Value="#374151"/>
+            <Setter Property="Foreground" Value="{DynamicResource TlTextSecondary}"/>
             <Setter Property="VerticalAlignment" Value="Center"/>
         </Style>
         <Style Selector="TextBlock.section">
             <Setter Property="FontSize" Value="13"/>
             <Setter Property="FontWeight" Value="SemiBold"/>
-            <Setter Property="Foreground" Value="#1f2937"/>
+            <Setter Property="Foreground" Value="{DynamicResource TlTextPrimary}"/>
             <Setter Property="Margin" Value="0,8,0,4"/>
         </Style>
     </Window.Styles>
 
-    <DockPanel Margin="20">
+    <DockPanel Margin="20" Background="{DynamicResource TlPanelBg}">
         <!-- 底部按钮 -->
         <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal"
                     HorizontalAlignment="Right" Spacing="8" Margin="0,16,0,0">
-            <Button Content="取消" Width="80" Click="OnCancel"/>
+            <Button Content="取消" Width="80" Click="OnCancel"
+                    Background="{DynamicResource TlToolbarBg}" Foreground="{DynamicResource TlTextSecondary}"/>
             <Button Content="导出" Width="80" Click="OnExport"
                     Classes="accent"
-                    Background="#3b82f6" Foreground="White"/>
+                    Background="{DynamicResource TlAccent}" Foreground="{DynamicResource TlAccentFg}"/>
         </StackPanel>
 
         <ScrollViewer>
             <StackPanel Spacing="6">
                 <!-- 标题 -->
                 <TextBlock Text="导出设置" FontSize="16" FontWeight="Bold"
-                           Foreground="#1f2937" Margin="0,0,0,8"/>
+                           Foreground="{DynamicResource TlTextPrimary}" Margin="0,0,0,8"/>
 
                 <!-- 导出格式 -->
                 <TextBlock Classes="section" Text="📄 导出格式"/>
@@ -51,9 +60,9 @@
 
                 <!-- 采样设置 (仅 CSV/CompactJson) -->
                 <Border Name="SampleSettingsPanel" IsVisible="False"
-                        Background="#f9fafb" CornerRadius="6" Padding="12" Margin="0,4">
+                        Background="{DynamicResource TlPropSectionBg}" CornerRadius="6" Padding="12" Margin="0,4">
                     <StackPanel Spacing="6">
-                        <TextBlock Classes="section" Text="🎯 采样设置"/>
+                        <TextBlock Classes="section" Text="采样设置"/>
                         <Grid ColumnDefinitions="100,*" RowDefinitions="Auto,Auto">
                             <TextBlock Classes="label" Text="采样率 (Hz):" Grid.Row="0"/>
                             <NumericUpDown Name="SampleRateInput" Grid.Row="0" Grid.Column="1"

@@ -40,6 +40,9 @@ namespace IOStudio.Models.Motion
         /// <summary>删除选中关键帧 (Delete / Backspace)</summary>
         Delete,
 
+        /// <summary>复制关键帧到播放头 (Ctrl+D)</summary>
+        DuplicateKeyframe,
+
         // ---- 播放控制 ----
 
         /// <summary>播放/暂停切换 (Space)</summary>
@@ -108,5 +111,13 @@ namespace IOStudio.Models.Motion
 
         /// <summary>重命名选中轨道 / 事件 / 标记 (F2) — UX-D1</summary>
         RenameSelected,
+
+        /// <summary>选择上一轨道 (↑)</summary>
+        SelectPreviousTrack,
+
+        /// <summary>选择下一轨道 (↓)</summary>
+        SelectNextTrack,
+
+        // ---- 视图操作 ----
     }
 }

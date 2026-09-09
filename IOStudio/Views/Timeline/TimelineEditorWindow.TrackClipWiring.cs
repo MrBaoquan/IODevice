@@ -27,6 +27,29 @@ namespace IOStudio.Views.Timeline
             base.OnLoaded(e);
             if (ViewModel != null)
             {
+                // 默认选中第一条轨道 (符合常规, 也作为曲线视图焦点轨)
+                Avalonia.Threading.Dispatcher.UIThread.Post(
+                    () =>
+                    {
+                        if (ViewModel.SelectedTrack == null && ViewModel.Tracks.Count > 0)
+                            ViewModel.SelectedTrack = ViewModel.Tracks[0];
+                    },
+                    Avalonia.Threading.DispatcherPriority.Loaded
+                );
+
+                // 轨道片段宽度 = 时间轴画布宽度 (布局完成后显式同步, 避免 ScrollViewer 测量时序导致的宽度 0)
+                var canvas = this.FindControl<Avalonia.Controls.Grid>("TimelineCanvas");
+                var itemsCtrl = this.FindControl<ItemsControl>("TrackItemsControl");
+                if (canvas != null && itemsCtrl != null)
+                {
+                    void SyncTrackWidth() => itemsCtrl.Width = Math.Max(1, canvas.Bounds.Width);
+                    canvas.SizeChanged += (_, _) => SyncTrackWidth();
+                    Avalonia.Threading.Dispatcher.UIThread.Post(
+                        SyncTrackWidth,
+                        Avalonia.Threading.DispatcherPriority.Loaded
+                    );
+                }
+
                 ViewModel.Tracks.CollectionChanged += (_, _) =>
                 {
                     Avalonia.Threading.Dispatcher.UIThread.Post(
@@ -62,6 +85,8 @@ namespace IOStudio.Views.Timeline
                 if (tcc.Tag is string s && s == "wired")
                     continue;
                 tcc.Tag = "wired";
+                tcc.SnapPointsProvider = () =>
+                    ViewModel?.IsSnapEnabled == true ? ViewModel.GetSnapPoints() : null;
 
                 tcc.AddKeyframeRequested += ms =>
                 {
@@ -104,7 +129,9 @@ namespace IOStudio.Views.Timeline
                             ViewModel.SelectKeyframe(trackVm, clipIdx, kfIdx);
                         else
                             ViewModel.ClearKeyframeSelection();
-                        // 不刷新检查器: 检查器只跟随播放头, 不跟随关键帧选中
+
+                        // Track/keyframe selection replaces the movie-level action context.
+                        RefreshPropertyPanel();
                     }
                 };
 
@@ -181,6 +208,102 @@ namespace IOStudio.Views.Timeline
                     ViewModel?.PasteKeyframes();
                     RefreshAllTrackControls();
                     SyncCurveEditorData();
+                    RefreshPropertyPanel();
+                };
+
+                tcc.DuplicateActionInstanceRequested += instanceId =>
+                {
+                    ViewModel?.DuplicateActionInstanceAtPlayhead(instanceId);
+                    RefreshAllTrackControls();
+                    SyncCurveEditorData();
+                };
+
+                tcc.MoveActionInstanceRequested += instanceId =>
+                {
+                    ViewModel?.MoveActionInstanceToPlayhead(instanceId);
+                    RefreshAllTrackControls();
+                    SyncCurveEditorData();
+                };
+
+                tcc.MoveActionInstanceToTimeRequested += (instanceId, targetMs) =>
+                {
+                    ViewModel?.MoveActionInstanceToTime(instanceId, targetMs);
+                    RefreshAllTrackControls();
+                    SyncCurveEditorData();
+                    RefreshPropertyPanel();
+                };
+
+                tcc.ActionInstanceResizeRequested += (instanceId, dStart, dEnd) =>
+                {
+                    ViewModel?.ResizeActionInstance(instanceId, dStart, dEnd);
+                    RefreshAllTrackControls();
+                    SyncCurveEditorData();
+                    RefreshPropertyPanel();
+                };
+
+                tcc.ZoomRequested += (newPpm, newScroll) =>
+                {
+                    if (ViewModel == null)
+                        return;
+                    ViewModel.PixelsPerMs = newPpm;
+                    ViewModel.ScrollOffsetX = newScroll;
+                };
+
+                tcc.PanRequested += newScroll =>
+                {
+                    if (ViewModel == null)
+                        return;
+                    ViewModel.ScrollOffsetX = Math.Max(0, newScroll);
+                };
+
+                tcc.PresetDroppedAtTimeRequested += async (presetId, targetMs, targetTrackId) =>
+                {
+                    if (ViewModel == null)
+                        return;
+                    await ViewModel.PlacePresetAtTime(presetId, targetMs, targetTrackId);
+                    RefreshAllTrackControls();
+                    SyncCurveEditorData();
+                    RefreshPropertyPanel();
+                };
+
+                tcc.SaveActionInstanceAsPresetRequested += instanceId =>
+                    ViewModel?.SaveActionInstanceAsPreset(instanceId);
+
+                tcc.DeleteActionInstanceRequested += instanceId =>
+                {
+                    ViewModel?.DeleteActionInstance(instanceId);
+                    RefreshAllTrackControls();
+                    SyncCurveEditorData();
+                    RefreshPropertyPanel();
+                };
+
+                tcc.ActionInstanceSelected += instanceId =>
+                {
+                    var trackVm = tcc.DataContext as TrackViewModel;
+                    if (trackVm == null || ViewModel == null)
+                        return;
+
+                    foreach (var otherTcc in this.GetVisualDescendants().OfType<TrackClipControl>())
+                        otherTcc.ClearSelection();
+
+                    int clipIdx = trackVm.Clips
+                        .Select((clip, index) => (clip, index))
+                        .Where(x => x.clip.Clip.ActionInstanceId == instanceId)
+                        .Select(x => x.index)
+                        .DefaultIfEmpty(-1)
+                        .First();
+                    if (clipIdx < 0)
+                        return;
+
+                    ViewModel.SelectActionInstance(trackVm, clipIdx, instanceId);
+                    foreach (var track in ViewModel.Tracks)
+                        track.IsSelected = track == trackVm;
+                    foreach (var otherTcc in this.GetVisualDescendants().OfType<TrackClipControl>())
+                    {
+                        otherTcc.IsTrackSelected = otherTcc.DataContext == trackVm;
+                        otherTcc.InvalidateVisual();
+                    }
+                    SyncSelectedTrackToCurveEditor(trackVm);
                     RefreshPropertyPanel();
                 };
 
@@ -408,6 +531,29 @@ namespace IOStudio.Views.Timeline
 
             var kfVm = ViewModel.KeyframePropertyVm;
 
+            if (!string.IsNullOrWhiteSpace(ViewModel.SelectedActionInstanceId))
+            {
+                var instance = ViewModel.Timeline?.ActionInstances?.FirstOrDefault(
+                    x => x.Id == ViewModel.SelectedActionInstanceId
+                );
+                if (instance != null)
+                {
+                    var preset = ViewModel.Timeline?.EmbeddedPresets?.FirstOrDefault(
+                        x =>
+                            x.Id == instance.DefinitionId
+                            && x.Revision == instance.DefinitionRevision
+                    );
+                    bool actionLocked = ViewModel.Tracks.Any(
+                        track =>
+                            track.IsLocked
+                            && track.Clips.Any(clip => clip.Clip.ActionInstanceId == instance.Id)
+                    );
+                    kfVm.ShowActionInstance(instance, preset, actionLocked);
+                    return;
+                }
+                ViewModel.SelectedActionInstanceId = null;
+            }
+
             // 多选模式: 显示多选摘要 + 统计信息
             if (ViewModel.IsMultiSelectMode)
             {
@@ -523,7 +669,8 @@ namespace IOStudio.Views.Timeline
                 kfIdx,
                 trackColor,
                 totalKfCount,
-                intervalInterp
+                intervalInterp,
+                track
             );
             kfVm.SetPlayheadEvent(playheadEvent);
         }

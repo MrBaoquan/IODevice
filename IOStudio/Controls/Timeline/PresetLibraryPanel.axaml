@@ -1,0 +1,339 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="using:IOStudio.ViewModels.Timeline"
+             xmlns:iconPacks="https://github.com/MahApps/IconPacks.Avalonia"
+             mc:Ignorable="d" d:DesignWidth="320" d:DesignHeight="600"
+             x:Class="IOStudio.Controls.Timeline.PresetLibraryPanel"
+             x:DataType="vm:PresetLibraryPanelViewModel">
+
+    <UserControl.Styles>
+        <Style Selector="Button.preset-btn">
+            <Setter Property="Focusable" Value="False"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Padding" Value="8,4"/>
+            <Setter Property="CornerRadius" Value="2"/>
+            <Setter Property="FontSize" Value="12"/>
+        </Style>
+        <Style Selector="Button.preset-btn:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="{DynamicResource TlBtnHover}"/>
+        </Style>
+
+        <!-- Compact asset-browser rows -->
+        <Style Selector="Button.preset-card">
+            <Setter Property="CornerRadius" Value="0"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderBrush" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="3,0,0,1"/>
+            <Setter Property="Padding" Value="10,8"/>
+            <Setter Property="Margin" Value="0"/>
+            <Setter Property="MinHeight" Value="78"/>
+            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+            <Setter Property="HorizontalAlignment" Value="Stretch"/>
+        </Style>
+        <Style Selector="Button.preset-card:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="BorderBrush" Value="{DynamicResource TlBorderBrush}"/>
+            <Setter Property="Background" Value="{DynamicResource TlHoverBg}"/>
+        </Style>
+        <Style Selector="Button.preset-card.selected">
+            <Setter Property="BorderBrush" Value="{DynamicResource TlAccent}"/>
+            <Setter Property="Background" Value="{DynamicResource TlAccentSoftBg}"/>
+            <Setter Property="BorderThickness" Value="3,0,0,1"/>
+        </Style>
+		<Style Selector="Button.preset-card:focus-visible">
+			<Setter Property="BorderBrush" Value="{DynamicResource TlAccent}"/>
+			<Setter Property="BorderThickness" Value="3,0,0,1"/>
+		</Style>
+		<Style Selector="Button.preset-apply:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+			<Setter Property="Background" Value="{DynamicResource TlAccentHover}"/>
+		</Style>
+    </UserControl.Styles>
+
+    <Grid RowDefinitions="Auto,*,Auto">
+        <!-- ═══════ 顶部: 搜索 + 分类 ═══════ -->
+        <Border Grid.Row="0" Padding="10,8" Background="{DynamicResource TlPanelBg}"
+                BorderBrush="{DynamicResource TlBorderBrush}" BorderThickness="0,0,0,1">
+            <StackPanel Spacing="8">
+                <!-- 标题 + 关闭 -->
+                <Grid ColumnDefinitions="*,Auto">
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                        <iconPacks:PackIconIonicons Kind="BookmarkiOS" Width="14" Height="14"
+                                                    Foreground="{DynamicResource TlAccent}"/>
+                        <TextBlock Text="预设库" FontWeight="SemiBold" FontSize="13"
+                                   Foreground="{DynamicResource TlTextSecondary}" VerticalAlignment="Center"/>
+                        <TextBlock Text="{Binding FilteredPresetCountDisplay}" FontSize="10"
+                                   Foreground="{DynamicResource TlTextMuted}" VerticalAlignment="Center"/>
+                    </StackPanel>
+                    <Button Grid.Column="1" Classes="preset-btn" Padding="4,2" Cursor="Hand"
+                            ToolTip.Tip="关闭面板"
+                            Click="OnClosePanelClick">
+                        <iconPacks:PackIconIonicons Kind="CloseiOS" Width="13" Height="13"
+                                                    Foreground="{DynamicResource TlTextMuted}"/>
+                    </Button>
+                </Grid>
+
+                <!-- 搜索 -->
+                <Grid>
+                    <TextBox Text="{Binding SearchText, Mode=TwoWay}" Watermark="搜索预设..."
+                             AutomationProperties.Name="搜索预设"
+                             FontSize="12" Padding="28,5,6,5"/>
+                    <iconPacks:PackIconIonicons Kind="SearchiOS" Width="13" Height="13"
+                                                Margin="8,0,0,0" HorizontalAlignment="Left"
+                                                VerticalAlignment="Center" IsHitTestVisible="False"
+                                                Foreground="{DynamicResource TlTextMuted}"/>
+                </Grid>
+                <!-- 分类选择 -->
+                <Grid>
+                    <ComboBox ItemsSource="{Binding Categories}"
+                              SelectedItem="{Binding SelectedCategory, Mode=TwoWay}"
+                              AutomationProperties.Name="预设分类"
+                              FontSize="12" Padding="28,4,6,4"
+                              HorizontalAlignment="Stretch"/>
+                    <iconPacks:PackIconIonicons Kind="FunneliOS" Width="13" Height="13"
+                                                Margin="8,0,0,0" HorizontalAlignment="Left"
+                                                VerticalAlignment="Center" IsHitTestVisible="False"
+                                                Foreground="{DynamicResource TlTextMuted}"/>
+                </Grid>
+            </StackPanel>
+        </Border>
+
+        <!-- ═══════ 中部: 预设列表 ═══════ -->
+        <Grid Grid.Row="1">
+            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                <ItemsControl ItemsSource="{Binding FilteredPresets}">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <Button Classes="preset-card" Cursor="Hand"
+                                Tag="{Binding}" ToolTip.Tip="单击选中 · 双击应用预设到时间轴 · 拖拽放置到轨道 · 右键管理"
+                                AutomationProperties.Name="{Binding Name}"
+                                Click="OnPresetCardClick"
+                                DoubleTapped="OnPresetCardDoubleTapped">
+                            <Button.ContextMenu>
+                                <ContextMenu>
+                                    <MenuItem Header="收藏 / 取消收藏" Click="OnToggleFavoriteClick"/>
+                                    <MenuItem Header="重命名" Click="OnRenamePresetClick"
+                                              IsEnabled="{Binding !IsBuiltIn}"
+                                              ToolTip.Tip="内置预设不可重命名"/>
+                                    <MenuItem Header="修改分类" Click="OnChangeCategoryClick"
+                                              IsEnabled="{Binding !IsBuiltIn}"
+                                              ToolTip.Tip="内置预设不可修改分类"/>
+                                    <MenuItem Header="导出 JSON" Click="OnExportPresetClick"/>
+                                    <Separator/>
+                                    <MenuItem Header="删除预设" Click="OnDeletePresetClick"
+                                              IsEnabled="{Binding !IsBuiltIn}"
+                                              ToolTip.Tip="内置预设不可删除"/>
+                                </ContextMenu>
+                            </Button.ContextMenu>
+                            <StackPanel Spacing="5">
+                                <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="6">
+                                    <iconPacks:PackIconIonicons Kind="StariOS" Width="12" Height="12"
+                                                                 VerticalAlignment="Center" Foreground="#d89b32"
+                                                                 IsVisible="{Binding IsFavorite}"/>
+                                    <TextBlock Grid.Column="1" Text="{Binding Name}" FontWeight="SemiBold" FontSize="13"
+                                               Foreground="{DynamicResource TlTextSecondary}"
+                                               TextTrimming="CharacterEllipsis"
+                                               VerticalAlignment="Center"/>
+                                    <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+                                        <Border Background="{DynamicResource TlRoleBadgeBg}"
+                                                CornerRadius="2" Padding="5,1" VerticalAlignment="Center">
+                                            <TextBlock Text="{Binding Category}" FontSize="10"
+                                                       Foreground="{DynamicResource TlRoleBadgeText}"/>
+                                        </Border>
+                                        <Border Background="{DynamicResource TlBadgeGroupBg}" CornerRadius="2" Padding="5,1"
+                                                IsVisible="{Binding IsBuiltIn}">
+                                            <TextBlock Text="内置" FontSize="9" Foreground="{DynamicResource TlTextMuted}"/>
+                                        </Border>
+                                    </StackPanel>
+                                </Grid>
+                                <TextBlock Text="{Binding Description, TargetNullValue=无描述}" FontSize="10"
+                                           Foreground="{DynamicResource TlTextMuted}"
+                                           TextWrapping="Wrap" MaxLines="2"/>
+                                <StackPanel Orientation="Horizontal" Spacing="5">
+                                    <iconPacks:PackIconIonicons Kind="KeyiOS" Width="11" Height="11"
+                                                                 Foreground="{DynamicResource TlTextMuted}" VerticalAlignment="Center"/>
+                                    <TextBlock FontSize="10" Foreground="{DynamicResource TlTextMuted}">
+                                        <Run Text="{Binding KeyframeCount}"/>
+                                        <Run Text=" 关键帧"/>
+                                    </TextBlock>
+                                    <TextBlock FontSize="10" Foreground="{DynamicResource TlTextMuted}"
+                                               Text="·"/>
+                                    <iconPacks:PackIconIonicons Kind="TimeiOS" Width="11" Height="11"
+                                                                 Foreground="{DynamicResource TlTextMuted}" VerticalAlignment="Center"/>
+                                    <TextBlock FontSize="10" Foreground="{DynamicResource TlTextMuted}">
+                                        <Run Text="{Binding DurationDisplay}"/>
+                                    </TextBlock>
+                                </StackPanel>
+                            </StackPanel>
+                        </Button>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </ScrollViewer>
+            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="8"
+                        IsVisible="{Binding HasNoFilteredPresets}">
+                <iconPacks:PackIconIonicons Kind="BookmarkiOS" Width="22" Height="22"
+                                            HorizontalAlignment="Center"
+                                            Foreground="{DynamicResource TlTextMuted}" Opacity="0.65"/>
+                <TextBlock Text="没有匹配的预设" FontSize="12"
+                           Foreground="{DynamicResource TlTextSecondary}"
+                           HorizontalAlignment="Center"/>
+                <TextBlock Text="调整搜索或分类，或保存当前动作作为新预设。"
+                           FontSize="10" Foreground="{DynamicResource TlTextMuted}"
+                           HorizontalAlignment="Center" TextWrapping="Wrap"
+                           MaxWidth="220" TextAlignment="Center"/>
+                <Button Classes="preset-btn" Cursor="Hand"
+                        Command="{Binding SaveAsPresetCommand}"
+                        HorizontalAlignment="Center">
+                    <StackPanel Orientation="Horizontal" Spacing="4">
+                        <iconPacks:PackIconIonicons Kind="SaveiOS" Width="12" Height="12"/>
+                        <TextBlock Text="保存当前动作" FontSize="11"/>
+                    </StackPanel>
+                </Button>
+            </StackPanel>
+        </Grid>
+
+        <!-- ═══════ 底部: 操作按钮 ═══════ -->
+        <Border Grid.Row="2" Padding="10,8" Background="{DynamicResource TlPanelBg}"
+                BorderBrush="{DynamicResource TlBorderBrush}" BorderThickness="0,1,0,0">
+            <StackPanel Spacing="8">
+				<Border Background="{DynamicResource TlSurfaceSubtle}" BorderBrush="{DynamicResource TlBorderLight}"
+						BorderThickness="1" CornerRadius="3" Padding="8,6">
+					<StackPanel Spacing="3">
+						<TextBlock Text="{Binding OperationStatus}" FontSize="10"
+								   IsVisible="{Binding HasOperationStatus}"
+								   Foreground="{DynamicResource TlAccent}" TextWrapping="Wrap"/>
+						<TextBlock Text="{Binding SelectedPresetInfo}" FontSize="11"
+								   TextTrimming="CharacterEllipsis"
+								   Foreground="{DynamicResource TlTextSecondary}"/>
+						<Grid ColumnDefinitions="Auto,*" ColumnSpacing="6"
+							  IsVisible="{Binding HasSelectedPreset}">
+							<TextBlock Text="目标轨道" FontSize="10"
+									   Foreground="{DynamicResource TlTextMuted}"/>
+							<TextBlock Grid.Column="1" Text="{Binding TargetTrackDisplay}"
+									   FontSize="10" TextTrimming="CharacterEllipsis"
+									   Foreground="{DynamicResource TlTextSecondary}"/>
+						</Grid>
+					</StackPanel>
+				</Border>
+                <Grid RowDefinitions="Auto,Auto" RowSpacing="6">
+                    <Grid Grid.Row="0" ColumnDefinitions="*,*" ColumnSpacing="6">
+                    <Button Grid.Column="0" Classes="preset-btn" Cursor="Hand"
+                            HorizontalAlignment="Stretch"
+                            ToolTip.Tip="将时间线中当前动作保存到用户预设库"
+                            Command="{Binding SaveAsPresetCommand}">
+                        <StackPanel Orientation="Horizontal" Spacing="4">
+                            <iconPacks:PackIconIonicons Kind="SaveiOS" Width="12" Height="12"/>
+                            <TextBlock Text="保存当前动作" FontSize="12"/>
+                        </StackPanel>
+                    </Button>
+                    <Button Grid.Column="1" Classes="preset-btn" Cursor="Hand"
+                            HorizontalAlignment="Stretch"
+                            ToolTip.Tip="编辑选中预设 / 时间轴当前动作的关键帧曲线"
+                            Command="{Binding EditPresetCommand}"
+                            IsEnabled="{Binding HasSelectedPreset}">
+                        <StackPanel Orientation="Horizontal" Spacing="4">
+                            <iconPacks:PackIconIonicons Kind="CreateiOS" Width="12" Height="12"/>
+                            <TextBlock Text="编辑曲线" FontSize="12"/>
+                        </StackPanel>
+                    </Button>
+                    </Grid>
+                    <Button Grid.Row="1" Classes="preset-btn preset-apply" Cursor="Hand"
+                            HorizontalAlignment="Stretch" MinHeight="30"
+                            Background="{DynamicResource TlAccent}" Foreground="{DynamicResource TlAccentFg}"
+                            FontWeight="SemiBold"
+                            Command="{Binding ApplyPresetCommand}"
+                            IsEnabled="{Binding CanConfirmApply}">
+                        <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+                            <iconPacks:PackIconIonicons Kind="CheckmarkiOS" Width="12" Height="12"/>
+                            <TextBlock Text="应用预设" FontSize="12"/>
+                        </StackPanel>
+                    </Button>
+                </Grid>
+            </StackPanel>
+        </Border>
+
+        <!-- ═══════ 参数对话框浮层 ═══════ -->
+        <Panel Grid.Row="0" Grid.RowSpan="3" Panel.ZIndex="10"
+               IsVisible="{Binding ShowParameterDialog}">
+            <Border Background="#99000000" PointerPressed="OnParameterDialogBackdropPressed"/>
+            <Border HorizontalAlignment="Stretch" VerticalAlignment="Center"
+                    Background="{DynamicResource TlPanelBg}" CornerRadius="2"
+                    BorderBrush="{DynamicResource TlBorderBrush}" BorderThickness="1"
+                    Margin="12,0" Padding="14,12">
+                <StackPanel Spacing="8">
+                    <Grid ColumnDefinitions="*,Auto">
+                        <TextBlock Text="应用预设到时间轴" FontWeight="SemiBold" FontSize="13"
+                                   Foreground="{DynamicResource TlTextSecondary}"/>
+                        <Button Grid.Column="1" Classes="preset-btn" Padding="4,2"
+                                ToolTip.Tip="关闭" Click="OnCloseParameterDialogClick">
+                            <iconPacks:PackIconIonicons Kind="CloseiOS" Width="13" Height="13"/>
+                        </Button>
+                    </Grid>
+                    <TextBlock Text="将在播放头处插入动作实例；放置后可选中动作并在「编辑曲线」中修改关键帧。"
+                               FontSize="10" TextWrapping="Wrap"
+                               Foreground="{DynamicResource TlTextMuted}"/>
+                    <TextBlock Text="{Binding SelectedPresetInfo}" FontSize="11"
+                               Foreground="{DynamicResource TlTextMuted}"/>
+
+                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+                        <TextBlock Text="目标轨道" FontSize="11"
+                                   Foreground="{DynamicResource TlTextMuted}"/>
+                        <TextBlock Grid.Column="1" Text="{Binding TargetTrackDisplay}"
+                                   FontSize="11" TextTrimming="CharacterEllipsis"
+                                   Foreground="{DynamicResource TlTextSecondary}"/>
+                    </Grid>
+
+                    <!-- 强度 -->
+                    <Grid RowDefinitions="Auto,Auto" RowSpacing="2">
+                        <TextBlock Grid.Row="0" Text="强度 (Intensity)" FontSize="11"
+                                   Foreground="{DynamicResource TlTextSecondary}"/>
+                        <Grid Grid.Row="1" ColumnDefinitions="*,Auto">
+                            <Slider Minimum="0.2" Maximum="1.2" TickFrequency="0.1"
+                                    Value="{Binding ApplyIntensity, Mode=TwoWay}"
+                                    IsSnapToTickEnabled="False" VerticalAlignment="Center"/>
+                            <TextBlock Grid.Column="1" Text="{Binding ApplyIntensity, StringFormat='{}{0:F2}'}"
+                                       FontSize="11" FontFamily="Consolas, monospace"
+                                       Foreground="{DynamicResource TlAccent}" Margin="8,0,0,0" VerticalAlignment="Center"/>
+                        </Grid>
+                    </Grid>
+
+                    <!-- 速度 -->
+                    <Grid RowDefinitions="Auto,Auto" RowSpacing="2">
+                        <TextBlock Grid.Row="0" Text="速度 (Speed)" FontSize="11"
+                                   Foreground="{DynamicResource TlTextSecondary}"/>
+                        <Grid Grid.Row="1" ColumnDefinitions="*,Auto">
+                            <Slider Minimum="0.5" Maximum="2.0" TickFrequency="0.1"
+                                    Value="{Binding ApplySpeed, Mode=TwoWay}"
+                                    VerticalAlignment="Center"/>
+                            <TextBlock Grid.Column="1" Text="{Binding ApplySpeed, StringFormat='{}{0:F2}x'}"
+                                       FontSize="11" FontFamily="Consolas, monospace"
+                                       Foreground="{DynamicResource TlAccent}" Margin="8,0,0,0" VerticalAlignment="Center"/>
+                        </Grid>
+                    </Grid>
+
+                    <!-- 时长 -->
+                    <Grid RowDefinitions="Auto,Auto" RowSpacing="2">
+                        <TextBlock Grid.Row="0" Text="时长 (毫秒, 0=预设基准)" FontSize="11"
+                                   Foreground="{DynamicResource TlTextSecondary}"/>
+                        <TextBox Grid.Row="1" Text="{Binding ApplyDurationMs, Mode=TwoWay}"
+                                 FontSize="11" Padding="6,3" FontFamily="Consolas, monospace"/>
+                    </Grid>
+
+                    <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8" Margin="0,4,0,0">
+                        <Button Grid.Column="1" Classes="preset-btn" Cursor="Hand"
+                                Command="{Binding CancelApplyCommand}">
+                            <TextBlock Text="取消" FontSize="12"/>
+                        </Button>
+                        <Button Grid.Column="2" Classes="preset-btn" Cursor="Hand"
+                                Background="{DynamicResource TlAccent}" Foreground="{DynamicResource TlAccentFg}"
+                                Command="{Binding ConfirmApplyCommand}"
+                                IsEnabled="{Binding CanConfirmApply}">
+                            <TextBlock Text="应用" FontSize="12"/>
+                        </Button>
+                    </Grid>
+                </StackPanel>
+            </Border>
+        </Panel>
+    </Grid>
+</UserControl>

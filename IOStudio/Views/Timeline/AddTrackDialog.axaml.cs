@@ -61,5 +61,17 @@ namespace IOStudio.Views.Timeline
                 ViewModel.SelectedColor = color;
             }
         }
+
+        /// <summary>用户点击"在时间轴编辑待机…" — 关闭对话框并标记需要跳转。</summary>
+        public bool RequestEditIdleInTimeline { get; private set; }
+
+        private void OnEditIdleInTimelineClick(
+            object? sender,
+            Avalonia.Interactivity.RoutedEventArgs e
+        )
+        {
+            RequestEditIdleInTimeline = true;
+            Close();
+        }
     }
 }

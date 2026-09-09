@@ -14,7 +14,7 @@ namespace IOStudio.ViewModels.Timeline
     /// <summary>
     /// 检查器面板 ViewModel — 始终跟随播放头时间 + 选中轨道显示属性。
     /// DaVinci Resolve Inspector 风格: 面板内容只与播放头位置有关, 不与关键帧选中状态绑定。
-    /// 支持四种显示模式: None / TrackInspector / MultiSelect / StandaloneEvent。
+    /// 支持轨道、动作实例、多选关键帧与独立事件等检查器模式。
     /// </summary>
     public class KeyframePropertyViewModel : ViewModelBase
     {
@@ -26,6 +26,9 @@ namespace IOStudio.ViewModels.Timeline
 
             /// <summary>轨道检查器: 显示播放头位置的插值值/插值类型</summary>
             TrackInspector,
+
+            /// <summary>跨轨动作实例摘要</summary>
+            ActionInstance,
 
             /// <summary>多选关键帧: 显示批量操作</summary>
             MultiSelect,
@@ -66,6 +69,12 @@ namespace IOStudio.ViewModels.Timeline
         private string _eventDataType = "string";
         private string _eventTimeText = "";
         private string _eventDataError = "";
+        private string _actionName = "";
+        private string _actionCategory = "";
+        private string _actionTimeRangeText = "";
+        private string _actionParametersText = "";
+        private string _actionBindingText = "";
+        private bool _actionEditLocked;
 
         // ── 多选统计 ──
         private int _multiSelectCount;
@@ -85,6 +94,7 @@ namespace IOStudio.ViewModels.Timeline
 
         public bool HasSelection => _mode != DisplayMode.None;
         public bool IsTrackInspector => _mode == DisplayMode.TrackInspector;
+        public bool IsActionInstance => _mode == DisplayMode.ActionInstance;
         public bool IsMultiSelect => _mode == DisplayMode.MultiSelect;
         public bool IsStandaloneEvent => _mode == DisplayMode.StandaloneEvent;
         public bool IsFloatMode => _valueType == "float" && _mode == DisplayMode.TrackInspector;
@@ -94,6 +104,43 @@ namespace IOStudio.ViewModels.Timeline
         public bool ShowEventBinding => _mode == DisplayMode.StandaloneEvent;
         public bool ShowValueArea =>
             _mode == DisplayMode.TrackInspector || _mode == DisplayMode.MultiSelect;
+
+        public string ActionName
+        {
+            get => _actionName;
+            private set => this.RaiseAndSetIfChanged(ref _actionName, value);
+        }
+
+        public string ActionCategory
+        {
+            get => _actionCategory;
+            private set => this.RaiseAndSetIfChanged(ref _actionCategory, value);
+        }
+
+        public string ActionTimeRangeText
+        {
+            get => _actionTimeRangeText;
+            private set => this.RaiseAndSetIfChanged(ref _actionTimeRangeText, value);
+        }
+
+        public string ActionParametersText
+        {
+            get => _actionParametersText;
+            private set => this.RaiseAndSetIfChanged(ref _actionParametersText, value);
+        }
+
+        public string ActionBindingText
+        {
+            get => _actionBindingText;
+            private set => this.RaiseAndSetIfChanged(ref _actionBindingText, value);
+        }
+
+        /// <summary>当前动作是否包含锁定轨道；锁定时动作级写操作在检查器中禁用。</summary>
+        public bool ActionEditLocked
+        {
+            get => _actionEditLocked;
+            private set => this.RaiseAndSetIfChanged(ref _actionEditLocked, value);
+        }
 
         /// <summary>值是否可编辑: 在关键帧上 或 AutoKey 开启</summary>
         public bool IsValueEditable =>
@@ -552,7 +599,8 @@ namespace IOStudio.ViewModels.Timeline
             int kfIdx = -1,
             string trackColor = "#4FC3F7",
             int totalKfCount = 0,
-            string intervalInterpolation = ""
+            string intervalInterpolation = "",
+            TrackViewModel? trackVm = null
         )
         {
             _isSyncing = true;
@@ -581,8 +629,36 @@ namespace IOStudio.ViewModels.Timeline
                 : (totalKfCount > 0 ? $"共 {totalKfCount} KF" : "无关键帧");
             EventBadge = "";
             EventNameDuplicate = false;
+            TrackVm = trackVm;
             RaiseModeProperties();
         }
+
+        private TrackViewModel? _trackVm;
+
+        /// <summary>当前检查器对应的轨道 (用于待机循环等轨道级操作)。</summary>
+        public TrackViewModel? TrackVm
+        {
+            get => _trackVm;
+            private set
+            {
+                this.RaiseAndSetIfChanged(ref _trackVm, value);
+                this.RaisePropertyChanged(nameof(HasIdleLoop));
+                this.RaisePropertyChanged(nameof(IdleStatusText));
+            }
+        }
+
+        /// <summary>当前轨道是否已启用待机循环。</summary>
+        public bool HasIdleLoop => TrackVm?.IdleLoop is { Enabled: true };
+
+        /// <summary>待机循环状态文本。</summary>
+        public string IdleStatusText =>
+            TrackVm?.IdleLoop is { } idle
+                ? (
+                    idle.Enabled
+                        ? $"待机已启用 · 周期 {idle.PeriodMs / 1000.0:F1}s · {idle.Keyframes?.Count ?? 0} 关键帧"
+                        : "待机已停用"
+                )
+                : "未配置待机循环";
 
         /// <summary>显示多选模式摘要。</summary>
         public void ShowMultiSelection(
@@ -609,6 +685,29 @@ namespace IOStudio.ViewModels.Timeline
             RaiseModeProperties();
         }
 
+        /// <summary>显示一个跨轨动作实例的整体摘要。</summary>
+        public void ShowActionInstance(
+            ActionInstance instance,
+            EffectPreset? preset,
+            bool actionEditLocked = false
+        )
+        {
+            SelectionVersion++;
+            DisplayedEvent = null;
+            Mode = DisplayMode.ActionInstance;
+            PanelTitle = "动作";
+            ActionName = string.IsNullOrWhiteSpace(instance.Name) ? "未命名动作" : instance.Name;
+            ActionCategory = preset?.Category ?? "项目动作";
+            ActionTimeRangeText =
+                $"{FormatTimeMs(instance.StartMs)} - {FormatTimeMs(instance.StartMs + instance.DurationMs)}";
+            ActionParametersText = $"强度 {instance.Intensity:F2}   速度 {instance.PlaybackRate:F2}x";
+            int channelCount = instance.RoleTrackIds?.Count ?? 0;
+            ActionBindingText = $"{channelCount} 通道   修订 {instance.DefinitionRevision}";
+            IndexLabel = $"{instance.DurationMs / 1000.0:F1}s";
+            ActionEditLocked = actionEditLocked;
+            RaiseModeProperties();
+        }
+
         /// <summary>显示独立事件属性。</summary>
         public void ShowEvent(TimelineEvent evt)
         {
@@ -623,6 +722,7 @@ namespace IOStudio.ViewModels.Timeline
             PanelTitle = "事件属性";
             IndexLabel = "独立事件";
             EventBadge = "事件";
+            ActionEditLocked = false;
             EventNameDuplicate = false;
             RaiseModeProperties();
         }
@@ -639,6 +739,7 @@ namespace IOStudio.ViewModels.Timeline
             TrackColor = "#4FC3F7";
             TotalKfCount = 0;
             IntervalInterpolation = "";
+            ActionEditLocked = false;
             EventNameDuplicate = false;
             RaiseModeProperties();
         }
@@ -777,6 +878,7 @@ namespace IOStudio.ViewModels.Timeline
         {
             this.RaisePropertyChanged(nameof(HasSelection));
             this.RaisePropertyChanged(nameof(IsTrackInspector));
+            this.RaisePropertyChanged(nameof(IsActionInstance));
             this.RaisePropertyChanged(nameof(IsMultiSelect));
             this.RaisePropertyChanged(nameof(IsStandaloneEvent));
             this.RaisePropertyChanged(nameof(IsFloatMode));

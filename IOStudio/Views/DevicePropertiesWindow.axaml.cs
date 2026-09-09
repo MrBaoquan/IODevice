@@ -21,6 +21,7 @@ namespace IOStudio.Views
         public bool IsConfirmed { get; private set; }
 
         private Device? _device;
+        private Device? _sourceDevice;
         private Border? _externalDeviceConfigSection;
         private TextBlock? _dllNameText;
         private DeviceConfigPanel? _deviceConfigPanel;
@@ -177,17 +178,28 @@ namespace IOStudio.Views
 
         public void SetDevice(Device device)
         {
-            _device = device;
-            DataContext = device;
+            _sourceDevice = device;
+            if (_restartDeviceButton != null)
+                _restartDeviceButton.IsVisible = IORoot.Instance.Devices.Contains(device);
+            _device = new Device
+            {
+                Name = device.Name,
+                Type = device.Type,
+                DllName = device.DllName,
+                Index = device.Index,
+                Properties = new Properties()
+            };
+            _device.Properties.CopyFrom(device.Properties);
+            DataContext = _device;
             if (device != null)
             {
-                Title = $"设备配置 - {device.Name}";
+                Title = $"设备配置 - {_device.Name}";
 
                 // 设置 DllNameComboBox 的选中项
                 ExternalDeviceInfo? deviceInfo = null;
-                if (_dllNameComboBox != null && !string.IsNullOrEmpty(device.DllName))
+                if (_dllNameComboBox != null && !string.IsNullOrEmpty(_device.DllName))
                 {
-                    deviceInfo = ExternalDeviceService.Instance.GetDeviceInfo(device.DllName);
+                    deviceInfo = ExternalDeviceService.Instance.GetDeviceInfo(_device.DllName);
                     if (deviceInfo != null)
                     {
                         // 遍历找到匹配的 ComboBoxItem
@@ -215,9 +227,9 @@ namespace IOStudio.Views
                 UpdateExternalSectionsVisibility();
 
                 // 如果是 External 类型且有 DllName，加载配置面板
-                if (device.IsExternalType && !string.IsNullOrEmpty(device.DllName))
+                if (_device.IsExternalType && !string.IsNullOrEmpty(_device.DllName))
                 {
-                    ShowExternalDeviceConfig(device.DllName, device.Index);
+                    ShowExternalDeviceConfig(_device.DllName, _device.Index);
                 }
                 else
                 {
@@ -481,7 +493,7 @@ namespace IOStudio.Views
                     var device = DataContext as Device;
                     var originalKeyName = key.Name;
                     var dialog = new PropertyKeyEditDialog();
-                    dialog.SetKey(key, device?.Name);
+                    dialog.SetKey(key, null);
                     await dialog.ShowDialog(this);
                     if (dialog.IsConfirmed)
                     {
@@ -498,9 +510,6 @@ namespace IOStudio.Views
                             return;
                         }
 
-                        // 立即同步到 IODevice（PropertyKeyEditDialog 中已经调用过 SetPKProps）
-                        // 这里只需要保存配置文件
-                        IORoot.Instance.Save();
                     }
                 }
                 e.Handled = true;
@@ -518,7 +527,6 @@ namespace IOStudio.Views
                     {
                         device.Properties.KeyList.Remove(key);
                         device.Properties.Keys.Remove(key);
-                        IORoot.Instance.Save();
                     }
                 }
                 e.Handled = true;
@@ -551,7 +559,7 @@ namespace IOStudio.Views
 
             // 打开编辑对话框
             var dialog = new PropertyKeyEditDialog();
-            dialog.SetKey(newKey, device.Name, isNewKey: true, existingKeyNames: existingKeyNames);
+            dialog.SetKey(newKey, null, isNewKey: true, existingKeyNames: existingKeyNames);
 
             await dialog.ShowDialog(this);
             if (dialog.IsConfirmed)
@@ -560,9 +568,6 @@ namespace IOStudio.Views
                 device.Properties.KeyList.Add(newKey);
                 device.Properties.Keys.Add(newKey);
 
-                // 立即同步到 IODevice（PropertyKeyEditDialog 中已经调用过 SetPKProps）
-                // 这里只需要保存配置文件
-                IORoot.Instance.Save();
             }
         }
 
@@ -579,6 +584,7 @@ namespace IOStudio.Views
                 return;
 
             device.Properties.KeyList.Clear();
+            device.Properties.Keys.Clear();
         }
 
         private void CancelButton_Click(object? sender, RoutedEventArgs e)
@@ -589,11 +595,45 @@ namespace IOStudio.Views
 
         private async void SaveButton_Click(object? sender, RoutedEventArgs e)
         {
+            if (_device == null || _sourceDevice == null)
+                return;
+
+            if (string.IsNullOrWhiteSpace(_device.Name))
+            {
+                var box = MessageBoxManager.GetMessageBoxStandard(
+                    "无法保存",
+                    "设备名称不能为空。",
+                    ButtonEnum.Ok,
+                    MsBox.Avalonia.Enums.Icon.Warning
+                );
+                await box.ShowWindowDialogAsync(this);
+                return;
+            }
+
+            if (_device.IsExternalType && string.IsNullOrWhiteSpace(_device.DllName))
+            {
+                var box = MessageBoxManager.GetMessageBoxStandard(
+                    "无法保存",
+                    "外部设备必须选择驱动。",
+                    ButtonEnum.Ok,
+                    MsBox.Avalonia.Enums.Icon.Warning
+                );
+                await box.ShowWindowDialogAsync(this);
+                return;
+            }
+
             // 保存设备配置面板的修改
             if (_deviceConfigPanel != null && _deviceConfigPanel.HasUnsavedChanges())
             {
                 _deviceConfigPanel.SaveConfig();
             }
+
+            _sourceDevice.Name = _device.Name.Trim();
+            _sourceDevice.Type = _device.Type;
+            _sourceDevice.DllName = _device.DllName;
+            _sourceDevice.Index = _device.Index;
+            _sourceDevice.Properties.CopyFrom(_device.Properties);
+            _sourceDevice.UpdateConfigSummary();
 
             IsConfirmed = true;
             IORoot.Instance?.Save();
@@ -623,12 +663,17 @@ namespace IOStudio.Views
 
         private async void RestartDeviceButton_Click(object? sender, RoutedEventArgs e)
         {
-            // 先保存配置
             if (_deviceConfigPanel != null && _deviceConfigPanel.HasUnsavedChanges())
             {
-                _deviceConfigPanel.SaveConfig();
+                var unsavedBox = MessageBoxManager.GetMessageBoxStandard(
+                    "存在未保存修改",
+                    "请先保存当前配置，再重启设备服务。",
+                    ButtonEnum.Ok,
+                    MsBox.Avalonia.Enums.Icon.Warning
+                );
+                await unsavedBox.ShowWindowDialogAsync(this);
+                return;
             }
-            IORoot.Instance?.Save();
 
             var box = MessageBoxManager.GetMessageBoxStandard(
                 "重启设备",

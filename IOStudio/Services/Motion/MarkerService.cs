@@ -68,7 +68,7 @@ namespace IOStudio.Services.Motion
         {
             var marker = new TimelineMarker
             {
-                TimeMs = timeMs,
+                TimeMs = ClampTime(timeMs),
                 Name = name ?? $"M{Markers.Count + 1}",
                 Color = color ?? _presetColors[_colorIndex++ % _presetColors.Length]
             };
@@ -143,7 +143,7 @@ namespace IOStudio.Services.Motion
                     () =>
                     {
                         if (timeMs.HasValue)
-                            marker.TimeMs = timeMs.Value;
+                            marker.TimeMs = ClampTime(timeMs.Value);
                         if (name != null)
                             marker.Name = name;
                         if (color != null)
@@ -224,6 +224,16 @@ namespace IOStudio.Services.Motion
             Markers.Clear();
             foreach (var m in sorted)
                 Markers.Add(m);
+        }
+
+        private double ClampTime(double timeMs)
+        {
+            if (double.IsNaN(timeMs) || double.IsInfinity(timeMs))
+                return 0;
+            var duration = _context.DurationMs > 0
+                ? _context.DurationMs
+                : (_context.Timeline?.DurationMs > 0 ? _context.Timeline.DurationMs : double.MaxValue);
+            return Math.Clamp(timeMs, 0, duration);
         }
 
         /// <summary>清空所有标记</summary>

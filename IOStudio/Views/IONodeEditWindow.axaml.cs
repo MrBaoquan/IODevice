@@ -3,6 +3,7 @@ using Avalonia.Interactivity;
 using IOStudio.ViewModels;
 using IOStudio.Services;
 using IOToolkit;
+using System;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -29,6 +30,18 @@ namespace IOStudio.Views
             var clearKeysButton = this.FindControl<Button>("ClearKeysButton");
             var deleteNodeButton = this.FindControl<Button>("DeleteNodeButton");
             var recordKeyButton = this.FindControl<Button>("RecordKeyButton");
+
+            // 输入时清除名称错误提示
+            var nodeNameBox = this.FindControl<TextBox>("NodeNameTextBox");
+            if (nodeNameBox != null)
+            {
+                nodeNameBox.TextChanged += (_, _) =>
+                {
+                    var err = this.FindControl<TextBlock>("NodeNameErrorText");
+                    if (err != null)
+                        err.IsVisible = false;
+                };
+            }
 
             if (saveButton != null)
                 saveButton.Click += SaveButton_Click;
@@ -74,7 +87,7 @@ namespace IOStudio.Views
             }
         }
 
-        private async void DeleteNodeButton_Click(object? sender, RoutedEventArgs e)
+        private void DeleteNodeButton_Click(object? sender, RoutedEventArgs e)
         {
             // 删除节点时使用原始节点引用
             if (
@@ -82,15 +95,9 @@ namespace IOStudio.Views
                 && _originalNode.DeleteNodeCommand.CanExecute(_originalNode)
             )
             {
-                var result = await ShowConfirmDialog(
-                    "确认删除",
-                    $"确定要删除节点 '{_originalNode.Name}' 吗？此操作无法撤销。"
-                );
-                if (result)
-                {
-                    _originalNode.DeleteNodeCommand.Execute(_originalNode);
-                    Close();
-                }
+                // 确认已在 DeleteNodeCommand (统一走 IDialogService) 内完成, 此处直接触发
+                _originalNode.DeleteNodeCommand.Execute(_originalNode);
+                Close();
             }
         }
 
@@ -209,17 +216,32 @@ namespace IOStudio.Views
         {
             var nodeNameTextBox = this.FindControl<TextBox>("NodeNameTextBox");
             var nodeLabelTextBox = this.FindControl<TextBox>("NodeLabelTextBox");
+            var nameErrorText = this.FindControl<TextBlock>("NodeNameErrorText");
 
             if (nodeNameTextBox != null && _nodeToEdit != null && _originalNode != null)
             {
-                if (string.IsNullOrWhiteSpace(nodeNameTextBox.Text))
+                // P0-1: 空名/重名校验 — 内联错误提示 + 聚焦, 不再静默返回
+                var name = nodeNameTextBox.Text?.Trim() ?? "";
+                if (string.IsNullOrWhiteSpace(name))
                 {
-                    // TODO: 显示验证错误
+                    ShowNameError("节点名称不能为空", nodeNameTextBox, nameErrorText);
+                    return;
+                }
+
+                // 重名校验: 与同设备/同类型下其它节点比较 (排除自身)
+                var duplicate = FindDuplicateName(name);
+                if (duplicate != null)
+                {
+                    ShowNameError(
+                        $"节点名称 \"{name}\" 已存在（{duplicate}），请换一个名称",
+                        nodeNameTextBox,
+                        nameErrorText
+                    );
                     return;
                 }
 
                 // 更新副本的名称和标签
-                _nodeToEdit.Name = nodeNameTextBox.Text;
+                _nodeToEdit.Name = name;
                 _nodeToEdit.Label = nodeLabelTextBox?.Text ?? "";
 
                 // 将副本的更改同步回原始节点
@@ -234,6 +256,46 @@ namespace IOStudio.Views
                 IsConfirmed = true;
                 Close();
             }
+        }
+
+        /// <summary>校验失败: 显示内联错误并聚焦名称输入框。</summary>
+        private void ShowNameError(string message, TextBox nameBox, TextBlock? errorText)
+        {
+            if (errorText != null)
+            {
+                errorText.Text = $"⚠ {message}";
+                errorText.IsVisible = true;
+            }
+            nameBox.Focus();
+            nameBox.SelectAll();
+        }
+
+        /// <summary>重名校验: 查找同设备同类型下已存在的同名节点 (排除自身), 返回其显示名或 null。</summary>
+        private string? FindDuplicateName(string name)
+        {
+            if (_parentDevice == null || _originalNode == null)
+                return null;
+
+            // 与同设备内其它节点比较
+            foreach (var n in _parentDevice.ActionList)
+                if (
+                    !ReferenceEquals(n, _originalNode)
+                    && string.Equals(n.Name, name, StringComparison.OrdinalIgnoreCase)
+                )
+                    return $"{n.Name} (Action)";
+            foreach (var n in _parentDevice.AxisList)
+                if (
+                    !ReferenceEquals(n, _originalNode)
+                    && string.Equals(n.Name, name, StringComparison.OrdinalIgnoreCase)
+                )
+                    return $"{n.Name} (Axis)";
+            foreach (var n in _parentDevice.OActionList)
+                if (
+                    !ReferenceEquals(n, _originalNode)
+                    && string.Equals(n.Name, name, StringComparison.OrdinalIgnoreCase)
+                )
+                    return $"{n.Name} (OAction)";
+            return null;
         }
 
         /// <summary>

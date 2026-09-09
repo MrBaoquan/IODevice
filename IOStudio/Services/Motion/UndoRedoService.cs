@@ -9,8 +9,9 @@ namespace IOStudio.Services.Motion
     /// </summary>
     public class UndoRedoService : IUndoRedoService
     {
-        private readonly Stack<IUndoableCommand> _undoStack = new();
-        private readonly Stack<IUndoableCommand> _redoStack = new();
+        // 使用 List 模拟栈 (尾部 Add/RemoveAt), 以支持超出上限时丢弃最旧命令。
+        private readonly List<IUndoableCommand> _undoStack = new();
+        private readonly List<IUndoableCommand> _redoStack = new();
         private const int MaxUndoLevels = 100;
 
         /// <summary>当 Undo/Redo 栈状态变化时触发</summary>
@@ -23,12 +24,18 @@ namespace IOStudio.Services.Motion
         public bool CanRedo => _redoStack.Count > 0;
 
         /// <summary>撤销栈描述 (用于 UI 提示)</summary>
-        public string? UndoDescription =>
-            _undoStack.Count > 0 ? _undoStack.Peek().Description : null;
+        public string? UndoDescription => _undoStack.Count > 0 ? _undoStack[^1].Description : null;
 
         /// <summary>重做栈描述 (用于 UI 提示)</summary>
-        public string? RedoDescription =>
-            _redoStack.Count > 0 ? _redoStack.Peek().Description : null;
+        public string? RedoDescription => _redoStack.Count > 0 ? _redoStack[^1].Description : null;
+
+        /// <summary>压入撤销栈, 超出上限时丢弃最旧命令以限制内存。</summary>
+        private void PushUndo(IUndoableCommand command)
+        {
+            _undoStack.Add(command);
+            if (_undoStack.Count > MaxUndoLevels)
+                _undoStack.RemoveAt(0);
+        }
 
         /// <summary>
         /// 执行命令并压入撤销栈
@@ -36,15 +43,8 @@ namespace IOStudio.Services.Motion
         public void Execute(IUndoableCommand command)
         {
             command.Execute();
-            _undoStack.Push(command);
+            PushUndo(command);
             _redoStack.Clear(); // 新操作清除重做栈
-
-            // 限制撤销层数
-            if (_undoStack.Count > MaxUndoLevels)
-            {
-                // Stack 不支持直接移除底部, 这里接受超出少量
-            }
-
             StateChanged?.Invoke();
         }
 
@@ -56,9 +56,10 @@ namespace IOStudio.Services.Motion
             if (_undoStack.Count == 0)
                 return;
 
-            var command = _undoStack.Pop();
+            var command = _undoStack[^1];
+            _undoStack.RemoveAt(_undoStack.Count - 1);
             command.Undo();
-            _redoStack.Push(command);
+            _redoStack.Add(command);
             StateChanged?.Invoke();
         }
 
@@ -70,9 +71,10 @@ namespace IOStudio.Services.Motion
             if (_redoStack.Count == 0)
                 return;
 
-            var command = _redoStack.Pop();
+            var command = _redoStack[^1];
+            _redoStack.RemoveAt(_redoStack.Count - 1);
             command.Execute();
-            _undoStack.Push(command);
+            PushUndo(command);
             StateChanged?.Invoke();
         }
 

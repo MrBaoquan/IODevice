@@ -19,6 +19,8 @@ namespace IOStudio.Services.Motion
         {
             if (keyframes == null || keyframes.Count == 0)
                 return 0.5f; // 默认中位
+            if (keyframes.Count == 1)
+                return keyframes[0].Value;
 
             // 在第一个关键帧之前, 返回第一个关键帧的值
             if (timeMs <= keyframes[0].TimeMs)
@@ -27,6 +29,20 @@ namespace IOStudio.Services.Motion
             // 在最后一个关键帧之后, 返回最后一个关键帧的值
             if (timeMs >= keyframes[^1].TimeMs)
                 return keyframes[^1].Value;
+
+            // 防御: 若关键帧非严格升序, 二分查找会返回错误区间导致锯齿毛刺。
+            // 就地做一次检测, 仅当乱序时才重排 (正常有序路径零开销)。
+            bool needSort = false;
+            for (int i = 1; i < keyframes.Count; i++)
+            {
+                if (keyframes[i].TimeMs < keyframes[i - 1].TimeMs)
+                {
+                    needSort = true;
+                    break;
+                }
+            }
+            if (needSort)
+                keyframes.Sort((a, b) => a.TimeMs.CompareTo(b.TimeMs));
 
             // 二分查找当前时间所处的两个关键帧
             int left = 0;
@@ -41,9 +57,14 @@ namespace IOStudio.Services.Motion
                     right = mid;
             }
 
-            var kfA = keyframes[left];
-            var kfB = keyframes[right];
+            return Evaluate(keyframes[left], keyframes[right], timeMs);
+        }
 
+        /// <summary>
+        /// 免分配的两关键帧求值 — 供渲染热路径 (曲线采样) 使用, 避免每采样点 new List。
+        /// </summary>
+        public static float Evaluate(MotionKeyframe kfA, MotionKeyframe kfB, double timeMs)
+        {
             // 计算归一化 t [0, 1]
             double span = kfB.TimeMs - kfA.TimeMs;
             if (span <= 0)
@@ -57,9 +78,14 @@ namespace IOStudio.Services.Motion
             {
                 "bezier"
                     => Bezier(
-                        kfA.Value, kfB.Value, t,
-                        kfA.TangentOut ?? 0f, kfB.TangentIn ?? 0f,
-                        kfA.Cp2x ?? 1f, kfB.Cp1x ?? 1f),
+                        kfA.Value,
+                        kfB.Value,
+                        t,
+                        kfA.TangentOut ?? 0f,
+                        kfB.TangentIn ?? 0f,
+                        kfA.Cp2x ?? 1f,
+                        kfB.Cp1x ?? 1f
+                    ),
                 "step" => Step(kfA.Value, kfB.Value, t),
                 "ease_in_out" or "ease" => EaseInOut(kfA.Value, kfB.Value, t),
                 _ => Linear(kfA.Value, kfB.Value, t),
@@ -91,9 +117,14 @@ namespace IOStudio.Services.Motion
         /// 系数为 1.0 时 Bx(t)=t (线性时间), 等价于传统纯垂直切线调整。
         /// </summary>
         public static float Bezier(
-            float a, float b, float normalizedTime,
-            float tangentOut, float tangentIn,
-            float cp2x, float cp1x)
+            float a,
+            float b,
+            float normalizedTime,
+            float tangentOut,
+            float tangentIn,
+            float cp2x,
+            float cp1x
+        )
         {
             // 控制点 Y
             float span = b - a;
@@ -101,14 +132,12 @@ namespace IOStudio.Services.Motion
             float p2y = b - tangentIn * Math.Abs(span) / 3f;
 
             // 控制点 X (归一化 [0,1] 时间空间)
-            float p1xNorm = cp2x / 3f;        // kfA OUT: 从 0 出发
-            float p2xNorm = 1f - cp1x / 3f;   // kfB IN:  从 1 回看
+            float p1xNorm = cp2x / 3f; // kfA OUT: 从 0 出发
+            float p2xNorm = 1f - cp1x / 3f; // kfB IN:  从 1 回看
 
             // 快速路径: 当两端 cpx ≈ 1.0 时, Bx(t)=t, 无需求解
             bool isIdentityX = Math.Abs(cp2x - 1f) < 0.001f && Math.Abs(cp1x - 1f) < 0.001f;
-            float t = isIdentityX
-                ? normalizedTime
-                : SolveBezierX(p1xNorm, p2xNorm, normalizedTime);
+            float t = isIdentityX ? normalizedTime : SolveBezierX(p1xNorm, p2xNorm, normalizedTime);
 
             // 评估 Y
             float u = 1f - t;

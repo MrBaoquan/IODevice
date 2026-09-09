@@ -14,12 +14,12 @@ using IOStudio.Controls.Timeline;
 using IOStudio.Models.Motion;
 using IOStudio.Services.Motion;
 using IOStudio.ViewModels.Timeline;
+
 namespace IOStudio.Views.Timeline
 {
     /// <summary>瀵艰埅/鍚屾/鍒锋柊杈呭姪 (浠?code-behind 鎻愬彇)</summary>
     public partial class TimelineEditorWindow
     {
-
         /// <summary>刷新所有 TrackClipControl</summary>
         private void RefreshAllTrackControls()
         {
@@ -84,12 +84,14 @@ namespace IOStudio.Views.Timeline
                 foreach (var clipVm in t.Clips)
                 {
                     var kfs = clipVm.Clip.Keyframes;
-                    if (kfs.Count == 0) continue;
+                    if (kfs.Count == 0)
+                        continue;
                     double startMs = clipVm.StartMs;
 
                     // 二分查找: 最后一个 absTime < playhead - 0.5
                     double target = playhead - 0.5 - startMs;
-                    int lo = 0, hi = kfs.Count;
+                    int lo = 0,
+                        hi = kfs.Count;
                     while (lo < hi)
                     {
                         int mid = (lo + hi) / 2;
@@ -134,12 +136,14 @@ namespace IOStudio.Views.Timeline
                 foreach (var clipVm in t.Clips)
                 {
                     var kfs = clipVm.Clip.Keyframes;
-                    if (kfs.Count == 0) continue;
+                    if (kfs.Count == 0)
+                        continue;
                     double startMs = clipVm.StartMs;
 
                     // 二分查找: 第一个 absTime > playhead + 0.5
                     double target = playhead + 0.5 - startMs;
-                    int lo = 0, hi = kfs.Count;
+                    int lo = 0,
+                        hi = kfs.Count;
                     while (lo < hi)
                     {
                         int mid = (lo + hi) / 2;
@@ -175,6 +179,25 @@ namespace IOStudio.Views.Timeline
                 .ToArray();
         }
 
+        /// <summary>选择相邻轨道 (↑/↓ 键)</summary>
+        private void SelectAdjacentTrack(int direction)
+        {
+            if (ViewModel == null || ViewModel.Tracks.Count == 0)
+                return;
+
+            int currentIdx = -1;
+            if (ViewModel.SelectedTrack != null)
+                currentIdx = ViewModel.Tracks.IndexOf(ViewModel.SelectedTrack);
+
+            int nextIdx = currentIdx + direction;
+            if (nextIdx < 0)
+                nextIdx = ViewModel.Tracks.Count - 1;
+            else if (nextIdx >= ViewModel.Tracks.Count)
+                nextIdx = 0;
+
+            ViewModel.SelectedTrack = ViewModel.Tracks[nextIdx];
+        }
+
         /// <summary>同步缩放级别到 TimeRulerControl</summary>
         private void SyncZoomToRuler()
         {
@@ -202,7 +225,7 @@ namespace IOStudio.Views.Timeline
             }
         }
 
-        /// <summary>同步工作区域标记到时间标尺</summary>
+        /// <summary>同步工作区域标记到时间标尺与轨道主体叠加层</summary>
         private void SyncWorkAreaToRuler()
         {
             var ruler = this.FindControl<TimeRulerControl>("TimeRuler");
@@ -211,6 +234,13 @@ namespace IOStudio.Views.Timeline
                 ruler.WorkAreaInMs = ViewModel.WorkAreaInMs ?? -1;
                 ruler.WorkAreaOutMs = ViewModel.WorkAreaOutMs ?? -1;
                 ruler.InvalidateVisual();
+            }
+            var overlay = this.FindControl<WorkAreaOverlay>("WorkAreaOverlay");
+            if (overlay != null && ViewModel != null)
+            {
+                overlay.WorkAreaInMs = ViewModel.WorkAreaInMs ?? -1;
+                overlay.WorkAreaOutMs = ViewModel.WorkAreaOutMs ?? -1;
+                overlay.InvalidateVisual();
             }
         }
     }

@@ -18,6 +18,9 @@ namespace IOStudio.Models.Motion
         public string Label { get; set; } = "";
         public string Color { get; set; } = "#4FC3F7";
         public string ValueType { get; set; } = "float";
+
+        /// <summary>Idle 循环配置 (null = 不启用 idle, 空窗期输出中性值)</summary>
+        public IdleLoop? IdleLoop { get; set; }
     }
 
     /// <summary>OAction 信息 — 设备的输出动作定义。</summary>

@@ -77,7 +77,7 @@ namespace IOStudio.ViewModels.Timeline
 
             var evt = new TimelineEvent
             {
-                TimeMs = timeMs,
+                TimeMs = ClampTime(timeMs),
                 EventName = uniqueName,
                 EventData = eventData
             };
@@ -181,7 +181,7 @@ namespace IOStudio.ViewModels.Timeline
                     () =>
                     {
                         if (timeMs.HasValue)
-                            evt.TimeMs = timeMs.Value;
+                            evt.TimeMs = ClampTime(timeMs.Value);
                         if (eventName is not null)
                             evt.EventName = eventName;
                         if (eventData is not null)

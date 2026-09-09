@@ -67,6 +67,15 @@ namespace IOStudio.Models.Motion
         [JsonPropertyName("value_type")]
         public string ValueType { get; set; } = "float";
 
+        /// <summary>
+        /// 中性/空闲值 — 该轨道"无动作覆盖时"的输出值 (用于回中/默认输出)。
+        /// <para>null = 使用类型默认 (bool=0 关, float=0.5 中位)。不同设备空闲语义不同,
+        /// 如运动轴回中位可能是 0 或 0.5, 特效通道可配置自定义默认值。</para>
+        /// </summary>
+        [JsonPropertyName("neutral_value")]
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public float? NeutralValue { get; set; }
+
         /// <summary>是否静音 (不输出到设备)</summary>
         [JsonPropertyName("muted")]
         public bool Muted { get; set; }
@@ -91,12 +100,38 @@ namespace IOStudio.Models.Motion
         public string Group { get; set; } = "";
 
         /// <summary>
+        /// 逻辑角色标签 (自由字符串, 可选)。供效果预设按角色匹配轨道。
+        /// 语义由业务层定义 (如 "heave" / "pitch" / "升降轴")，代码层零解释。
+        /// </summary>
+        [JsonPropertyName("role")]
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+        public string Role { get; set; } = "";
+
+        /// <summary>
         /// 是否在曲线编辑器中显示 (UX-B1 焦点模式)。
         /// true = 显示, false = 隐藏但保留轨道; 默认 true.
         /// </summary>
         [JsonPropertyName("show_in_curve")]
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
         public bool ShowInCurve { get; set; } = true;
+
+        /// <summary>
+        /// Idle 循环 (gap 填充) — 该轨道"无 clip 覆盖"时的待机循环动作。
+        /// <para>null = 无 idle, 空窗期输出 neutralValue (原语义)。启用后空窗期沿关键帧循环求值,
+        /// 与相邻 clip 可交叉淡化 (BlendMs), 相位模式 continuous/restart。</para>
+        /// </summary>
+        [JsonPropertyName("idle")]
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public IdleLoop? IdleLoop { get; set; }
+
+        /// <summary>
+        /// Overlay 覆盖关键帧 (空窗自由数值点, 绝对时间)。
+        /// <para>优先级高于 idle: 两点之间按插值求值, 所有点之外回落到 idle 循环/中性值。
+        /// 用于在待机循环上打点 (如特定时刻拉高某值), 无需建 clip。</para>
+        /// </summary>
+        [JsonPropertyName("override_keyframes")]
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public List<MotionKeyframe>? OverrideKeyframes { get; set; }
 
         /// <summary>片段列表</summary>
         [JsonPropertyName("clips")]

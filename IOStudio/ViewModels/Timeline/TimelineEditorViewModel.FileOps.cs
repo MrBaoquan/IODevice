@@ -26,20 +26,29 @@ namespace IOStudio.ViewModels.Timeline
         {
             _undoRedo.Execute(command);
             MarkDirty();
+            PushStatus(command.Description);
         }
 
         /// <summary>撤销</summary>
         public void Undo()
         {
+            if (!_undoRedo.CanUndo)
+                return;
+            var desc = _undoRedo.UndoDescription;
             _undoRedo.Undo();
             MarkDirty();
+            PushStatus($"已撤销: {desc}");
         }
 
         /// <summary>重做</summary>
         public void Redo()
         {
+            if (!_undoRedo.CanRedo)
+                return;
+            var desc = _undoRedo.RedoDescription;
             _undoRedo.Redo();
             MarkDirty();
+            PushStatus($"已重做: {desc}");
         }
 
         /// <summary>更新窗口标题 (含 dirty 标记)</summary>
@@ -65,11 +74,11 @@ namespace IOStudio.ViewModels.Timeline
                     {
                         if (IsDirty && Timeline != null && !string.IsNullOrEmpty(CurrentFilePath))
                         {
-                            MotionFileReader.Write(Timeline, CurrentFilePath);
-                            IsDirty = false;
-                            System.Diagnostics.Debug.WriteLine(
-                                $"[AutoSave] Saved to {CurrentFilePath}"
-                            );
+                            if (MotionFileReader.Write(Timeline, CurrentFilePath))
+                            {
+                                IsDirty = false;
+                                PushStatus("已自动保存");
+                            }
                         }
                     });
                 });
@@ -138,57 +147,72 @@ namespace IOStudio.ViewModels.Timeline
 
         private void SaveFile()
         {
+            _ = SaveAsync();
+        }
+
+        /// <summary>
+        /// 保存当前项目并返回是否真正写入成功。
+        /// 关闭窗口等数据安全路径必须等待此方法，不能仅触发保存命令。
+        /// </summary>
+        public async System.Threading.Tasks.Task<bool> SaveAsync()
+        {
             if (Timeline is null)
-                return;
+                return false;
 
             // 同步标记到 Timeline 模型
             _markerService.SyncToTimeline();
 
             if (!string.IsNullOrEmpty(CurrentFilePath))
             {
-                MotionFileReader.Write(Timeline, CurrentFilePath);
-                IsDirty = false;
-                UpdateWindowTitle();
+                if (MotionFileReader.Write(Timeline, CurrentFilePath))
+                {
+                    IsDirty = false;
+                    UpdateWindowTitle();
+                    PushStatus("已保存");
+                    return true;
+                }
+                PushStatus("保存失败，请检查磁盘空间或文件权限");
+                return false;
             }
-            else
-            {
-                // 没有文件路径, 触发另存为
-                SaveAs();
-            }
+
+            return await SaveAsAsync();
         }
 
         private void SaveAs()
         {
-            if (_dialogService is not null)
-            {
-                _ = SaveAsWithDialogAsync();
-                return;
-            }
-            // 后备: 通知 View 层触发另存为对话框
-            SaveAsRequested = true;
-            SaveAsRequested = false;
+            _ = SaveAsAsync();
         }
 
-        /// <summary>通过 IDialogService 另存为 (无需 View 层参与)。</summary>
-        private async System.Threading.Tasks.Task SaveAsWithDialogAsync()
+        /// <summary>另存为并返回是否真正写入成功；取消选择文件返回 false。</summary>
+        public async System.Threading.Tasks.Task<bool> SaveAsAsync()
         {
+            if (_dialogService is null)
+            {
+                // 后备: 通知 View 层触发另存为对话框。该路径无法同步获知结果，
+                // 因此对关闭窗口的调用方返回 false，保持窗口和 dirty 状态。
+                SaveAsRequested = true;
+                SaveAsRequested = false;
+                return false;
+            }
+
             var suggestedName = Timeline?.Name ?? "untitled";
             var path = await _dialogService!.SaveFileAsync(
                 "保存动作文件",
                 suggestedName,
                 MotionFileFilters
             );
-            if (!string.IsNullOrEmpty(path))
-                SaveToFile(path);
+            if (string.IsNullOrEmpty(path))
+                return false;
+            return SaveToFile(path);
         }
 
         /// <summary>
         /// 另存为 (由 View 层调用)
         /// </summary>
-        public void SaveToFile(string filePath)
+        public bool SaveToFile(string filePath)
         {
             if (Timeline == null)
-                return;
+                return false;
 
             // 同步标记到 Timeline 模型
             _markerService.SyncToTimeline();
@@ -199,7 +223,11 @@ namespace IOStudio.ViewModels.Timeline
                 IsDirty = false;
                 UpdateWindowTitle();
                 StartAutoSave();
+                PushStatus($"已保存: {System.IO.Path.GetFileName(filePath)}");
+                return true;
             }
+            PushStatus("保存失败，请检查磁盘空间或文件权限");
+            return false;
         }
     }
 }

@@ -8,6 +8,7 @@ namespace IOStudio.Controls.Timeline
     /// <summary>
     /// 播放头叠加层 — 绘制一条垂直红色播放头线, 覆盖整个轨道区域。
     /// 即使没有轨道, 播放头线也始终可见, 方便用户在空状态下定位时间。
+    /// 已配置工作区 (In/Out) 时, 播放头超出工作区范围会降透明, 提示"循环范围之外"。
     /// </summary>
     public class PlayheadOverlay : Control
     {
@@ -19,6 +20,12 @@ namespace IOStudio.Controls.Timeline
 
         public static readonly StyledProperty<double> ScrollOffsetXProperty =
             AvaloniaProperty.Register<PlayheadOverlay, double>(nameof(ScrollOffsetX), 0);
+
+        public static readonly StyledProperty<double> WorkAreaInMsProperty =
+            AvaloniaProperty.Register<PlayheadOverlay, double>(nameof(WorkAreaInMs), -1);
+
+        public static readonly StyledProperty<double> WorkAreaOutMsProperty =
+            AvaloniaProperty.Register<PlayheadOverlay, double>(nameof(WorkAreaOutMs), -1);
 
         public double CurrentTimeMs
         {
@@ -38,8 +45,27 @@ namespace IOStudio.Controls.Timeline
             set => SetValue(ScrollOffsetXProperty, value);
         }
 
+        /// <summary>工作区域入点 (毫秒), -1 表示未设置</summary>
+        public double WorkAreaInMs
+        {
+            get => GetValue(WorkAreaInMsProperty);
+            set => SetValue(WorkAreaInMsProperty, value);
+        }
+
+        /// <summary>工作区域出点 (毫秒), -1 表示未设置</summary>
+        public double WorkAreaOutMs
+        {
+            get => GetValue(WorkAreaOutMsProperty);
+            set => SetValue(WorkAreaOutMsProperty, value);
+        }
+
         private static readonly IPen PlayheadPen = new Pen(
             new SolidColorBrush(Color.Parse("#ef4444")),
+            1.5
+        );
+
+        private static readonly IPen PlayheadOutOfRangePen = new Pen(
+            new SolidColorBrush(Color.FromArgb(70, 239, 68, 68)),
             1.5
         );
 
@@ -48,7 +74,9 @@ namespace IOStudio.Controls.Timeline
             AffectsRender<PlayheadOverlay>(
                 CurrentTimeMsProperty,
                 PixelsPerMsProperty,
-                ScrollOffsetXProperty
+                ScrollOffsetXProperty,
+                WorkAreaInMsProperty,
+                WorkAreaOutMsProperty
             );
         }
 
@@ -63,7 +91,16 @@ namespace IOStudio.Controls.Timeline
 
             if (x >= -2 && x <= Bounds.Width + 2 && h > 0)
             {
-                context.DrawLine(PlayheadPen, new Point(x, 0), new Point(x, h));
+                bool inWorkArea =
+                    WorkAreaInMs >= 0
+                    && WorkAreaOutMs > WorkAreaInMs
+                    && CurrentTimeMs >= WorkAreaInMs
+                    && CurrentTimeMs <= WorkAreaOutMs;
+                context.DrawLine(
+                    (inWorkArea || WorkAreaInMs < 0) ? PlayheadPen : PlayheadOutOfRangePen,
+                    new Point(x, 0),
+                    new Point(x, h)
+                );
             }
         }
     }

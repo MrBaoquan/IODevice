@@ -3,31 +3,41 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:vm="using:IOStudio.ViewModels.Timeline"
+        xmlns:ctl="using:IOStudio.Controls.Timeline"
+        xmlns:iconPacks="https://github.com/MahApps/IconPacks.Avalonia"
         mc:Ignorable="d"
         x:Class="IOStudio.Views.Timeline.AddTrackDialog"
         x:DataType="vm:AddTrackDialogViewModel"
         Title="添加轨道"
-        Width="460" Height="580"
+        Width="480" Height="760"
         CanResize="False"
         WindowStartupLocation="CenterOwner"
         SystemDecorations="BorderOnly">
+
+    <Window.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceInclude Source="avares://IOStudio/Assets/Themes/TimelineThemeResources.axaml"/>
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </Window.Resources>
 
     <Window.Styles>
         <Style Selector="TextBlock.section-title">
             <Setter Property="FontSize" Value="12"/>
             <Setter Property="FontWeight" Value="Bold"/>
-            <Setter Property="Foreground" Value="#6366f1"/>
+            <Setter Property="Foreground" Value="{DynamicResource TlAccentSoftFg}"/>
             <Setter Property="Margin" Value="0,0,0,8"/>
         </Style>
         <Style Selector="TextBlock.label">
             <Setter Property="FontSize" Value="12"/>
             <Setter Property="FontWeight" Value="SemiBold"/>
-            <Setter Property="Foreground" Value="#374151"/>
+            <Setter Property="Foreground" Value="{DynamicResource TlTextSecondary}"/>
             <Setter Property="Margin" Value="0,0,0,4"/>
         </Style>
         <Style Selector="TextBlock.hint">
             <Setter Property="FontSize" Value="10"/>
-            <Setter Property="Foreground" Value="#9ca3af"/>
+            <Setter Property="Foreground" Value="{DynamicResource TlTextMuted}"/>
             <Setter Property="Margin" Value="0,3,0,0"/>
             <Setter Property="TextWrapping" Value="Wrap"/>
         </Style>
@@ -41,40 +51,41 @@
             <Setter Property="CornerRadius" Value="4"/>
         </Style>
         <Style Selector="Border.section">
-            <Setter Property="Background" Value="#f8fafc"/>
+            <Setter Property="Background" Value="{DynamicResource TlPropSectionBg}"/>
             <Setter Property="CornerRadius" Value="8"/>
             <Setter Property="Padding" Value="14,10"/>
-            <Setter Property="BorderBrush" Value="#e2e8f0"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource TlBorderBrush}"/>
             <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="Margin" Value="0,0,0,10"/>
         </Style>
     </Window.Styles>
 
-    <Border Background="#ffffff">
+    <Border Background="{DynamicResource TlPanelBg}">
         <DockPanel>
             <!-- 标题栏 -->
-            <Border DockPanel.Dock="Top" Background="#4f46e5" Padding="20,14">
+            <Border DockPanel.Dock="Top" Background="{DynamicResource TlAccent}" Padding="20,14">
                 <StackPanel Orientation="Horizontal" Spacing="10">
-                    <TextBlock Text="➕" FontSize="18" VerticalAlignment="Center"/>
+                    <iconPacks:PackIconIonicons Kind="AddiOS" Width="18" Height="18"
+                                                Foreground="{DynamicResource TlAccent}" VerticalAlignment="Center"/>
                     <StackPanel>
                         <TextBlock Text="{Binding DialogTitle}" FontSize="16" FontWeight="Bold"
-                                   Foreground="White"/>
+                                   Foreground="{DynamicResource TlAccentFg}"/>
                         <TextBlock Text="配置设备输出映射到时间轴轨道" FontSize="11"
-                                   Foreground="#c7d2fe"/>
+                                   Foreground="{DynamicResource TlAccentFg}" Opacity="0.8"/>
                     </StackPanel>
                 </StackPanel>
             </Border>
 
             <!-- 底部按钮 -->
             <Border DockPanel.Dock="Bottom" Padding="20,12"
-                    Background="#f8fafc" BorderBrush="#e2e8f0" BorderThickness="0,1,0,0">
+                    Background="{DynamicResource TlPanelBg}" BorderBrush="{DynamicResource TlBorderBrush}" BorderThickness="0,1,0,0">
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="10">
                     <Button Content="取消" Padding="20,8" MinWidth="80"
                             Command="{Binding CancelCommand}"
-                            Background="#f1f5f9" Foreground="#64748b"/>
+                            Background="{DynamicResource TlToolbarBg}" Foreground="{DynamicResource TlTextSecondary}"/>
                     <Button Content="{Binding ConfirmButtonText}" Padding="20,8" MinWidth="100"
                             Command="{Binding ConfirmCommand}"
-                            Background="#4f46e5" Foreground="White" FontWeight="SemiBold"/>
+                            Background="{DynamicResource TlAccent}" Foreground="{DynamicResource TlAccentFg}" FontWeight="SemiBold"/>
                 </StackPanel>
             </Border>
 
@@ -111,6 +122,9 @@
                                 <ComboBox ItemsSource="{Binding OutputItems}"
                                           SelectedItem="{Binding SelectedOutputDisplay}"
                                           PlaceholderText="选择输出目标..."/>
+                                <TextBlock Classes="hint" Text="{Binding OutputEmptyMessage}"
+                                           IsVisible="{Binding !HasOutputItems}"
+                                           Foreground="#f59e0b"/>
                             </StackPanel>
                         </StackPanel>
                     </Border>
@@ -140,10 +154,25 @@
                         </StackPanel>
                     </Border>
 
+                    <!-- ═══ 待机循环提示 (编辑入口在时间轴) ═══ -->
+                    <Border Classes="section">
+                        <StackPanel Spacing="8">
+                            <TextBlock Classes="section-title" Text="待机循环"/>
+                            <TextBlock Classes="hint"
+                                       Text="待机循环请在时间轴中编辑：右键轨道头 →「待机循环」或选中轨道后在属性面板中配置。"/>
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <Button Content="在时间轴编辑待机…" Padding="10,6"
+                                        Click="OnEditIdleInTimelineClick"
+                                        Background="{DynamicResource TlAccent}"
+                                        Foreground="{DynamicResource TlAccentFg}"/>
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+
                     <!-- ═══ 外观设置 ═══ -->
                     <Border Classes="section">
                         <StackPanel Spacing="8">
-                            <TextBlock Classes="section-title" Text="🎨 外观设置"/>
+                            <TextBlock Classes="section-title" Text="外观设置"/>
 
                             <TextBlock Classes="label" Text="轨道颜色"/>
                             <WrapPanel Orientation="Horizontal" HorizontalAlignment="Left">

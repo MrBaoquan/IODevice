@@ -299,12 +299,11 @@ namespace IOStudio.Services.Motion
                     {
                         if (!IsTrackSilenced(tracks[i]))
                         {
-                            bool isBoolTrack = string.Equals(
+                            float neutral = TrackValueEvaluator.ResolveNeutral(
                                 tracks[i].ValueType,
-                                "bool",
-                                StringComparison.OrdinalIgnoreCase
+                                tracks[i].NeutralValue
                             );
-                            WriteToDevice(tracks[i], isBoolTrack ? 0f : 0.5f);
+                            WriteToDevice(tracks[i], neutral);
                         }
                     }
                 }
@@ -327,12 +326,10 @@ namespace IOStudio.Services.Motion
                     continue;
 
                 _returnStartValues.TryGetValue(i, out float startVal);
-                bool isBoolTrk = string.Equals(
+                float targetVal = TrackValueEvaluator.ResolveNeutral(
                     allTracks[i].ValueType,
-                    "bool",
-                    StringComparison.OrdinalIgnoreCase
+                    allTracks[i].NeutralValue
                 );
-                float targetVal = isBoolTrk ? 0f : 0.5f;
                 float value = startVal + (targetVal - startVal) * smooth;
 
                 string channelName =
@@ -416,63 +413,17 @@ namespace IOStudio.Services.Motion
         }
 
         /// <summary>
-        /// C# InterpolationEngine 对单个轨道求值 (与 TrackClipControl 曲线渲染一致)
+        /// 轨道任一时刻求值 — 委托 TrackValueEvaluator (镜像 C++ MotionPlayer 语义: clip 覆盖→插值, 空窗→overlay/idle 循环/中性值)。
         /// </summary>
-        private static float EvaluateTrackAtTime(MotionTrack track, float timeMs)
-        {
-            bool isBool = string.Equals(
+        private static float EvaluateTrackAtTime(MotionTrack track, float timeMs) =>
+            TrackValueEvaluator.Evaluate(
+                track.Clips,
                 track.ValueType,
-                "bool",
-                StringComparison.OrdinalIgnoreCase
+                track.NeutralValue,
+                track.IdleLoop,
+                track.OverrideKeyframes,
+                timeMs
             );
-
-            for (int c = 0; c < track.Clips.Count; c++)
-            {
-                var clip = track.Clips[c];
-                if (timeMs >= clip.StartMs && timeMs <= clip.EndMs)
-                {
-                    if (isBool)
-                    {
-                        // Bool 轨道: 强制阶梯求值 (与 DrawBoolStepCurve 渲染完全一致)
-                        // 不依赖关键帧的 Interpolation 属性, 始终使用阶梯逻辑
-                        return EvaluateBoolStep(clip, timeMs);
-                    }
-                    return InterpolationEngine.EvaluateClip(clip, timeMs);
-                }
-            }
-            // 不在任何 Clip 范围内: 查找最近的 Clip 边界值
-            // Bool 轨道默认值为 0 (关), Float 轨道默认值为 0.5 (中位)
-            float defaultVal = isBool ? 0f : 0.5f;
-            float closestValue = defaultVal;
-            double closestDist = double.MaxValue;
-            for (int c = 0; c < track.Clips.Count; c++)
-            {
-                var clip = track.Clips[c];
-                if (clip.Keyframes.Count == 0)
-                    continue;
-                // 在 Clip 之前: 取第一个关键帧值
-                if (timeMs < clip.StartMs)
-                {
-                    double dist = clip.StartMs - timeMs;
-                    if (dist < closestDist)
-                    {
-                        closestDist = dist;
-                        closestValue = clip.Keyframes[0].Value;
-                    }
-                }
-                // 在 Clip 之后: 取最后一个关键帧值
-                else if (timeMs > clip.EndMs)
-                {
-                    double dist = timeMs - clip.EndMs;
-                    if (dist < closestDist)
-                    {
-                        closestDist = dist;
-                        closestValue = clip.Keyframes[^1].Value;
-                    }
-                }
-            }
-            return closestValue;
-        }
 
         /// <summary>
         /// Bool 轨道专用阶梯求值 — 与 TrackClipControl.DrawBoolStepCurve 渲染逻辑完全一致。

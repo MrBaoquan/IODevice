@@ -1,23 +1,84 @@
 <Window xmlns="https://github.com/avaloniaui"
-        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:vm="using:IOStudio.ViewModels"
+		xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+		xmlns:vm="using:IOStudio.ViewModels"
 		xmlns:controls="using:IOStudio.Controls"
-        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+		xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+		xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
 		xmlns:iconPacks="https://github.com/MahApps/IconPacks.Avalonia"
-        mc:Ignorable="d" d:DesignWidth="1280" d:DesignHeight="720"
-        x:Class="IOStudio.Views.MainWindow"
-        x:DataType="vm:MainWindowViewModel"
-        Icon="/Assets/avalonia-logo.ico"
-        Title="IO聚合调试平台">
+		mc:Ignorable="d" d:DesignWidth="1280" d:DesignHeight="720"
+		x:Class="IOStudio.Views.MainWindow"
+		x:DataType="vm:MainWindowViewModel"
+		MinWidth="960"
+		MinHeight="600"
+		Icon="/Assets/avalonia-logo.ico"
+		Title="IOStudio - 设备调试工作台">
 
-    <Design.DataContext>
-        <!-- This only sets the DataContext for the previewer in an IDE,
-             to set the actual DataContext for runtime, set the DataContext property in code (look at App.axaml.cs) -->
-        <vm:MainWindowViewModel/>
-    </Design.DataContext>
+	<Design.DataContext>
+		<!-- This only sets the DataContext for the previewer in an IDE,
+		to set the actual DataContext for runtime, set the DataContext property in code (look at App.axaml.cs) -->
+		<vm:MainWindowViewModel/>
+	</Design.DataContext>
 
 	<Window.Styles>
+		<!-- 主窗口服务状态：让高风险的启停动作始终有清晰的语义色 -->
+		<Style Selector="Button.service-button">
+			<Setter Property="Background" Value="{DynamicResource TlSurfaceRaised}" />
+			<Setter Property="BorderBrush" Value="{DynamicResource TlBorderLight}" />
+			<Setter Property="BorderThickness" Value="1" />
+			<Setter Property="Foreground" Value="{DynamicResource TlTextSecondary}" />
+			<Setter Property="CornerRadius" Value="4" />
+			<Setter Property="Height" Value="36" />
+			<Setter Property="Padding" Value="10,5" />
+		</Style>
+		<Style Selector="Button.service-button.running">
+			<Setter Property="Background" Value="{DynamicResource TlStatusOnlineBg}" />
+			<Setter Property="BorderBrush" Value="{DynamicResource TlSuccess}" />
+			<Setter Property="Foreground" Value="{DynamicResource TlStatusOnlineFg}" />
+		</Style>
+		<Style Selector="Button.service-button:not(.running):pointerover">
+			<Setter Property="Background" Value="{DynamicResource TlBtnHover}" />
+			<Setter Property="BorderBrush" Value="{DynamicResource TlTextMuted}" />
+		</Style>
+		<Style Selector="Button.service-button.running:pointerover">
+			<Setter Property="Background" Value="{DynamicResource TlStatusOnlineBg}" />
+			<Setter Property="BorderBrush" Value="{DynamicResource TlSuccess}" />
+			<Setter Property="Opacity" Value="0.88" />
+		</Style>
+
+		<!-- 设备标签页：状态徽章与操作按钮共用紧凑节奏 -->
+		<Style Selector="Border.device-state-badge">
+			<Setter Property="CornerRadius" Value="3" />
+			<Setter Property="Padding" Value="6,2" />
+			<Setter Property="MinWidth" Value="34" />
+			<Setter Property="VerticalAlignment" Value="Center" />
+		</Style>
+
+		<!-- 配置保护状态：默认只读，只有开发人员主动进入编辑模式才开放修改入口 -->
+		<Style Selector="Button.mode-toggle">
+			<Setter Property="Background" Value="{DynamicResource TlStatusNeutralBg}" />
+			<Setter Property="BorderBrush" Value="{DynamicResource TlBorderLight}" />
+			<Setter Property="BorderThickness" Value="1" />
+			<Setter Property="Foreground" Value="{DynamicResource TlTextSecondary}" />
+			<Setter Property="CornerRadius" Value="4" />
+			<Setter Property="Height" Value="36" />
+			<Setter Property="Padding" Value="10,4" />
+			<Setter Property="HorizontalContentAlignment" Value="Center" />
+			<Setter Property="VerticalContentAlignment" Value="Center" />
+		</Style>
+		<Style Selector="Button.mode-toggle:pointerover">
+			<Setter Property="Background" Value="{DynamicResource TlBtnHover}" />
+			<Setter Property="BorderBrush" Value="{DynamicResource TlTextMuted}" />
+		</Style>
+		<Style Selector="Button.mode-toggle.editing">
+			<Setter Property="Background" Value="{DynamicResource TlAccentSoftBg}" />
+			<Setter Property="BorderBrush" Value="{DynamicResource TlAccent}" />
+			<Setter Property="Foreground" Value="{DynamicResource TlAccentSoftFg}" />
+		</Style>
+		<Style Selector="Button.mode-toggle.editing:pointerover">
+			<Setter Property="Background" Value="{DynamicResource TlAccentSoftBg}" />
+			<Setter Property="BorderBrush" Value="{DynamicResource TlAccent}" />
+		</Style>
+
 		<Style Selector="Button.img-btn">
 			<Setter Property="Background" Value="" />
 			<Setter Property="Height" Value="36" />
@@ -37,108 +98,246 @@
 
 	</Window.Styles>
 
-	<DockPanel>
+	<DockPanel Background="{DynamicResource TlWindowBg}">
 		<!-- 菜单栏 -->
-		<Menu DockPanel.Dock="Top">
+		<Menu DockPanel.Dock="Top" Background="{DynamicResource TlMenuBg}">
 			<MenuItem Header="文件(_F)">
-				<MenuItem Header="退出(_X)" InputGesture="Alt+F4" />
+				<MenuItem Header="重新加载当前配置(_R)" InputGesture="Ctrl+R"
+						  Command="{Binding NewSessionCommand}"/>
+				<MenuItem Header="在外部编辑器中编辑 IODevice.xml(_E)" InputGesture="Ctrl+O"
+						  Command="{Binding OpenConfigCommand}" IsEnabled="{Binding IsEditMode}"/>
+				<Separator/>
+				<MenuItem Header="退出(_X)" InputGesture="Alt+F4"
+						  Command="{Binding ExitCommand}"/>
 			</MenuItem>
-			<MenuItem Header="编辑(_E)">
-				<MenuItem Header="IO交互编排(_E)" Command="{Binding EditIOConfigCommand}" />
-				<Separator />
-				<MenuItem Header="事件转发配置(_F)" Command="{Binding OpenEventForwardConfigCommand}" />
-				<Separator />
-				<MenuItem Header="动作编排(_T)" Command="{Binding OpenTimelineEditorCommand}" />
+			<MenuItem Header="设备(_D)">
+				<MenuItem Header="添加设备(_A)" InputGesture="Ctrl+Shift+A"
+						  Command="{Binding AddDeviceCommand}" IsEnabled="{Binding IsEditMode}"/>
+				<MenuItem Header="{Binding OpenCloseMenuText}" Command="{Binding OpenCloseDeviceCommand}"/>
+				<Separator/>
+				<MenuItem Header="设备属性(_P)" Command="{Binding OpenDevicePropertiesCommand}" IsEnabled="{Binding IsEditMode}"/>
+				<MenuItem Header="删除当前设备(_X)"
+						  Command="{Binding DeleteDeviceCommand}"
+						  CommandParameter="{Binding SelectedIODevcie}"
+						  IsEnabled="{Binding IsEditMode}" />
 			</MenuItem>
-			<MenuItem Header="视图(_V)">
-				<MenuItem Header="{Binding EditModeMenuText}" Command="{Binding ToggleEditModeCommand}">
+			<MenuItem Header="工作区(_W)">
+				<MenuItem Header="动作编排" Command="{Binding OpenTimelineEditorCommand}">
 					<MenuItem.Icon>
-						<CheckBox IsChecked="{Binding IsEditMode}" IsHitTestVisible="False" />
+						<CheckBox IsChecked="{Binding IsTimelineOpen}" IsHitTestVisible="False" />
 					</MenuItem.Icon>
 				</MenuItem>
-				<Separator />
-				<MenuItem Header="查看日志(_L)" Command="{Binding ViewIOLogCommand}" />
-				<Separator />
-				<MenuItem Header="接口调试(_D)" Command="{Binding OpenInterfaceDebugCommand}" />
+				<MenuItem Header="事件转发配置" Command="{Binding OpenEventForwardConfigCommand}">
+					<MenuItem.Icon>
+						<CheckBox IsChecked="{Binding IsEventForwardOpen}" IsHitTestVisible="False" />
+					</MenuItem.Icon>
+				</MenuItem>
+				<MenuItem Header="接口调试" Command="{Binding OpenInterfaceDebugCommand}">
+					<MenuItem.Icon>
+						<CheckBox IsChecked="{Binding IsInterfaceDebugOpen}" IsHitTestVisible="False" />
+					</MenuItem.Icon>
+				</MenuItem>
+			</MenuItem>
+				<MenuItem Header="视图(_V)">
+					<MenuItem Header="{Binding EditModeMenuText}" Command="{Binding ToggleEditModeCommand}">
+					<MenuItem.Icon>
+						<CheckBox IsChecked="{Binding IsEditMode}" IsHitTestVisible="False" />
+						</MenuItem.Icon>
+					</MenuItem>
+					<MenuItem Header="{Binding ThemeMenuText}" Command="{Binding ToggleThemeCommand}" />
+				</MenuItem>
+			<MenuItem Header="诊断(_D)">
+				<MenuItem Header="查看日志(_L)" Command="{Binding ViewIOLogCommand}"/>
 			</MenuItem>
 			<MenuItem Header="帮助(_H)">
+				<MenuItem Header="检查更新(_U)" Command="{Binding CheckUpdateCommand}" />
+				<Separator />
 				<MenuItem Header="参考信息(_R)" Name="HelpReferenceMenuItem" />
 				<Separator />
-				<MenuItem Header="关于(_A)" />
+				<MenuItem Header="关于(_A)" Command="{Binding AboutCommand}" />
 			</MenuItem>
 		</Menu>
-		
-		<Border DockPanel.Dock="Top" BorderBrush="#e5e7eb" BorderThickness="0 0 0 1" Padding="0 8 0 0">
+
+		<Border DockPanel.Dock="Top" Background="{DynamicResource TlToolbarBg}" BorderBrush="{DynamicResource TlBorderBrush}" BorderThickness="0 0 0 1" Padding="18 12">
 			<Grid>
 				<Grid.ColumnDefinitions>
 					<ColumnDefinition Width="Auto"/>
 					<ColumnDefinition Width="*"/>
 					<ColumnDefinition Width="Auto"/>
 				</Grid.ColumnDefinitions>
-				
+
 				<!-- 左侧添加设备按钮 -->
-				<StackPanel Grid.Column="0" Orientation="Horizontal" Margin="16 8">
-					<Button Command="{Binding AddDeviceCommand}" 
-							Classes="text-button"
-							Padding="12 6"
-							FontSize="13">
+				<StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="12">
+					<StackPanel Spacing="1" VerticalAlignment="Center">
+						<TextBlock Text="IOStudio" FontSize="16" FontWeight="SemiBold" Foreground="{DynamicResource TlTextPrimary}" />
+						<TextBlock Text="设备调试工作台" FontSize="11" Foreground="{DynamicResource TlTextMuted}" />
+					</StackPanel>
+					<Border Width="1" Height="28" Background="{DynamicResource TlBorderBrush}" VerticalAlignment="Center" />
+					<Button Command="{Binding AddDeviceCommand}" Classes="primary-button" Padding="14 7" FontSize="13" AutomationProperties.Name="添加设备" IsEnabled="{Binding IsEditMode}">
 						<StackPanel Orientation="Horizontal" Spacing="4">
-							<TextBlock Text="+" FontWeight="Bold" VerticalAlignment="Center"/>
+							<iconPacks:PackIconIonicons Kind="AddiOS" Width="15" Height="15" Foreground="{DynamicResource TlAccentFg}" VerticalAlignment="Center"/>
 							<TextBlock Text="添加设备" VerticalAlignment="Center"/>
 						</StackPanel>
 					</Button>
 				</StackPanel>
-				
-				<!-- 右侧按钮组 -->
-				<StackPanel Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="16 8">
-					<Button Classes="img-btn" ToolTip.Tip="查看日志" Command="{Binding ViewIOLogCommand}">
-						<Image Width="28" Height="28" Source="avares://IOStudio/Assets/view-log.png" />
-					</Button>
-					<Button Classes="img-btn" ToolTip.Tip="IO交互编排" Command="{Binding EditIOConfigCommand}">
-						<Image Width="32" Height="32" Source="avares://IOStudio/Assets/edit-config.png" />
-					</Button>
 
-					<Button Classes="img-btn" Command="{Binding OpenCloseDeviceCommand}" Background="#e2e8f0" Height="36"
-							Margin="16 0 0 0">
+				<!-- 右侧按钮组 -->
+				<StackPanel Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="6">
+					<Button Classes="mode-toggle" Classes.editing="{Binding IsEditMode}"
+							Command="{Binding ToggleEditModeCommand}"
+							ToolTip.Tip="{Binding EditModeTooltip}"
+							AutomationProperties.Name="{Binding EditModeTooltip}">
+						<StackPanel Orientation="Horizontal" Spacing="7">
+							<iconPacks:PackIconIonicons IsVisible="{Binding !IsEditMode}" Kind="LockiOS" Width="16" Height="16" VerticalAlignment="Center" />
+							<iconPacks:PackIconIonicons IsVisible="{Binding IsEditMode}" Kind="UnlockiOS" Width="16" Height="16" VerticalAlignment="Center" />
+							<StackPanel Spacing="0" VerticalAlignment="Center">
+								<TextBlock Text="{Binding EditModeLabel}" FontSize="12" FontWeight="SemiBold" />
+								<TextBlock Text="{Binding EditModeHint}" FontSize="10" Foreground="{DynamicResource TlTextMuted}" />
+							</StackPanel>
+						</StackPanel>
+					</Button>
+					<Button Classes="icon-button" AutomationProperties.Name="查看日志" ToolTip.Tip="查看日志" Command="{Binding ViewIOLogCommand}">
+						<iconPacks:PackIconIonicons Kind="DocumentiOS" Width="18" Height="18"/>
+					</Button>
+					<Button Classes="service-button" Classes.running="{Binding IsStared}"
+							Command="{Binding OpenCloseDeviceCommand}"
+							AutomationProperties.Name="{Binding OpenCloseMenuText}">
 						<StackPanel Orientation="Horizontal">
-							<Image IsVisible="{Binding !IsStared}" Width="24" Height="24" Source="avares://IOStudio/Assets/start.png" />
-							<Image IsVisible="{Binding IsStared}" Width="24" Height="24" Source="avares://IOStudio/Assets/stop.png" />
-							<TextBlock IsVisible="{Binding IsStared}" Text="关闭" Padding="16 4" />
-							<TextBlock IsVisible="{Binding !IsStared}" Text="打开" Padding="16 4" />
+							<iconPacks:PackIconIonicons IsVisible="{Binding !IsStared}" Kind="PlayiOS" Width="18" Height="18" Foreground="{DynamicResource TlSuccess}" VerticalAlignment="Center"/>
+							<iconPacks:PackIconIonicons IsVisible="{Binding IsStared}" Kind="SquareiOS" Width="16" Height="16" Foreground="{DynamicResource TlDanger}" VerticalAlignment="Center"/>
+							<TextBlock IsVisible="{Binding IsStared}" Text="停止设备服务" Padding="12 4" />
+							<TextBlock IsVisible="{Binding !IsStared}" Text="启动设备服务" Padding="12 4" />
 						</StackPanel>
 					</Button>
 				</StackPanel>
 			</Grid>
 		</Border>
 
-		<TabControl Margin="5 5 5 0"
-					SelectedItem="{Binding SelectedIODevcie}"
-					ItemsSource="{Binding Devices}">
-			<TabControl.ItemTemplate>
-				<DataTemplate>
-					<StackPanel Orientation="Horizontal" Margin="0">
-						<TextBlock Text="{Binding Title}" VerticalAlignment="Center"/>
-						<Ellipse IsVisible="{Binding IsValid}" Width="12" Height="12" Fill="#059669" Stroke="Black" StrokeThickness="0" Margin="10 0 4 0"/>
-						<Ellipse IsVisible="{Binding !IsValid}" Width="12" Height="12" Fill="#dc2626" Stroke="Black" StrokeThickness="0" Margin="10 0 4 0"/>
-						<Button Command="{Binding $parent[TabControl].((vm:MainWindowViewModel)DataContext).DeleteDeviceCommand}"
-								CommandParameter="{Binding}"
-								Background="Transparent"
-								Padding="4 2"
-								Margin="4 0 0 0"
-								VerticalAlignment="Center"
-								ToolTip.Tip="删除设备"
-								Cursor="Hand">
-							<TextBlock Text="✕" FontSize="12" Foreground="#94a3b8"/>
+		<Grid Margin="12,8,12,0">
+			<!-- 设备标签页 (主区, 仅显示未被弹出的设备) -->
+			<TabControl SelectedItem="{Binding SelectedIODevcie}"
+						ItemsSource="{Binding VisibleDevices}">
+				<TabControl.ItemTemplate>
+					<DataTemplate>
+						<StackPanel Orientation="Horizontal" Margin="0" Spacing="4">
+							<TextBlock Text="{Binding Title}" VerticalAlignment="Center"/>
+							<Border Classes="device-state-badge" Background="{Binding ConnectionStateBackground}" Margin="6,0,2,0">
+								<TextBlock Text="{Binding ConnectionStateText}" FontSize="10" Foreground="{Binding ConnectionStateForeground}"
+									   HorizontalAlignment="Center" TextAlignment="Center" />
+							</Border>
+							<Button Classes="icon-button" Width="28" Height="28" Padding="5"
+									AutomationProperties.Name="弹出为独立窗口"
+																									Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).DetachDeviceCommand}"
+									CommandParameter="{Binding}" ToolTip.Tip="弹出为独立窗口">
+								<iconPacks:PackIconIonicons Kind="ResizeiOS" Width="14" Height="14"/>
+							</Button>
+						<StackPanel.ContextMenu>
+							<ContextMenu>
+								<MenuItem Header="弹出为独立窗口"
+																												Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).DetachDeviceCommand}"
+										CommandParameter="{Binding}" />
+								<MenuItem Header="删除设备"
+																												Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).DeleteDeviceCommand}"
+										CommandParameter="{Binding}" />
+							</ContextMenu>
+						</StackPanel.ContextMenu>
+						</StackPanel>
+					</DataTemplate>
+				</TabControl.ItemTemplate>
+				<TabControl.ContentTemplate>
+					<DataTemplate>
+						<controls:IODeviceView />
+					</DataTemplate>
+				</TabControl.ContentTemplate>
+			</TabControl>
+
+			<!-- 空状态引导 (无设备时覆盖显示) -->
+			<Border IsVisible="{Binding HasNoDevices}"
+					Background="{DynamicResource TlPanelBg}"
+					CornerRadius="8"
+					BorderBrush="{DynamicResource TlBorderBrush}"
+					BorderThickness="1"
+					Padding="32"
+					HorizontalAlignment="Center"
+					VerticalAlignment="Center"
+					MaxWidth="420">
+				<StackPanel Spacing="14" HorizontalAlignment="Center">
+					<iconPacks:PackIconIonicons Kind="AddiOS" Width="48" Height="48" Foreground="{DynamicResource TlTextMuted}"
+												HorizontalAlignment="Center"/>
+					<TextBlock Text="尚未添加设备"
+							   FontSize="18" FontWeight="Bold"
+							   Foreground="{DynamicResource TlTextPrimary}"
+							   HorizontalAlignment="Center"/>
+					<TextBlock Text="从 IODevice.xml 或下方按钮添加设备，开始输入输出调试。"
+							   FontSize="12"
+							   Foreground="{DynamicResource TlTextSecondary}"
+							   TextAlignment="Center"
+							   TextWrapping="Wrap"/>
+					<StackPanel Orientation="Horizontal" Spacing="10"
+								HorizontalAlignment="Center" Margin="0,8,0,0">
+						<Button Command="{Binding AddDeviceCommand}"
+								IsEnabled="{Binding IsEditMode}"
+								Padding="16,8"
+										Background="{DynamicResource TlAccent}"
+										Foreground="{DynamicResource TlAccentFg}"
+								FontWeight="SemiBold">
+							<StackPanel Orientation="Horizontal" Spacing="6">
+																				<iconPacks:PackIconIonicons Kind="AddiOS" Width="16" Height="16" Foreground="{DynamicResource TlAccentFg}" VerticalAlignment="Center"/>
+								<TextBlock Text="添加设备" VerticalAlignment="Center"/>
+							</StackPanel>
 						</Button>
+						<Button Content="编辑 IODevice.xml"
+								Command="{Binding OpenConfigCommand}"
+								IsEnabled="{Binding IsEditMode}"
+								Padding="16,8"
+								Background="{DynamicResource TlToolbarBg}"
+								Foreground="{DynamicResource TlTextSecondary}"/>
 					</StackPanel>
-				</DataTemplate>
-			</TabControl.ItemTemplate>
-			<TabControl.ContentTemplate>
-				<DataTemplate>
-					<controls:IODeviceView />
-				</DataTemplate>
-			</TabControl.ContentTemplate>
-		</TabControl>
+				</StackPanel>
+			</Border>
+		</Grid>
+
+		<!-- 底部状态栏 -->
+		<Border DockPanel.Dock="Bottom"
+				Background="{DynamicResource TlToolbarBg}"
+				BorderBrush="{DynamicResource TlBorderBrush}"
+				BorderThickness="0,1,0,0"
+				Padding="12,5">
+			<Grid ColumnDefinitions="*,Auto">
+				<StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8"
+							VerticalAlignment="Center">
+					<Ellipse Width="8" Height="8"
+							 Fill="{Binding RunStateColor}"
+								 Stroke="{DynamicResource TlBorderBrush}" StrokeThickness="0"
+							 VerticalAlignment="Center"/>
+					<TextBlock Text="{Binding RunStateText}"
+							   FontSize="11"
+							   Foreground="{DynamicResource TlTextSecondary}"
+							   VerticalAlignment="Center"/>
+					<TextBlock Text="·" FontSize="11" Foreground="{DynamicResource TlTextMuted}" VerticalAlignment="Center"/>
+					<TextBlock Text="{Binding ConnectedDeviceCountText}" FontSize="11" Foreground="{DynamicResource TlTextSecondary}" VerticalAlignment="Center"/>
+					<TextBlock Text="·" FontSize="11"
+							   Foreground="{DynamicResource TlTextMuted}"
+							   VerticalAlignment="Center"/>
+					<TextBlock Text="{Binding DeviceCountText}"
+							   FontSize="11"
+							   Foreground="{DynamicResource TlTextSecondary}"
+							   VerticalAlignment="Center"/>
+					<TextBlock Text="·" FontSize="11"
+							   Foreground="{DynamicResource TlTextMuted}"
+							   VerticalAlignment="Center"/>
+					<TextBlock Text="{Binding StatusText}"
+							   FontSize="11"
+							   Foreground="{DynamicResource TlTextMuted}"
+							   VerticalAlignment="Center"
+							   TextTrimming="CharacterEllipsis"/>
+				</StackPanel>
+				<TextBlock Grid.Column="1" Text="IO聚合调试平台"
+						   FontSize="10"
+						   Foreground="{DynamicResource TlTextMuted}"
+						   VerticalAlignment="Center"/>
+			</Grid>
+		</Border>
 	</DockPanel>
 
 </Window>

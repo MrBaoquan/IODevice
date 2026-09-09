@@ -18,6 +18,7 @@ namespace IOStudio.ViewModels.Timeline
         /// <summary>选中关键帧 (由 TrackClipControl.KeyframeSelected 触发)</summary>
         public void SelectKeyframe(TrackViewModel track, int clipIdx, int kfIdx)
         {
+            SelectedActionInstanceId = null;
             SelectedTrack = track;
             SelectedClipIndex = clipIdx;
             SelectedKeyframeIndex = kfIdx;
@@ -49,10 +50,24 @@ namespace IOStudio.ViewModels.Timeline
         /// <summary>清除关键帧选中</summary>
         public void ClearKeyframeSelection()
         {
+            SelectedActionInstanceId = null;
             SelectedClipIndex = -1;
             SelectedKeyframeIndex = -1;
             SelectedKeyframe = null;
             _selectedKeyframes.Clear();
+            this.RaisePropertyChanged(nameof(IsMultiSelectMode));
+            this.RaisePropertyChanged(nameof(SelectedKeyframeCount));
+        }
+
+        /// <summary>将一个跨轨动作作为整体选中，不进入单关键帧编辑状态。</summary>
+        public void SelectActionInstance(TrackViewModel track, int clipIdx, string instanceId)
+        {
+            SelectedTrack = track;
+            SelectedClipIndex = clipIdx;
+            SelectedKeyframeIndex = -1;
+            SelectedKeyframe = null;
+            _selectedKeyframes.Clear();
+            SelectedActionInstanceId = instanceId;
             this.RaisePropertyChanged(nameof(IsMultiSelectMode));
             this.RaisePropertyChanged(nameof(SelectedKeyframeCount));
         }
@@ -180,8 +195,12 @@ namespace IOStudio.ViewModels.Timeline
         /// </summary>
         public void AddKeyframeAtTime(TrackViewModel track, double absoluteTimeMs)
         {
+            if (!TryBeginTrackEdit(track, "添加关键帧"))
+                return;
             if (track.Clips.Count == 0)
                 return;
+
+            absoluteTimeMs = ClampTime(absoluteTimeMs);
 
             // 找到包含该时间的 clip
             ClipViewModel? targetClip = null;
@@ -280,6 +299,230 @@ namespace IOStudio.ViewModels.Timeline
         }
 
         /// <summary>
+        /// 复制最近关键帧到播放头 (快捷键 Ctrl+D)。
+        /// 在选中轨道上, 将播放头左侧最近的关键帧 (值/插值/切线) 复制到当前播放头位置。
+        /// 若左侧无关键帧, 则直接添加播放头处插值值的普通关键帧。
+        /// </summary>
+        public void DuplicateKeyframeAtPlayhead()
+        {
+            var targetTrack = SelectedTrack ?? (Tracks.Count > 0 ? Tracks[0] : null);
+            if (!TryBeginTrackEdit(targetTrack, "复制关键帧"))
+                return;
+
+            // 1. 找播放头左侧最近的关键帧
+            MotionKeyframe? nearest = null;
+            MotionClip? nearestClip = null;
+            foreach (var clipVm in targetTrack.Clips)
+            {
+                double startMs = clipVm.StartMs;
+                foreach (var kf in clipVm.Clip.Keyframes)
+                {
+                    double absTime = startMs + kf.TimeMs;
+                    if (
+                        absTime <= CurrentTimeMs + 0.5
+                        && (nearest == null || absTime > nearestClip!.StartMs + nearest.TimeMs)
+                    )
+                    {
+                        nearest = kf;
+                        nearestClip = clipVm.Clip;
+                    }
+                }
+            }
+
+            if (nearest == null || nearestClip == null)
+            {
+                // 无左侧关键帧: 落到 AddKeyframeAtTime (用插值值)
+                AddKeyframeAtTime(targetTrack, CurrentTimeMs);
+                return;
+            }
+
+            // 2. 复制关键帧到播放头 (同值/同插值/同切线)
+            var clone = new MotionKeyframe
+            {
+                TimeMs = CurrentTimeMs - nearestClip.StartMs,
+                Value = nearest.Value,
+                Interpolation = nearest.Interpolation,
+                TangentIn = nearest.TangentIn,
+                TangentOut = nearest.TangentOut,
+                Cp1x = nearest.Cp1x,
+                Cp2x = nearest.Cp2x,
+                Event = nearest.Event,
+            };
+            nearestClip.Keyframes.Add(clone);
+            nearestClip.Keyframes.Sort((a, b) => a.TimeMs.CompareTo(b.TimeMs));
+
+            AddKeyframeViewModel(nearestClip, clone);
+            MarkDirty();
+        }
+
+        /// <summary>
+        /// 将新建的关键帧同步到 ClipViewModel (保持 UI 与模型一致)
+        /// </summary>
+        private void AddKeyframeViewModel(MotionClip clip, MotionKeyframe kf)
+        {
+            var clipVm = Tracks.SelectMany(t => t.Clips).FirstOrDefault(c => c.Clip == clip);
+            if (clipVm == null)
+                return;
+
+            int insertIdx = 0;
+            for (int i = 0; i < clipVm.Keyframes.Count; i++)
+            {
+                if (clipVm.Keyframes[i].TimeMs > kf.TimeMs)
+                    break;
+                insertIdx = i + 1;
+            }
+            clipVm.Keyframes.Insert(insertIdx, new KeyframeViewModel(kf));
+        }
+
+        /// <summary>
+        /// 添加 Overlay 覆盖关键帧 (空窗自由数值点, 绝对时间, 带 Undo)。
+        /// 优先级高于 idle: 两点间插值, 之外回落 idle/中性。用于在待机循环上打点。
+        /// </summary>
+        public void AddOverrideKeyframeAtTime(TrackViewModel track, double absTimeMs, float value)
+        {
+            if (!TryBeginTrackEdit(track, "添加覆盖关键帧"))
+                return;
+            // 惰性初始化 override 列表
+            track.OverrideKeyframes ??= new List<MotionKeyframe>();
+
+            double t = ClampTime(absTimeMs);
+            float v = Math.Clamp(value, 0f, 1f);
+
+            // 同一时刻已有点 → 仅更新值 (不重复插入)
+            var existing = track.OverrideKeyframes.FirstOrDefault(
+                k => Math.Abs(k.TimeMs - t) < 0.5
+            );
+            if (existing != null)
+            {
+                float oldVal = existing.Value;
+                _undoRedo.Execute(
+                    new LambdaCommand(
+                        "修改覆盖关键帧",
+                        () =>
+                        {
+                            existing.Value = v;
+                            NotifyTrackDataChanged(track);
+                        },
+                        () =>
+                        {
+                            existing.Value = oldVal;
+                            NotifyTrackDataChanged(track);
+                        }
+                    )
+                );
+                MarkDirty();
+                return;
+            }
+
+            var kf = new MotionKeyframe
+            {
+                TimeMs = t,
+                Value = v,
+                Interpolation = "linear"
+            };
+            _undoRedo.Execute(
+                new LambdaCommand(
+                    "添加覆盖关键帧",
+                    () =>
+                    {
+                        track.OverrideKeyframes!.Add(kf);
+                        track.OverrideKeyframes.Sort((a, b) => a.TimeMs.CompareTo(b.TimeMs));
+                        NotifyTrackDataChanged(track);
+                        InvalidateTrackChannelIndex();
+                    },
+                    () =>
+                    {
+                        track.OverrideKeyframes!.Remove(kf);
+                        NotifyTrackDataChanged(track);
+                        InvalidateTrackChannelIndex();
+                    }
+                )
+            );
+            MarkDirty();
+        }
+
+        /// <summary>
+        /// 添加 idle 待机循环关键帧 (空窗双击, 相位 ∈ [0, period), 带 Undo)。
+        /// 轨道未配置 idle 时自动创建默认 idle 循环。
+        /// </summary>
+        public void AddIdleKeyframeAtTime(TrackViewModel track, double phaseMs, float value)
+        {
+            if (!TryBeginTrackEdit(track, "添加待机关键帧"))
+                return;
+
+            // 惰性初始化 idle 循环
+            if (track.IdleLoop == null)
+            {
+                track.IdleLoop = new IdleLoop
+                {
+                    Enabled = true,
+                    PeriodMs = 1600.0,
+                    PhaseMode = "continuous",
+                };
+            }
+            track.IdleLoop.Enabled = true;
+            track.IdleLoop.Keyframes ??= new List<MotionKeyframe>();
+
+            double period = track.IdleLoop.PeriodMs > 1.0 ? track.IdleLoop.PeriodMs : 1.0;
+            double phase = phaseMs % period;
+            if (phase < 0)
+                phase += period;
+            float v = Math.Clamp(value, 0f, 1f);
+
+            // 同一相位已有点 → 仅更新值 (不重复插入)
+            var existing = track.IdleLoop.Keyframes.FirstOrDefault(
+                k => Math.Abs(k.TimeMs - phase) < 0.5
+            );
+            if (existing != null)
+            {
+                float oldVal = existing.Value;
+                _undoRedo.Execute(
+                    new LambdaCommand(
+                        "修改待机关键帧",
+                        () =>
+                        {
+                            existing.Value = v;
+                            NotifyTrackDataChanged(track);
+                        },
+                        () =>
+                        {
+                            existing.Value = oldVal;
+                            NotifyTrackDataChanged(track);
+                        }
+                    )
+                );
+                MarkDirty();
+                return;
+            }
+
+            var kf = new MotionKeyframe
+            {
+                TimeMs = phase,
+                Value = v,
+                Interpolation = "bezier"
+            };
+            _undoRedo.Execute(
+                new LambdaCommand(
+                    "添加待机关键帧",
+                    () =>
+                    {
+                        track.IdleLoop!.Keyframes!.Add(kf);
+                        track.IdleLoop.Keyframes.Sort((a, b) => a.TimeMs.CompareTo(b.TimeMs));
+                        NotifyTrackDataChanged(track);
+                        InvalidateTrackChannelIndex();
+                    },
+                    () =>
+                    {
+                        track.IdleLoop!.Keyframes!.Remove(kf);
+                        NotifyTrackDataChanged(track);
+                        InvalidateTrackChannelIndex();
+                    }
+                )
+            );
+            MarkDirty();
+        }
+
+        /// <summary>
         /// 移动关键帧 (拖拽时调用)
         /// </summary>
         public void MoveKeyframe(
@@ -290,6 +533,8 @@ namespace IOStudio.ViewModels.Timeline
             float newValue
         )
         {
+            if (!TryBeginTrackEdit(track, "移动关键帧"))
+                return;
             if (clipIdx < 0 || clipIdx >= track.Clips.Count)
                 return;
             var clipVm = track.Clips[clipIdx];
@@ -299,9 +544,10 @@ namespace IOStudio.ViewModels.Timeline
             // 对拖拽时间应用吸附 (转为绝对时间后吸附, 再转回本地时间)
             double absTime = clipVm.StartMs + newTimeMs;
             double snappedAbs = ApplySnap(absTime);
-            newTimeMs = snappedAbs - clipVm.StartMs;
+            newTimeMs = ClampTime(snappedAbs) - clipVm.StartMs;
             if (newTimeMs < 0)
                 newTimeMs = 0;
+            newTimeMs = Math.Max(0, ClampTime(clipVm.StartMs + newTimeMs) - clipVm.StartMs);
 
             // Bool 轨道: 值必须严格为 0 或 1
             if (track.ValueType == "bool")
@@ -345,6 +591,8 @@ namespace IOStudio.ViewModels.Timeline
             float newValue
         )
         {
+            if (!TryBeginTrackEdit(track, "移动关键帧"))
+                return;
             if (clipIdx < 0 || clipIdx >= track.Clips.Count)
                 return;
             var clipVm = track.Clips[clipIdx];
@@ -353,6 +601,7 @@ namespace IOStudio.ViewModels.Timeline
 
             if (newTimeMs < 0)
                 newTimeMs = 0;
+            newTimeMs = Math.Max(0, ClampTime(clipVm.StartMs + newTimeMs) - clipVm.StartMs);
 
             // Bool 轨道: 值必须严格为 0 或 1
             if (track.ValueType == "bool")
@@ -400,6 +649,8 @@ namespace IOStudio.ViewModels.Timeline
         /// </summary>
         public void DeleteKeyframe(TrackViewModel track, int clipIdx, int kfIdx)
         {
+            if (!TryBeginTrackEdit(track, "删除关键帧"))
+                return;
             if (clipIdx < 0 || clipIdx >= track.Clips.Count)
                 return;
             var clipVm = track.Clips[clipIdx];
@@ -455,6 +706,8 @@ namespace IOStudio.ViewModels.Timeline
         public int DeleteSelectedKeyframes()
         {
             if (_selectedKeyframes.Count == 0)
+                return 0;
+            if (!TryBeginTrackEdit(_selectedKeyframes.Select(item => item.Track), "删除关键帧"))
                 return 0;
 
             // 从后往前删除, 避免索引偏移问题
@@ -558,6 +811,8 @@ namespace IOStudio.ViewModels.Timeline
         {
             if (_selectedKeyframes.Count == 0)
                 return;
+            if (!TryBeginTrackEdit(_selectedKeyframes.Select(item => item.Track), "设置插值"))
+                return;
 
             // 快照旧插值值
             var snapshot =
@@ -611,6 +866,8 @@ namespace IOStudio.ViewModels.Timeline
         public void MoveSelectedKeyframes(double deltaTimeMs)
         {
             if (_selectedKeyframes.Count == 0)
+                return;
+            if (!TryBeginTrackEdit(_selectedKeyframes.Select(item => item.Track), "移动关键帧"))
                 return;
 
             // 快照旧时间值
@@ -753,6 +1010,18 @@ namespace IOStudio.ViewModels.Timeline
             if (_clipboardKeyframes.Count == 0)
                 return;
             if (SelectedTrack == null && Tracks.Count == 0)
+                return;
+
+            var pasteTargetTracks = _clipboardKeyframes
+                .Select(item =>
+                    Tracks.FirstOrDefault(track => track.Label == item.TrackName)
+                    ?? SelectedTrack
+                    ?? Tracks.FirstOrDefault()
+                )
+                .Where(track => track != null)
+                .Cast<TrackViewModel>()
+                .ToList();
+            if (!TryBeginTrackEdit(pasteTargetTracks, "粘贴关键帧"))
                 return;
 
             double pasteTimeMs = CurrentTimeMs;
@@ -934,10 +1203,19 @@ namespace IOStudio.ViewModels.Timeline
             string interpolation
         )
         {
+            if (!TryBeginTrackEdit(track, "设置插值"))
+                return;
             if (clipIdx < 0 || clipIdx >= track.Clips.Count)
                 return;
             var clipVm = track.Clips[clipIdx];
             if (kfIdx < 0 || kfIdx >= clipVm.Keyframes.Count)
+                return;
+
+            // Bool 轨只允许 step (与运行时阶梯求值/导出语义一致, 避免播放与导出打架)
+            if (
+                string.Equals(track.ValueType, "bool", StringComparison.OrdinalIgnoreCase)
+                && !string.Equals(interpolation, "step", StringComparison.OrdinalIgnoreCase)
+            )
                 return;
 
             clipVm.Keyframes[kfIdx].Interpolation = interpolation;
@@ -961,6 +1239,8 @@ namespace IOStudio.ViewModels.Timeline
         public void BatchSetInterpolation(string interpolation)
         {
             if (_selectedKeyframes.Count == 0)
+                return;
+            if (!TryBeginTrackEdit(_selectedKeyframes.Select(item => item.Track), "设置插值"))
                 return;
 
             // 快照旧值
@@ -1011,6 +1291,8 @@ namespace IOStudio.ViewModels.Timeline
         {
             if (_selectedKeyframes.Count == 0)
                 return;
+            if (!TryBeginTrackEdit(_selectedKeyframes.Select(item => item.Track), "应用曲线预设"))
+                return;
 
             var preset = CurvePresetService.FindPreset(presetName);
             if (preset == null)
@@ -1033,6 +1315,8 @@ namespace IOStudio.ViewModels.Timeline
         )
         {
             if (SelectedKeyframe is null)
+                return;
+            if (!TryBeginTrackEdit(SelectedTrack, "修改关键帧属性"))
                 return;
 
             // Bool 轨道: 值必须严格为 0 或 1
@@ -1089,6 +1373,8 @@ namespace IOStudio.ViewModels.Timeline
         {
             if (SelectedKeyframe is null)
                 return;
+            if (!TryBeginTrackEdit(SelectedTrack, "修改关键帧事件"))
+                return;
 
             var kf = SelectedKeyframe;
             string oldEventName = kf.EventName ?? "";
@@ -1120,6 +1406,8 @@ namespace IOStudio.ViewModels.Timeline
         {
             var track = SelectedTrack;
             if (track == null || SelectedClipIndex < 0 || SelectedClipIndex >= track.Clips.Count)
+                return;
+            if (!TryBeginTrackEdit(track, "设置插值"))
                 return;
 
             var clipVm = track.Clips[SelectedClipIndex];

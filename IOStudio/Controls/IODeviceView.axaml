@@ -32,17 +32,10 @@
 			<Setter Property="BorderThickness" Value="1" />
 			<Setter Property="CornerRadius" Value="4" />
 		</Style>
-		<Style Selector="Button.IOControl:pointerover, Button.DIButton:pointerover">
-			<Setter Property="Background" Value="{DynamicResource TlBtnHover}" />
-		</Style>
 		<Style Selector="Button.IOControl.active, Button.DIButton.active">
 			<Setter Property="Background" Value="{DynamicResource TlControlActiveBg}" />
 			<Setter Property="Foreground" Value="{DynamicResource TlControlActiveFg}" />
 			<Setter Property="BorderBrush" Value="{DynamicResource TlControlActiveBg}" />
-		</Style>
-		<Style Selector="Button.IOControl.active:pointerover, Button.DIButton.active:pointerover">
-			<Setter Property="Background" Value="{DynamicResource TlSuccess}" />
-			<Setter Property="Foreground" Value="{DynamicResource TlControlActiveFg}" />
 		</Style>
 
 		<Style Selector="Button.img-btn">

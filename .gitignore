@@ -259,3 +259,7 @@ TestRunDebug/
 *.pptx
 *.mp4
 
+
+# 运行时复制到输出目录的动作预设（源文件在 IOStudio/Config/Motion）
+Binaries/Win64/Debug/Config/Motion/*
+

@@ -14,10 +14,79 @@
 #if !defined (_PDLL_H_)
 #define _PDLL_H_
 
+#include <cstring>
+#include "IOPlatform.h"
+#if IODEVICE_PLATFORM_WINDOWS
 #include <windows.h>
 #include <winbase.h>
+#endif
 #include <string>
 #define FUNC_LOADED 3456
+
+#if IODEVICE_PLATFORM_WINDOWS
+using PDLLHandle = HINSTANCE;
+#define IOTK_PLUGIN_CALL IODEVICE_PLUGIN_CALL
+#define IOTK_DLL_IMPORT IODEVICE_DLL_IMPORT
+
+inline PDLLHandle PDLLLoadLibrary(const char* name)
+{
+	return LoadLibraryA(name);
+}
+
+inline void* PDLLGetSymbol(PDLLHandle handle, const char* symbolName)
+{
+	return reinterpret_cast<void*>(GetProcAddress(handle, symbolName));
+}
+
+inline void PDLLFreeLibrary(PDLLHandle handle)
+{
+	FreeLibrary(handle);
+}
+
+inline unsigned long PDLLLastError()
+{
+	return GetLastError();
+}
+#else
+#include <dlfcn.h>
+using PDLLHandle = void*;
+#define IOTK_PLUGIN_CALL IODEVICE_PLUGIN_CALL
+#define IOTK_DLL_IMPORT IODEVICE_DLL_IMPORT
+
+inline PDLLHandle PDLLLoadLibrary(const char* name)
+{
+	return dlopen(name, RTLD_NOW | RTLD_LOCAL);
+}
+
+inline void* PDLLGetSymbol(PDLLHandle handle, const char* symbolName)
+{
+	return dlsym(handle, symbolName);
+}
+
+inline void PDLLFreeLibrary(PDLLHandle handle)
+{
+	if (handle)
+	{
+		dlclose(handle);
+	}
+}
+
+inline unsigned long PDLLLastError()
+{
+	return 1;
+}
+
+inline int strcpy_s(char* dest, size_t destSize, const char* src)
+{
+	if (!dest || !src || destSize == 0)
+	{
+		return 1;
+	}
+	std::strncpy(dest, src, destSize - 1);
+	dest[destSize - 1] = '\0';
+	return 0;
+}
+#endif
 
 // function declarations according to the number of parameters
 // define the type
@@ -29,18 +98,17 @@
 // otherwise return a NULL cast to the return parameter.
 
 #define DECLARE_FUNCTION0(retVal, FuncName) \
-	typedef  retVal (CALLBACK* TYPE_##FuncName)(); \
-	TYPE_##FuncName m_##FuncName; \
-	short m_is##FuncName; \
+	typedef  retVal (IOTK_PLUGIN_CALL* TYPE_##FuncName)(); \
+	TYPE_##FuncName m_##FuncName = nullptr; \
+	short m_is##FuncName = 0; \
 	retVal FuncName() \
 	{ \
 		if (m_dllHandle) \
 		{ \
-			if (FUNC_LOADED != m_is##FuncName) \
+			if (0 == m_is##FuncName) \
 			{\
-				m_##FuncName = NULL; \
-				m_##FuncName = (TYPE_##FuncName)GetProcAddress(m_dllHandle, #FuncName); \
-				m_is##FuncName = FUNC_LOADED;\
+				m_##FuncName = (TYPE_##FuncName)PDLLGetSymbol(m_dllHandle, #FuncName); \
+				m_is##FuncName = (m_##FuncName != NULL) ? FUNC_LOADED : -1;\
 			}\
 			if (NULL != m_##FuncName) \
 				return m_##FuncName(); \
@@ -52,18 +120,17 @@
 	}   	
 
 #define DECLARE_FUNCTION1(retVal, FuncName, Param1) \
-	typedef  retVal (CALLBACK* TYPE_##FuncName)(Param1); \
-	TYPE_##FuncName m_##FuncName; \
-	short m_is##FuncName;\
+	typedef  retVal (IOTK_PLUGIN_CALL* TYPE_##FuncName)(Param1); \
+	TYPE_##FuncName m_##FuncName = nullptr; \
+	short m_is##FuncName = 0;\
 	retVal FuncName(Param1 p1) \
 	{ \
 		if (m_dllHandle) \
 		{ \
-			if (FUNC_LOADED != m_is##FuncName) \
+			if (0 == m_is##FuncName) \
 			{\
-				m_##FuncName = NULL; \
-				m_##FuncName = (TYPE_##FuncName)GetProcAddress(m_dllHandle, #FuncName); \
-				m_is##FuncName = FUNC_LOADED;\
+				m_##FuncName = (TYPE_##FuncName)PDLLGetSymbol(m_dllHandle, #FuncName); \
+				m_is##FuncName = (m_##FuncName != NULL) ? FUNC_LOADED : -1;\
 			}\
 			if (NULL != m_##FuncName) \
 				return m_##FuncName(p1); \
@@ -75,18 +142,17 @@
 	}
 
 #define DECLARE_FUNCTION2(retVal, FuncName, Param1, Param2) \
-	typedef  retVal (CALLBACK* TYPE_##FuncName)(Param1, Param2); \
-	TYPE_##FuncName m_##FuncName; \
-	short m_is##FuncName;\
+	typedef  retVal (IOTK_PLUGIN_CALL* TYPE_##FuncName)(Param1, Param2); \
+	TYPE_##FuncName m_##FuncName = nullptr; \
+	short m_is##FuncName = 0;\
 	retVal FuncName (Param1 p1, Param2 p2) \
 	{\
 		if (m_dllHandle)\
 		{\
-			if (FUNC_LOADED != m_is##FuncName) \
+			if (0 == m_is##FuncName) \
 			{\
-				m_##FuncName = NULL; \
-				m_##FuncName = (TYPE_##FuncName)GetProcAddress(m_dllHandle, #FuncName); \
-				m_is##FuncName = FUNC_LOADED;\
+				m_##FuncName = (TYPE_##FuncName)PDLLGetSymbol(m_dllHandle, #FuncName); \
+				m_is##FuncName = (m_##FuncName != NULL) ? FUNC_LOADED : -1;\
 			}\
 			if (NULL != m_##FuncName) \
 				return m_##FuncName(p1, p2); \
@@ -98,18 +164,17 @@
 	}
 
 #define DECLARE_FUNCTION3(retVal, FuncName, Param1, Param2, Param3) \
-	typedef  retVal (CALLBACK* TYPE_##FuncName)(Param1, Param2, Param3); \
-	TYPE_##FuncName m_##FuncName; \
-	short m_is##FuncName;\
+	typedef  retVal (IOTK_PLUGIN_CALL* TYPE_##FuncName)(Param1, Param2, Param3); \
+	TYPE_##FuncName m_##FuncName = nullptr; \
+	short m_is##FuncName = 0;\
 	retVal FuncName (Param1 p1, Param2 p2, Param3 p3) \
 	{\
 		if (m_dllHandle)\
 		{\
-			if (FUNC_LOADED != m_is##FuncName) \
+			if (0 == m_is##FuncName) \
 			{\
-				m_##FuncName = NULL; \
-				m_##FuncName = (TYPE_##FuncName)GetProcAddress(m_dllHandle, #FuncName); \
-				m_is##FuncName = FUNC_LOADED; \
+				m_##FuncName = (TYPE_##FuncName)PDLLGetSymbol(m_dllHandle, #FuncName); \
+				m_is##FuncName = (m_##FuncName != NULL) ? FUNC_LOADED : -1; \
 			}\
 			if (NULL != m_##FuncName) \
 				return m_##FuncName(p1, p2, p3);\
@@ -121,7 +186,7 @@
 	}
 
 #define DECLARE_FUNCTION4(retVal, FuncName, Param1, Param2, Param3, Param4) \
-	typedef  retVal (CALLBACK* TYPE_##FuncName)(Param1, Param2, Param3, Param4); \
+	typedef  retVal (IOTK_PLUGIN_CALL* TYPE_##FuncName)(Param1, Param2, Param3, Param4); \
 	TYPE_##FuncName m_##FuncName; \
 	short m_is##FuncName;\
 	retVal FuncName (Param1 p1, Param2 p2, Param3 p3, Param4 p4) \
@@ -131,7 +196,7 @@
 			if (FUNC_LOADED != m_is##FuncName) \
 			{\
 				m_##FuncName = NULL; \
-				m_##FuncName = (TYPE_##FuncName)GetProcAddress(m_dllHandle, #FuncName); \
+				m_##FuncName = (TYPE_##FuncName)PDLLGetSymbol(m_dllHandle, #FuncName); \
 				m_is##FuncName = FUNC_LOADED;\
 			}\
 			if (NULL != m_##FuncName) \
@@ -144,7 +209,7 @@
 	}
 
 #define DECLARE_FUNCTION5(retVal, FuncName, Param1, Param2, Param3, Param4, Param5) \
-	typedef  retVal (CALLBACK* TYPE_##FuncName)(Param1, Param2, Param3, Param4, Param5); \
+	typedef  retVal (IOTK_PLUGIN_CALL* TYPE_##FuncName)(Param1, Param2, Param3, Param4, Param5); \
 	TYPE_##FuncName m_##FuncName; \
 	short m_is##FuncName; \
 	retVal FuncName (Param1 p1, Param2 p2, Param3 p3, Param4 p4, Param5 p5) \
@@ -154,7 +219,7 @@
 			if (FUNC_LOADED != m_is##FuncName) \
 			{\
 				m_##FuncName = NULL; \
-				m_##FuncName = (TYPE_##FuncName)GetProcAddress(m_dllHandle, #FuncName); \
+				m_##FuncName = (TYPE_##FuncName)PDLLGetSymbol(m_dllHandle, #FuncName); \
 				m_is##FuncName = FUNC_LOADED;\
 			}\
 			if (NULL != m_##FuncName) \
@@ -167,7 +232,7 @@
 	}
 
 #define DECLARE_FUNCTION6(retVal, FuncName, Param1, Param2, Param3, Param4, Param5, Param6) \
-	typedef  retVal (CALLBACK* TYPE_##FuncName)(Param1, Param2, Param3, Param4, Param5, Param6); \
+	typedef  retVal (IOTK_PLUGIN_CALL* TYPE_##FuncName)(Param1, Param2, Param3, Param4, Param5, Param6); \
 	TYPE_##FuncName m_##FuncName; \
 	short m_is##FuncName;\
 	retVal FuncName (Param1 p1, Param2 p2, Param3 p3, Param4 p4, Param5 p5, Param6 p6) \
@@ -177,7 +242,7 @@
 			if (FUNC_LOADED != m_is##FuncName) \
 			{\
 				m_##FuncName = NULL; \
-				m_##FuncName = (TYPE_##FuncName)GetProcAddress(m_dllHandle, #FuncName); \
+				m_##FuncName = (TYPE_##FuncName)PDLLGetSymbol(m_dllHandle, #FuncName); \
 				m_is##FuncName = FUNC_LOADED;\
 			}\
 			if (NULL != m_##FuncName) \
@@ -190,7 +255,7 @@
 	}
 
 #define DECLARE_FUNCTION7(retVal, FuncName, Param1, Param2, Param3, Param4, Param5, Param6, Param7) \
-	typedef  retVal (CALLBACK* TYPE_##FuncName)(Param1, Param2, Param3, Param4, Param5, Param6, Param7); \
+	typedef  retVal (IOTK_PLUGIN_CALL* TYPE_##FuncName)(Param1, Param2, Param3, Param4, Param5, Param6, Param7); \
 	TYPE_##FuncName m_##FuncName; \
 	short m_is##FuncName;\
 	retVal FuncName (Param1 p1, Param2 p2, Param3 p3, Param4 p4, Param5 p5, Param6 p6, Param7 p7) \
@@ -200,7 +265,7 @@
 			if (FUNC_LOADED != m_is##FuncName) \
 			{\
 				m_##FuncName = NULL; \
-				m_##FuncName = (TYPE_##FuncName)GetProcAddress(m_dllHandle, #FuncName); \
+				m_##FuncName = (TYPE_##FuncName)PDLLGetSymbol(m_dllHandle, #FuncName); \
 				m_is##FuncName = FUNC_LOADED;\
 			}\
 			if (NULL != m_##FuncName) \
@@ -213,7 +278,7 @@
 	}
 
 #define DECLARE_FUNCTION8(retVal, FuncName, Param1, Param2, Param3, Param4, Param5, Param6, Param7, Param8) \
-	typedef  retVal (CALLBACK* TYPE_##FuncName)(Param1, Param2, Param3, Param4, Param5, Param6, Param7, Param8); \
+	typedef  retVal (IOTK_PLUGIN_CALL* TYPE_##FuncName)(Param1, Param2, Param3, Param4, Param5, Param6, Param7, Param8); \
 	TYPE_##FuncName m_##FuncName; \
 	short m_is##FuncName;\
 	retVal FuncName (Param1 p1, Param2 p2, Param3 p3, Param4 p4, Param5 p5, Param6 p6, Param7 p7, Param8 p8) \
@@ -223,7 +288,7 @@
 			if (FUNC_LOADED != m_is##FuncName) \
 			{\
 				m_##FuncName = NULL; \
-				m_##FuncName = (TYPE_##FuncName)GetProcAddress(m_dllHandle, #FuncName); \
+				m_##FuncName = (TYPE_##FuncName)PDLLGetSymbol(m_dllHandle, #FuncName); \
 				m_is##FuncName = FUNC_LOADED;\
 			}\
 			if (NULL != m_##FuncName) \
@@ -236,7 +301,7 @@
 	}
 
 #define DECLARE_FUNCTION9(retVal, FuncName, Param1, Param2, Param3, Param4, Param5, Param6, Param7, Param8, Param9) \
-	typedef  retVal (CALLBACK* TYPE_##FuncName)(Param1, Param2, Param3, Param4, Param5, Param6, Param7, Param8, Param9); \
+	typedef  retVal (IOTK_PLUGIN_CALL* TYPE_##FuncName)(Param1, Param2, Param3, Param4, Param5, Param6, Param7, Param8, Param9); \
 	TYPE_##FuncName m_##FuncName; \
 	short m_is##FuncName; \
 	retVal FuncName (Param1 p1, Param2 p2, Param3 p3, Param4 p4, Param5 p5, Param6 p6, Param7 p7, Param8 p8, Param9 p9) \
@@ -246,7 +311,7 @@
 			if (FUNC_NAME != m_is##FuncName) \
 			{\
 				m_##FuncName = NULL; \
-				m_##FuncName = (TYPE_##FuncName)GetProcAddress(m_dllHandle, #FuncName); \
+				m_##FuncName = (TYPE_##FuncName)PDLLGetSymbol(m_dllHandle, #FuncName); \
 				m_is##FuncName = FUNC_LOADED;\
 			}\
 			if (NULL != m_##FuncName) \
@@ -259,7 +324,7 @@
 	}
 
 #define DECLARE_FUNCTION10(retVal, FuncName, Param1, Param2, Param3, Param4, Param5, Param6, Param7, Param8, Param9, Param10) \
-	typedef  retVal (CALLBACK* TYPE_##FuncName)FuncName(Param1, Param2, Param3, Param4, Param5, Param6, Param7, Param8, Param9, Param10); \
+	typedef  retVal (IOTK_PLUGIN_CALL* TYPE_##FuncName)FuncName(Param1, Param2, Param3, Param4, Param5, Param6, Param7, Param8, Param9, Param10); \
 	TYPE_##FuncName m_##FuncName; \
 	short m_is##FuncName;\
 	retVal FuncName (Param1 p1, Param2 p2, Param3 p3, Param4 p4, Param5 p5, Param6 p6, Param7 p7, Param8 p8, Param9 p9, Param10 p10) \
@@ -269,13 +334,13 @@
 			if (FUNC_LOADED != m_is##FuncName) \
 			{\
 				m_##FuncName = NULL; \
-				m_##FuncName = (TYPE_##FuncName)GetProcAddress(m_dllHandle, #FuncName); \
+				m_##FuncName = (TYPE_##FuncName)PDLLGetSymbol(m_dllHandle, #FuncName); \
 				m_is##FuncName = FUNC_LOADED;\
 			}\
-			if (NULL != m_##FuncName) \
-				return m_##FuncName(p1, p2, p3, p4, p5, p6, p7, p8, p9, p10);\
-			else \
-				return (retVal)NULL; \
+		 if (NULL != m_##FuncName) \
+			 return m_##FuncName(p1, p2, p3, p4, p5, p6, p7, p8, p9, p10);\
+		 else \
+			 return (retVal)NULL; \
 		}\
 		else					\
 			return (retVal)NULL;\
@@ -283,15 +348,15 @@
 
 //declare constructors and LoadFunctions
 #define DECLARE_CLASS(ClassName) \
-	public:	\
-	ClassName (const char* name){LoadDll(name);} \
-	ClassName () {PDLL();}
+    public:	\
+    ClassName (const char* name) : PDLL() {LoadDll(name);} \
+    ClassName () : PDLL() {}
 
 class PDLL
 {
 
 protected:
-    HINSTANCE m_dllHandle;
+	PDLLHandle m_dllHandle;
     char* m_dllName;
     int m_refCount;
 
@@ -313,12 +378,12 @@ public:
             SetDllName(name);
 
         //try to load
-        m_dllHandle = LoadLibraryA(m_dllName);
+		m_dllHandle = PDLLLoadLibrary(m_dllName);
         if (m_dllHandle == NULL /*&& showMsg*/)
         {
-            errCode = GetLastError();
+			errCode = PDLLLastError();
             //std::string error_title = std::string("Error code:") + std::to_string(error_code);
-            //MessageBoxA(NULL, std::string("╪сть").append(name).append("й╖╟э").data(),error_title.data(), MB_OK);
+            //MessageBoxA(NULL, std::string("О©╫О©╫О©╫О©╫").append(name).append("й╖О©╫О©╫").data(),error_title.data(), MB_OK);
             //std::abort();
         }
     }
@@ -393,7 +458,7 @@ public:
         {
             if (m_dllHandle)
             {
-                FreeLibrary(m_dllHandle);
+				PDLLFreeLibrary(m_dllHandle);
                 m_dllHandle = NULL;
             }
 

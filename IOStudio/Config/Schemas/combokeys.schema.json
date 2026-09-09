@@ -1,0 +1,29 @@
+{
+  "dllName": "COMBOKEYS",
+  "displayName": "键盘读卡器",
+  "version": "1.0",
+  "category": "读卡器",
+  "sections": [
+    {
+      "name": "other",
+      "title": "基础配置项",
+      "collapsed": true,
+      "fields": [
+        {
+          "key": "input_hold_ms",
+          "label": "输入保持时间(ms)",
+          "type": "boolean",
+          "default": "500",
+          "required": false
+        },
+        {
+          "key": "terminal_key",
+          "label": "终止键",
+          "type": "text",
+          "default": "Enter",
+          "required": false
+        }
+      ]
+    }
+  ]
+}

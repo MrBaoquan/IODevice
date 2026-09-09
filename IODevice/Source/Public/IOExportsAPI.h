@@ -3,8 +3,10 @@
  *  CreateTime: 2018-6-27 9:00
  */
 
+#include "IOPlatform.h"
+
 #ifdef IODEVICEEXPORTS
-#define IOAPI __declspec(dllexport)
+#define IOAPI IODEVICE_EXPORT
 #else
-#define IOAPI __declspec(dllimport)
+#define IOAPI IODEVICE_IMPORT
 #endif // DEVICEEXPORTS

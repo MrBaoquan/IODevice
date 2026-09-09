@@ -8,7 +8,7 @@
 #include "CoreTypes.inl"
 #include "Math/Vector.h"
 
-namespace DevelopHelper
+namespace IOToolkit
 {
 
 struct FKeyState

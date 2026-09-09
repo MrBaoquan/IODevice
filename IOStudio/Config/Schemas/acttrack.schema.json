@@ -1,0 +1,71 @@
+{
+  "dllName": "ACTTRACK",
+  "displayName": "交互数据采集器",
+  "version": "1.0",
+  "category": "中控",
+  "sections": [
+    {
+      "name": "heartbeat",
+      "title": "心跳服务",
+      "collapsed": false,
+      "fields": [
+        {
+          "key": "heartbeat_ip",
+          "label": "服务器IP",
+          "type": "text",
+          "default": "127.0.0.1",
+          "required": false
+        },
+        {
+          "key": "heartbeat_port",
+          "label": "服务器端口",
+          "type": "number",
+          "default": "32001",
+          "required": false
+        },
+        {
+          "key": "heartbeat_interval",
+          "label": "心跳间隔(秒)",
+          "type": "number",
+          "default": "5",
+          "required": false
+        }
+      ]
+    },
+    {
+      "name": "report",
+      "title": "上报服务",
+      "collapsed": false,
+      "fields": [
+        {
+          "key": "local_port",
+          "label": "本地端口",
+          "type": "number",
+          "default": "12333",
+          "required": false
+        },
+        {
+          "key": "server_ip",
+          "label": "服务器IP",
+          "type": "text",
+          "default": "127.0.0.1",
+          "required": false
+        },
+        {
+          "key": "server_port",
+          "label": "服务器端口",
+          "type": "number",
+          "default": "12321",
+          "required": false
+        },
+        {
+          "key": "report_interval",
+          "label": "上报间隔(秒)",
+          "type": "number",
+          "default": "5",
+          "required": false
+        }
+      ]
+    }
+  ]
+}

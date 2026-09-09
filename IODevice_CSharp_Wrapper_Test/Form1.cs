@@ -26,44 +26,47 @@ namespace IODevice_C_CSharpTest
         private void Form1_Load(object sender, EventArgs e)
         {
             //_delegate = new NativeDelegate.NativeActionSignature(this.onKeyPressed);
-            IODeviceController.Load();
-            IODeviceController.UnLoad();
-            IODeviceController.Load();
+            // IOSettings.SetIOConfigPath("D:\\测试\\IODevice.xml");
+            IOSettings.SetIOLogDir("D:\\Logs1");
 
-            IODevice _device = IODeviceController.GetIODevice("Standard");
+            IODeviceController.Load();
+            IODevice _device = IODeviceController.GetIODevice("PCI2312A");
+            var _dllName = _device.DllName();
+            var _ioType = _device.IOType();
+            var _idx = _device.Index();
             _device.BindAction("TestAction", InputEvent.IE_Pressed, this.onActionPressed);
             _device.BindAction("TestAction", InputEvent.IE_Released, this.onActionReleased);
-
-
-            _device.BindKey(IOKeyCode.AnyKey, InputEvent.IE_Pressed, this.onAnyKeyPressed);
-            _device.BindKey(IOKeyCode.AnyKey, InputEvent.IE_Released, this.onAnyKeyReleased);
-
-            _device.BindAxis("MoveLR", this.OnMove);
+            
+            
             timer1.Start();
+            timer1.Interval = 20;
         }
 
         private void timer1_Tick(object sender, EventArgs e)
         {
             IODeviceController.Update();
 
-            IODevice _device = IODeviceController.GetIODevice("Standard");
-            byte _test = _device.GetDeviceDO(IOKeyCode.A);
-            byte[] _status = new byte[32];
-            _status[1] = 1;
-            _status[31] = 1;
-            _device.SetDeviceDO(_status);
-            _device.SetDeviceDO(IOKeyCode.A, 1);
-            if (_device.GetKeyDown(IOKeyCode.A))
-            {
-                Debug.WriteLine("A Pressed");
-            }
-            if (_device.GetKeyUp(IOKeyCode.A))
-            {
-                Debug.WriteLine("A Released");
-            }
+            // Byte[] _data = new Byte[512];
+            // int _recvSize = IODeviceController.GetIODevice("PCI2312A").RefreshStreamingData(_data);
+            // string _test = System.Text.Encoding.Default.GetString(_data);
+            Console.WriteLine("Test");
+            //IODevice _device = IODeviceController.GetIODevice("ExtDev");
+            //var _ret = _device.GetKeyDown(IOKeyCode.A);
+            //if (_ret)
+            //{
+            //    int _res = _device.SetDO("Start",1.0f);
+            //    Debug.WriteLine(_device.GetDO("Start"));
+            //}
+            //if (_device.GetKeyUp(IOKeyCode.A))
+            //{
+            //    //_device.SetDO("Start",0.0f);
+            //    Debug.WriteLine(_device.GetDO("Start"));
+            //}
+
+            //Debug.WriteLine(_device.GetDO("Start"));
             //Debug.WriteLine(_device.GetKeyDownDuration(IOKeyCode.B));
             //Debug.WriteLine(_device.GetAxisKey(IOKeyCode.MouseX));
-            Debug.WriteLine(_device.GetAxis("MoveLR"));
+            //Debug.WriteLine(_device.GetAxis("TestAxis"));
         }
 
         private void onAnyKeyPressed()
@@ -83,7 +86,15 @@ namespace IODevice_C_CSharpTest
 
         private void onActionPressed(Key InKeyName)
         {
+            IOSettings.SetIOLogDir("D:\\Logs1");
+            IOToolkit.IODeviceController.Unload();
+            IOToolkit.IODeviceController.Load();
+            IODevice _device = IODeviceController.GetIODevice("PCI2312A");
+            _device.BindAction("TestAction", InputEvent.IE_Pressed, this.onActionPressed);
+            _device.BindAction("TestAction", InputEvent.IE_Released, this.onActionReleased);
+
             actionLabel.Text = InKeyName + "Pressed";
+            Debug.WriteLine(InKeyName);
         }
 
         private void onActionReleased(Key InKey)

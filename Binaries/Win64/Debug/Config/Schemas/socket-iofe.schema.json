@@ -1,0 +1,51 @@
+{
+  "dllName": "SOCKET-IOFE",
+  "displayName": "SOCKET-IOFE 设备",
+  "version": "1.0",
+  "category": "IO设备",
+  "disabled":true,
+  "sections": [
+    {
+      "name": "connection",
+      "title": "连接配置",
+      "collapsed": false,
+      "fields": [
+        {
+          "key": "local_port",
+          "label": "local_port",
+          "type": "number",
+          "default": "8234",
+          "required": false
+        },
+        {
+          "key": "remote_ip",
+          "label": "remote_ip",
+          "type": "text",
+          "default": "192.168.0.7",
+          "required": false
+        },
+        {
+          "key": "remote_port",
+          "label": "remote_port",
+          "type": "number",
+          "default": "8234",
+          "required": false
+        }
+      ]
+    },
+    {
+      "name": "other",
+      "title": "其他配置",
+      "collapsed": true,
+      "fields": [
+        {
+          "key": "write_wait_ms",
+          "label": "write_wait_ms",
+          "type": "number",
+          "default": "10",
+          "required": false
+        }
+      ]
+    }
+  ]
+}

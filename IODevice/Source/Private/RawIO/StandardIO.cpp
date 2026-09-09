@@ -13,7 +13,7 @@
 
 #pragma comment(lib,"Imm32.lib")
 
-LRESULT CALLBACK DevelopHelper::StandardIO::OnMessageProc(int code, WPARAM wParam, LPARAM lParam)
+LRESULT CALLBACK IOToolkit::StandardIO::OnMessageProc(int code, WPARAM wParam, LPARAM lParam)
 {
     PMSG pMsg = nullptr;
     if (code < 0)
@@ -171,10 +171,7 @@ LRESULT CALLBACK DevelopHelper::StandardIO::OnMessageProc(int code, WPARAM wPara
                     const int yPosRelative = Raw->data.mouse.lLastY;
                     StandardIO::OnRawMouseMove(xPosRelative, yPosRelative);
                 }
-                else if (Raw->header.dwType == RIM_TYPEKEYBOARD)
-                {
-                    OutputDebugStringA("TEST");
-                }
+                else if (Raw->header.dwType == RIM_TYPEKEYBOARD){}
             }
         }
         break;
@@ -189,7 +186,7 @@ LRESULT CALLBACK DevelopHelper::StandardIO::OnMessageProc(int code, WPARAM wPara
 }
 
 #include <bitset>
-LRESULT CALLBACK DevelopHelper::StandardIO::OnKeyboardProc(int code, WPARAM wParam, LPARAM lParam)
+LRESULT CALLBACK IOToolkit::StandardIO::OnKeyboardProc(int code, WPARAM wParam, LPARAM lParam)
 {
     if (code < 0) { return CallNextHookEx(IOApplication::hhks[0], code, wParam, lParam); }
     std::bitset<32> rawBits(lParam);
@@ -208,7 +205,7 @@ LRESULT CALLBACK DevelopHelper::StandardIO::OnKeyboardProc(int code, WPARAM wPar
     return CallNextHookEx(IOApplication::hhks[0], code, wParam, lParam);
 }
 
-LRESULT CALLBACK DevelopHelper::StandardIO::CallWndRetProc(_In_ int nCode, _In_ WPARAM wParam, _In_ LPARAM lParam)
+LRESULT CALLBACK IOToolkit::StandardIO::CallWndRetProc(_In_ int nCode, _In_ WPARAM wParam, _In_ LPARAM lParam)
 {
     PCWPRETSTRUCT pMsg = nullptr;
     if (nCode != HC_ACTION)
@@ -254,7 +251,13 @@ LRESULT CALLBACK DevelopHelper::StandardIO::CallWndRetProc(_In_ int nCode, _In_ 
     return CallNextHookEx(IOApplication::hhks[1], nCode, wParam, lParam);
 }
 
-void DevelopHelper::StandardIO::Tick(float DeltaSeconds)
+
+void IOToolkit::StandardIO::Initialize()
+{
+
+}
+
+void IOToolkit::StandardIO::Tick(float DeltaSeconds)
 {
     RawIO::Tick(DeltaSeconds);
     PlayerInput::Instance().InputAxis(EKeys::MouseX, MouseDelta.X, IODeviceController::Instance().GetDeltaSeconds(), StandardDeviceID, NumMouseSamplesX);
@@ -264,13 +267,13 @@ void DevelopHelper::StandardIO::Tick(float DeltaSeconds)
     NumMouseSamplesY = 0;
 }
 
-void DevelopHelper::StandardIO::OnFrameEnd()
+void IOToolkit::StandardIO::OnFrameEnd()
 {
 
 }
 
 
-DevelopHelper::FKey DevelopHelper::StandardIO::TranslateMouseButtonToKey(const EMouseButtons::Type Button)
+IOToolkit::FKey IOToolkit::StandardIO::TranslateMouseButtonToKey(const EMouseButtons::Type Button)
 {
     FKey Key = EKeys::Invalid;
 
@@ -296,14 +299,14 @@ DevelopHelper::FKey DevelopHelper::StandardIO::TranslateMouseButtonToKey(const E
     return Key;
 }
 
-void DevelopHelper::StandardIO::Initialize()
+void IOToolkit::StandardIO::Build()
 {
-    ImmDisableIME(0);
+    // ImmDisableIME(0);  // 注释掉：这会禁用输入法，导致Avalonia TextBox无法输入中文
 }
 
-void DevelopHelper::StandardIO::OnKeyDown(uint32 keyCode, uint32 charCode, bool isRepeat/*=false*/)
+void IOToolkit::StandardIO::OnKeyDown(uint32 keyCode, uint32 charCode, bool isRepeat/*=false*/)
 {
-    FKey& key = InputKeyManager::Instance().GetKeyFromCodes(keyCode, charCode);
+    FKey key = InputKeyManager::Instance().GetKeyFromCodes(keyCode, charCode);
     //if (!isRepeat)
     //{
     //    OutputDebugStringA(std::string(key.GetName()).append("keydown \n").data());
@@ -317,9 +320,9 @@ void DevelopHelper::StandardIO::OnKeyDown(uint32 keyCode, uint32 charCode, bool 
 
 }
 
-void DevelopHelper::StandardIO::OnKeyUp(uint32 keyCode, uint32 charCode, bool isRepeat /*= false*/)
+void IOToolkit::StandardIO::OnKeyUp(uint32 keyCode, uint32 charCode, bool isRepeat /*= false*/)
 {
-    FKey& key = InputKeyManager::Instance().GetKeyFromCodes(keyCode, charCode);
+    FKey key = InputKeyManager::Instance().GetKeyFromCodes(keyCode, charCode);
    // OutputDebugStringA(std::string(key.GetName()).append("keyup \n").data());
     if (key == EKeys::Invalid)
     {
@@ -328,25 +331,25 @@ void DevelopHelper::StandardIO::OnKeyUp(uint32 keyCode, uint32 charCode, bool is
     PlayerInput::Instance().InputKey(key, IE_Released, StandardDeviceID);
 }
 
-void DevelopHelper::StandardIO::OnMouseUp(const EMouseButtons::Type Button, const Vector2D CursorPos)
+void IOToolkit::StandardIO::OnMouseUp(const EMouseButtons::Type Button, const Vector2D CursorPos)
 {
     FKey key = TranslateMouseButtonToKey(Button);
     PlayerInput::Instance().InputKey(key, IE_Released, StandardDeviceID);
 }
 
-void DevelopHelper::StandardIO::OnMouseDown(const EMouseButtons::Type Button, const Vector2D CursorPos)
+void IOToolkit::StandardIO::OnMouseDown(const EMouseButtons::Type Button, const Vector2D CursorPos)
 {
     FKey key = TranslateMouseButtonToKey(Button);
     PlayerInput::Instance().InputKey(key, IE_Pressed, StandardDeviceID);
 }
 
-void DevelopHelper::StandardIO::OnMouseDoubleClick(const EMouseButtons::Type Button)
+void IOToolkit::StandardIO::OnMouseDoubleClick(const EMouseButtons::Type Button)
 {
     FKey key = TranslateMouseButtonToKey(Button);
     PlayerInput::Instance().InputKey(key, IE_DoubleClick, StandardDeviceID);
 }
 
-void DevelopHelper::StandardIO::OnRawMouseMove(const int32 X, const int32 Y)
+void IOToolkit::StandardIO::OnRawMouseMove(const int32 X, const int32 Y)
 {
 
     const Vector2D CursorDelta(static_cast<float>(X), static_cast<float>(Y));
@@ -358,25 +361,25 @@ void DevelopHelper::StandardIO::OnRawMouseMove(const int32 X, const int32 Y)
 }
 
 
-void DevelopHelper::StandardIO::OnWindowActivationChanged(EWindowActivation ActivationType)
+void IOToolkit::StandardIO::OnWindowActivationChanged(EWindowActivation ActivationType)
 {
     if (ActivationType==EWindowActivation::Deactivate)
     {
-        PlayerInput::Instance().FlushPressedKeys();
+        // PlayerInput::Instance().FlushPressedKeys();
     }
 }
 
-bool DevelopHelper::StandardIO::bForceActivateByMouse;
+bool IOToolkit::StandardIO::bForceActivateByMouse;
 
-DevelopHelper::Vector2D DevelopHelper::StandardIO::MouseDelta;
+IOToolkit::Vector2D IOToolkit::StandardIO::MouseDelta;
 
-DevelopHelper::int32 DevelopHelper::StandardIO::NumMouseSamplesX;
+IOToolkit::int32 IOToolkit::StandardIO::NumMouseSamplesX;
 
-DevelopHelper::int32 DevelopHelper::StandardIO::NumMouseSamplesY;
+IOToolkit::int32 IOToolkit::StandardIO::NumMouseSamplesY;
 
-DevelopHelper::uint8 DevelopHelper::StandardIO::StandardDeviceID = InvalidDeviceID;
+IOToolkit::uint8 IOToolkit::StandardIO::StandardDeviceID = InvalidDeviceID;
 
-void DevelopHelper::StandardIO::OnMouseMove()
+void IOToolkit::StandardIO::OnMouseMove()
 {
 
     // PlayerInput::Instance().InputAxis(Keys::MouseX, MouseX, IODeviceController::Instance().GetDeltaSeconds(), 0, false);

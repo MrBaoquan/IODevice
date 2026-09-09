@@ -4,8 +4,10 @@
  */
 
 #include "PlayerInput.h"
-#include <windows.h>
 #include <algorithm>
+#include <atomic>
+#include <cmath>
+#include "IOClock.h"
 #include "IOStatics.h"
 #include "IODeviceController.h"
 #include "Math/Vector.h"
@@ -13,13 +15,13 @@
 
 #define CLAMP(x, low, high)  (((x) > (high)) ? (high) : (((x) < (low)) ? (low) : (x)))
 
-DevelopHelper::PlayerInput& DevelopHelper::PlayerInput::Instance()
+IOToolkit::PlayerInput& IOToolkit::PlayerInput::Instance()
 {
     static PlayerInput instance;
     return instance;
 }
 
-void DevelopHelper::PlayerInput::Initialize()
+void IOToolkit::PlayerInput::Initialize()
 {
     ForceRebuildingKeyMaps(true);
     const uint8 deviceCount = IODevices::GetDevicesCount();
@@ -33,20 +35,31 @@ void DevelopHelper::PlayerInput::Initialize()
 }
 
 
-void DevelopHelper::PlayerInput::UnInitialize()
+void IOToolkit::PlayerInput::UnInitialize()
 {
+	// Note: This is called from IOApplication::Cleanup which is protected by IODeviceController::controllerMutex
 	KeyStateMaps.clear();
 	ActionKeyMaps.clear();
 	AxisKeyMaps.clear();
 }
 
-void DevelopHelper::PlayerInput::Tick(float DeltaSeconds)
+void IOToolkit::PlayerInput::Tick(float DeltaSeconds)
 {
+    // Note: This is called from IODeviceController::Update which is protected by IODeviceController::controllerMutex
+    // Early return if data has been cleared
+    if (KeyStateMaps.empty()) return;
+    
     ProcessInputStack();
 }
 
-void DevelopHelper::PlayerInput::InputKey(FKey& InKey, InputEvent KeyEvent,const uint8 deviceID, float AmountDepressed)
+void IOToolkit::PlayerInput::InputKey(FKey& InKey, InputEvent KeyEvent,const uint8 deviceID, float AmountDepressed)
 {
+    // Lock controller mutex to protect KeyStateMaps access (may be called from Windows message handler)
+    std::lock_guard<std::recursive_mutex> lock(IODeviceController::controllerMutex);
+    
+    // Validate state after acquiring lock
+    if (KeyStateMaps.size() <= 0 || deviceID >= KeyStateMaps.size()) return;
+    
     std::map<FKey, FKeyState, LessKey>& KeyStateMap = KeyStateMaps[deviceID];
     KeyStateMap.try_emplace(InKey);
     FKeyState& keyState = KeyStateMap[InKey];
@@ -60,7 +73,7 @@ void DevelopHelper::PlayerInput::InputKey(FKey& InKey, InputEvent KeyEvent,const
         {
             // check for doubleclick
             // note, a tripleclick will currently count as a 2nd double click.
-            const float WorldRealTimeSeconds = GetTickCount()/1000.f;
+            const float WorldRealTimeSeconds = static_cast<float>(IOClock::GetSeconds());
             const float deltaTime = WorldRealTimeSeconds - keyState.LastUpDownTransitionTime;
             if (deltaTime < doubleClickTime&&deltaTime>0.01f)
             {
@@ -73,7 +86,7 @@ void DevelopHelper::PlayerInput::InputKey(FKey& InKey, InputEvent KeyEvent,const
         break;
     case IE_Released:
         {
-            const float WorldRealTimeSeconds = GetTickCount() / 1000.f;
+            const float WorldRealTimeSeconds = static_cast<float>(IOClock::GetSeconds());
             keyState.LastUpDownTransitionTime = WorldRealTimeSeconds;
             keyState.RawValueAccumulator.X = 0.f;
             keyState.EventAccumulator[IE_Released].push_back(++EventCount);
@@ -88,9 +101,14 @@ void DevelopHelper::PlayerInput::InputKey(FKey& InKey, InputEvent KeyEvent,const
     keyState.SampleCountAccumulator++;
 }
 
-void DevelopHelper::PlayerInput::InputAxis(FKey Key, float Delta, float DeltaTime, uint8 deviceID, int32 NumSamples)
+void IOToolkit::PlayerInput::InputAxis(FKey Key, float Delta, float DeltaTime, uint8 deviceID, int32 NumSamples)
 {
     if (NumSamples <= 0) { return; }
+    
+    // Lock controller mutex to protect KeyStateMaps access (may be called from Windows message handler)
+    std::lock_guard<std::recursive_mutex> lock(IODeviceController::controllerMutex);
+    
+    if (KeyStateMaps.size() <= 0 || deviceID >= KeyStateMaps.size()) return;
     std::map<FKey, FKeyState, LessKey>& KeyStateMap = KeyStateMaps[deviceID];
 	
     KeyStateMap.try_emplace(Key);
@@ -121,21 +139,23 @@ void DevelopHelper::PlayerInput::InputAxis(FKey Key, float Delta, float DeltaTim
 	keyState.RawValueAccumulator.X += Delta;
 }
 
-const float DevelopHelper::PlayerInput::GetKeyDownTime(const FKey& InKey, uint8 deviceID)
+const float IOToolkit::PlayerInput::GetKeyDownTime(const FKey& InKey, uint8 deviceID)
 {
+    if (deviceID >= KeyStateMaps.size()) return 0.f;
     const std::map<FKey, FKeyState, LessKey>& KeyStateMap = KeyStateMaps[deviceID];
     bool bPressed = IsPressed(InKey, deviceID);
     if (KeyStateMap.count(InKey)&&bPressed)
     {
         const FKeyState& keyState = KeyStateMap.at(InKey);
-        float curTime = GetTickCount() / 1000.f;
+        float curTime = static_cast<float>(IOClock::GetSeconds());
         return curTime - keyState.LastUpDownTransitionTime;
     }
     return 0.0f;
 }
 
-float DevelopHelper::PlayerInput::GetKeyValue(FKey InKey, uint8 deviceID) const
+float IOToolkit::PlayerInput::GetKeyValue(FKey InKey, uint8 deviceID) const
 {
+    if (deviceID >= KeyStateMaps.size()) return 0.f;
     const std::map<FKey, FKeyState, LessKey>& KeyStateMap = KeyStateMaps[deviceID];
     if (InKey == EKeys::AnyKey)
     {
@@ -149,8 +169,12 @@ float DevelopHelper::PlayerInput::GetKeyValue(FKey InKey, uint8 deviceID) const
     return KeyState ? KeyState->Value.X : 0.f;
 }
 
-void DevelopHelper::PlayerInput::ProcessInputStack()
+void IOToolkit::PlayerInput::ProcessInputStack()
 {
+    // Note: This function is called from Tick() which already holds the mutex lock
+    // Early return if data has been cleared
+    if (KeyStateMaps.empty()) return;
+    
     // Copy standard KeyStateMap to Others
     if (KeyStateMaps.size() > 1)
     {
@@ -220,7 +244,6 @@ void DevelopHelper::PlayerInput::ProcessInputStack()
     deviceID = 0;
     for (auto& deviceIt : IODevices::GetDevcies())
     {
-        
         IODeviceDetails& deviceDetails = deviceIt.second;
         deviceID = deviceDetails.GetDevice().GetID();
         for (int32 ActionIndex = 0;ActionIndex < deviceDetails.GetNumActionBindings();++ActionIndex)
@@ -336,8 +359,9 @@ void DevelopHelper::PlayerInput::ProcessInputStack()
     AxisDelegates.clear();
 }
 
-const DevelopHelper::FKeyState DevelopHelper::PlayerInput::GetKeyState(const FKey& InKey, uint8 deviceID) const
+const IOToolkit::FKeyState IOToolkit::PlayerInput::GetKeyState(const FKey& InKey, uint8 deviceID) const
 {
+    if (deviceID >= KeyStateMaps.size()) return FKeyState();
     const std::map<FKey, FKeyState, LessKey>& KeyStateMap = KeyStateMaps[deviceID];
 
     if (InKey == EKeys::AnyKey)
@@ -358,7 +382,7 @@ const DevelopHelper::FKeyState DevelopHelper::PlayerInput::GetKeyState(const FKe
     return FKeyState();
 }
 
-void DevelopHelper::PlayerInput::ProcessAllKeys(FKey Inkey, FKeyState* KeyState, uint8 deviceID)
+void IOToolkit::PlayerInput::ProcessAllKeys(FKey Inkey, FKeyState* KeyState, uint8 deviceID)
 {
     KeyState->Value.X = MassageKeyRawInput(Inkey, KeyState->RawValue.X,deviceID);
     int32 const PressDelta =static_cast<uint32>(KeyState->EventCounts[IE_Pressed].size() - KeyState->EventCounts[IE_Released].size());
@@ -379,8 +403,11 @@ void DevelopHelper::PlayerInput::ProcessAllKeys(FKey Inkey, FKeyState* KeyState,
     }
 }
 
-void DevelopHelper::PlayerInput::GetChordForKey(const FInputKeyBinding& KeyBinding, std::vector<struct FDelegateDispatchDetails>& FoundChords, std::set<FKey,LessKey>& KeysToConsume, uint8 deviceID)
+void IOToolkit::PlayerInput::GetChordForKey(const FInputKeyBinding& KeyBinding, std::vector<struct FDelegateDispatchDetails>& FoundChords, std::set<FKey,LessKey>& KeysToConsume, uint8 deviceID)
 {
+    // Note: This function is called from ProcessInputStack which holds the mutex lock
+    if (deviceID >= KeyStateMaps.size()) return;
+    
     bool bConsumeInput = false;
     std::map<FKey, FKeyState, LessKey>& KeyStateMap = KeyStateMaps[deviceID];
     if (KeyBinding.Chord.Key == EKeys::AnyKey)
@@ -430,8 +457,9 @@ void DevelopHelper::PlayerInput::GetChordForKey(const FInputKeyBinding& KeyBindi
     }
 }
 
-bool DevelopHelper::PlayerInput::KeyEventOccurred(FKey Key, InputEvent Event, std::vector<uint32>& InEventIndices, uint8 deviceID) const
+bool IOToolkit::PlayerInput::KeyEventOccurred(FKey Key, InputEvent Event, std::vector<uint32>& InEventIndices, uint8 deviceID) const
 {
+    if (deviceID >= KeyStateMaps.size()) return false;
     const std::map<FKey, FKeyState, LessKey>& KeyStateMap = KeyStateMaps[deviceID];
     if(KeyStateMap.size()>0)
     {
@@ -450,8 +478,9 @@ bool DevelopHelper::PlayerInput::KeyEventOccurred(FKey Key, InputEvent Event, st
     return false;
 }
 
-bool DevelopHelper::PlayerInput::IsKeyConsumed(FKey InKey, uint8 deviceID) const
+bool IOToolkit::PlayerInput::IsKeyConsumed(FKey InKey, uint8 deviceID) const
 {
+    if (deviceID >= KeyStateMaps.size()) return false;
     const std::map<FKey, FKeyState, LessKey>& KeyStateMap = KeyStateMaps[deviceID];
     if (InKey == EKeys::AnyKey)
     {
@@ -477,7 +506,7 @@ bool DevelopHelper::PlayerInput::IsKeyConsumed(FKey InKey, uint8 deviceID) const
     return false;
 }
 
-void DevelopHelper::PlayerInput::FinishProcessingPlayerInput()
+void IOToolkit::PlayerInput::FinishProcessingPlayerInput()
 {
     for (auto& KeyStateMap:KeyStateMaps)
     {
@@ -503,26 +532,41 @@ void DevelopHelper::PlayerInput::FinishProcessingPlayerInput()
     }
 }
 
-float DevelopHelper::PlayerInput::MassageKeyRawInput(FKey Key, float RawValue, uint8 deviceID)
+float IOToolkit::PlayerInput::MassageKeyRawInput(FKey Key, float RawValue, uint8 deviceID)
 {
+    if (deviceID >= KeyStateMaps.size() || deviceID >= KeysProperties.size()) return RawValue;
     float NewVal = RawValue;
     std::map<FKey, FKeyState, LessKey>& KeyStateMap = KeyStateMaps[deviceID];
     std::map<FKey, FInputKeyProperties, LessKey>& KeyProperties = KeysProperties[deviceID];
     if (KeyProperties.count(Key))
     {
         FInputKeyProperties const* const KeyProps = &KeyProperties.at(Key);
-		NewVal += KeyProps->PreOffset;
-		NewVal *= KeyProps->PreScale;
-        if (NewVal > 0)
+		NewVal += KeyProps->Offset;
+		NewVal *= KeyProps->Scale;
+        
+        
+        float deadZoneDenom = 1.f - KeyProps->DeadZone;
+        if (deadZoneDenom > 0.001f)
         {
-            NewVal = max(0.f, NewVal - KeyProps->DeadZone) / (1.f - KeyProps->DeadZone);
-        }else
-        {
-            NewVal = -max(0.f, -NewVal - KeyProps->DeadZone) / (1.f - KeyProps->DeadZone);
+            if (NewVal > 0)
+            {
+                NewVal = (std::max)(0.f, NewVal - KeyProps->DeadZone) / deadZoneDenom;
+            }
+            else
+            {
+                NewVal = -(std::max)(0.f, -NewVal - KeyProps->DeadZone) / deadZoneDenom;
+            }
         }
+        else
+        {
+            NewVal = 0.f; 
+        }
+        
+        
         if (KeyProps->Exponent != 1.f)
         {
-            NewVal = std::sin(NewVal)*std::powf(std::abs(NewVal), KeyProps->Exponent);
+            float sign = NewVal >= 0.f ? 1.f : -1.f;
+            NewVal = sign * std::pow(std::abs(NewVal), KeyProps->Exponent);
         }
         NewVal *= KeyProps->Sensitivity;
 
@@ -554,8 +598,10 @@ float DevelopHelper::PlayerInput::MassageKeyRawInput(FKey Key, float RawValue, u
     return NewVal;
 }
 
-void DevelopHelper::PlayerInput::GetChordsForAction(const FInputActionBinding& ActionBinding, uint8 deviceID, std::vector<struct FDelegateDispatchDetails>& FoundChords, std::set<FKey,LessKey>& KeysToConsume)
+void IOToolkit::PlayerInput::GetChordsForAction(const FInputActionBinding& ActionBinding, uint8 deviceID, std::vector<struct FDelegateDispatchDetails>& FoundChords, std::set<FKey,LessKey>& KeysToConsume)
 {
+    // Note: This function is called from ProcessInputStack which holds the mutex lock
+    if (deviceID >= KeyStateMaps.size() || deviceID >= ActionKeyMaps.size()) return;
     ConditionalBuildKeyMappings();
 
     std::map<FKey, FKeyState, LessKey>& KeyStateMap = KeyStateMaps[deviceID];
@@ -590,7 +636,7 @@ void DevelopHelper::PlayerInput::GetChordsForAction(const FInputActionBinding& A
     }
 }
 
-void DevelopHelper::PlayerInput::GetChordsForKeyMapping(const FInputActionKeyMapping& KeyMapping, const FInputActionBinding& ActionBinding, uint8 deviceID, std::vector<FDelegateDispatchDetails>& FoundChords, std::set<FKey,LessKey>& KeysToConsume)
+void IOToolkit::PlayerInput::GetChordsForKeyMapping(const FInputActionKeyMapping& KeyMapping, const FInputActionBinding& ActionBinding, uint8 deviceID, std::vector<FDelegateDispatchDetails>& FoundChords, std::set<FKey,LessKey>& KeysToConsume)
 {
     bool bConsumeInput = false;
     if (KeyEventOccurred(KeyMapping.Key, ActionBinding.KeyEvent, EventIndices, deviceID))
@@ -620,7 +666,7 @@ void DevelopHelper::PlayerInput::GetChordsForKeyMapping(const FInputActionKeyMap
     EventIndices.clear();
 }
 
-float DevelopHelper::PlayerInput::DetermineAxisValue(const FInputAxisBinding& AxisBinding, uint8 deviceID, std::set<FKey,LessKey>& KeysToConsume)
+float IOToolkit::PlayerInput::DetermineAxisValue(const FInputAxisBinding& AxisBinding, uint8 deviceID, std::set<FKey,LessKey>& KeysToConsume)
 {
     std::map<std::string, FAxisKeyDetails>& AxisKeyMap = AxisKeyMaps[deviceID];
     ConditionalBuildKeyMappings();
@@ -654,8 +700,18 @@ float DevelopHelper::PlayerInput::DetermineAxisValue(const FInputAxisBinding& Ax
     return AxisValue;
 }
 
-void DevelopHelper::PlayerInput::ConditionalBuildKeyMappings_Internal()
+void IOToolkit::PlayerInput::ConditionalBuildKeyMappings_Internal()
 {
+    // 清空旧的缓存数据
+    for (auto& actionMap : ActionKeyMaps)
+    {
+        actionMap.clear();
+    }
+    for (auto& axisMap : AxisKeyMaps)
+    {
+        axisMap.clear();
+    }
+
     struct
     {
         void Build(const std::vector<std::vector<FInputActionKeyMapping>>& InMappings, std::vector<std::map<std::string, FActionKeyDetails>>& InKeyMap)
@@ -663,6 +719,10 @@ void DevelopHelper::PlayerInput::ConditionalBuildKeyMappings_Internal()
             int deviceIndex = 0;
             for (const std::vector<FInputActionKeyMapping>& Mappings : InMappings)
             {
+                if (deviceIndex >= static_cast<int>(InKeyMap.size()))
+                {
+                    break;
+                }
                 std::map<std::string, FActionKeyDetails>& KeyMap = InKeyMap[deviceIndex++];
                 for (const FInputActionKeyMapping& ActionMapping : Mappings)
                 {
@@ -685,7 +745,11 @@ void DevelopHelper::PlayerInput::ConditionalBuildKeyMappings_Internal()
             int deviceIndex = 0;
             for (const std::vector<FInputAxisKeyMapping>& Mappings : InMappings)
             {
-                std::map<std::string, FAxisKeyDetails>& AxisMap = InAxisMap[deviceIndex++];
+                if (deviceIndex >= static_cast<int>(InAxisMap.size()))
+                {
+                    break;
+                }
+                std::map<std::string, FAxisKeyDetails>& AxisMap = InAxisMap[deviceIndex];
                 for (const FInputAxisKeyMapping& AxisMapping : Mappings)
                 {
                     bool bAdd = true;
@@ -705,16 +769,19 @@ void DevelopHelper::PlayerInput::ConditionalBuildKeyMappings_Internal()
                         KeyDetails.KeyMappings.push_back(AxisMapping);
                     }
                 }
+                deviceIndex++;
             }
         }
     } AxisMappingsUtility;
 
     AxisMappingsUtility.Build(AxisMappings, AxisKeyMaps);
 
+    // 内存屏障，确保所有写入完成后再设置 bKeyMapsBuilt
+    std::atomic_thread_fence(std::memory_order_seq_cst);
     bKeyMapsBuilt = true;
 }
 
-void DevelopHelper::PlayerInput::FlushPressedKeys()
+void IOToolkit::PlayerInput::FlushPressedKeys()
 {
     std::map<FKey,int,LessKey> PressedKeys;
     int deviceIndex = -1;
@@ -743,7 +810,7 @@ void DevelopHelper::PlayerInput::FlushPressedKeys()
         }
     }
 
-    float TimeSeconds = GetTickCount() / 1000.f;
+    float TimeSeconds = static_cast<float>(IOClock::GetSeconds());
     for (auto& KeyStateMap : KeyStateMaps)
     {
         for (auto& It:KeyStateMap)
@@ -757,7 +824,7 @@ void DevelopHelper::PlayerInput::FlushPressedKeys()
     }
 }
 
-void DevelopHelper::PlayerInput::ForceRebuildingKeyMaps(const bool bRestoreDefaults /*= false*/)
+void IOToolkit::PlayerInput::ForceRebuildingKeyMaps(const bool bRestoreDefaults /*= false*/)
 {
     if (bRestoreDefaults)
     {
@@ -770,24 +837,24 @@ void DevelopHelper::PlayerInput::ForceRebuildingKeyMaps(const bool bRestoreDefau
     bKeyMapsBuilt = false;
 }
 
-bool DevelopHelper::PlayerInput::GetKey(const FKey& InKey, uint8 deviceID)
+bool IOToolkit::PlayerInput::GetKey(const FKey& InKey, uint8 deviceID)
 {
     return IsPressed(InKey, deviceID);
 }
 
-bool DevelopHelper::PlayerInput::GetKeyDown(const FKey& InKey, uint8 deviceID)
+bool IOToolkit::PlayerInput::GetKeyDown(const FKey& InKey, uint8 deviceID)
 {
     const FKeyState keyState = GetKeyState(InKey, deviceID);
     return keyState.IsKeyDown;
 }
 
-bool DevelopHelper::PlayerInput::GetKeyUp(const FKey& InKey, uint8 deviceID)
+bool IOToolkit::PlayerInput::GetKeyUp(const FKey& InKey, uint8 deviceID)
 {
     const FKeyState keyState = GetKeyState(InKey, deviceID);
     return keyState.IsKeyUp;
 }
 
-float DevelopHelper::PlayerInput::GetAxis(const char* AxisName, uint8 deviceID)
+float IOToolkit::PlayerInput::GetAxis(const char* AxisName, uint8 deviceID)
 {
     std::map<std::string, FAxisKeyDetails>& AxisKeyMap = AxisKeyMaps[deviceID];
     ConditionalBuildKeyMappings();
@@ -817,33 +884,117 @@ float DevelopHelper::PlayerInput::GetAxis(const char* AxisName, uint8 deviceID)
     return AxisValue;
 }
 
-float DevelopHelper::PlayerInput::GetAxisKey(const FKey& InKey, uint8 deviceID)
+float IOToolkit::PlayerInput::GetAxisKey(const FKey& InKey, uint8 deviceID)
 {
     return GetKeyValue(InKey, deviceID);
 }
 
-bool DevelopHelper::PlayerInput::IsPressed(const FKey& InKey, uint8 deviceID) const
+float IOToolkit::PlayerInput::GetRawKeyValue(const FKey& InKey, uint8 deviceID) const
+{
+    if (deviceID >= KeyStateMaps.size()) return 0.f;
+    const std::map<FKey, FKeyState, LessKey>& KeyStateMap = KeyStateMaps[deviceID];
+    
+    if (InKey == EKeys::AnyKey)
+    {
+        return 0.f;
+    }
+    
+    if (!KeyStateMap.count(InKey))
+    {
+        return 0.f;
+    }
+    
+    const FKeyState* const KeyState = &KeyStateMap.at(InKey);
+    return KeyState ? KeyState->RawValue.X : 0.f;
+}
+
+bool IOToolkit::PlayerInput::IsPressed(const FKey& InKey, uint8 deviceID) const
 {
     const FKeyState keyState = GetKeyState(InKey, deviceID);
     return keyState.bDown;
 }
 
-bool DevelopHelper::PlayerInput::IsAltPressed() const
+bool IOToolkit::PlayerInput::IsAltPressed() const
 {
     return IsPressed(EKeys::LeftAlt,0) || IsPressed(EKeys::RightAlt,0);
 }
 
-bool DevelopHelper::PlayerInput::IsCtrlPressed() const
+bool IOToolkit::PlayerInput::IsCtrlPressed() const
 {
     return IsPressed(EKeys::LeftControl,0) || IsPressed(EKeys::RightControl,0);
 }
 
-bool DevelopHelper::PlayerInput::IsShiftPressed() const
+bool IOToolkit::PlayerInput::IsShiftPressed() const
 {
     return IsPressed(EKeys::LeftShift,0) || IsPressed(EKeys::RightShift,0);
 }
 
-bool DevelopHelper::PlayerInput::IsCmdPressed() const
+bool IOToolkit::PlayerInput::IsCmdPressed() const
 {
     return IsPressed(EKeys::LeftCommand,0) || IsPressed(EKeys::RightCommand,0);
 }
+
+int IOToolkit::PlayerInput::SetAKProps(const char* axisName, const char* keyName, float scale, uint8 deviceID)
+{
+    if (deviceID >= AxisMappings.size())
+    {
+        return 0;
+    }
+
+    FKey targetKey(keyName);
+    bool found = false;
+
+    // 修改 AxisMappings 中的 Scale
+    for (auto& axisMapping : AxisMappings[deviceID])
+    {
+        if (axisMapping.AxisName == axisName && axisMapping.Key == targetKey)
+        {
+            axisMapping.Scale = scale;
+            found = true;
+            break;
+        }
+    }
+
+    if (!found)
+    {
+        return 0;
+    }
+
+    // 直接强制重建 KeyMaps 以应用更改（不依赖条件检查）
+    bKeyMapsBuilt = false;
+    ConditionalBuildKeyMappings_Internal();
+
+    return 1;
+}
+
+int IOToolkit::PlayerInput::SetPKProps(const char* keyName, float offset, float scale, float minValue, float maxValue, float deadZone, float sensitivity, float exponent, bool invert, bool invertEvent, uint8 deviceID)
+{
+    if (deviceID >= KeysProperties.size())
+    {
+        return 0;
+    }
+
+    FKey targetKey(keyName);
+    std::map<FKey, FInputKeyProperties, LessKey>& KeyProperties = KeysProperties[deviceID];
+    
+    
+    if (!KeyProperties.count(targetKey))
+    {
+        KeyProperties[targetKey] = FInputKeyProperties();
+    }
+
+    
+    FInputKeyProperties& props = KeyProperties[targetKey];
+    props.Offset = offset;
+    props.Scale = scale;
+    props.Min = minValue;
+    props.Max = maxValue;
+    props.DeadZone = deadZone;
+    props.Sensitivity = sensitivity;
+    props.Exponent = exponent;
+    props.bInvert = invert;
+    props.bInvertEvent = invertEvent;
+
+    return 1;
+}
+

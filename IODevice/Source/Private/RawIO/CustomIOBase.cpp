@@ -5,7 +5,7 @@
 
 #include "RawIO/CustomIOBase.h"
 
-void DevelopHelper::CustomIOBase::Initlialize()
+void IOToolkit::CustomIOBase::Constructor()
 {
     for (uint8 channelIndex = 0;channelIndex < channelsState.size();++channelIndex)
     {
@@ -14,12 +14,17 @@ void DevelopHelper::CustomIOBase::Initlialize()
     }
 }
 
-void DevelopHelper::CustomIOBase::Tick(float DeltaSeconds)
+void IOToolkit::CustomIOBase::Tick(float DeltaSeconds)
 {
 
 }
 
-void DevelopHelper::CustomIOBase::OnFrameEnd()
+void IOToolkit::CustomIOBase::OnFrameEnd()
 {
 
+}
+
+void IOToolkit::CustomIOBase::Initialize()
+{
+    RawIO::Initialize();
 }

@@ -4,57 +4,93 @@
  */
 
 #include "RawIO/RawIO.h"
-#include <windows.h>
+#include "IOClock.h"
 #include "PlayerInput.h"
 #include "InputSettings.h"
+#include <algorithm>
+#include <cmath>
 
-void DevelopHelper::RawIO::Tick(float DeltaSeconds)
+#define CLAMP(x, low, high)  (((x) > (high)) ? (high) : (((x) < (low)) ? (low) : (x)))
+
+void IOToolkit::RawIO::Tick(float DeltaSeconds)
 {
     
 }
 
-int DevelopHelper::RawIO::SetDeviceDO(BYTE* InDOStatus)
+int IOToolkit::RawIO::SetDO(float* InDOStatus)
 {
     return -1;
 }
 
-int DevelopHelper::RawIO::SetDeviceDO(const FKey InKey, BYTE val)
+
+int IOToolkit::RawIO::SetDOOn(const char* InOAction)
+{
+	return -1;
+}
+
+
+int IOToolkit::RawIO::SetDOOff(const char* InOAction)
+{
+	return -1;
+}
+
+int IOToolkit::RawIO::DOImmediate()
+{
+	return 0;
+}
+
+int IOToolkit::RawIO::SetDO(const char* InOAction, float val, bool bIgnoreMassage/*=false*/)
+{
+	return -1;
+}
+int IOToolkit::RawIO::SetDO(const FKey& InKey, float val)
 {
     return -1;
 }
 
-int DevelopHelper::RawIO::GetDeviceDO(BYTE* OutDOStatus)
+int IOToolkit::RawIO::GetDO(float* OutDOStatus)
 {
     return -1;
 }
 
-BYTE DevelopHelper::RawIO::GetDeviceDO(const FKey InKey)
+
+int IOToolkit::RawIO::RefreshStreamingData(BYTE* StreamingData, unsigned int DataSize)
 {
     return 0;
 }
 
-void DevelopHelper::RawIO::OnFrameEnd()
+float IOToolkit::RawIO::GetDO(const char* InOAction)
+{
+	return 0;
+}
+
+float IOToolkit::RawIO::GetDO(const FKey InKey)
+{
+    return 0;
+}
+
+void IOToolkit::RawIO::OnFrameEnd()
 {
 
 }
 
 
-void DevelopHelper::RawIO::InputKey(FKey InKey, InputEvent keyEvent,int deviceID)
+void IOToolkit::RawIO::InputKey(FKey InKey, InputEvent keyEvent,int deviceID)
 {
     PlayerInput::Instance().InputKey(InKey, keyEvent, deviceID);
 }
 
-void DevelopHelper::RawIO::InputAxis(FKey Key, float Delta, float DeltaTime, uint8 InID, int32 NumSamples)
+void IOToolkit::RawIO::InputAxis(FKey Key, float Delta, float DeltaTime, uint8 InID, int32 NumSamples)
 {
     PlayerInput::Instance().InputAxis(Key, Delta, 0.f, InID, NumSamples);
 }
 
-void DevelopHelper::RawIO::Initialize()
+void IOToolkit::RawIO::Initialize()
 {
     KeyProperties = UInputSettings::Instance().KeyProperties[deviceID];
 }
 
-void DevelopHelper::RawIO::DispatchButtonEvent(std::vector<BYTE> DIStatus, std::vector<ButtonState>& channelsState)
+void IOToolkit::RawIO::DispatchButtonEvent(std::vector<BYTE> DIStatus, std::vector<ButtonState>& channelsState)
 {
     for (uint8 channelIndex = 0;channelIndex < DIStatus.size();channelIndex++)
     {
@@ -70,22 +106,32 @@ void DevelopHelper::RawIO::DispatchButtonEvent(std::vector<BYTE> DIStatus, std::
     }
 }
 
-void DevelopHelper::RawIO::DispatchAxisEvent(std::vector<short> InAxis)
+void IOToolkit::RawIO::DispatchAxisEvent(std::vector<short> InAxis)
 {
     for (uint8 index = 0;index < InAxis.size();++index)
     {
-        InputAxis(GetAxisKey(index), InAxis[index]/MaxAxisValue, 0.f, deviceID, 1);
+        InputAxis(GetAxisKey(index), InAxis[index], 0.f, deviceID, 1);
     }
 }
 
-DevelopHelper::InputEvent DevelopHelper::RawIO::GetChannelEvent(ButtonState& chState)
+void IOToolkit::RawIO::DispatchAxisEvent(std::vector<int32_t> InAxis)
+{
+    for (uint8 index = 0;index < InAxis.size();++index)
+    {
+        // 使用 int32_t，根据实际需求进行处理
+        // 可以直接使用整数值，或者按需转换
+        InputAxis(GetAxisKey(index), static_cast<float>(InAxis[index]), 0.f, deviceID, 1);
+    }
+}
+
+IOToolkit::InputEvent IOToolkit::RawIO::GetChannelEvent(ButtonState& chState)
 {
     InputEvent FinalInputEvent = IE_MAX;
     bool bPressed = IsKeyPressed(chState);
     if (bPressed)
     {
-        double currentTime = GetTickCount() / 1000.0;
-        if (chState.status != chState.lastStatus)   // �����¼�
+        double currentTime = IOClock::GetSeconds();
+        if (chState.status != chState.lastStatus)   // �����¼�
         {
             FinalInputEvent = IE_Pressed;
             chState.lastRepeatTime = currentTime;
@@ -109,14 +155,14 @@ DevelopHelper::InputEvent DevelopHelper::RawIO::GetChannelEvent(ButtonState& chS
             }
         }
     }
-    else if (chState.status != chState.lastStatus) // �����¼�
+    else if (chState.status != chState.lastStatus) // �����¼�
     {
         FinalInputEvent = IE_Released;
     }
     return FinalInputEvent;
 }
 
-bool DevelopHelper::RawIO::IsKeyPressed(struct ButtonState& chState)
+bool IOToolkit::RawIO::IsKeyPressed(struct ButtonState& chState)
 {
     bool bPressed = chState.status == pressedValue ? true : false;
     if (KeyProperties.count(chState.Key))
@@ -130,7 +176,7 @@ bool DevelopHelper::RawIO::IsKeyPressed(struct ButtonState& chState)
     return bPressed;
 }
 
-DevelopHelper::FKey DevelopHelper::RawIO::GetButtonKey(uint8 channelIndex)
+IOToolkit::FKey IOToolkit::RawIO::GetButtonKey(uint8 channelIndex)
 {
     std::string channelKeyPrefix("Button_");
     std::string fullKeyName = "";
@@ -146,7 +192,7 @@ DevelopHelper::FKey DevelopHelper::RawIO::GetButtonKey(uint8 channelIndex)
     return FKey(fullKeyName.data());
 }
 
-DevelopHelper::FKey DevelopHelper::RawIO::GetAxisKey(uint8 axisIndex)
+IOToolkit::FKey IOToolkit::RawIO::GetAxisKey(uint8 axisIndex)
 {
     std::string channelKeyPrefix("Axis_");
     std::string fullKeyName = "";
@@ -162,3 +208,70 @@ DevelopHelper::FKey DevelopHelper::RawIO::GetAxisKey(uint8 axisIndex)
     return FKey(fullKeyName.data());
 }
 
+
+IOToolkit::FKey IOToolkit::RawIO::GetOAxisKey(uint8 oaxisIndex)
+{
+	std::string channelKeyPrefix("OAxis_");
+	std::string fullKeyName = "";
+	if (oaxisIndex < 0) { return EKeys::Invalid; }
+	if (oaxisIndex < 10)
+	{
+		fullKeyName = channelKeyPrefix + "0" + std::to_string(oaxisIndex);
+	}
+	else
+	{
+		fullKeyName = channelKeyPrefix + std::to_string(oaxisIndex);
+	}
+	return FKey(fullKeyName.data());
+}
+
+float IOToolkit::RawIO::MassageKeyInput(FKey InKey, float InRawValue)
+{
+	float NewVal = InRawValue;
+	if (KeyProperties.count(InKey))
+	{
+		FInputKeyProperties const* const KeyProps = &KeyProperties.at(InKey);
+		NewVal += KeyProps->Offset;
+		NewVal *= KeyProps->Scale;
+
+		
+		float deadZoneDenom = 1.f - KeyProps->DeadZone;
+		if (deadZoneDenom > 0.001f)
+		{
+			if (NewVal > 0)
+			{
+                NewVal = (std::max)(0.f, NewVal - KeyProps->DeadZone) / deadZoneDenom;
+			}
+			else
+			{
+                NewVal = -(std::max)(0.f, -NewVal - KeyProps->DeadZone) / deadZoneDenom;
+			}
+		}
+		else
+		{
+			NewVal = 0.f; // 死区过大，直接输出0
+		}
+
+		// 指数曲线处理，修正公式：sign(x) * pow(|x|, exponent)
+		if (KeyProps->Exponent != 1.f)
+		{
+			float sign = NewVal >= 0.f ? 1.f : -1.f;
+            NewVal = sign * std::pow(std::abs(NewVal), KeyProps->Exponent);
+		}
+		NewVal *= KeyProps->Sensitivity;
+
+		NewVal = CLAMP(NewVal, KeyProps->Min, KeyProps->Max);
+
+		if (KeyProps->bInvert)
+		{
+			NewVal *= -1.f;
+		}
+	}
+	return NewVal;
+}
+
+int IOToolkit::RawIO::SetOKProps(const char* oactionName, const char* keyName, float scale, bool invertEvent)
+{
+	// 默认实现返回 0，由子类重写
+	return 0;
+}

@@ -11,13 +11,13 @@
 #include "CoreTypes/IOTypes.h"
 
 
-DevelopHelper::Joystick::Joystick(uint8 InID, uint8 InIndex) :CustomIOBase(InID,InIndex,IOType::Joystick)
+IOToolkit::Joystick::Joystick(uint8 InID, uint8 InIndex) :CustomIOBase(InID,InIndex,IOType::Joystick)
 {
     JoyStickServer::Instance().Initialize();
-    Initialize();
+	Constructor();
 }
 
-void DevelopHelper::Joystick::Tick(float DeltaSeconds)
+void IOToolkit::Joystick::Tick(float DeltaSeconds)
 {
     if (jsEntry)
     {
@@ -88,7 +88,13 @@ void DevelopHelper::Joystick::Tick(float DeltaSeconds)
     
 }
 
-void DevelopHelper::Joystick::Initialize()
+
+void IOToolkit::Joystick::Initialize()
+{
+	__super::Initialize();
+}
+
+void IOToolkit::Joystick::Constructor()
 {
     jsEntry = JoyStickServer::Instance().GetEntry(deviceIndex);
     if (!jsEntry)
@@ -99,10 +105,10 @@ void DevelopHelper::Joystick::Initialize()
     inputCount = static_cast<uint8>(jsEntry->diDevCaps.dwButtons);
     channelsState = std::vector<ButtonState>(inputCount);
     DIStatus = std::vector<BYTE>(inputCount, 0);
-    CustomIOBase::Initlialize();
+	__super::Constructor();
 }
 
-DevelopHelper::JoyStickServer& DevelopHelper::JoyStickServer::Instance()
+IOToolkit::JoyStickServer& IOToolkit::JoyStickServer::Instance()
 {
     static JoyStickServer instance;
     return instance;
@@ -110,7 +116,7 @@ DevelopHelper::JoyStickServer& DevelopHelper::JoyStickServer::Instance()
 
 /** JoyStickServer implemention */
 
-void DevelopHelper::JoyStickServer::Initialize()
+void IOToolkit::JoyStickServer::Initialize()
 {
     if (SUCCEEDED(DirectInput8Create(GetModuleHandle(0), DIRECTINPUT_VERSION, IID_IDirectInput8, (void**)&lpDi, 0)))
     {
@@ -118,12 +124,12 @@ void DevelopHelper::JoyStickServer::Initialize()
     }
 }
 
-DIJoyStick::Entry* DevelopHelper::JoyStickServer::GetEntry(int entryIndex)
+DIJoyStick::Entry* IOToolkit::JoyStickServer::GetEntry(int entryIndex)
 {
     return djs.getEntry(entryIndex);
 }
 
-DevelopHelper::JoyStickServer::JoyStickServer()
+IOToolkit::JoyStickServer::JoyStickServer()
 {
     Initialize();
 }

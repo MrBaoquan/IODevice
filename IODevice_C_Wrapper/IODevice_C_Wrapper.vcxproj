@@ -22,33 +22,33 @@
     <ProjectGuid>{341DDC22-0F9E-4172-A5DE-78B89DAC3E1C}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
     <RootNamespace>IODevice_C</RootNamespace>
-    <WindowsTargetPlatformVersion>8.1</WindowsTargetPlatformVersion>
+    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
     <ProjectName>IODevice_C_Wrapper</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v140</PlatformToolset>
+    <PlatformToolset>v143</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v140</PlatformToolset>
+    <PlatformToolset>v143</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v140</PlatformToolset>
+    <PlatformToolset>v143</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v140</PlatformToolset>
+    <PlatformToolset>v143</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
@@ -72,30 +72,30 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>$(ProjectDir)Source\Public;$(SolutionDir)IOToolkit\include;$(IncludePath)</IncludePath>
-    <LibraryPath>$(SolutionDir)IOToolkit\Binaries\Win32;$(LibraryPath)</LibraryPath>
+    <IncludePath>$(ProjectDir)Source\Public;$(SolutionDir)IODevice\Source\Public;$(SolutionDir)v2.4.1\IOToolkit\include</IncludePath>
+    <LibraryPath>$(SolutionDir)Binaries\Win32\Debug;$(LibraryPath)</LibraryPath>
     <OutDir>$(SolutionDIr)Binaries\Win32\Debug</OutDir>
     <IntDir>$(SolutionDIr)Binaries\Win32\Debug\Temp\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
     <OutDir>$(SolutionDIr)Binaries\Win64\Debug</OutDir>
-    <LibraryPath>$(SolutionDir)IOToolkit\Binaries\Win64;$(LibraryPath)</LibraryPath>
-    <IncludePath>$(ProjectDir)Source\Public;$(SolutionDir)IOToolkit\include;$(IncludePath)</IncludePath>
+    <LibraryPath>$(SolutionDir)Binaries\Win64\Debug;$(LibraryPath)</LibraryPath>
+    <IncludePath>$(ProjectDir)Source\Public;$(SolutionDir)IODevice\Source\Public;$(SolutionDir)v2.4.1\IOToolkit\include</IncludePath>
     <IntDir>$(SolutionDIr)Binaries\Win64\Debug\Temp\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
-    <IncludePath>$(ProjectDir)Source\Public;$(SolutionDir)IOToolkit\include;$(IncludePath)</IncludePath>
-    <LibraryPath>$(SolutionDir)IOToolkit\Binaries\Win32;$(LibraryPath)</LibraryPath>
+    <IncludePath>$(ProjectDir)Source\Public;$(SolutionDir)IODevice\Source\Public;$(SolutionDir)v2.4.1\IOToolkit\include</IncludePath>
+    <LibraryPath>$(SolutionDir)Binaries\Win32\Release;$(LibraryPath)</LibraryPath>
     <OutDir>$(SolutionDIr)Binaries\Win32\Release</OutDir>
     <IntDir>$(SolutionDIr)Binaries\Win32\Release\Temp</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
     <OutDir>$(SolutionDIr)Binaries\Win64\Release</OutDir>
-    <LibraryPath>$(SolutionDir)IOToolkit\Binaries\Win64;$(LibraryPath)</LibraryPath>
-    <IncludePath>$(ProjectDir)Source\Public;$(SolutionDir)IOToolkit\include;$(IncludePath)</IncludePath>
+    <LibraryPath>$(SolutionDir)Binaries\Win64\Release;$(LibraryPath)</LibraryPath>
+    <IncludePath>$(ProjectDir)Source\Public;$(SolutionDir)IODevice\Source\Public;$(SolutionDir)v2.4.1\IOToolkit\include</IncludePath>
     <IntDir>$(SolutionDIr)Binaries\Win64\Release\Temp</IntDir>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
@@ -105,10 +105,13 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_USRDLL;IODEVICE_C_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <SupportUnloadOfDelayLoadedDLL>true</SupportUnloadOfDelayLoadedDLL>
+      <DelayLoadDLLs>IODevice.dll</DelayLoadDLLs>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -118,10 +121,13 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>_DEBUG;_WINDOWS;_USRDLL;IODEVICE_C_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <SupportUnloadOfDelayLoadedDLL>true</SupportUnloadOfDelayLoadedDLL>
+      <DelayLoadDLLs>IODevice.dll</DelayLoadDLLs>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -133,12 +139,15 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;IODEVICE_C_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <SupportUnloadOfDelayLoadedDLL>true</SupportUnloadOfDelayLoadedDLL>
+      <DelayLoadDLLs>IODevice.dll</DelayLoadDLLs>
     </Link>
     <PostBuildEvent>
       <Command>call $(SolutionDir)release_cwrapper.bat Win32</Command>
@@ -153,12 +162,15 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>NDEBUG;_WINDOWS;_USRDLL;IODEVICE_C_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <SupportUnloadOfDelayLoadedDLL>true</SupportUnloadOfDelayLoadedDLL>
+      <DelayLoadDLLs>IODevice.dll</DelayLoadDLLs>
     </Link>
     <PostBuildEvent>
       <Command>call $(SolutionDir)release_cwrapper.bat Win64</Command>
@@ -172,6 +184,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="IODevice_CWrapper.h" />
+    <ClInclude Include="Source\Public\Paths.hpp" />
     <ClInclude Include="Source\Public\StringUtils.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

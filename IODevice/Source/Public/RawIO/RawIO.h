@@ -8,15 +8,13 @@
 #include <vector>
 #include "CoreTypes.inl"
 #include "InputCoreTypes.h"
+#include "CoreTypes/IOTypes.h"
 #include "CoreTypes/InputKeyProperties.h"
 #include "LessKey.h"
 
-namespace  DevelopHelper
+namespace  IOToolkit
 {
 
-const uint8 InvalidDeviceID = static_cast<uint8>(255);
-const uint8 MaxIOCount = static_cast<uint8>(255);
-const float MaxAxisValue = 1000.f;
 
 class RawIO
 {
@@ -31,15 +29,42 @@ public:
 
     virtual const bool Valid() const { return false; }
 
-    virtual int SetDeviceDO(BYTE* InDOStatus);
+    virtual int SetDO(float* InDOStatus);
 
-    virtual int SetDeviceDO(const FKey InKey, BYTE val);
+	virtual int SetDO(const char* InOAction, float val, bool bIgnoreMassage=false);
+	virtual int SetDO(const FKey& InKey, float val);
+	virtual int SetDOOn(const char* InOAction);
+	virtual int SetDOOff(const char* InOAction);
+	virtual int DOImmediate();
 
-    virtual int GetDeviceDO(BYTE* OutDOStatus);
+	/**
+	 * 设置 OAction Key 的属性 (Scale, InvertEvent)
+	 * @param oactionName: OAction 名称
+	 * @param keyName: Key 名称
+	 * @param scale: 缩放系数
+	 * @param invertEvent: 是否反转事件
+	 * @return: 成功返回1 失败返回0
+	 */
+	virtual int SetOKProps(const char* oactionName, const char* keyName, float scale, bool invertEvent);
 
-    virtual BYTE GetDeviceDO(const FKey InKey);
+    virtual int GetDO(float* OutDOStatus);
+    virtual float GetDO(const FKey InKey);
+	virtual float GetDO(const char* InOAction);
+    virtual int RefreshStreamingData(BYTE* StreamingData, unsigned int DataSize);
 
-    void Initialize();
+    /**
+     * 通用插件通道 - 宿主→插件 下行写入
+     * 默认无实现, 返回 0. ExternalIO 会覆盖, 转发至插件 DLL 的 WritePluginChannel.
+     */
+    virtual int WritePluginChannel(const char* channelName, const BYTE* data, unsigned int size) { return 0; }
+
+    /**
+     * 通用插件通道 - 首次有 handler 绑定时调用, 让 ExternalIO 向插件注册派发回调.
+     * @param details 宿主侧 IODeviceDetails*, 用于回调入口.
+     */
+    virtual void EnsurePluginChannelDispatcher(void* details) {}
+
+	virtual void Initialize() = 0;
 
     virtual void OnFrameEnd();
 
@@ -48,7 +73,8 @@ public:
     void InputAxis(FKey Key, float Delta, float DeltaTime, uint8 InID, int32 NumSamples);
 
     const uint8 ID()const { return deviceID; };
-    const std::string getIOType()const { return IOType; }
+    const std::string& getIOType()const { return IOType; }
+
 public:
     struct ButtonState
     {
@@ -71,7 +97,8 @@ public:
     };
 protected:
     void DispatchButtonEvent(std::vector<BYTE> DIStatus, std::vector<ButtonState>& channelsState);
-    void DispatchAxisEvent(std::vector<short> InAxis);
+    void DispatchAxisEvent(std::vector<short> InAxis);       // V1: �ϰ汾 (short)
+    void DispatchAxisEvent(std::vector<int32_t> InAxis);     // V2: �°汾 (int32_t)
 
     InputEvent GetChannelEvent(ButtonState& chState);
 
@@ -79,6 +106,9 @@ protected:
 
     FKey GetButtonKey(uint8 channelIndex);
     FKey GetAxisKey(uint8 axisIndex);
+	FKey GetOAxisKey(uint8 oaxisIndex);
+
+	float MassageKeyInput(FKey InKey, float InRawValue);
 
 protected:
     uint8 deviceID;

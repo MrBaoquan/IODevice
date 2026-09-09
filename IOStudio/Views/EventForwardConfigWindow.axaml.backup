@@ -1,0 +1,448 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:IOTester.ViewModels"
+        xmlns:converters="using:IOTester.Converters"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d" d:DesignWidth="1000" d:DesignHeight="600"
+        x:Class="IOTester.Views.EventForwardConfigWindow"
+        x:DataType="vm:EventForwardConfigViewModel"
+        Title="事件转发配置"
+        Width="1000" Height="600"
+        MinWidth="800" MinHeight="500"
+        Icon="/Assets/avalonia-logo.ico">
+
+    <Design.DataContext>
+        <vm:EventForwardConfigViewModel/>
+    </Design.DataContext>
+
+    <Window.Resources>
+        <converters:BoolToColorConverter x:Key="BoolToColorConverter"/>
+        <converters:BoolToTextConverter x:Key="BoolToTextConverter"/>
+        <converters:StringEqualsConverter x:Key="StringEqualsConverter"/>
+    </Window.Resources>
+
+    <Window.Styles>
+        <Style Selector="TextBlock.header">
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="Margin" Value="0,0,8,0"/>
+        </Style>
+        <Style Selector="TextBox">
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+        </Style>
+        <Style Selector="Button.action-btn">
+            <Setter Property="Margin" Value="4"/>
+            <Setter Property="Padding" Value="12,6"/>
+        </Style>
+    </Window.Styles>
+
+    <DockPanel>
+        <!-- 顶部工具栏 -->
+        <Border DockPanel.Dock="Top" BorderBrush="#e5e7eb" BorderThickness="0,0,0,1" Padding="12">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+                <Button Classes="action-btn" Command="{Binding AddMappingCommand}">
+                    <StackPanel Orientation="Horizontal" Spacing="4">
+                        <TextBlock Text="➕" FontSize="16"/>
+                        <TextBlock Text="添加映射"/>
+                    </StackPanel>
+                </Button>
+                <Button Classes="action-btn" Command="{Binding DeleteMappingCommand}">
+                    <StackPanel Orientation="Horizontal" Spacing="4">
+                        <TextBlock Text="🗑️" FontSize="16"/>
+                        <TextBlock Text="删除"/>
+                    </StackPanel>
+                </Button>
+                <Separator Width="1" Height="24" Background="#d1d5db"/>
+                <Button Classes="action-btn" Command="{Binding MoveUpCommand}">
+                    <StackPanel Orientation="Horizontal" Spacing="4">
+                        <TextBlock Text="⬆️" FontSize="16"/>
+                        <TextBlock Text="上移"/>
+                    </StackPanel>
+                </Button>
+                <Button Classes="action-btn" Command="{Binding MoveDownCommand}">
+                    <StackPanel Orientation="Horizontal" Spacing="4">
+                        <TextBlock Text="⬇️" FontSize="16"/>
+                        <TextBlock Text="下移"/>
+                    </StackPanel>
+                </Button>
+                <Separator Width="1" Height="24" Background="#d1d5db"/>
+                <Button Classes="action-btn" Command="{Binding SaveConfigCommand}" Background="#10b981" Foreground="White">
+                    <StackPanel Orientation="Horizontal" Spacing="4">
+                        <TextBlock Text="💾" FontSize="16"/>
+                        <TextBlock Text="保存配置"/>
+                    </StackPanel>
+                </Button>
+                <Button Classes="action-btn" Command="{Binding LoadConfigCommand}">
+                    <StackPanel Orientation="Horizontal" Spacing="4">
+                        <TextBlock Text="📂" FontSize="16"/>
+                        <TextBlock Text="重新加载"/>
+                    </StackPanel>
+                </Button>
+            </StackPanel>
+        </Border>
+
+        <!-- 底部状态栏 -->
+        <Border DockPanel.Dock="Bottom" BorderBrush="#e5e7eb" BorderThickness="0,1,0,0" Padding="12,8" Background="#f9fafb">
+            <StackPanel Orientation="Horizontal" Spacing="16">
+                <TextBlock Text="配置文件路径:" VerticalAlignment="Center" Foreground="#6b7280"/>
+                <TextBlock Text="{Binding ConfigFilePath}" VerticalAlignment="Center" FontFamily="Consolas" FontSize="11"/>
+                <TextBlock Text="|" VerticalAlignment="Center" Foreground="#d1d5db"/>
+                <TextBlock VerticalAlignment="Center" Foreground="#6b7280">
+                    <Run Text="映射总数:"/>
+                    <Run Text="{Binding Mappings.Count}" FontWeight="Bold"/>
+                </TextBlock>
+            </StackPanel>
+        </Border>
+
+        <!-- 主内容区 -->
+        <Grid Margin="12">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" MinWidth="300"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- 左侧：映射列表 -->
+            <Border Grid.Column="0" BorderBrush="#e5e7eb" BorderThickness="1" CornerRadius="4">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                    <!-- 列表标题 -->
+                    <Border Grid.Row="0" Background="#f3f4f6" Padding="12,8" BorderBrush="#e5e7eb" BorderThickness="0,0,0,1">
+                        <TextBlock Text="转发映射列表" FontWeight="Bold" FontSize="14"/>
+                    </Border>
+
+                    <!-- 映射列表 -->
+                    <ListBox Grid.Row="1" 
+                             ItemsSource="{Binding Mappings}"
+                             SelectedItem="{Binding SelectedMapping}"
+                             Background="White">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <Border Padding="8" BorderBrush="#e5e7eb" BorderThickness="0,0,0,1">
+                                    <Grid>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="Auto"/>
+                                        </Grid.RowDefinitions>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+
+                                        <!-- 第一行：源设备 -->
+                                        <StackPanel Grid.Row="0" Grid.Column="0" Orientation="Horizontal" Spacing="6" Margin="0,0,0,4">
+                                            <TextBlock Text="📱" FontSize="11" Foreground="#6b7280"/>
+                                            <TextBlock Text="{Binding SourceDevice}" FontSize="11" Foreground="#6b7280" FontWeight="SemiBold"/>
+                                        </StackPanel>
+
+                                        <!-- 第二行：SourceKey -> TargetKey -->
+                                        <StackPanel Grid.Row="1" Grid.Column="0" Orientation="Horizontal" Spacing="8">
+                                            <TextBlock Text="{Binding SourceKey}" FontWeight="Bold" FontSize="13" Foreground="#1f2937"/>
+                                            <TextBlock Text="→" Foreground="#9ca3af"/>
+                                            <TextBlock Text="{Binding TargetKey}" FontWeight="SemiBold" FontSize="13" Foreground="#3b82f6"/>
+                                        </StackPanel>
+
+                                        <!-- 启用状态 -->
+                                        <Border Grid.Row="1" Grid.Column="1" 
+                                                Background="{Binding IsEnabled, Mode=OneWay, Converter={StaticResource BoolToColorConverter}}"
+                                                CornerRadius="3" Padding="6,2">
+                                            <TextBlock Text="{Binding IsEnabled, Mode=OneWay, Converter={StaticResource BoolToTextConverter}}" 
+                                                       FontSize="10" 
+                                                       Foreground="White"
+                                                       FontWeight="Bold"/>
+                                        </Border>
+
+                                        <!-- 第三行：目标设备 -->
+                                        <StackPanel Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2" Orientation="Horizontal" Spacing="8" Margin="0,4,0,0">
+                                            <TextBlock Text="🌐" FontSize="11"/>
+                                            <TextBlock Text="{Binding TargetDevice}" FontSize="11" Foreground="#6b7280" FontFamily="Consolas"/>
+                                        </StackPanel>
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                </Grid>
+            </Border>
+
+            <!-- 分隔条 -->
+            <GridSplitter Grid.Column="1" 
+                          Width="4" 
+                          Background="Transparent"
+                          IsVisible="{Binding IsEditPanelVisible}"/>
+
+            <!-- 右侧：详细编辑区 -->
+            <Border Grid.Column="2" 
+                    BorderBrush="#e5e7eb" 
+                    BorderThickness="1" 
+                    CornerRadius="4"
+                    Width="500"
+                    IsVisible="{Binding IsEditPanelVisible}">
+                <Grid IsEnabled="{Binding SelectedMapping, Converter={x:Static ObjectConverters.IsNotNull}}">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                    <!-- 编辑区标题 -->
+                    <Border Grid.Row="0" Background="#f3f4f6" Padding="12,8" BorderBrush="#e5e7eb" BorderThickness="0,0,0,1">
+                        <Grid>
+                            <TextBlock Text="映射详细配置" FontWeight="Bold" FontSize="14" VerticalAlignment="Center"/>
+                            <Button HorizontalAlignment="Right" 
+                                    Background="Transparent" 
+                                    BorderThickness="0"
+                                    Padding="8,4"
+                                    ToolTip.Tip="关闭编辑面板"
+                                    Command="{Binding $parent[Window].DataContext.CloseEditPanelCommand}">
+                                <TextBlock Text="✕" FontSize="16" Foreground="#6b7280"/>
+                            </Button>
+                        </Grid>
+                    </Border>
+
+                    <!-- 编辑表单 -->
+                    <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+                        <StackPanel Margin="16" Spacing="16">
+                            <!-- 源设备选择 -->
+                            <StackPanel Spacing="6">
+                                <TextBlock Classes="header" Text="源设备" Foreground="#374151"/>
+                                <ComboBox ItemsSource="{Binding AvailableDevices}"
+                                          SelectedItem="{Binding SelectedMapping.SourceDevice}"
+                                          FontSize="13"
+                                          HorizontalAlignment="Stretch">
+                                    <ComboBox.ItemTemplate>
+                                        <DataTemplate>
+                                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                                <TextBlock Text="📱" FontSize="12"/>
+                                                <TextBlock Text="{Binding}" FontSize="13"/>
+                                            </StackPanel>
+                                        </DataTemplate>
+                                    </ComboBox.ItemTemplate>
+                                </ComboBox>
+                                <TextBlock Text="选择接收键值输入的源设备" 
+                                           FontSize="11" 
+                                           Foreground="#9ca3af" 
+                                           Margin="4,0,0,0"/>
+                            </StackPanel>
+
+                            <!-- 源Key 输入 -->
+                            <StackPanel Spacing="6">
+                                <TextBlock Classes="header" Text="源Key (接收的键值)" Foreground="#374151"/>
+                                <TextBox Text="{Binding SelectedMapping.SourceKey}" 
+                                         Watermark="请输入源Key名称"
+                                         FontSize="13"/>
+                                <TextBlock Text="接收到的键值输入标识" 
+                                           FontSize="11" 
+                                           Foreground="#9ca3af" 
+                                           Margin="4,0,0,0"/>
+                            </StackPanel>
+
+                            <!-- 目标Key 输入 -->
+                            <StackPanel Spacing="6">
+                                <TextBlock Classes="header" Text="目标Key (转发的键值)" Foreground="#374151"/>
+                                <TextBox Text="{Binding SelectedMapping.TargetKey}" 
+                                         Watermark="请输入目标Key"
+                                         FontSize="13"/>
+                                <TextBlock Text="转发到目标设备的键值标识" 
+                                           FontSize="11" 
+                                           Foreground="#9ca3af" 
+                                           Margin="4,0,0,0"/>
+                            </StackPanel>
+
+                            <!-- 目标协议选择 -->
+                            <StackPanel Spacing="6">
+                                <TextBlock Classes="header" Text="目标协议" Foreground="#374151"/>
+                                <ComboBox SelectedItem="{Binding SelectedMapping.TargetProtocol}"
+                                          ItemsSource="{Binding $parent[Window].DataContext.AvailableProtocols}"
+                                          HorizontalAlignment="Stretch"
+                                          FontSize="13">
+                                </ComboBox>
+                                <TextBlock Text="选择目标设备的通信协议" 
+                                           FontSize="11" 
+                                           Foreground="#9ca3af" 
+                                           Margin="4,0,0,0"/>
+                            </StackPanel>
+
+                            <!-- NetIO 协议配置 -->
+                            <StackPanel Spacing="6">
+                                <Border BorderBrush="#e0e7ff" BorderThickness="1" CornerRadius="4" Padding="12" Background="#f5f7ff"
+                                        IsVisible="{Binding SelectedMapping.TargetProtocol, Converter={StaticResource StringEqualsConverter}, ConverterParameter=NetIO}">
+                                    <StackPanel Spacing="12">
+                                        <TextBlock Text="📡 NetIO 协议配置" FontWeight="SemiBold" Foreground="#4f46e5"/>
+                                        
+                                        <!-- IP地址 -->
+                                        <StackPanel Spacing="4">
+                                            <TextBlock Text="IP地址" FontSize="12" Foreground="#374151"/>
+                                            <TextBox Text="{Binding SelectedMapping.TargetIP}" 
+                                                     Watermark="例如: 192.168.1.100"
+                                                     FontFamily="Consolas"
+                                                     FontSize="13"/>
+                                        </StackPanel>
+                                        
+                                        <!-- 端口 -->
+                                        <StackPanel Spacing="4">
+                                            <TextBlock Text="端口" FontSize="12" Foreground="#374151"/>
+                                            <NumericUpDown Value="{Binding SelectedMapping.TargetPort}"
+                                                           Minimum="1"
+                                                           Maximum="65535"
+                                                           FontSize="13"/>
+                                        </StackPanel>
+                                    </StackPanel>
+                                </Border>
+                            </StackPanel>
+
+                            <!-- Modbus-RTU 协议配置 -->
+                            <StackPanel Spacing="6">
+                                <Border BorderBrush="#dbeafe" BorderThickness="1" CornerRadius="4" Padding="12" Background="#eff6ff"
+                                        IsVisible="{Binding SelectedMapping.TargetProtocol, Converter={StaticResource StringEqualsConverter}, ConverterParameter=Modbus-RTU}">
+                                    <StackPanel Spacing="12">
+                                        <TextBlock Text="🔌 Modbus-RTU 协议配置" FontWeight="SemiBold" Foreground="#2563eb"/>
+                                        
+                                        <!-- 串口号 -->
+                                        <StackPanel Spacing="4">
+                                            <TextBlock Text="串口号" FontSize="12" Foreground="#374151"/>
+                                            <ComboBox SelectedItem="{Binding SelectedMapping.SerialPort}"
+                                                      ItemsSource="{Binding $parent[Window].DataContext.AvailablePorts}"
+                                                      HorizontalAlignment="Stretch"
+                                                      FontSize="13"/>
+                                        </StackPanel>
+                                        
+                                        <!-- 波特率 -->
+                                        <StackPanel Spacing="4">
+                                            <TextBlock Text="波特率" FontSize="12" Foreground="#374151"/>
+                                            <ComboBox SelectedItem="{Binding SelectedMapping.BaudRate}"
+                                                      ItemsSource="{Binding $parent[Window].DataContext.AvailableBaudRates}"
+                                                      HorizontalAlignment="Stretch"
+                                                      FontSize="13"/>
+                                        </StackPanel>
+                                        
+                                        <!-- 数据位 -->
+                                        <StackPanel Spacing="4">
+                                            <TextBlock Text="数据位" FontSize="12" Foreground="#374151"/>
+                                            <ComboBox SelectedItem="{Binding SelectedMapping.DataBits}"
+                                                      ItemsSource="{Binding $parent[Window].DataContext.AvailableDataBits}"
+                                                      HorizontalAlignment="Stretch"
+                                                      FontSize="13"/>
+                                        </StackPanel>
+                                        
+                                        <!-- 校验位 -->
+                                        <StackPanel Spacing="4">
+                                            <TextBlock Text="校验位" FontSize="12" Foreground="#374151"/>
+                                            <ComboBox SelectedItem="{Binding SelectedMapping.Parity}"
+                                                      ItemsSource="{Binding $parent[Window].DataContext.AvailableParities}"
+                                                      HorizontalAlignment="Stretch"
+                                                      FontSize="13"/>
+                                        </StackPanel>
+                                        
+                                        <!-- 停止位 -->
+                                        <StackPanel Spacing="4">
+                                            <TextBlock Text="停止位" FontSize="12" Foreground="#374151"/>
+                                            <ComboBox SelectedItem="{Binding SelectedMapping.StopBits}"
+                                                      ItemsSource="{Binding $parent[Window].DataContext.AvailableStopBits}"
+                                                      HorizontalAlignment="Stretch"
+                                                      FontSize="13"/>
+                                        </StackPanel>
+                                    </StackPanel>
+                                </Border>
+                            </StackPanel>
+
+                            <!-- 是否启用 -->
+                            <StackPanel Spacing="6">
+                                <CheckBox IsChecked="{Binding SelectedMapping.IsEnabled}">
+                                    <TextBlock Text="启用此映射" FontWeight="SemiBold"/>
+                                </CheckBox>
+                                <TextBlock Text="取消勾选可临时禁用此映射而不删除" 
+                                           FontSize="11" 
+                                           Foreground="#9ca3af" 
+                                           Margin="24,0,0,0"/>
+                            </StackPanel>
+
+                            <!-- 说明 -->
+                            <StackPanel Spacing="6">
+                                <TextBlock Classes="header" Text="说明备注" Foreground="#374151"/>
+                                <TextBox Text="{Binding SelectedMapping.Description}" 
+                                         Watermark="请输入映射说明（可选）"
+                                         AcceptsReturn="True"
+                                         TextWrapping="Wrap"
+                                         Height="80"
+                                         FontSize="13"/>
+                                <TextBlock Text="为此映射添加说明，便于后续维护" 
+                                           FontSize="11" 
+                                           Foreground="#9ca3af" 
+                                           Margin="4,0,0,0"/>
+                            </StackPanel>
+
+                            <!-- 预览区 -->
+                            <Border Background="#f0f9ff" 
+                                    BorderBrush="#bfdbfe" 
+                                    BorderThickness="1" 
+                                    CornerRadius="4" 
+                                    Padding="12"
+                                    Margin="0,8,0,0">
+                                <StackPanel Spacing="8">
+                                    <TextBlock Text="📋 映射预览" FontWeight="Bold" Foreground="#1e40af"/>
+                                    <StackPanel Spacing="4">
+                                        <TextBlock FontFamily="Consolas" FontSize="12" Foreground="#1e3a8a">
+                                            <Run Text="源设备: "/>
+                                            <Run Text="{Binding SelectedMapping.SourceDevice, Mode=OneWay}" FontWeight="Bold"/>
+                                            <Run Text=" | 源Key: "/>
+                                            <Run Text="{Binding SelectedMapping.SourceKey, Mode=OneWay}" FontWeight="Bold"/>
+                                        </TextBlock>
+                                        <TextBlock FontFamily="Consolas" FontSize="12" Foreground="#1e3a8a">
+                                            <Run Text="→ 目标Key: "/>
+                                            <Run Text="{Binding SelectedMapping.TargetKey, Mode=OneWay}" FontWeight="Bold"/>
+                                        </TextBlock>
+                                        <TextBlock FontFamily="Consolas" FontSize="12" Foreground="#1e3a8a">
+                                            <Run Text="协议: "/>
+                                            <Run Text="{Binding SelectedMapping.TargetProtocol, Mode=OneWay}" FontWeight="Bold"/>
+                                        </TextBlock>
+                                        <TextBlock FontFamily="Consolas" FontSize="11" Foreground="#1e3a8a"
+                                                   IsVisible="{Binding SelectedMapping.TargetProtocol, Converter={StaticResource StringEqualsConverter}, ConverterParameter=NetIO}">
+                                            <Run Text="  └ "/>
+                                            <Run Text="{Binding SelectedMapping.TargetIP, Mode=OneWay}"/>
+                                            <Run Text=":"/>
+                                            <Run Text="{Binding SelectedMapping.TargetPort, Mode=OneWay}"/>
+                                        </TextBlock>
+                                        <TextBlock FontFamily="Consolas" FontSize="11" Foreground="#1e3a8a"
+                                                   IsVisible="{Binding SelectedMapping.TargetProtocol, Converter={StaticResource StringEqualsConverter}, ConverterParameter=Modbus-RTU}">
+                                            <Run Text="  └ "/>
+                                            <Run Text="{Binding SelectedMapping.SerialPort, Mode=OneWay}"/>
+                                            <Run Text=" @ "/>
+                                            <Run Text="{Binding SelectedMapping.BaudRate, Mode=OneWay}"/>
+                                            <Run Text=" bps"/>
+                                        </TextBlock>
+                                        <TextBlock FontFamily="Consolas" FontSize="12" Foreground="#1e3a8a">
+                                            <Run Text="状态: "/>
+                                            <Run Text="{Binding SelectedMapping.IsEnabled, Mode=OneWay, Converter={StaticResource BoolToTextConverter}}" FontWeight="Bold"/>
+                                        </TextBlock>
+                                    </StackPanel>
+                                </StackPanel>
+                            </Border>
+                        </StackPanel>
+                    </ScrollViewer>
+
+                    <!-- 未选择提示 -->
+                    <Border Grid.Row="1" 
+                            IsVisible="{Binding SelectedMapping, Converter={x:Static ObjectConverters.IsNull}}"
+                            Background="#fafafa">
+                        <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="12">
+                            <TextBlock Text="📝" FontSize="48" HorizontalAlignment="Center" Opacity="0.3"/>
+                            <TextBlock Text="请从左侧列表选择一个映射进行编辑" 
+                                       FontSize="14" 
+                                       Foreground="#9ca3af"
+                                       HorizontalAlignment="Center"/>
+                            <TextBlock Text="或点击【添加映射】创建新的转发规则" 
+                                       FontSize="12" 
+                                       Foreground="#d1d5db"
+                                       HorizontalAlignment="Center"/>
+                        </StackPanel>
+                    </Border>
+                </Grid>
+            </Border>
+        </Grid>
+    </DockPanel>
+</Window>

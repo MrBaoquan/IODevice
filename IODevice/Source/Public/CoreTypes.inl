@@ -1,10 +1,12 @@
 #pragma once
-namespace DevelopHelper
+#include <cstdint>
+
+namespace IOToolkit
 {
 
-typedef unsigned __int8      uint8;
-typedef unsigned __int32    uint32;
-typedef          __int32     int32;
-typedef unsigned    char      BYTE;
+typedef std::uint8_t  uint8;
+typedef std::uint32_t uint32;
+typedef std::int32_t  int32;
+typedef unsigned char BYTE;
 
 };

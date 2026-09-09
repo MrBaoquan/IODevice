@@ -8,7 +8,7 @@
 #include "InputCoreTypes.h"
 #include "PlayerInput.h"
 
-namespace DevelopHelper
+namespace IOToolkit
 {
 
 class UInputSettings
@@ -26,11 +26,17 @@ public:
     /** List of Action Mappings */
     std::vector<std::vector<struct FInputAxisKeyMapping>> AxisMappings;
 
+	/**
+	 * List of OAction Mappings
+	 */
+	std::vector<std::map<std::string,std::vector<struct FOutputActionKey>>> OActionMappings;
+
     /** Internal structure for storing axis config data. */
     std::vector<std::map<FKey, FInputKeyProperties, LessKey>> KeyProperties;
 
     const bool HasAction(uint8 deviceID, std::string actionName);
     const bool HasAxis(uint8 deviceID, std::string axisName);
+    const bool HasOAction(uint8 deviceID, std::string oactionName);
 
     int SetConfigPath(const char* InPath);
 
@@ -38,7 +44,7 @@ private:
     UInputSettings() {}
     ~UInputSettings(){}
 
-    bool AddDevcie(struct DevicePropeties deviceProps);
+    bool AddDevice(struct DeviceProperties deviceProps);
     float GetNodeValue(const char* val,float defaultValue = 0.f);
 
     std::string customConfigPath = "Invalid";

@@ -1,0 +1,228 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:vm="using:IOStudio.ViewModels.Timeline"
+        xmlns:ctl="using:IOStudio.Controls.Timeline"
+        xmlns:iconPacks="https://github.com/MahApps/IconPacks.Avalonia"
+        mc:Ignorable="d"
+        x:Class="IOStudio.Views.Timeline.AddTrackDialog"
+        x:DataType="vm:AddTrackDialogViewModel"
+        Title="添加轨道"
+        Width="480" Height="760"
+        CanResize="False"
+        WindowStartupLocation="CenterOwner"
+        SystemDecorations="BorderOnly">
+
+    <Window.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceInclude Source="avares://IOStudio/Assets/Themes/TimelineThemeResources.axaml"/>
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </Window.Resources>
+
+    <Window.Styles>
+        <Style Selector="TextBlock.section-title">
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="Foreground" Value="{DynamicResource TlAccentSoftFg}"/>
+            <Setter Property="Margin" Value="0,0,0,8"/>
+        </Style>
+        <Style Selector="TextBlock.label">
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Foreground" Value="{DynamicResource TlTextSecondary}"/>
+            <Setter Property="Margin" Value="0,0,0,4"/>
+        </Style>
+        <Style Selector="TextBlock.hint">
+            <Setter Property="FontSize" Value="10"/>
+            <Setter Property="Foreground" Value="{DynamicResource TlTextMuted}"/>
+            <Setter Property="Margin" Value="0,3,0,0"/>
+            <Setter Property="TextWrapping" Value="Wrap"/>
+        </Style>
+        <Style Selector="ComboBox">
+            <Setter Property="MinWidth" Value="200"/>
+            <Setter Property="HorizontalAlignment" Value="Stretch"/>
+            <Setter Property="CornerRadius" Value="4"/>
+        </Style>
+        <Style Selector="TextBox">
+            <Setter Property="HorizontalAlignment" Value="Stretch"/>
+            <Setter Property="CornerRadius" Value="4"/>
+        </Style>
+        <Style Selector="Border.section">
+            <Setter Property="Background" Value="{DynamicResource TlPropSectionBg}"/>
+            <Setter Property="CornerRadius" Value="8"/>
+            <Setter Property="Padding" Value="14,10"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource TlBorderBrush}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Margin" Value="0,0,0,10"/>
+        </Style>
+    </Window.Styles>
+
+    <Border Background="{DynamicResource TlPanelBg}">
+        <DockPanel>
+            <!-- 标题栏 -->
+            <Border DockPanel.Dock="Top" Background="{DynamicResource TlAccent}" Padding="20,14">
+                <StackPanel Orientation="Horizontal" Spacing="10">
+                    <iconPacks:PackIconIonicons Kind="AddiOS" Width="18" Height="18"
+                                                Foreground="{DynamicResource TlAccent}" VerticalAlignment="Center"/>
+                    <StackPanel>
+                        <TextBlock Text="{Binding DialogTitle}" FontSize="16" FontWeight="Bold"
+                                   Foreground="{DynamicResource TlAccentFg}"/>
+                        <TextBlock Text="配置设备输出映射到时间轴轨道" FontSize="11"
+                                   Foreground="{DynamicResource TlAccentFg}" Opacity="0.8"/>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
+            <!-- 底部按钮 -->
+            <Border DockPanel.Dock="Bottom" Padding="20,12"
+                    Background="{DynamicResource TlPanelBg}" BorderBrush="{DynamicResource TlBorderBrush}" BorderThickness="0,1,0,0">
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="10">
+                    <Button Content="取消" Padding="20,8" MinWidth="80"
+                            Command="{Binding CancelCommand}"
+                            Background="{DynamicResource TlToolbarBg}" Foreground="{DynamicResource TlTextSecondary}"/>
+                    <Button Content="{Binding ConfirmButtonText}" Padding="20,8" MinWidth="100"
+                            Command="{Binding ConfirmCommand}"
+                            Background="{DynamicResource TlAccent}" Foreground="{DynamicResource TlAccentFg}" FontWeight="SemiBold"/>
+                </StackPanel>
+            </Border>
+
+            <!-- 表单内容 (可滚动) -->
+            <ScrollViewer Padding="20,14">
+                <StackPanel>
+                    <!-- ═══ 设备输出配置 ═══ -->
+                    <Border Classes="section">
+                        <StackPanel Spacing="10">
+                            <TextBlock Classes="section-title" Text="📡 设备输出配置"/>
+
+                            <!-- 设备选择 -->
+                            <StackPanel>
+                                <TextBlock Classes="label" Text="目标设备"/>
+                                <ComboBox ItemsSource="{Binding DeviceNames}"
+                                          SelectedItem="{Binding SelectedDeviceName}"
+                                          PlaceholderText="选择设备..."/>
+                            </StackPanel>
+
+                            <!-- 输出类型选择 -->
+                            <StackPanel>
+                                <TextBlock Classes="label" Text="输出类型"/>
+                                <ComboBox SelectedIndex="{Binding SelectedOutputTypeIndex}">
+                                    <ComboBoxItem Content="OAction 输出动作"/>
+                                    <ComboBoxItem Content="OAxis 输出通道"/>
+                                </ComboBox>
+                                <TextBlock Classes="hint"
+                                           Text="OAction: 灯光/风机等输出动作 | OAxis: 直接输出通道 (OAxis_00~31)"/>
+                            </StackPanel>
+
+                            <!-- 输出目标选择 -->
+                            <StackPanel>
+                                <TextBlock Classes="label" Text="输出目标"/>
+                                <ComboBox ItemsSource="{Binding OutputItems}"
+                                          SelectedItem="{Binding SelectedOutputDisplay}"
+                                          PlaceholderText="选择输出目标..."/>
+                                <TextBlock Classes="hint" Text="{Binding OutputEmptyMessage}"
+                                           IsVisible="{Binding !HasOutputItems}"
+                                           Foreground="#f59e0b"/>
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- ═══ 轨道属性 ═══ -->
+                    <Border Classes="section">
+                        <StackPanel Spacing="10">
+                            <TextBlock Classes="section-title" Text="🎚 轨道属性"/>
+
+                            <!-- 显示名称 -->
+                            <StackPanel>
+                                <TextBlock Classes="label" Text="显示名称"/>
+                                <TextBox Text="{Binding Label}" Watermark="如: 俯仰、横滚、升降"
+                                         Padding="8,6"/>
+                            </StackPanel>
+
+                            <!-- 值类型 -->
+                            <StackPanel>
+                                <TextBlock Classes="label" Text="值类型"/>
+                                <ComboBox SelectedIndex="{Binding SelectedValueTypeIndex}">
+                                    <ComboBoxItem Content="Float 连续值 (0.0 ~ 1.0)"/>
+                                    <ComboBoxItem Content="Bool 开关值 (0 / 1)"/>
+                                </ComboBox>
+                                <TextBlock Classes="hint"
+                                           Text="Float: 运动轴等连续控制 | Bool: 灯光、风机等开关控制 (SetDO)"/>
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- ═══ 待机循环提示 (编辑入口在时间轴) ═══ -->
+                    <Border Classes="section">
+                        <StackPanel Spacing="8">
+                            <TextBlock Classes="section-title" Text="待机循环"/>
+                            <TextBlock Classes="hint"
+                                       Text="待机循环请在时间轴中编辑：右键轨道头 →「待机循环」或选中轨道后在属性面板中配置。"/>
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <Button Content="在时间轴编辑待机…" Padding="10,6"
+                                        Click="OnEditIdleInTimelineClick"
+                                        Background="{DynamicResource TlAccent}"
+                                        Foreground="{DynamicResource TlAccentFg}"/>
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- ═══ 外观设置 ═══ -->
+                    <Border Classes="section">
+                        <StackPanel Spacing="8">
+                            <TextBlock Classes="section-title" Text="外观设置"/>
+
+                            <TextBlock Classes="label" Text="轨道颜色"/>
+                            <WrapPanel Orientation="Horizontal" HorizontalAlignment="Left">
+                                <Border Width="30" Height="30" CornerRadius="6" Margin="0,0,6,6"
+                                        Background="#4FC3F7" Cursor="Hand"
+                                        Tag="#4FC3F7" PointerPressed="OnColorPick"/>
+                                <Border Width="30" Height="30" CornerRadius="6" Margin="0,0,6,6"
+                                        Background="#81C784" Cursor="Hand"
+                                        Tag="#81C784" PointerPressed="OnColorPick"/>
+                                <Border Width="30" Height="30" CornerRadius="6" Margin="0,0,6,6"
+                                        Background="#FFB74D" Cursor="Hand"
+                                        Tag="#FFB74D" PointerPressed="OnColorPick"/>
+                                <Border Width="30" Height="30" CornerRadius="6" Margin="0,0,6,6"
+                                        Background="#E57373" Cursor="Hand"
+                                        Tag="#E57373" PointerPressed="OnColorPick"/>
+                                <Border Width="30" Height="30" CornerRadius="6" Margin="0,0,6,6"
+                                        Background="#BA68C8" Cursor="Hand"
+                                        Tag="#BA68C8" PointerPressed="OnColorPick"/>
+                                <Border Width="30" Height="30" CornerRadius="6" Margin="0,0,6,6"
+                                        Background="#4DD0E1" Cursor="Hand"
+                                        Tag="#4DD0E1" PointerPressed="OnColorPick"/>
+                                <Border Width="30" Height="30" CornerRadius="6" Margin="0,0,6,6"
+                                        Background="#F06292" Cursor="Hand"
+                                        Tag="#F06292" PointerPressed="OnColorPick"/>
+                                <Border Width="30" Height="30" CornerRadius="6" Margin="0,0,6,6"
+                                        Background="#AED581" Cursor="Hand"
+                                        Tag="#AED581" PointerPressed="OnColorPick"/>
+                                <Border Width="30" Height="30" CornerRadius="6" Margin="0,0,6,6"
+                                        Background="#7986CB" Cursor="Hand"
+                                        Tag="#7986CB" PointerPressed="OnColorPick"/>
+                                <Border Width="30" Height="30" CornerRadius="6" Margin="0,0,6,6"
+                                        Background="#FFD54F" Cursor="Hand"
+                                        Tag="#FFD54F" PointerPressed="OnColorPick"/>
+                            </WrapPanel>
+                            <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,2,0,0">
+                                <TextBlock Text="已选:" FontSize="11" Foreground="#6b7280"
+                                           VerticalAlignment="Center"/>
+                                <Border Name="SelectedColorPreview"
+                                        Width="22" Height="22" CornerRadius="4"
+                                        Background="#4FC3F7"
+                                        BorderBrush="#d1d5db" BorderThickness="1"/>
+                                <TextBlock Name="SelectedColorText" Text="#4FC3F7"
+                                           FontSize="11" Foreground="#6b7280"
+                                           FontFamily="Consolas, monospace"
+                                           VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+            </ScrollViewer>
+        </DockPanel>
+    </Border>
+</Window>

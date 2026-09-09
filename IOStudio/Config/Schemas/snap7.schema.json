@@ -1,0 +1,199 @@
+{
+  "dllName": "SNAP7",
+  "displayName": "西门子 S7 PLC",
+  "version": "1.0",
+  "category": "通讯协议",
+  "sections": [
+    {
+      "name": "connection",
+      "title": "连接配置",
+      "collapsed": false,
+      "fields": [
+        {
+          "key": "ip",
+          "label": "PLC IP地址",
+          "type": "text",
+          "required": true,
+          "placeholder": "192.168.2.1",
+          "default": "192.168.2.1",
+          "description": "S7 PLC的IP地址"
+        },
+        {
+          "key": "rack",
+          "label": "机架号",
+          "type": "number",
+          "min": 0,
+          "default": "0",
+          "description": "PLC机架号"
+        },
+        {
+          "key": "slot",
+          "label": "槽位号",
+          "type": "number",
+          "min": 0,
+          "default": "1",
+          "description": "CPU槽位号 (S7-300/400通常为2，S7-1200/1500通常为1)"
+        }
+      ]
+    },
+    {
+      "name": "timing",
+      "title": "轮询时序",
+      "collapsed": true,
+      "fields": [
+        {
+          "key": "poll_interval_ms",
+          "label": "轮询间隔(ms)",
+          "type": "number",
+          "min": 10,
+          "default": "100",
+          "description": "每轮读取完成后的等待时间"
+        },
+        {
+          "key": "command_interval_ms",
+          "label": "命令间隔(ms)",
+          "type": "number",
+          "min": 0,
+          "default": "10",
+          "description": "连续读取命令之间的间隔"
+        },
+        {
+          "key": "timeout_ms",
+          "label": "超时时间(ms)",
+          "type": "number",
+          "default": "1000",
+          "description": "连接/读写超时时间"
+        },
+        {
+          "key": "retry_wait_ms",
+          "label": "重试等待(ms)",
+          "type": "number",
+          "default": "20",
+          "description": "操作失败后重试等待时间"
+        },
+        {
+          "key": "max_consecutive_failures",
+          "label": "断线检测阈值",
+          "type": "number",
+          "min": 0,
+          "default": "3",
+          "description": "连续失败多少次判定为断线"
+        }
+      ]
+    },
+    {
+      "name": "di",
+      "title": "DI配置（开关量输入）",
+      "collapsed": false,
+      "fields": [
+        {
+          "key": "di_area",
+          "label": "输入区域",
+          "type": "select",
+          "default": "PE",
+          "description": "S7存储区域",
+          "options": [
+            { "value": "PE", "label": "PE - 输入区(I)" },
+            { "value": "PA", "label": "PA - 输出区(Q)" },
+            { "value": "MK", "label": "MK - 标志区(M)" },
+            { "value": "DB", "label": "DB - 数据块" }
+          ]
+        },
+        {
+          "key": "di_db_number",
+          "label": "DB块号",
+          "type": "number",
+          "min": 0,
+          "default": "0",
+          "description": "仅当区域为DB时有效",
+          "visibleWhen": { "di_area": "DB" }
+        },
+        {
+          "key": "di_start",
+          "label": "起始地址",
+          "type": "number",
+          "min": 0,
+          "default": "0",
+          "description": "起始字节地址"
+        },
+        {
+          "key": "di_bytes",
+          "label": "字节数",
+          "type": "number",
+          "min": 1,
+          "default": "8",
+          "description": "读取的字节数量 (8字节=64位)"
+        }
+      ]
+    },
+    {
+      "name": "do",
+      "title": "DO配置（开关量输出）",
+      "collapsed": false,
+      "fields": [
+        {
+          "key": "do_mode",
+          "label": "输出模式",
+          "type": "select",
+          "default": "bit",
+          "description": "输出数据模式",
+          "options": [
+            { "value": "bit", "label": "位模式 - 按位控制" },
+            { "value": "byte", "label": "字节模式 - 每通道1字节" },
+            { "value": "word", "label": "字模式 - 每通道2字节" },
+            { "value": "dword", "label": "双字模式 - 每通道4字节" }
+          ]
+        },
+        {
+          "key": "do_area",
+          "label": "输出区域",
+          "type": "select",
+          "default": "PA",
+          "options": [
+            { "value": "PA", "label": "PA - 输出区(Q)" },
+            { "value": "MK", "label": "MK - 标志区(M)" },
+            { "value": "DB", "label": "DB - 数据块" },
+            { "value": "PE", "label": "PE - 输入区(I)" }
+          ]
+        },
+        {
+          "key": "do_db_number",
+          "label": "DB块号",
+          "type": "number",
+          "min": 0,
+          "default": "1",
+          "visibleWhen": { "do_area": "DB" }
+        },
+        {
+          "key": "do_start",
+          "label": "起始地址",
+          "type": "number",
+          "min": 0,
+          "default": "0",
+          "description": "起始字节地址"
+        },
+        {
+          "key": "do_bytes",
+          "label": "字节数",
+          "type": "number",
+          "min": 1,
+          "default": "8",
+          "description": "仅位模式有效"
+        }
+      ]
+    },
+    {
+      "name": "ai",
+      "title": "AI配置（模拟量输入）",
+      "collapsed": false,
+      "fields": [
+        {
+          "key": "ai_channel_*",
+          "label": "AI通道配置",
+          "type": "text",
+          "description": "格式: 区域地址, 数据类型[, 表达式][, 字节序]\n示例: DB1.20, int16, x*0.1"
+        }
+      ]
+    }
+  ]
+}

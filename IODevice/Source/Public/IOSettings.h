@@ -7,7 +7,7 @@
 #include "IOExportsAPI.h"
 #include "ExportCoreTypes.h"
 
-namespace DevelopHelper
+namespace IOToolkit
 {
     class IOAPI IOSettings
     {
@@ -16,6 +16,14 @@ namespace DevelopHelper
 
         /** Set IODevice.xml file path */
         int SetIOConfigPath(const char* InPath);
+
+        /** Set runtime root directory containing Config/, Logs/, and ExternalLibraries/. */
+        int SetIORuntimeRoot(const char* InRuntimeRoot);
+
+        /**
+         * Set Log Directory
+         */
+        int SetIOLogDir(const char* InLogDir);
 
     private:
         IOSettings(){}

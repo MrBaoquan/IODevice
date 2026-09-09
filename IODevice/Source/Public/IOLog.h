@@ -6,23 +6,29 @@
 #pragma once
 #include "spdlog/spdlog.h"
 
-namespace DevelopHelper
+namespace IOToolkit
 {
 
 class IOLog
 {
 public:
     static IOLog& Instance();
+
+    int SetLogDir(std::string InLogDir);
+
     void Log(std::string msg);
     void Warning(std::string msg);
     void Error(std::string msg);
 
 	void ReleaseLogger();
+
 private:
     IOLog();
     ~IOLog();
 
-	void MakeReference();
+    std::string logDir = "Invalid";
+    void RenameIODeviceLogName();
+	void MakeReference(bool bForce = false);
     std::shared_ptr<spdlog::logger> IOLogger = nullptr;
 };
 

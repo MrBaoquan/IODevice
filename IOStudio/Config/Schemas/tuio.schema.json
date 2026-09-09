@@ -1,0 +1,46 @@
+{
+  "dllName": "TUIO",
+  "displayName": "Tuio",
+  "version": "1.0",
+  "category": "通讯协议",
+  "sections": [
+    {
+      "name": "connection",
+      "title": "连接配置",
+      "collapsed": false,
+      "fields": [
+        {
+          "key": "DRIVER_0",
+          "label": "DRIVER_0",
+          "type": "text",
+          "required": false
+        },
+        {
+          "key": "TCP_PORT_0",
+          "label": "TCP_PORT_0",
+          "type": "number",
+          "required": false
+        },
+        {
+          "key": "UDP_PORT_0",
+          "label": "UDP_PORT_0",
+          "type": "number",
+          "required": false
+        }
+      ]
+    },
+    {
+      "name": "other",
+      "title": "其他配置",
+      "collapsed": true,
+      "fields": [
+        {
+          "key": "TCP_ADDRESS_0",
+          "label": "TCP_ADDRESS_0",
+          "type": "hex",
+          "required": false
+        }
+      ]
+    }
+  ]
+}

@@ -1,4 +1,4 @@
-/** Copyright (c) mrma617@gmail.com
+﻿/** Copyright (c) mrma617@gmail.com
  *  Author: MrBaoquan
  *  CreateTime: 2018-6-27 9:00
  */
@@ -7,28 +7,27 @@
 #include <string>
 #include "IOStatics.h"
 #include "PlayerInput.h"
+#include "IOPlatform.h"
+#if IODEVICE_PLATFORM_WINDOWS
 #include "RawIO/StandardIO.h"
+#endif
 #include "RawIOFactory.h"
 #include "Paths.hpp"
 #include "IOLog.h"
 
+#if IODEVICE_PLATFORM_WINDOWS
 #pragma comment(lib,"Winmm.lib")
+#endif
 
-BOOL CALLBACK EnumWindowsProc(HWND hwnd, LPARAM lParam)
-{
-    DWORD dwCurProcessId = *((DWORD*)lParam);
-    DWORD dwProcessId = 0;
-    
-    GetWindowThreadProcessId(hwnd, &dwProcessId);
-    
-    if (dwProcessId == dwCurProcessId && GetParent(hwnd) == NULL)
-    {
-        *((HWND *)lParam) = hwnd;
-        return FALSE;
-    }
-    return TRUE;
-}
+std::vector<HHOOK> IOToolkit::IOApplication::hhks;
+std::vector<HWND> IOToolkit::IOApplication::mainWindows;
+HINSTANCE IOToolkit::IOApplication::dllInstance;
 
+
+bool IOToolkit::IOApplication::bLoaded = false;
+
+
+#if IODEVICE_PLATFORM_WINDOWS
 std::string HWNDToString(HWND input)
 {
     std::string output = "";
@@ -44,21 +43,25 @@ std::string HWNDToString(HWND input)
     return output;
 }
 
-HWND GetMainWindow()
+BOOL CALLBACK EnumWindowsProc(HWND hwnd, LPARAM lParam)
+{
+    DWORD dwCurProcessId = *((DWORD*)lParam);
+    DWORD dwProcessId = 0;
+    GetWindowThreadProcessId(hwnd, &dwProcessId);
+
+    if (dwProcessId == dwCurProcessId && GetWindow(hwnd, GW_OWNER) == (HWND)0)
+    {
+        if (std::find(IOToolkit::IOApplication::mainWindows.begin(), IOToolkit::IOApplication::mainWindows.end(), hwnd)!= IOToolkit::IOApplication::mainWindows.end()){
+            return FALSE;
+        }
+        IOToolkit::IOApplication::mainWindows.push_back(hwnd);
+    }
+    return TRUE;
+}
+HWND RefreshMainWindows()
 {
     static DWORD dwCurrentProcessId = GetCurrentProcessId();
-    if (!EnumWindows(EnumWindowsProc, (LPARAM)&dwCurrentProcessId))
-    {
-        
-#ifdef WIN_64
-        DevelopHelper::IOLog::Instance().Log(std::string("Succeed in finding process id of main window, and the title of main window is ") + HWNDToString((HWND)(__int64)(dwCurrentProcessId)));
-        return (HWND)(__int64)(dwCurrentProcessId);
-#else
-        DevelopHelper::IOLog::Instance().Log(std::string("Succeed in finding process id of main window, and the title of main window is ") + HWNDToString((HWND)(dwCurrentProcessId)));
-        return (HWND)(dwCurrentProcessId);
-#endif // WIN_64
-    }
-    DevelopHelper::IOLog::Instance().Warning("Could not find process id of main window, make sure your program have a window. ");
+    EnumWindows(EnumWindowsProc, (LPARAM)&dwCurrentProcessId);
     return NULL;
 }
 
@@ -68,19 +71,23 @@ BOOL WINAPI DllMain(
     _In_ LPVOID    lpvReserved
 )
 {
-    using namespace DevelopHelper;
+    using namespace IOToolkit;
     switch (fdwReason)
     {
     case DLL_PROCESS_ATTACH:
         IOApplication::dllInstance = hinstDLL;
-        
-        /** Initialize Paths before initialize IOLog, because IOLog need a correct log path. */
-        Paths::Instance().SetModule(IOApplication::dllInstance);
-
+		{
+			/** Initialize Paths before initialize IOLog, because IOLog need a correct log path. */
+			Paths::Instance().SetModule(IOApplication::dllInstance);
+            std::string dllPath = Paths::Instance().GetExternalLibraryCoreDir();
+			std::wstring _wdllPath(dllPath.begin(), dllPath.end());
+			AddDllDirectory(_wdllPath.data());
+		}
         break;
     case DLL_PROCESS_DETACH:
-        IOApplication::UnHookWindow();
-		IOLog::Instance().Log(std::string("------------------------------  IOToolkit has been detached, Bye!  ------------------------------"));
+        if (IOApplication::bLoaded) {
+            IOApplication::Cleanup();
+        }
         break;
     case DLL_THREAD_ATTACH:
         break;
@@ -91,17 +98,9 @@ BOOL WINAPI DllMain(
     }
     return TRUE;
 }
+#endif
 
-std::vector<HHOOK> DevelopHelper::IOApplication::hhks;
-
-HWND DevelopHelper::IOApplication::mainWindow;
-
-HINSTANCE DevelopHelper::IOApplication::dllInstance;
-
-
-bool DevelopHelper::IOApplication::bLoaded = false;
-
-int DevelopHelper::IOApplication::Constructor()
+int IOToolkit::IOApplication::Constructor()
 {
 	IOLog::Instance().Log(std::string("\n\n\n------------------------------  (*^_^*) Welcome to use IOToolkit (*^_^*) ------------------------------\n\
 		\n\
@@ -112,55 +111,127 @@ int DevelopHelper::IOApplication::Constructor()
 "));
     /** Key mapping */
     StaticKeys::Initialize();
-	IOApplication::RegisterRawInput();
     return SuccessCode;
 }
 
 
-int DevelopHelper::IOApplication::Destructor()
+int IOToolkit::IOApplication::Destructor()
 {
 	return 0;
 }
 
 
-int DevelopHelper::IOApplication::DyLoad()
+int IOToolkit::IOApplication::DyLoad()
 {
 	if (IOApplication::bLoaded) {
-		IOLog::Instance().Warning(std::string("------------------------------  IOToolkit is alreay loaded  ------------------------------\n"));
+		IOLog::Instance().Warning(std::string("------------------------------  IOToolkit is already loaded  ------------------------------\n"));
 		return -1;
 	}
 
 	IOLog::Instance().Log(std::string("------------------------------  IOToolkit Loading...  ------------------------------"));
-	IOApplication::SetWindowsHook();
+    
+#if IODEVICE_PLATFORM_WINDOWS
+    mainWindows.clear();
+    RegisterRawInput();
+
+    if (SetWindowsHook() != SuccessCode) {
+        IOLog::Instance().Warning("Failed to set windows hook");
+        return ErrorCode;
+    }
+#endif
+    
 	/** Device initializtion */
 	IODevices::Initialize();
 	PlayerInput::Instance().Initialize();
-	IOApplication::bLoaded = true;
+	
+	bLoaded = true;
 	IOLog::Instance().Log(std::string("------------------------------  IOToolkit Loaded  ------------------------------"));
-	return 0;
+	return SuccessCode;
 }
 
 
-int DevelopHelper::IOApplication::DyUnload()
+int IOToolkit::IOApplication::DyUnload()
 {
-	if (!IOApplication::bLoaded) {
-		IOLog::Instance().Warning(std::string("------------------------------  IOToolkit is alreay unloaded  ------------------------------\n"));
-		return -1;
-	}
-	IOApplication::UnHookWindow();
-	IODevices::UnInitialize();
-	PlayerInput::Instance().UnInitialize();
-	IOApplication::bLoaded = false;
-	IOLog::Instance().Log(std::string("------------------------------  IOToolkit has been unloaded  ------------------------------\n"));
-	IOLog::Instance().ReleaseLogger();
-	return 0;
+	Cleanup();
+	return SuccessCode;
 }
 
-void DevelopHelper::IOApplication::RegisterRawInput()
+#if IODEVICE_PLATFORM_WINDOWS
+void IOToolkit::IOApplication::RegisterRawInput()
 {
-    HWND hwnd = GetMainWindow();
-    IOApplication::mainWindow = hwnd;
+    RefreshMainWindows();
 
+    if (IOToolkit::IOApplication::mainWindows.size() <= 0) return;
+    auto _windows = IOToolkit::IOApplication::mainWindows;
+
+
+#ifndef HID_USAGE_PAGE_GENERIC
+#define HID_USAGE_PAGE_GENERIC         ((USHORT) 0x01)
+#endif
+#ifndef HID_USAGE_GENERIC_MOUSE
+#define HID_USAGE_GENERIC_MOUSE        ((USHORT) 0x02)
+#endif
+
+    for (auto _window : _windows)
+    {
+        RAWINPUTDEVICE Rid[1];
+        Rid[0].usUsagePage = HID_USAGE_PAGE_GENERIC;
+        Rid[0].usUsage = HID_USAGE_GENERIC_MOUSE;
+        Rid[0].dwFlags = RIDEV_INPUTSINK;
+        Rid[0].hwndTarget = _window;
+
+        if (RegisterRawInputDevices(Rid, 1, sizeof(Rid[0])) == FALSE)
+        {
+            IOLog::Instance().Warning("Register raw input devcies failed. Title: " + HWNDToString(_window));
+        }
+    }
+
+}
+#else
+void IOToolkit::IOApplication::RegisterRawInput()
+{
+}
+#endif
+
+bool IOToolkit::IOApplication::SuccessResult(int code)
+{
+    return code == SuccessCode;
+}
+
+void IOToolkit::IOApplication::Cleanup()
+{
+    if (!bLoaded) {
+        return;  // Already cleaned up
+    }
+    
+    IOLog::Instance().Log("IOToolkit cleanup started...");
+    
+#if IODEVICE_PLATFORM_WINDOWS
+    // 1. Unhook first to stop receiving new messages
+    UnHookWindow();
+    
+    // 2. Unregister raw input devices
+    UnregisterRawInput();
+#endif
+    
+    // 3. Clean up devices and input system
+    IODevices::UnInitialize();
+    PlayerInput::Instance().UnInitialize();
+    
+#if IODEVICE_PLATFORM_WINDOWS
+    // 4. Clear window list
+    mainWindows.clear();
+#endif
+    
+    // 5. Mark as unloaded
+    bLoaded = false;
+    
+    IOLog::Instance().Log("IOToolkit cleanup completed.");
+}
+
+#if IODEVICE_PLATFORM_WINDOWS
+void IOToolkit::IOApplication::UnregisterRawInput()
+{
 #ifndef HID_USAGE_PAGE_GENERIC
 #define HID_USAGE_PAGE_GENERIC         ((USHORT) 0x01)
 #endif
@@ -171,92 +242,117 @@ void DevelopHelper::IOApplication::RegisterRawInput()
     RAWINPUTDEVICE Rid[1];
     Rid[0].usUsagePage = HID_USAGE_PAGE_GENERIC;
     Rid[0].usUsage = HID_USAGE_GENERIC_MOUSE;
-    Rid[0].dwFlags = RIDEV_INPUTSINK;
-    Rid[0].hwndTarget = IOApplication::mainWindow;
-
-    // Joystick for rawinput .
-    //Rid[1].usUsagePage = 0x01;
-    //Rid[1].usUsage = 0x04;
-    //Rid[1].dwFlags = 0;                 // adds joystick
-    //Rid[1].hwndTarget = IOApplication::mainWindow;
-
+    Rid[0].dwFlags = RIDEV_REMOVE;
+    Rid[0].hwndTarget = nullptr;
+    
     if (RegisterRawInputDevices(Rid, 1, sizeof(Rid[0])) == FALSE)
     {
-        IOLog::Instance().Warning("Register raw input devcies failed. ");
+        IOLog::Instance().Warning("Unregister raw input devices failed.");
     }
 }
-
-bool DevelopHelper::IOApplication::SuccessResult(int code)
+#else
+void IOToolkit::IOApplication::UnregisterRawInput()
 {
-    return code == SuccessCode;
 }
+#endif
 
-void DevelopHelper::IOApplication::PreShutdown()
+#if IODEVICE_PLATFORM_WINDOWS
+int IOToolkit::IOApplication::SetWindowsHook()
 {
-	IOApplication::DyUnload();
-}
-
-int DevelopHelper::IOApplication::SetWindowsHook()
-{
-    DWORD threadID = GetCurrentThreadId();
-    HHOOK hhk1 = SetWindowsHookEx(WH_GETMESSAGE, IOApplication::OnMessageProc,IOApplication::dllInstance, threadID);
-    if (hhk1)
-    {
-        IOApplication::hhks.push_back(hhk1);
-    }else
-    {
-        IOLog::Instance().Warning("Hook WM_GETMESSAGE Failed ...");
+    RefreshMainWindows();
+    if (IOToolkit::IOApplication::mainWindows.size() <= 0) {
+        IOToolkit::IOLog::Instance().Warning("Could not find any window in current process, please make sure your program have one window at least! ");
         return ErrorCode;
+    } 
+
+    auto _windows = IOToolkit::IOApplication::mainWindows;
+
+    std::vector<DWORD> _hhks;
+    for  (auto _window : _windows)
+    {
+        DWORD dwProcessId = 0;
+        DWORD threadID = GetWindowThreadProcessId(_window, &dwProcessId);
+        if (std::find(_hhks.begin(), _hhks.end(), threadID) != _hhks.end()) {
+            continue;
+        }
+        IOToolkit::IOLog::Instance().Log(std::string("Hook Window: ") + HWNDToString(_window) + "; PID: " + std::to_string(dwProcessId) + "; TID: " + std::to_string(threadID));
+        _hhks.push_back(threadID);
+        HHOOK hhk1 = SetWindowsHookEx(WH_GETMESSAGE, IOApplication::OnMessageProc, IOApplication::dllInstance, threadID);
+        if (hhk1)
+        {
+            IOApplication::hhks.push_back(hhk1);
+        }
+        else
+        {
+            IOLog::Instance().Warning("Hook WM_GETMESSAGE Failed ...");
+            return ErrorCode;
+        }
+
+        HHOOK hhk2 = SetWindowsHookEx(WH_CALLWNDPROCRET, IOApplication::CallWndRetProc, IOApplication::dllInstance, threadID);
+        if (hhk2)
+        {
+            IOApplication::hhks.push_back(hhk2);
+        }
+        else
+        {
+            IOLog::Instance().Warning("Hook WH_CALLWNDPROCRET Failed ...");
+            return ErrorCode;
+        }
+
+        HHOOK hhk3 = SetWindowsHookEx(WH_CALLWNDPROC, IOApplication::CallWndProc, IOApplication::dllInstance, threadID);
+        if (hhk3)
+        {
+            IOApplication::hhks.push_back(hhk3);
+        }
+        else
+        {
+            IOLog::Instance().Warning("Hook WH_CALLWNDPROC Failed ...");
+            return ErrorCode;
+        }
     }
 
-    HHOOK hhk2 = SetWindowsHookEx(WH_CALLWNDPROCRET, IOApplication::CallWndRetProc, IOApplication::dllInstance, threadID);
-    if (hhk2)
-    {
-        IOApplication::hhks.push_back(hhk2);
-    }else
-    {
-        IOLog::Instance().Warning("Hook WH_CALLWNDPROCRET Failed ...");
-        return ErrorCode;
-    }
-
-	HHOOK hhk3 = SetWindowsHookEx(WH_CALLWNDPROC, IOApplication::CallWndProc, IOApplication::dllInstance, threadID);
-	if (hhk3)
-	{
-		IOApplication::hhks.push_back(hhk3);
-	}
-	else
-	{
-		IOLog::Instance().Warning("Hook WH_CALLWNDPROC Failed ...");
-		return ErrorCode;
-	}
 
     return SuccessCode;
 }
+#else
+int IOToolkit::IOApplication::SetWindowsHook()
+{
+    return SuccessCode;
+}
+#endif
 
-void DevelopHelper::IOApplication::UnHookWindow()
+#if IODEVICE_PLATFORM_WINDOWS
+void IOToolkit::IOApplication::UnHookWindow()
 {
     for (auto& hhk:IOApplication::hhks)
     {
         UnhookWindowsHookEx(hhk);
     }
+    IOApplication::hhks.clear();
 }
+#else
+void IOToolkit::IOApplication::UnHookWindow()
+{
+}
+#endif
 
-LRESULT CALLBACK DevelopHelper::IOApplication::OnMessageProc(int code, WPARAM wParam, LPARAM lParam)
+#if IODEVICE_PLATFORM_WINDOWS
+LRESULT CALLBACK IOToolkit::IOApplication::OnMessageProc(int code, WPARAM wParam, LPARAM lParam)
 {
     return StandardIO::OnMessageProc(code, wParam, lParam);
 }
 
-LRESULT CALLBACK DevelopHelper::IOApplication::CallWndRetProc(_In_ int nCode, _In_ WPARAM wParam, _In_ LPARAM lParam)
+LRESULT CALLBACK IOToolkit::IOApplication::CallWndRetProc(_In_ int nCode, _In_ WPARAM wParam, _In_ LPARAM lParam)
 {
     return StandardIO::CallWndRetProc(nCode, wParam, lParam);
 }
 
 
-LRESULT CALLBACK DevelopHelper::IOApplication::CallWndProc(_In_ int nCode, _In_ WPARAM wParam, _In_ LPARAM lParam)
+LRESULT CALLBACK IOToolkit::IOApplication::CallWndProc(_In_ int nCode, _In_ WPARAM wParam, _In_ LPARAM lParam)
 {
 	if (nCode != HC_ACTION)
 	{
-		return CallNextHookEx(IOApplication::hhks[2], nCode, wParam, lParam);
+		return CallNextHookEx(nullptr, nCode, wParam, lParam);
 	}
 	PCWPSTRUCT data = (PCWPSTRUCT)lParam;
 	UINT msg = data->message;
@@ -264,14 +360,34 @@ LRESULT CALLBACK DevelopHelper::IOApplication::CallWndProc(_In_ int nCode, _In_ 
 	{
 	case WM_CLOSE:
 		IOLog::Instance().Log("Detected window close event.");
-		IOApplication::PreShutdown();
+		// Let DLL_PROCESS_DETACH handle the cleanup
 		break;
 	case WM_QUERYENDSESSION:
 		IOLog::Instance().Log("Detected system shutdown event.");
-		IOApplication::PreShutdown();
+		// Proactively cleanup on system shutdown
+		if (bLoaded) {
+			Cleanup();
+		}
 		break;
 	default:
 		break;
 	}
-	return CallNextHookEx(IOApplication::hhks[2], nCode, wParam, lParam);
+    
+	return CallNextHookEx(nullptr, nCode, wParam, lParam);
 }
+    #else
+    LRESULT CALLBACK IOToolkit::IOApplication::OnMessageProc(int code, WPARAM wParam, LPARAM lParam)
+    {
+        return 0;
+    }
+
+    LRESULT CALLBACK IOToolkit::IOApplication::CallWndRetProc(_In_ int nCode, _In_ WPARAM wParam, _In_ LPARAM lParam)
+    {
+        return 0;
+    }
+
+    LRESULT CALLBACK IOToolkit::IOApplication::CallWndProc(_In_ int nCode, _In_ WPARAM wParam, _In_ LPARAM lParam)
+    {
+        return 0;
+    }
+    #endif

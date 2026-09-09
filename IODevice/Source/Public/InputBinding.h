@@ -8,7 +8,7 @@
 #include <functional>
 #include "InputCoreTypes.h"
 
-namespace DevelopHelper
+namespace IOToolkit
 {
 
 
@@ -66,6 +66,15 @@ typedef std::function<void(FKey)> InputActionHandlerWithKeySignature;
 struct InputActionUnifiedDelegate
 {
 public:
+    enum class EBoundDelegate : uint8
+    {
+        Unbound,
+        Delegate,
+        DelegateWithKey,
+        DelegateWithData,
+        DynamicDelegate
+    };
+
     InputActionUnifiedDelegate():boundDelegateType(EBoundDelegate::Unbound){}
     InputActionUnifiedDelegate(InputActionHandlerSignature const& D) :FuncDelegate(D), boundDelegateType(EBoundDelegate::Delegate){}
     InputActionUnifiedDelegate(InputActionHandlerWithKeySignature const& D):FuncDelegateWithKey(D),boundDelegateType(EBoundDelegate::DelegateWithKey){}
@@ -146,22 +155,12 @@ private:
 	 */
 	InputActionWithDataSignature FuncDelegateWithData;
 
-
-    enum class EBoundDelegate:unsigned __int8
-    {
-        Unbound,
-        Delegate,
-        DelegateWithKey,
-		DelegateWithData,
-        DynamicDelegate
-    };
-
     EBoundDelegate boundDelegateType;
 
 };
 
 /**
-    * ÊäÈë°ó¶¨»ùÀà
+    * ï¿½ï¿½ï¿½ï¿½ó¶¨»ï¿½ï¿½ï¿½
     */
 
 struct FInputBinding

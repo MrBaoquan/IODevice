@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- IODevice 测试配置 — 用于 Motion 接口集成测试
+     设备类型: External (DEBUGGER) — 不需要物理硬件
+     
+     通道映射:
+       OAction "Light"  → OAxis_00 (Scale=100), OAxis_02 (Scale=10) — Float 连续控制
+       Action  "Fire"   → 按键 A, Button_03, C, B — Bool 开关控制
+       Axis    "MoveX"  → Right(+10), Left(-10), Axis_04, Axis_00 — 模拟轴输入
+       Axis    "MoveY"  → Axis_01(+10), Up, Down(-10) — 模拟轴输入
+-->
+<IORoot>
+  <Device Name="ExtDev" Type="External" DllName="DEBUGGER" Index="1">
+    <Properties />
+    <Action Name="Fire" Label="开火状态">
+      <Key Name="A" />
+      <Key Name="Button_03" />
+    </Action>
+    <Axis Name="MoveX" Label="左右移动">
+      <Key Name="Right" Scale="10" />
+      <Key Name="Left" Scale="-10" />
+      <Key Name="Axis_00" />
+    </Axis>
+    <Axis Name="MoveY" Label="前后移动">
+      <Key Name="Axis_01" Scale="10" />
+      <Key Name="Up" />
+      <Key Name="Down" Scale="-10" />
+    </Axis>
+    <OAction Name="Light" Label="氛围灯">
+      <Key Name="OAxis_00" Scale="100" />
+      <Key Name="OAxis_02" Scale="10" />
+    </OAction>
+  </Device>
+</IORoot>

@@ -1,0 +1,44 @@
+{
+  "dllName": "NETIO",
+  "displayName": "NETIO-网络设备",
+  "version": "1.0",
+  "category": "通讯协议",
+  "starred": true,
+  "sections": [
+    {
+      "name": "connection",
+      "title": "\u8FDE\u63A5\u914D\u7F6E",
+      "collapsed": false,
+      "fields": [
+        {
+          "key": "remote_ip",
+          "label": "remote_ip",
+          "type": "text",
+          "default": "127.0.0.1",
+          "required": false
+        },
+        {
+          "key": "remote_port",
+          "label": "remote_port",
+          "type": "number",
+          "default": "20001",
+          "required": false
+        }
+      ]
+    },
+    {
+      "name": "timing",
+      "title": "\u8F6E\u8BE2\u65F6\u5E8F",
+      "collapsed": true,
+      "fields": [
+        {
+          "key": "heartbeat_interval",
+          "label": "heartbeat_interval",
+          "type": "number",
+          "default": "0",
+          "required": false
+        }
+      ]
+    }
+  ]
+}

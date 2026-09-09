@@ -1,0 +1,122 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:iconPacks="https://github.com/MahApps/IconPacks.Avalonia"
+             mc:Ignorable="d" d:DesignWidth="400" d:DesignHeight="40"
+             x:Class="IOStudio.Controls.CollapsibleHeader"
+             x:Name="root">
+	
+	<UserControl.Styles>
+		<Style Selector="Border.chevron-icon">
+			<Setter Property="Background" Value="Transparent" />
+			<Setter Property="Cursor" Value="Hand" />
+			<Setter Property="CornerRadius" Value="4" />
+		</Style>
+		<Style Selector="Border.chevron-icon:pointerover iconPacks|PackIconIonicons">
+			<Setter Property="Foreground" Value="{DynamicResource TlTextPrimary}" />
+		</Style>
+		<Style Selector="Border.chevron-icon:pointerover">
+			<Setter Property="Background" Value="{DynamicResource TlBtnHover}" />
+		</Style>
+		<Style Selector="Button.header-action">
+			<Setter Property="MinHeight" Value="28" />
+			<Setter Property="Padding" Value="8,4" />
+			<Setter Property="Background" Value="Transparent" />
+			<Setter Property="BorderThickness" Value="1" />
+			<Setter Property="BorderBrush" Value="{DynamicResource TlBorderLight}" />
+			<Setter Property="Foreground" Value="{DynamicResource TlTextSecondary}" />
+		</Style>
+		<Style Selector="Button.header-action:pointerover">
+			<Setter Property="Background" Value="{DynamicResource TlBtnHover}" />
+			<Setter Property="Foreground" Value="{DynamicResource TlTextPrimary}" />
+		</Style>
+	</UserControl.Styles>
+	
+	<Border Background="{DynamicResource TlSectionHeaderBg}" BorderBrush="{DynamicResource TlBorderBrush}" BorderThickness="0 0 0 1" Padding="12 7">
+		<Grid ColumnDefinitions="Auto,*,Auto">
+			<!-- 左侧：折叠按钮 + 标题 -->
+			<StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8">
+				<Border Classes="chevron-icon"
+						Width="24" Height="24"
+						VerticalAlignment="Center"
+						PointerPressed="OnChevronClicked">
+					<Panel HorizontalAlignment="Center" VerticalAlignment="Center">
+						<!-- 展开状态：向下箭头 -->
+						<iconPacks:PackIconIonicons Kind="ArrowDowniOS"
+													Width="16" Height="16"
+																		Foreground="{DynamicResource TlTextMuted}"
+													HorizontalAlignment="Center"
+													VerticalAlignment="Center"
+													IsVisible="{Binding #root.IsExpanded}" />
+						<!-- 收起状态：向前箭头 -->
+						<iconPacks:PackIconIonicons Kind="ArrowForwardiOS"
+													Width="16" Height="16"
+																		Foreground="{DynamicResource TlTextMuted}"
+													HorizontalAlignment="Center"
+													VerticalAlignment="Center"
+													IsVisible="{Binding !#root.IsExpanded}" />
+					</Panel>
+				</Border>
+				<TextBlock Text="{Binding #root.Title}" 
+						   FontSize="13"
+										   FontWeight="Medium"
+										   Foreground="{DynamicResource TlTextPrimary}"
+						   VerticalAlignment="Center" />
+				
+				<!-- 节点数量提示 -->
+				<Border Background="{DynamicResource TlBadgeGroupBg}"
+						CornerRadius="9"
+						Padding="7 1"
+						Margin="6 0 0 0"
+						VerticalAlignment="Center"
+						IsVisible="{Binding #root.ShowItemCount}">
+					<TextBlock Text="{Binding #root.ItemCount}" 
+							   FontSize="11" 
+								   Foreground="{DynamicResource TlTextSecondary}"
+							   VerticalAlignment="Center"
+							   HorizontalAlignment="Center" />
+				</Border>
+				
+			</StackPanel>
+			
+			<!-- 右侧：编辑模式操作按钮 -->
+			<StackPanel Grid.Column="2"
+						Orientation="Horizontal" 
+						Spacing="6"
+						HorizontalAlignment="Right"
+						VerticalAlignment="Center">
+				<!-- 额外内容与编辑操作共用右侧操作区，避免控件散落在标题文字中间 -->
+				<ContentPresenter Content="{Binding #root.ExtraContent}"
+								  VerticalAlignment="Center"
+								  Margin="0 0 4 0" />
+				<StackPanel Orientation="Horizontal"
+							Spacing="6"
+							IsVisible="{Binding #root.ShowEditButtons}">
+				<Button Classes="header-action"
+						Padding="8 4"
+						FontSize="12"
+						Command="{Binding #root.AddCommand}"
+						ToolTip.Tip="{Binding #root.AddTooltip}"
+						AutomationProperties.Name="{Binding #root.AddTooltip}">
+					<StackPanel Orientation="Horizontal" Spacing="4">
+						<iconPacks:PackIconIonicons Kind="AddiOS" Width="14" Height="14" />
+						<TextBlock Text="新增" />
+					</StackPanel>
+				</Button>
+				<Button Classes="header-action"
+						Padding="8 4"
+						FontSize="12"
+						Command="{Binding #root.ClearCommand}"
+						ToolTip.Tip="{Binding #root.ClearTooltip}"
+						AutomationProperties.Name="{Binding #root.ClearTooltip}">
+					<StackPanel Orientation="Horizontal" Spacing="4">
+						<iconPacks:PackIconIonicons Kind="TrashiOS" Width="14" Height="14" />
+						<TextBlock Text="清空" />
+					</StackPanel>
+				</Button>
+				</StackPanel>
+			</StackPanel>
+		</Grid>
+	</Border>
+</UserControl>

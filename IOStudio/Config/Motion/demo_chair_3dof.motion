@@ -1,0 +1,196 @@
+{
+  "version": "1.0",
+  "name": "demo_chair_3dof",
+  "duration_ms": 30000,
+  "fps": 60,
+  "tracks": [
+    {
+      "id": "trk_ptch",
+      "device": "",
+      "oaction": "",
+      "output_type": "oaction",
+      "oaxis_channel": "",
+      "axis_name": "",
+      "label": "\u4FEF\u4EF0",
+      "color": "#4FC3F7",
+      "value_type": "float",
+      "muted": false,
+      "enabled": true,
+      "locked": false,
+      "group": "",
+      "role": "",
+      "show_in_curve": true,
+      "clips": [
+        {
+          "id": "clip_p01",
+          "start_ms": 0,
+          "end_ms": 10500,
+          "keyframes": [
+            {
+              "time_ms": 0,
+              "value": 0.75,
+              "interpolation": "linear"
+            },
+            {
+              "time_ms": 2000,
+              "value": 0.8,
+              "interpolation": "bezier",
+              "event": {
+                "event_name": ""
+              }
+            },
+            {
+              "time_ms": 5000,
+              "value": 0.2,
+              "interpolation": "ease_in_out"
+            },
+            {
+              "time_ms": 8000,
+              "value": 0.7,
+              "interpolation": "linear"
+            },
+            {
+              "time_ms": 8500,
+              "value": 0.65,
+              "interpolation": "bezier"
+            },
+            {
+              "time_ms": 10000,
+              "value": 0.501,
+              "interpolation": "linear"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "trk_roll",
+      "device": "",
+      "oaction": "",
+      "output_type": "oaction",
+      "oaxis_channel": "",
+      "axis_name": "",
+      "label": "\u6A2A\u6EDA",
+      "color": "#FF8A65",
+      "value_type": "float",
+      "muted": false,
+      "enabled": true,
+      "locked": false,
+      "group": "",
+      "role": "",
+      "clips": [
+        {
+          "id": "clip_r01",
+          "start_ms": 0,
+          "end_ms": 10500,
+          "keyframes": [
+            {
+              "time_ms": 0,
+              "value": 0.5,
+              "interpolation": "linear"
+            },
+            {
+              "time_ms": 1500,
+              "value": 0.3,
+              "interpolation": "ease_in_out"
+            },
+            {
+              "time_ms": 3500,
+              "value": 0.7,
+              "interpolation": "bezier"
+            },
+            {
+              "time_ms": 6000,
+              "value": 0.4,
+              "interpolation": "ease_in_out"
+            },
+            {
+              "time_ms": 8500,
+              "value": 0.6,
+              "interpolation": "linear"
+            },
+            {
+              "time_ms": 10000,
+              "value": 0.5,
+              "interpolation": "linear"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "trk_heav",
+      "device": "",
+      "oaction": "",
+      "output_type": "oaction",
+      "oaxis_channel": "",
+      "axis_name": "",
+      "label": "\u5347\u964D",
+      "color": "#81C784",
+      "value_type": "float",
+      "muted": false,
+      "enabled": true,
+      "locked": false,
+      "group": "",
+      "role": "",
+      "show_in_curve": true,
+      "clips": [
+        {
+          "id": "clip_h01",
+          "start_ms": 0,
+          "end_ms": 10500,
+          "keyframes": [
+            {
+              "time_ms": 0,
+              "value": 0.5,
+              "interpolation": "linear"
+            },
+            {
+              "time_ms": 2500,
+              "value": 0.9,
+              "interpolation": "bezier"
+            },
+            {
+              "time_ms": 4000,
+              "value": 0.1,
+              "interpolation": "step"
+            },
+            {
+              "time_ms": 6500,
+              "value": 0.6,
+              "interpolation": "ease_in_out"
+            },
+            {
+              "time_ms": 9000,
+              "value": 0.4,
+              "interpolation": "linear"
+            },
+            {
+              "time_ms": 10000,
+              "value": 0.5,
+              "interpolation": "linear"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "events": [
+    {
+      "time_ms": 28683.083511777302,
+      "event_name": "event",
+      "event_data": "",
+      "color": "#f59e0b",
+      "data_type": "string",
+      "lane": "default"
+    }
+  ],
+  "markers": [
+    {
+      "time_ms": 28683.083511777302,
+      "name": "\u6807\u8BB0",
+      "color": "#f59e0b",
+      "lane": "default"
+    }
+  ]
+}

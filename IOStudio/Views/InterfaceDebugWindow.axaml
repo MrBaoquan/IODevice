@@ -1,0 +1,125 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:IOStudio.ViewModels"
+        xmlns:models="using:IOStudio.Models"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d" d:DesignWidth="1100" d:DesignHeight="680"
+        x:Class="IOStudio.Views.InterfaceDebugWindow"
+        x:DataType="vm:InterfaceDebugViewModel"
+        Title="接口调试 - Plugin Channel"
+        Width="1100" Height="680"
+        MinWidth="800" MinHeight="500"
+        Icon="/Assets/avalonia-logo.ico">
+
+    <Design.DataContext>
+        <vm:InterfaceDebugViewModel/>
+    </Design.DataContext>
+
+    <Window.Styles>
+        <Style Selector="Button.action-btn">
+            <Setter Property="Padding" Value="12,6"/>
+            <Setter Property="Margin" Value="0,0,8,0"/>
+        </Style>
+        <Style Selector="TextBlock.field-label">
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="Foreground" Value="#6b7280"/>
+            <Setter Property="Margin" Value="0,0,0,2"/>
+        </Style>
+    </Window.Styles>
+
+    <DockPanel>
+        <!-- 顶部：订阅区 -->
+        <Border DockPanel.Dock="Top" BorderBrush="#e5e7eb" BorderThickness="0,0,0,1" Padding="12,10">
+            <Grid ColumnDefinitions="160,Auto,20,200,Auto,Auto,*,Auto" RowDefinitions="Auto,Auto" VerticalAlignment="Center">
+                <TextBlock Grid.Column="0" Grid.Row="0" Text="设备" Classes="field-label"/>
+                <ComboBox Grid.Column="0" Grid.Row="1"
+                          ItemsSource="{Binding Devices}"
+                          SelectedItem="{Binding SelectedDevice}"
+                          HorizontalAlignment="Stretch"/>
+
+                <Button Grid.Column="1" Grid.Row="1" Content="刷新" Classes="action-btn"
+                        Command="{Binding RefreshDevicesCommand}"
+                        Margin="8,0,0,0"/>
+
+                <TextBlock Grid.Column="3" Grid.Row="0" Text="订阅通道（IN）" Classes="field-label"/>
+                <AutoCompleteBox Grid.Column="3" Grid.Row="1"
+                                 ItemsSource="{Binding SuggestedChannels}"
+                                 Text="{Binding SubscribeChannel, Mode=TwoWay}"
+                                 FilterMode="Contains"/>
+
+                <Button Grid.Column="4" Grid.Row="1" Content="订阅" Classes="action-btn"
+                        Command="{Binding SubscribeCommand}"
+                        Background="#10b981" Foreground="White"
+                        Margin="8,0,0,0"/>
+                <Button Grid.Column="5" Grid.Row="1" Content="取消订阅" Classes="action-btn"
+                        Command="{Binding UnsubscribeCommand}"/>
+
+                <Button Grid.Column="7" Grid.Row="1" Content="清空日志" Classes="action-btn"
+                        Command="{Binding ClearCommand}"
+                        HorizontalAlignment="Right"/>
+            </Grid>
+        </Border>
+
+        <!-- 底部：发送区 -->
+        <Border DockPanel.Dock="Bottom" BorderBrush="#e5e7eb" BorderThickness="0,1,0,0" Padding="12,10">
+            <Grid ColumnDefinitions="200,20,*,12,Auto" RowDefinitions="Auto,Auto">
+                <TextBlock Grid.Column="0" Grid.Row="0" Text="发送通道（OUT）" Classes="field-label"/>
+                <AutoCompleteBox Grid.Column="0" Grid.Row="1"
+                                 ItemsSource="{Binding SuggestedChannels}"
+                                 Text="{Binding SendChannel, Mode=TwoWay}"
+                                 FilterMode="Contains"/>
+
+                <TextBlock Grid.Column="2" Grid.Row="0" Text="内容（UTF-8 文本）" Classes="field-label"/>
+                <TextBox Grid.Column="2" Grid.Row="1"
+                         Text="{Binding SendText, Mode=TwoWay}"
+                         AcceptsReturn="True"
+                         TextWrapping="Wrap"
+                         MaxHeight="96"
+                         VerticalContentAlignment="Top"/>
+
+                <Button Grid.Column="4" Grid.Row="1" Content="发送"
+                        Command="{Binding SendCommand}"
+                        Background="#3b82f6" Foreground="White"
+                        Padding="18,8" VerticalAlignment="Bottom"/>
+            </Grid>
+        </Border>
+
+        <!-- 中部：日志列表（避免 DataGrid 运行时兼容性问题） -->
+        <Border Padding="12,8">
+            <Grid RowDefinitions="Auto,*">
+                <Border Grid.Row="0" Background="#f8fafc" BorderBrush="#e5e7eb" BorderThickness="1,1,1,0" Padding="8,6">
+                    <Grid ColumnDefinitions="110,60,120,160,60,*">
+                        <TextBlock Grid.Column="0" Text="时间" FontWeight="Bold"/>
+                        <TextBlock Grid.Column="1" Text="方向" FontWeight="Bold"/>
+                        <TextBlock Grid.Column="2" Text="设备" FontWeight="Bold"/>
+                        <TextBlock Grid.Column="3" Text="通道" FontWeight="Bold"/>
+                        <TextBlock Grid.Column="4" Text="字节" FontWeight="Bold"/>
+                        <TextBlock Grid.Column="5" Text="内容" FontWeight="Bold"/>
+                    </Grid>
+                </Border>
+
+                <ListBox Grid.Row="1"
+                         ItemsSource="{Binding Entries}"
+                         BorderBrush="#e5e7eb"
+                         BorderThickness="1"
+                        Background="White">
+                    <ListBox.ItemTemplate>
+                        <DataTemplate>
+                            <Border BorderBrush="#f1f5f9" BorderThickness="0,0,0,1" Padding="8,6">
+                                <Grid ColumnDefinitions="110,60,120,160,60,*">
+                                    <TextBlock Grid.Column="0" Text="{Binding TimestampText}"/>
+                                    <TextBlock Grid.Column="1" Text="{Binding Direction}"/>
+                                    <TextBlock Grid.Column="2" Text="{Binding DeviceName}" TextTrimming="CharacterEllipsis"/>
+                                    <TextBlock Grid.Column="3" Text="{Binding ChannelName}" TextTrimming="CharacterEllipsis"/>
+                                    <TextBlock Grid.Column="4" Text="{Binding Size}"/>
+                                    <TextBlock Grid.Column="5" Text="{Binding Text}" TextWrapping="Wrap"/>
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+            </Grid>
+        </Border>
+    </DockPanel>
+</Window>

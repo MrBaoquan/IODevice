@@ -1,0 +1,229 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:local="clr-namespace:IOStudio.Controls.Timeline"
+             mc:Ignorable="d" d:DesignWidth="640" d:DesignHeight="360"
+             x:Class="IOStudio.Controls.Timeline.VideoPreviewControl">
+
+    <UserControl.Styles>
+        <!-- 视频列表项样式 -->
+        <Style Selector="ListBoxItem">
+            <Setter Property="Padding" Value="6,4"/>
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="Foreground" Value="{DynamicResource TlTextSecondary}"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="CornerRadius" Value="3"/>
+            <Setter Property="Margin" Value="2,1"/>
+        </Style>
+        <Style Selector="ListBoxItem:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="{DynamicResource TlBtnHover}"/>
+        </Style>
+        <Style Selector="ListBoxItem:selected /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="{DynamicResource TlTrackHeaderSelectedBg}"/>
+        </Style>
+        <!-- 视频工具栏按钮 -->
+        <Style Selector="Button.video-btn">
+            <Setter Property="Focusable" Value="False"/>
+            <Setter Property="Background" Value="{DynamicResource TlBtnHover}"/>
+            <Setter Property="Foreground" Value="{DynamicResource TlTextSecondary}"/>
+            <Setter Property="Padding" Value="5,2"/>
+            <Setter Property="CornerRadius" Value="3"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="MinWidth" Value="0"/>
+            <Setter Property="MinHeight" Value="0"/>
+        </Style>
+        <Style Selector="Button.video-btn:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="{DynamicResource TlBorderLight}"/>
+        </Style>
+    </UserControl.Styles>
+
+    <Border Background="{DynamicResource TlVideoViewerBg}" CornerRadius="0">
+        <DockPanel>
+            <!-- 顶部: 标题栏 -->
+            <Border Name="TitleBar" DockPanel.Dock="Top"
+                    Background="{DynamicResource TlVideoTitleBg}" Padding="8,4"
+                    BorderBrush="{DynamicResource TlBorderBrush}" BorderThickness="0,0,0,1">
+                <Grid>
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                        <Canvas Width="14" Height="14" VerticalAlignment="Center">
+                            <Path Data="M 2,1 L 12,1 L 12,13 L 2,13 Z M 5,5 L 10,7 L 5,9 Z"
+                                  Stroke="{DynamicResource TlTextSecondary}" StrokeThickness="1" Fill="Transparent"/>
+                        </Canvas>
+                        <TextBlock Text="视频预览" FontSize="12" FontWeight="SemiBold"
+                                   Foreground="{DynamicResource TlTextPrimary}" VerticalAlignment="Center"/>
+                        <TextBlock Name="VideoFileLabel" Text="" FontSize="11"
+                                   Foreground="{DynamicResource TlTextMuted}" VerticalAlignment="Center"
+                                   Margin="8,0,0,0"/>
+                    </StackPanel>
+                    <StackPanel HorizontalAlignment="Right" Orientation="Horizontal" Spacing="4">
+                        <Button Classes="video-btn" FontSize="11" Padding="6,2"
+                                Click="OnLoadVideo" ToolTip.Tip="加载视频文件">
+                            <StackPanel Orientation="Horizontal" Spacing="4">
+                                <Canvas Width="12" Height="12" VerticalAlignment="Center">
+                                    <Path Data="M 1,3 L 5,3 L 6,1 L 11,1 L 11,11 L 1,11 Z"
+                                          Stroke="{DynamicResource TlTextSecondary}" StrokeThickness="1.2" Fill="Transparent"/>
+                                </Canvas>
+                                <TextBlock Text="加载视频" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </Button>
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+            <!-- 中央: 左侧视频列表 + 右侧预览区 -->
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="120" MinWidth="80" MaxWidth="240"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+
+                <!-- 左侧: 视频文件列表 -->
+                <Border Name="VideoListPanel" Grid.Column="0"
+                        Background="{DynamicResource TlVideoSidebarBg}"
+                        BorderBrush="{DynamicResource TlBorderBrush}" BorderThickness="0,0,1,0">
+                    <DockPanel>
+                        <Border DockPanel.Dock="Top" Padding="6,4"
+                                BorderBrush="{DynamicResource TlBorderBrush}" BorderThickness="0,0,0,1">
+                            <TextBlock Text="视频列表" FontSize="10" FontWeight="SemiBold"
+                                       Foreground="{DynamicResource TlTextMuted}"/>
+                        </Border>
+                        <ListBox Name="VideoListBox" Background="Transparent"
+                                 DoubleTapped="OnVideoListDoubleTapped"
+                                 ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                            <ListBox.ItemTemplate>
+                                <DataTemplate x:DataType="local:VideoFileItem">
+                                    <TextBlock Text="{Binding FileName}" FontSize="10"
+                                               Foreground="{DynamicResource TlTextSecondary}"
+                                               TextTrimming="CharacterEllipsis"
+                                               ToolTip.Tip="{Binding FilePath}"/>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
+                    </DockPanel>
+                </Border>
+
+                <!-- 分隔条 -->
+                <GridSplitter Name="VideoListSplitter" Grid.Column="1" Width="3"
+                              Background="{DynamicResource TlBorderBrush}"
+                              ResizeDirection="Columns"/>
+
+                <!-- 右侧: 视频预览区 -->
+                <Grid Grid.Column="2">
+                    <!-- 空状态占位符 -->
+                    <StackPanel Name="EmptyPlaceholder"
+                                VerticalAlignment="Center" HorizontalAlignment="Center"
+                                Spacing="12">
+                        <Canvas Width="48" Height="48" HorizontalAlignment="Center">
+                            <Path Data="M 4,2 L 44,2 L 44,46 L 4,46 Z"
+                                  Stroke="{DynamicResource TlVideoPlaceholderIcon}" StrokeThickness="2" Fill="Transparent"/>
+                            <Path Data="M 18,16 L 34,24 L 18,32 Z"
+                                  Fill="{DynamicResource TlVideoPlaceholderIcon}"/>
+                        </Canvas>
+                        <TextBlock Text="未加载参考视频" FontSize="13"
+                                   Foreground="{DynamicResource TlTextMuted}"
+                                   HorizontalAlignment="Center"/>
+                        <TextBlock Text="将视频与时间轴同步，参考画面编辑动作关键帧"
+                                   FontSize="11" Foreground="{DynamicResource TlTextMuted}"
+                                   HorizontalAlignment="Center" TextWrapping="Wrap"
+                                   TextAlignment="Center" MaxWidth="300" Opacity="0.7" IsVisible="False"/>
+                        <Button HorizontalAlignment="Center"
+                                Padding="16,8" FontSize="12" CornerRadius="4"
+                                Background="{DynamicResource TlAccent}" Foreground="{DynamicResource TlAccentFg}"
+                                Click="OnLoadVideo">
+                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                <Canvas Width="14" Height="14" VerticalAlignment="Center">
+                                    <Path Data="M 1,4 L 6,4 L 7,2 L 13,2 L 13,12 L 1,12 Z"
+                                          Stroke="White" StrokeThickness="1.3" Fill="Transparent"/>
+                                </Canvas>
+                                <TextBlock Text="选择视频文件" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </Button>
+                    </StackPanel>
+
+                    <!-- 视频显示区 (加载后显示) — LibVLCSharp -->
+                    <DockPanel Name="VideoDisplay" IsVisible="False" Background="Black">
+                        <!-- 底部: 视频工具栏 -->
+                        <Border Name="VideoToolbar" DockPanel.Dock="Bottom"
+                                Background="{DynamicResource TlVideoToolbarBg}" Padding="4,2"
+                                BorderBrush="{DynamicResource TlBorderBrush}" BorderThickness="0,1,0,0">
+                            <Grid>
+                                <StackPanel Orientation="Horizontal" Spacing="4"
+                                            HorizontalAlignment="Left" VerticalAlignment="Center">
+                                    <Button Name="BtnZoomOut" Classes="video-btn" FontSize="10"
+                                            Click="OnVideoZoomOut" ToolTip.Tip="缩小视频">
+                                        <Canvas Width="12" Height="12">
+                                            <Ellipse Canvas.Left="1" Canvas.Top="1" Width="8" Height="8"
+                                                     Stroke="{DynamicResource TlTextSecondary}" StrokeThickness="1.2"/>
+                                            <Line StartPoint="8,8" EndPoint="11,11"
+                                                  Stroke="{DynamicResource TlTextSecondary}" StrokeThickness="1.5"/>
+                                            <Line StartPoint="3,5" EndPoint="7,5"
+                                                  Stroke="{DynamicResource TlTextSecondary}" StrokeThickness="1.2"/>
+                                        </Canvas>
+                                    </Button>
+                                    <TextBlock Name="VideoZoomText" Text="适配" FontSize="10"
+                                               Foreground="{DynamicResource TlTextMuted}" VerticalAlignment="Center"
+                                               Width="36" TextAlignment="Center"/>
+                                    <Button Name="BtnZoomIn" Classes="video-btn" FontSize="10"
+                                            Click="OnVideoZoomIn" ToolTip.Tip="放大视频">
+                                        <Canvas Width="12" Height="12">
+                                            <Ellipse Canvas.Left="1" Canvas.Top="1" Width="8" Height="8"
+                                                     Stroke="{DynamicResource TlTextSecondary}" StrokeThickness="1.2"/>
+                                            <Line StartPoint="8,8" EndPoint="11,11"
+                                                  Stroke="{DynamicResource TlTextSecondary}" StrokeThickness="1.5"/>
+                                            <Line StartPoint="3,5" EndPoint="7,5"
+                                                  Stroke="{DynamicResource TlTextSecondary}" StrokeThickness="1.2"/>
+                                            <Line StartPoint="5,3" EndPoint="5,7"
+                                                  Stroke="{DynamicResource TlTextSecondary}" StrokeThickness="1.2"/>
+                                        </Canvas>
+                                    </Button>
+                                    <Button Name="BtnZoomFit" Classes="video-btn" FontSize="10"
+                                            Click="OnVideoZoomFit" ToolTip.Tip="适配窗口">
+                                        <Canvas Width="12" Height="12">
+                                            <Path Data="M 1,3 L 1,1 L 3,1 M 9,1 L 11,1 L 11,3 M 11,9 L 11,11 L 9,11 M 3,11 L 1,11 L 1,9"
+                                                  Stroke="{DynamicResource TlTextSecondary}" StrokeThickness="1.3" Fill="Transparent"/>
+                                        </Canvas>
+                                    </Button>
+                                </StackPanel>
+                                <StackPanel Orientation="Horizontal" Spacing="4"
+                                            HorizontalAlignment="Right" VerticalAlignment="Center">
+                                    <Button Name="BtnFullscreen" Classes="video-btn" FontSize="10"
+                                            Click="OnVideoFullscreen" ToolTip.Tip="全屏预览">
+                                        <Canvas Width="12" Height="12">
+                                            <Path Data="M 1,1 L 4,1 L 4,4 L 1,4 Z M 8,1 L 11,1 L 11,4 L 8,4 Z M 1,8 L 4,8 L 4,11 L 1,11 Z M 8,8 L 11,8 L 11,11 L 8,11 Z"
+                                                  Stroke="{DynamicResource TlTextSecondary}" StrokeThickness="1" Fill="Transparent"/>
+                                        </Canvas>
+                                    </Button>
+                                </StackPanel>
+                            </Grid>
+                        </Border>
+                        <Grid PointerWheelChanged="OnVideoWheelZoom">
+                            <!-- 视频容器: VlcVideoHost 创建独立子窗口供 LibVLC 渲染 -->
+                            <local:VlcVideoHost Name="VideoViewHost"/>
+                            <!-- 透明输入层: 捕获鼠标滚轮缩放 (VlcVideoHost 原生窗口会拦截指针事件) -->
+                            <Border Name="VideoInputOverlay" Background="Transparent"
+                                    IsHitTestVisible="True"
+                                    PointerWheelChanged="OnVideoWheelZoom"/>
+                            <!-- 视频状态遮罩 -->
+                            <Border Name="VideoOverlay" Background="{DynamicResource TlVideoOverlayBg}"
+                                    IsVisible="True">
+                                <StackPanel VerticalAlignment="Center"
+                                            HorizontalAlignment="Center" Spacing="4">
+                                    <Canvas Width="36" Height="36" HorizontalAlignment="Center">
+                                        <Path Data="M 8,4 L 28,18 L 8,32 Z"
+                                              Fill="{DynamicResource TlVideoOverlayText}"/>
+                                    </Canvas>
+                                    <TextBlock Name="VideoStatusText"
+                                               Text="视频已加载 — 播放时间轴以同步预览"
+                                               FontSize="11" Foreground="{DynamicResource TlVideoOverlayText}"
+                                               HorizontalAlignment="Center"/>
+                                </StackPanel>
+                            </Border>
+                        </Grid>
+                    </DockPanel>
+                </Grid>
+            </Grid>
+        </DockPanel>
+    </Border>
+</UserControl>

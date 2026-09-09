@@ -1,0 +1,53 @@
+{
+  "dllName": "DAM3000M",
+  "displayName": "Dam3000m",
+  "category": "PCI板卡",
+  "version": "1.0",
+  "sections": [
+    {
+      "name": "connection",
+      "title": "\u8FDE\u63A5\u914D\u7F6E",
+      "collapsed": false,
+      "fields": [
+        {
+          "key": "BaudRate",
+          "label": "BaudRate",
+          "type": "text",
+          "required": false
+        }
+      ]
+    },
+    {
+      "name": "timing",
+      "title": "\u8F6E\u8BE2\u65F6\u5E8F",
+      "collapsed": true,
+      "fields": [
+        {
+          "key": "Init_Timeout",
+          "label": "Init_Timeout",
+          "type": "number",
+          "required": false
+        }
+      ]
+    },
+    {
+      "name": "other",
+      "title": "\u5176\u4ED6\u914D\u7F6E",
+      "collapsed": true,
+      "fields": [
+        {
+          "key": "AD_lMode",
+          "label": "AD_lMode",
+          "type": "text",
+          "required": false
+        },
+        {
+          "key": "lDeviceID",
+          "label": "lDeviceID",
+          "type": "text",
+          "required": false
+        }
+      ]
+    }
+  ]
+}

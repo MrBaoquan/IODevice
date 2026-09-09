@@ -19,19 +19,21 @@
     <OutputPath>..\Binaries\Win64\Debug\</OutputPath>
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
+    <WarningLevel>5</WarningLevel>
     <PlatformTarget>AnyCPU</PlatformTarget>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <DebugType>pdbonly</DebugType>
+    <DebugType>none</DebugType>
     <Optimize>true</Optimize>
     <OutputPath>..\Binaries\Win64\Release\</OutputPath>
     <DefineConstants>TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
+    <WarningLevel>1</WarningLevel>
     <PlatformTarget>AnyCPU</PlatformTarget>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <GenerateSerializationAssemblies>On</GenerateSerializationAssemblies>
+    <GenerateSerializationAssemblies>Auto</GenerateSerializationAssemblies>
+    <DocumentationFile>
+    </DocumentationFile>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
@@ -45,9 +47,21 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="IOToolkit\Core\IONativeWrapper.cs" />
+    <Compile Include="IOToolkit\Facades\ChannelTypes.cs" />
+    <Compile Include="IOToolkit\Facades\IODevice.Channel.cs" />
     <Compile Include="IOToolkit\Facades\InputCoreTypes.cs" />
     <Compile Include="IOToolkit\Facades\IODevice.cs" />
     <Compile Include="IOToolkit\Facades\IODeviceController.cs" />
+    <Compile Include="IOToolkit\Facades\IOSettings.cs" />
+    <Compile Include="IOToolkit\Facades\MotionPlayer.cs" />
+    <Compile Include="IOToolkit\Facades\MotionSlot.cs" />
+    <Compile Include="IOToolkit\Extensions\KeyExtensions.cs" />
+    <Compile Include="IOToolkit\Extensions\ModbusExtension.cs" />
+    <Compile Include="IOToolkit\Extensions\ActTrackExtension.cs" />
+    <Compile Include="IOToolkit\Extensions\Snap7Extension.cs" />
+    <Compile Include="IOToolkit\Extensions\NetFrame.cs" />
+    <Compile Include="IOToolkit\Extensions\NetIOExtensions.cs" />
+    <Compile Include="IOToolkit\Extensions\PulseTask.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

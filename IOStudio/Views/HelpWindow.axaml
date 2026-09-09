@@ -1,0 +1,231 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:iconPacks="https://github.com/MahApps/IconPacks.Avalonia"
+        mc:Ignorable="d" d:DesignWidth="700" d:DesignHeight="600"
+        x:Class="IOStudio.Views.HelpWindow"
+        Title="IODevice 帮助文档"
+        Width="750"
+        Height="650"
+        MinWidth="600"
+        MinHeight="400"
+        CanResize="True"
+        WindowStartupLocation="CenterOwner">
+
+    <Window.Styles>
+        <Style Selector="TextBlock.sectionTitle">
+            <Setter Property="FontSize" Value="16"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="Foreground" Value="#1e40af"/>
+            <Setter Property="Margin" Value="0,0,0,8"/>
+        </Style>
+        <Style Selector="TextBlock.subTitle">
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Foreground" Value="#374151"/>
+            <Setter Property="Margin" Value="0,12,0,6"/>
+        </Style>
+        <Style Selector="Border.keyItem">
+            <Setter Property="Background" Value="#f3f4f6"/>
+            <Setter Property="CornerRadius" Value="4"/>
+            <Setter Property="Padding" Value="8,4"/>
+            <Setter Property="Margin" Value="2"/>
+        </Style>
+        <Style Selector="Border.keyItem:pointerover">
+            <Setter Property="Background" Value="#dbeafe"/>
+        </Style>
+    </Window.Styles>
+
+    <DockPanel>
+        <!-- 底部按钮栏 -->
+        <DockPanel DockPanel.Dock="Bottom" Margin="16,12" LastChildFill="False">
+            <Button Content="关闭" Name="CloseButton" Width="100" Padding="12,8" DockPanel.Dock="Right"/>
+        </DockPanel>
+
+        <!-- 主内容区 -->
+        <TabControl Margin="16,16,16,0">
+            <!-- 合法键名列表 -->
+            <TabItem Header="📋 合法键名">
+                <ScrollViewer>
+                    <StackPanel Margin="16" Spacing="16">
+                        <!-- 搜索框 -->
+                        <DockPanel>
+                            <TextBlock Text="搜索：" VerticalAlignment="Center" DockPanel.Dock="Left" Margin="0,0,8,0"/>
+                            <TextBox Name="KeySearchTextBox" Watermark="输入关键字搜索键名..." Height="32"/>
+                        </DockPanel>
+
+                        <TextBlock Text="💡 点击键名可复制到剪贴板" FontSize="11" Foreground="#6b7280"/>
+
+                        <!-- 动态键名 -->
+                        <Border Background="#fefce8" CornerRadius="8" Padding="16" BorderBrush="#fde047" BorderThickness="1">
+                            <StackPanel Spacing="8">
+                                <TextBlock Classes="sectionTitle" Text="🔧 动态键名（常用）" Foreground="#92400e"/>
+                                <TextBlock Text="格式: Axis_xx, Button_xx, OAxis_xx (xx = 00-99)" FontSize="12" Foreground="#a16207"/>
+
+                                <TextBlock Classes="subTitle" Text="Axis (模拟量输入)"/>
+                                <WrapPanel Name="AxisKeysPanel"/>
+
+                                <TextBlock Classes="subTitle" Text="Button (数字量输入)"/>
+                                <WrapPanel Name="ButtonKeysPanel"/>
+
+                                <TextBlock Classes="subTitle" Text="OAxis (输出)"/>
+                                <WrapPanel Name="OAxisKeysPanel"/>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- 标准键名 -->
+                        <Border Background="#f0fdf4" CornerRadius="8" Padding="16" BorderBrush="#86efac" BorderThickness="1">
+                            <StackPanel Spacing="8">
+                                <TextBlock Classes="sectionTitle" Text="⌨️ 键盘按键" Foreground="#166534"/>
+
+                                <TextBlock Classes="subTitle" Text="字母键"/>
+                                <WrapPanel Name="LetterKeysPanel"/>
+
+                                <TextBlock Classes="subTitle" Text="数字键"/>
+                                <WrapPanel Name="NumberKeysPanel"/>
+
+                                <TextBlock Classes="subTitle" Text="功能键 (F1-F12)"/>
+                                <WrapPanel Name="FunctionKeysPanel"/>
+
+                                <TextBlock Classes="subTitle" Text="控制键"/>
+                                <WrapPanel Name="ControlKeysPanel"/>
+
+                                <TextBlock Classes="subTitle" Text="小键盘"/>
+                                <WrapPanel Name="NumPadKeysPanel"/>
+
+                                <TextBlock Classes="subTitle" Text="其他键"/>
+                                <WrapPanel Name="OtherKeysPanel"/>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- 鼠标 -->
+                        <Border Background="#fdf4ff" CornerRadius="8" Padding="16" BorderBrush="#e879f9" BorderThickness="1">
+                            <StackPanel Spacing="8">
+                                <TextBlock Classes="sectionTitle" Text="🖱️ 鼠标" Foreground="#86198f"/>
+                                <WrapPanel Name="MouseKeysPanel"/>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- 摇杆 -->
+                        <Border Background="#eff6ff" CornerRadius="8" Padding="16" BorderBrush="#93c5fd" BorderThickness="1">
+                            <StackPanel Spacing="8">
+                                <TextBlock Classes="sectionTitle" Text="🎮 摇杆 (Joystick)" Foreground="#1e40af"/>
+
+                                <TextBlock Classes="subTitle" Text="轴向"/>
+                                <WrapPanel Name="JoystickAxisKeysPanel"/>
+
+                                <TextBlock Classes="subTitle" Text="速度/加速度/力"/>
+                                <WrapPanel Name="JoystickVelocityKeysPanel"/>
+
+                                <TextBlock Classes="subTitle" Text="滑块/POV"/>
+                                <WrapPanel Name="JoystickSliderKeysPanel"/>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+
+            <!-- 设备类型 -->
+            <TabItem Header="🔌 设备类型">
+                <ScrollViewer>
+                    <StackPanel Margin="16" Spacing="16">
+                        <TextBlock Classes="sectionTitle" Text="IODevice 支持的设备类型"/>
+
+                        <!-- Standard -->
+                        <Border Background="#f0fdf4" CornerRadius="8" Padding="16" BorderBrush="#86efac" BorderThickness="1">
+                            <StackPanel Spacing="8">
+                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                    <TextBlock Text="Standard" FontWeight="Bold" FontSize="15" Foreground="#166534"/>
+                                    <Border Background="#dcfce7" CornerRadius="4" Padding="6,2">
+                                        <TextBlock Text="Type=&quot;Standard&quot;" FontFamily="Consolas" FontSize="11" Foreground="#15803d"/>
+                                    </Border>
+                                </StackPanel>
+                                <TextBlock Text="标准键盘输入设备，用于监听系统键盘事件。" Foreground="#374151"/>
+                                <TextBlock Text="示例：" FontWeight="SemiBold" Margin="0,8,0,4"/>
+                                <Border Background="#f9fafb" CornerRadius="4" Padding="12">
+                                    <TextBlock FontFamily="Consolas" FontSize="12" Foreground="#1f2937"
+                                               Text="&lt;Device Name=&quot;Standard&quot; Type=&quot;Standard&quot;&gt;&lt;/Device&gt;"/>
+                                </Border>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Joystick -->
+                        <Border Background="#eff6ff" CornerRadius="8" Padding="16" BorderBrush="#93c5fd" BorderThickness="1">
+                            <StackPanel Spacing="8">
+                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                    <TextBlock Text="Joystick" FontWeight="Bold" FontSize="15" Foreground="#1e40af"/>
+                                    <Border Background="#dbeafe" CornerRadius="4" Padding="6,2">
+                                        <TextBlock Text="Type=&quot;Joystick&quot;" FontFamily="Consolas" FontSize="11" Foreground="#1d4ed8"/>
+                                    </Border>
+                                </StackPanel>
+                                <TextBlock Text="游戏摇杆/手柄设备，支持 DirectInput 兼容设备。" Foreground="#374151"/>
+                                <TextBlock Text="支持的键名: JS_X, JS_Y, JS_Z, JS_Rx, JS_Ry, JS_Rz, Button_00-31 等" FontSize="12" Foreground="#6b7280"/>
+                                <TextBlock Text="示例：" FontWeight="SemiBold" Margin="0,8,0,4"/>
+                                <Border Background="#f9fafb" CornerRadius="4" Padding="12">
+                                    <TextBlock FontFamily="Consolas" FontSize="12" Foreground="#1f2937"
+                                               Text="&lt;Device Name=&quot;MyJoystick&quot; Type=&quot;Joystick&quot; Index=&quot;0&quot;&gt;&lt;/Device&gt;"/>
+                                </Border>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- External -->
+                        <Border Background="#fef3c7" CornerRadius="8" Padding="16" BorderBrush="#fcd34d" BorderThickness="1">
+                            <StackPanel Spacing="8">
+                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                    <TextBlock Text="External" FontWeight="Bold" FontSize="15" Foreground="#92400e"/>
+                                    <Border Background="#fef9c3" CornerRadius="4" Padding="6,2">
+                                        <TextBlock Text="Type=&quot;External&quot;" FontFamily="Consolas" FontSize="11" Foreground="#a16207"/>
+                                    </Border>
+                                </StackPanel>
+                                <TextBlock Text="外部扩展设备（PCI板卡、串口设备等），需要指定 DllName。" Foreground="#374151"/>
+                                <TextBlock Text="DllName 对应 ExternalLibraries 文件夹下的 IOUI-Win64-{DllName}.dll" FontSize="12" Foreground="#6b7280"/>
+                                <TextBlock Text="示例：" FontWeight="SemiBold" Margin="0,8,0,4"/>
+                                <Border Background="#f9fafb" CornerRadius="4" Padding="12">
+                                    <TextBlock FontFamily="Consolas" FontSize="12" Foreground="#1f2937" TextWrapping="Wrap"
+                                               Text="&lt;Device Name=&quot;PCI2312A&quot; Type=&quot;External&quot; DllName=&quot;PCI2312A&quot; Index=&quot;0&quot;&gt;&lt;/Device&gt;"/>
+                                </Border>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+
+            <!-- DllName 列表 -->
+            <TabItem Header="📦 DllName 列表">
+                <ScrollViewer>
+                    <StackPanel Margin="16" Spacing="16">
+                        <TextBlock Classes="sectionTitle" Text="可用的 DllName (Type=External)"/>
+                        <TextBlock Text="以下列表来自 ExternalLibraries 文件夹下的 IOUI-Win64-*.dll 文件" FontSize="12" Foreground="#6b7280"/>
+                        <TextBlock Text="💡 点击 DllName 可复制到剪贴板" FontSize="11" Foreground="#6b7280"/>
+
+                        <Button Name="RefreshDllButton" HorizontalAlignment="Left" Padding="12,6">
+                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                <iconPacks:PackIconIonicons Kind="RefreshiOS" Width="15" Height="15" VerticalAlignment="Center"/>
+                                <TextBlock Text="刷新列表" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </Button>
+
+                        <Border Background="#f9fafb" CornerRadius="8" Padding="16" BorderBrush="#e5e7eb" BorderThickness="1">
+                            <StackPanel Spacing="8">
+                                <WrapPanel Name="DllNamesPanel"/>
+                                <TextBlock Name="NoDllText" Text="未找到任何 DLL 文件，请确保 ExternalLibraries 文件夹存在且包含相关文件。"
+                                           Foreground="#9ca3af" IsVisible="False"/>
+                            </StackPanel>
+                        </Border>
+
+                        <TextBlock Classes="subTitle" Text="如何添加新的外部设备驱动"/>
+                        <Border Background="#fefce8" CornerRadius="8" Padding="16" BorderBrush="#fde047" BorderThickness="1">
+                            <StackPanel Spacing="4">
+                                <TextBlock Text="1. 将驱动 DLL 放入 ExternalLibraries 文件夹" FontSize="12"/>
+                                <TextBlock Text="2. DLL 命名格式: IOUI-Win64-{DllName}.dll" FontSize="12"/>
+                                <TextBlock Text="3. 在 IODevice.xml 中配置 DllName=&quot;{DllName}&quot;" FontSize="12"/>
+                                <TextBlock Text="4. 重启程序以加载新驱动" FontSize="12"/>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+        </TabControl>
+    </DockPanel>
+</Window>

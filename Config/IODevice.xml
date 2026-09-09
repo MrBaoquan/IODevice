@@ -1,12 +1,18 @@
 <!--
-  Copyright (c) 2018 Hefei And Technology Co.,Ltd All rights reserved
+  Copyright (c) mrma617@gmail.com
   Author: MrBaoquan
   CreateTime: 2018-5-16 9:10
-  Email: mrma617@gmail.com
 -->
 
 <IORoot>
-
-  <Device Name="Standard" Type="Standard"></Device>
+  <Device Name="extDev" Type="External" DllName="Debugger" Index="0">
+	
+	<!-- 输入动作绑定 -->
+	<Action Name="StartGame" Label="开始游戏">
+		<Key Name="S" />
+		<Key Name="Button_00" />
+	</Action>
+	
+  </Device>
 
 </IORoot>

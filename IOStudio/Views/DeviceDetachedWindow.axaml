@@ -1,0 +1,51 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:controls="using:IOStudio.Controls"
+        xmlns:vm="using:IOStudio.ViewModels"
+        xmlns:iconPacks="https://github.com/MahApps/IconPacks.Avalonia"
+        mc:Ignorable="d" d:DesignWidth="1280" d:DesignHeight="720"
+        x:Class="IOStudio.Views.DeviceDetachedWindow"
+        x:DataType="vm:Device"
+        Title="{Binding Title}"
+        Width="1280" Height="720"
+        CanResize="True"
+        WindowStartupLocation="CenterOwner"
+        Icon="/Assets/avalonia-logo.ico">
+
+    <Window.Styles>
+        <Style Selector="Button.img-btn">
+            <Setter Property="Background" Value="" />
+            <Setter Property="Height" Value="36" />
+        </Style>
+    </Window.Styles>
+
+    <DockPanel>
+        <!-- 独立窗口标题栏工具条 -->
+        <Border DockPanel.Dock="Top" Background="{DynamicResource TlToolbarBg}"
+                BorderBrush="{DynamicResource TlBorderBrush}" BorderThickness="0 0 0 1"
+                Padding="12 6">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+                <iconPacks:PackIconIonicons Kind="BookmarkiOS" Width="16" Height="16" Foreground="{DynamicResource TlAccent}" VerticalAlignment="Center"/>
+                <TextBlock Text="{Binding Title}" FontWeight="SemiBold" Foreground="{DynamicResource TlTextPrimary}"
+                           VerticalAlignment="Center"/>
+                <TextBlock Text="(独立窗口)" FontSize="11" Foreground="{DynamicResource TlTextMuted}"
+                           VerticalAlignment="Center"/>
+                <Button Classes="text-button" Padding="8 5"
+                        Margin="16 0 0 0"
+                        ToolTip.Tip="关闭独立窗口并恢复到主窗口标签页"
+                        AutomationProperties.Name="返回标签页"
+                        Click="OnAttachClick">
+                    <StackPanel Orientation="Horizontal" Spacing="4">
+                        <iconPacks:PackIconIonicons Kind="ArrowBackiOS" Width="14" Height="14" Foreground="{DynamicResource TlTextSecondary}" VerticalAlignment="Center"/>
+                        <TextBlock Text="返回标签页" Foreground="{DynamicResource TlTextSecondary}" VerticalAlignment="Center"/>
+                    </StackPanel>
+                </Button>
+            </StackPanel>
+        </Border>
+
+        <!-- 设备视图本体 (与标签页共享同一 IODeviceView 控件) -->
+        <controls:IODeviceView />
+    </DockPanel>
+</Window>

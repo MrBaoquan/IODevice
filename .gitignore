@@ -13,6 +13,8 @@
 # Build results
 !/Binaries/Win64/Debug
 
+v[0-9].[0-9].[0-9]/
+
 !/**/[Dd]ebug/
 /**/[Dd]ebug/*
 !/Binaries/Win64/Debug/Config
@@ -249,3 +251,15 @@ ModelManifest.xml
 
 # FAKE - F# Make
 .fake/
+
+# 构建/调试输出（本地生成，勿入库）
+TestRunDebug/
+
+# 大体积二进制文档（pptx/mp4 可经 docs/**/generate_ppt*.py 重新生成，勿入库）
+*.pptx
+*.mp4
+
+
+# 运行时复制到输出目录的动作预设（源文件在 IOStudio/Config/Motion）
+Binaries/Win64/Debug/Config/Motion/*
+

@@ -1,4 +1,4 @@
-/** Copyright (c) mrma617@gmail.com
+﻿/** Copyright (c) mrma617@gmail.com
  *  Author: MrBaoquan
  *  CreateTime: 2018-6-27 9:00
  */
@@ -9,19 +9,31 @@
 #include <filesystem>
 #include <algorithm>
 #include <chrono>
+#include "IOPlatform.h"
 #include "Paths.hpp"
 #include "spdlog/sinks/simple_file_sink.h"
 
-namespace fs = std::experimental::filesystem;
+namespace fs = std::filesystem;
 namespace spd = spdlog;
 
-DevelopHelper::IOLog& DevelopHelper::IOLog::Instance()
+IOToolkit::IOLog& IOToolkit::IOLog::Instance()
 {
     static IOLog instance;
     return instance;
 }
 
-void DevelopHelper::IOLog::Log(std::string msg)
+
+int IOToolkit::IOLog::SetLogDir(std::string InLogDir)
+{
+	if (!InLogDir.empty() && InLogDir.back() != '\\' && InLogDir.back() != '/') {
+		InLogDir.push_back('\\');
+	}
+    logDir = InLogDir;
+	MakeReference(true);
+	return 1;
+}
+
+void IOToolkit::IOLog::Log(std::string msg)
 {
     try
     {
@@ -39,7 +51,7 @@ void DevelopHelper::IOLog::Log(std::string msg)
     }
 }
 
-void DevelopHelper::IOLog::Warning(std::string msg)
+void IOToolkit::IOLog::Warning(std::string msg)
 {
     try
     {
@@ -57,7 +69,7 @@ void DevelopHelper::IOLog::Warning(std::string msg)
     }
 }
 
-void DevelopHelper::IOLog::Error(std::string msg)
+void IOToolkit::IOLog::Error(std::string msg)
 {
     try
     {
@@ -76,86 +88,89 @@ void DevelopHelper::IOLog::Error(std::string msg)
 }
 
 
-void DevelopHelper::IOLog::ReleaseLogger()
+void IOToolkit::IOLog::ReleaseLogger()
 {
 	spdlog::drop("IO_Logger");
 	IOLogger = nullptr;
 }
 
+template <typename TP>
+std::time_t to_time_t(TP tp)
+{
+    using namespace std::chrono;
+    auto sctp = time_point_cast<system_clock::duration>(tp - TP::clock::now()
+        + system_clock::now());
+    return system_clock::to_time_t(sctp);
+}
+
+
 const std::string GetDateTimeString(std::string filePath)
 {
     auto time = fs::last_write_time(filePath);
-    std::chrono::time_point<std::chrono::system_clock> now(time);
-    std::time_t start_time = std::chrono::system_clock::to_time_t(now);
+    //std::chrono::time_point<std::chrono::system_clock> now();
+
+    std::time_t start_time = to_time_t(time);
     char timedisplay[100];
     struct tm buf;
-    errno_t err = localtime_s(&buf, &start_time);
-    if (std::strftime(timedisplay, sizeof(timedisplay), "%Y.%m.%d-%H.%M.%S", &buf))
-    {
-
-    }
+#if IODEVICE_PLATFORM_WINDOWS
+    localtime_s(&buf, &start_time);
+#else
+    localtime_r(&start_time, &buf);
+#endif
+    std::strftime(timedisplay, sizeof(timedisplay), "%Y.%m.%d-%H.%M.%S", &buf);
     return std::string(timedisplay);
 }
 
-void FilterFiles(std::string DirPath, int maxNum = 10)
+void FilterFiles(const std::string& DirPath, int maxNum = 10)
 {
-    struct FileInfo
-    {
-        FileInfo(fs::path& p,std::time_t t):fp(p),time(t){}
-        fs::path fp;
-        std::time_t time;
-    };
+	if (DirPath == "Invalid") return;
 
-    std::vector<FileInfo> files;
+	std::vector<fs::path> files;
 
-    int num = 0;
-    std::time_t minval = 0;
-    for (auto & dirIt : fs::directory_iterator(DirPath))
-    {
-        num++;
-        fs::path p = dirIt.path();
-        auto ftime = fs::last_write_time(p);
-        std::time_t cftime = decltype(ftime)::clock::to_time_t(ftime); // assuming system_clock
-        files.push_back(FileInfo(p, cftime));
-    }
-    if (num > maxNum)
-    {
-        struct {
-            bool operator()(FileInfo a, FileInfo b) const
-            {
-                return a.time < b.time;
-            }
-        } customLess;
-        std::sort(files.begin(), files.end(),customLess);
-        for (int index = 0;index < num-maxNum;++index)
-        {
-            fs::remove(files[index].fp);
-        }
-    }
+	// 收集符合条件的文件
+	for (const auto& dirIt : fs::directory_iterator(DirPath))
+	{
+		if (dirIt.is_regular_file() && dirIt.path().filename().string().rfind("IODevice-", 0) == 0)
+		{
+			files.push_back(dirIt.path());
+		}
+	}
+
+	int num = files.size();
+
+	// 如果文件数超过 maxNum，则按时间顺序删除多余的文件
+	if (num > maxNum)
+	{
+		std::sort(files.begin(), files.end(), [](const fs::path& a, const fs::path& b) {
+			return fs::last_write_time(a) < fs::last_write_time(b);
+			});
+
+		for (int i = 0; i < num - maxNum; ++i)
+		{
+			fs::remove(files[i]);
+		}
+	}
 }
 
-DevelopHelper::IOLog::IOLog()
+IOToolkit::IOLog::IOLog() {}
+
+IOToolkit::IOLog::~IOLog(){}
+
+
+void IOToolkit::IOLog::RenameIODeviceLogName()
 {
-    try
+  try
     {
-        std::string logDir = Paths::Instance().GetLogDir();
-        if (!fs::exists(logDir))
-        {
-            fs::create_directory(logDir);
-        }
         std::string logFilePath = logDir + "IODevice.log";
         std::fstream fp;
         fp.open(logFilePath);
         if(fp)
         {
             fp.close();
-           
             std::string nowTime = GetDateTimeString(logFilePath);
-            std::string newName = logDir + "IODevice-backup-"+nowTime+".log";
+            std::string newName = logDir + "IODevice-"+nowTime+".log";
             rename(logFilePath.data(), newName.data());
         }
-        IOLogger = spd::basic_logger_mt("IO_Logger", logFilePath);
-		IOLogger->flush_on(spdlog::level::warn);
     }
     catch (const spd::spdlog_ex&)
     {
@@ -163,26 +178,30 @@ DevelopHelper::IOLog::IOLog()
     }
 }
 
-DevelopHelper::IOLog::~IOLog()
+void IOToolkit::IOLog::MakeReference(bool bForce)
 {
-    FilterFiles(Paths::Instance().GetLogDir());
-}
-
-void DevelopHelper::IOLog::MakeReference()
-{
-	if (IOLogger) { return; }
+	if (IOLogger && !bForce) { return; }
+    if (IOLogger) ReleaseLogger();
 	try
 	{
-		std::string logDir = Paths::Instance().GetLogDir();
-		if (!fs::exists(logDir))
+        if (logDir == "Invalid") {
+            logDir = Paths::Instance().GetLogDir();
+        }
+        
+        if (!fs::exists(logDir))
 		{
 			fs::create_directory(logDir);
 		}
+
+        RenameIODeviceLogName();
+        FilterFiles(logDir);
+        
 		std::string logFilePath = logDir + "IODevice.log";
 		IOLogger = spd::basic_logger_mt("IO_Logger", logFilePath);
-		IOLogger->flush_on(spdlog::level::warn); 
+		IOLogger->flush_on(spdlog::level::info);
 	}
 	catch (const spd::spdlog_ex&)
 	{
+        
 	}
 }

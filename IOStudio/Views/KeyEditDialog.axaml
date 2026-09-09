@@ -1,0 +1,80 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:IOStudio.ViewModels"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d" d:DesignWidth="450" d:DesignHeight="300"
+        x:Class="IOStudio.Views.KeyEditDialog"
+        Title="编辑按键"
+        Width="450" 
+        SizeToContent="Height"
+        WindowStartupLocation="CenterOwner"
+        CanResize="False">
+
+    <Window.Styles>
+        <Style Selector="TextBlock.label">
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Margin" Value="0,0,0,4"/>
+            <Setter Property="FontSize" Value="13"/>
+        </Style>
+    </Window.Styles>
+
+    <DockPanel>
+        <!-- 底部按钮栏 -->
+        <Border DockPanel.Dock="Bottom" BorderBrush="#e5e7eb" BorderThickness="0,1,0,0" Padding="16,12" Background="#f9fafb">
+            <StackPanel Orientation="Horizontal" Spacing="12" HorizontalAlignment="Right">
+                <Button Content="取消" 
+                        Name="CancelButton"
+                        Width="100" 
+                        Padding="12,8"
+                        Background="#e5e7eb"
+                        Foreground="#374151"
+                        HorizontalContentAlignment="Center"
+                        VerticalContentAlignment="Center"/>
+                <Button Content="确定" 
+                        Name="OkButton"
+                        Width="100" 
+                        Padding="12,8"
+                        Background="#3b82f6"
+                        Foreground="White"
+                        HorizontalContentAlignment="Center"
+                        VerticalContentAlignment="Center"/>
+            </StackPanel>
+        </Border>
+
+        <!-- 主内容区 -->
+        <StackPanel Margin="24,20,24,16" Spacing="12">
+            <!-- 按键名称 -->
+            <StackPanel Spacing="8">
+                <TextBlock Classes="label" Text="按键名称 *"/>
+                <TextBox Name="KeyNameTextBox" 
+                         Watermark="请输入按键名称（如：Button_01）"
+                         FontSize="14"
+                         Height="36"/>
+            </StackPanel>
+
+            <!-- Axis 和 OAction 显示缩放系数 -->
+            <StackPanel Spacing="8" Name="ScalePanel">
+                <TextBlock Classes="label" Text="缩放系数"/>
+                <NumericUpDown Name="ScaleNumericUpDown"
+                              Minimum="-100"
+                              Maximum="100"
+                              Increment="0.1"
+                              FormatString="0.0"
+                              Height="36"
+                              Value="1.0"/>
+            </StackPanel>
+
+            <!-- OAction 和 Action 显示反转事件 -->
+            <StackPanel Spacing="8" Name="InvertEventPanel">
+                <CheckBox Name="InvertEventCheckBox" 
+                         Content="反转事件 (InvertEvent)"
+                         FontSize="13"/>
+                <TextBlock Text="反转 IE_Pressed 和 IE_Released 事件" 
+                          Foreground="#6b7280" 
+                          FontSize="11"
+                          Margin="24,0,0,0"/>
+            </StackPanel>
+        </StackPanel>
+    </DockPanel>
+</Window>

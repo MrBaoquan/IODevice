@@ -1,0 +1,297 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:IOStudio.ViewModels"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:iconPacks="https://github.com/MahApps/IconPacks.Avalonia"
+        xmlns:converter="using:IOStudio.Converters"
+        mc:Ignorable="d" d:DesignWidth="600" d:DesignHeight="500"
+        x:Class="IOStudio.Views.IONodeEditWindow"
+        x:DataType="vm:IONodeBase"
+        Title="{Binding WindowTitle}"
+        Width="600" Height="500"
+        MinWidth="500" MinHeight="400"
+        WindowStartupLocation="CenterOwner"
+        CanResize="True">
+
+    <Window.Resources>
+        <converter:BoolToRecordingBgConverter x:Key="BoolToRecordingBgConverter"/>
+        <converter:BoolToRecordingBorderConverter x:Key="BoolToRecordingBorderConverter"/>
+        <converter:BoolToRecordingFgConverter x:Key="BoolToRecordingFgConverter"/>
+        <converter:BoolToRecordingIconConverter x:Key="BoolToRecordingIconConverter"/>
+        <converter:BoolToRecordingTextConverter x:Key="BoolToRecordingTextConverter"/>
+    </Window.Resources>
+
+    <Window.Styles>
+        <Style Selector="TextBlock.section-title">
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="Margin" Value="0,0,0,8"/>
+        </Style>
+        <Style Selector="TextBlock.label">
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Margin" Value="0,0,0,4"/>
+            <Setter Property="FontSize" Value="13"/>
+        </Style>
+        <Style Selector="Border.section-border">
+            <Setter Property="BorderBrush" Value="#e5e7eb"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="4"/>
+            <Setter Property="Padding" Value="16"/>
+            <Setter Property="Background" Value="White"/>
+        </Style>
+        <Style Selector="Button.key-action-btn">
+            <Setter Property="Padding" Value="8,4"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="BorderBrush" Value="#d1d5db"/>
+        </Style>
+        <Style Selector="Button.key-action-btn:pointerover">
+            <Setter Property="Background" Value="#f3f4f6"/>
+        </Style>
+        <Style Selector="Border.key-item">
+            <Setter Property="Background" Value="#f9fafb"/>
+            <Setter Property="BorderBrush" Value="#e5e7eb"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="4"/>
+            <Setter Property="Padding" Value="12,8"/>
+            <Setter Property="Margin" Value="0,0,0,8"/>
+        </Style>
+
+        <!-- 删除节点按钮 hover 效果 -->
+        <Style Selector="Button#DeleteNodeButton:pointerover /template/ ContentPresenter">
+            <Setter Property="Background" Value="#dc2626"/>
+        </Style>
+
+        <!-- 取消按钮 hover 效果 -->
+        <Style Selector="Button#CancelButton:pointerover /template/ ContentPresenter">
+            <Setter Property="Background" Value="#d1d5db"/>
+        </Style>
+
+        <!-- 保存按钮 hover 效果 -->
+        <Style Selector="Button#SaveButton:pointerover /template/ ContentPresenter">
+            <Setter Property="Background" Value="#2563eb"/>
+        </Style>
+
+        <!-- 添加按键按钮 hover 效果 -->
+        <Style Selector="Button#AddKeyButton:pointerover /template/ ContentPresenter">
+            <Setter Property="Background" Value="#2563eb"/>
+        </Style>
+
+        <!-- 清空按钮 hover 效果 -->
+        <Style Selector="Button#ClearKeysButton:pointerover /template/ ContentPresenter">
+            <Setter Property="Background" Value="#f3f4f6"/>
+        </Style>
+    </Window.Styles>
+
+    <DockPanel>
+        <!-- 底部按钮栏 -->
+        <Border DockPanel.Dock="Bottom" BorderBrush="#e5e7eb" BorderThickness="0,1,0,0" Padding="16,12" Background="#f9fafb">
+            <Grid>
+                <StackPanel Orientation="Horizontal" Spacing="12" HorizontalAlignment="Left">
+                    <Button Content="删除节点"
+                            Name="DeleteNodeButton"
+                            Width="100"
+                            Padding="12,8"
+                            Background="#ef4444"
+                            Foreground="White"
+                            HorizontalContentAlignment="Center"
+                            VerticalContentAlignment="Center"/>
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" Spacing="12" HorizontalAlignment="Right">
+                    <Button Content="取消"
+                            Name="CancelButton"
+                            Width="100"
+                            Padding="12,8"
+                            Background="#e5e7eb"
+                            Foreground="#374151"
+                            HorizontalContentAlignment="Center"
+                            VerticalContentAlignment="Center"/>
+                    <Button Content="保存"
+                            Name="SaveButton"
+                            Width="100"
+                            Padding="12,8"
+                            Background="#3b82f6"
+                            Foreground="White"
+                            HorizontalContentAlignment="Center"
+                            VerticalContentAlignment="Center"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- 主内容区 -->
+        <ScrollViewer>
+            <StackPanel Margin="24,20,24,16" Spacing="20">
+                <!-- 基本信息 -->
+                <Border Classes="section-border">
+                    <StackPanel Spacing="12">
+                        <TextBlock Classes="section-title" Text="基本信息"/>
+
+                        <StackPanel Spacing="8">
+                            <TextBlock Classes="label" Text="节点名称 *"/>
+                            <TextBox Name="NodeNameTextBox"
+                                     Text="{Binding Name}"
+                                     Watermark="请输入节点名称（如：Action_00）"
+                                     FontSize="14"
+                                     MinWidth="400"
+                                     Height="36"
+                                     AcceptsReturn="False"
+                                     AcceptsTab="False"/>
+                            <!-- 内联验证错误提示 (保存时校验, 空名/重名) -->
+                            <TextBlock Name="NodeNameErrorText"
+                                       IsVisible="False"
+                                       FontSize="12"
+                                       Foreground="#dc2626"
+                                       TextWrapping="Wrap"/>
+                        </StackPanel>
+
+                        <StackPanel Spacing="8">
+                            <TextBlock Classes="label" Text="显示标签"/>
+                            <TextBox Name="NodeLabelTextBox"
+                                     Text="{Binding Label}"
+                                     Watermark="请输入显示标签（如：开始游戏）"
+                                     FontSize="14"
+                                     MinWidth="400"
+                                     Height="36"
+                                     AcceptsReturn="False"
+                                     AcceptsTab="False"/>
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+
+                <!-- 绑定按键列表 -->
+                <Border Classes="section-border">
+                    <StackPanel Spacing="12">
+                        <Grid>
+                            <TextBlock Classes="section-title" Text="绑定按键" HorizontalAlignment="Left"/>
+                            <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
+                                <Button Name="RecordKeyButton"
+                                        Classes="key-action-btn"
+                                        Background="{Binding IsRecording, Converter={StaticResource BoolToRecordingBgConverter}}"
+                                        BorderBrush="{Binding IsRecording, Converter={StaticResource BoolToRecordingBorderConverter}}"
+                                        BorderThickness="1"
+                                        Foreground="{Binding IsRecording, Converter={StaticResource BoolToRecordingFgConverter}}"
+                                        Padding="8,4"
+                                        ToolTip.Tip="{Binding RecordingToolTip}"
+                                        IsVisible="{Binding ShowRecordBtn}">
+                                    <StackPanel Orientation="Horizontal" Spacing="4">
+                                        <!-- 录制中：红色实心圆 -->
+                                        <Ellipse Width="12" Height="12"
+                                                 Fill="{Binding IsRecording, Converter={StaticResource BoolToRecordingIconConverter}}"
+                                                 IsVisible="{Binding IsRecording}"/>
+                                        <!-- 未录制：空心圆 -->
+                                        <Ellipse Width="12" Height="12"
+                                                 Stroke="{Binding IsRecording, Converter={StaticResource BoolToRecordingFgConverter}}"
+                                                 StrokeThickness="2"
+                                                 IsVisible="{Binding !IsRecording}"/>
+                                        <TextBlock Text="{Binding IsRecording, Converter={StaticResource BoolToRecordingTextConverter}}"
+                                                   VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                </Button>
+                                <Button Content="+ 添加按键"
+                                        Name="AddKeyButton"
+                                        Classes="key-action-btn"
+                                        Background="#3b82f6"
+                                        Foreground="White"
+                                        BorderThickness="0">
+                                    <Button.Styles>
+                                        <Style Selector="Button.key-action-btn:pointerover">
+                                            <Setter Property="Background" Value="#2563eb"/>
+                                        </Style>
+                                    </Button.Styles>
+                                </Button>
+                                <Button Content="清空"
+                                        Name="ClearKeysButton"
+                                        Classes="key-action-btn"/>
+                            </StackPanel>
+                        </Grid>
+
+                        <!-- Keys 列表 -->
+                        <ScrollViewer MaxHeight="250">
+                            <ItemsControl Name="KeysItemsControl" ItemsSource="{Binding KeyList}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border Classes="key-item">
+                                            <Grid ColumnDefinitions="Auto,*,Auto">
+                                                <!-- 键名 -->
+                                                <TextBlock Grid.Column="0"
+                                                           Text="{Binding Name}"
+                                                           FontWeight="SemiBold"
+                                                           VerticalAlignment="Center"
+                                                           MinWidth="100"/>
+
+                                                <!-- 中间：根据节点类型显示不同内容 -->
+                                                <StackPanel Grid.Column="1"
+                                                            Orientation="Horizontal"
+                                                            Spacing="12"
+                                                            VerticalAlignment="Center"
+                                                            Margin="12,0">
+
+                                                    <!-- Axis 和 OAction 显示缩放系数 -->
+                                                    <StackPanel Orientation="Horizontal"
+                                                                Spacing="4"
+                                                                IsVisible="{Binding $parent[Window].((vm:IONodeBase)DataContext).ShowKeyValue}">
+                                                        <TextBlock Text="缩放:" VerticalAlignment="Center" Foreground="#6b7280"/>
+                                                        <NumericUpDown Value="{Binding Scale, Mode=TwoWay}"
+                                                                       Minimum="-100"
+                                                                       Maximum="100"
+                                                                       Increment="0.1"
+                                                                       FormatString="F1"
+                                                                       Width="120"
+                                                                       Height="28"
+                                                                       ShowButtonSpinner="True"/>
+                                                    </StackPanel>
+
+                                                    <!-- OAction 显示反转事件 -->
+                                                    <CheckBox Content="反转事件"
+                                                              IsChecked="{Binding InvertEventBool}"
+                                                              IsVisible="{Binding $parent[Window].((vm:IONodeBase)DataContext).ShowBtn}"
+                                                              VerticalAlignment="Center"/>
+                                                </StackPanel>
+
+                                                <!-- 删除按钮 -->
+                                                <Button Grid.Column="2"
+                                                        Name="DeleteKeyButton"
+                                                        Classes="key-action-btn"
+                                                        Background="Transparent"
+                                                        Foreground="#ef4444"
+                                                        BorderBrush="#fecaca"
+                                                        ToolTip.Tip="删除此按键">
+                                                    <iconPacks:PackIconIonicons Kind="TrashiOS" Width="14" Height="14"/>
+                                                </Button>
+                                            </Grid>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </ScrollViewer>
+
+                        <!-- 空状态提示 -->
+                        <Border Padding="24"
+                                Background="#f9fafb"
+                                CornerRadius="4"
+                                BorderBrush="#e5e7eb"
+                                BorderThickness="1"
+                                IsVisible="{Binding !KeyList.Count}">
+                            <StackPanel Spacing="8" HorizontalAlignment="Center">
+                                <iconPacks:PackIconIonicons Kind="KeyiOS"
+                                                            Width="32"
+                                                            Height="32"
+                                                            Foreground="#9ca3af"
+                                                            HorizontalAlignment="Center"/>
+                                <TextBlock Text="暂无绑定按键"
+                                           Foreground="#9ca3af"
+                                           HorizontalAlignment="Center"/>
+                                <TextBlock Text="点击 添加按键 开始配置"
+                                           Foreground="#d1d5db"
+                                           FontSize="12"
+                                           HorizontalAlignment="Center"/>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+        </ScrollViewer>
+    </DockPanel>
+</Window>

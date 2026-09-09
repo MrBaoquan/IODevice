@@ -1,0 +1,1093 @@
+{
+  "version": "3.0",
+  "name": "\u52A8\u4F5C\u7F16\u6392\u793A\u4F8B - \u5F71\u7247\u8282\u594F",
+  "duration_ms": 60000,
+  "fps": 60,
+  "tracks": [
+    {
+      "id": "trk_heave",
+      "device": "YDL-0",
+      "oaction": "",
+      "output_type": "oaxis",
+      "oaxis_channel": "OAxis_00",
+      "axis_name": "",
+      "label": "\u5347\u964D",
+      "color": "#4FC3F7",
+      "value_type": "float",
+      "muted": false,
+      "enabled": true,
+      "locked": false,
+      "group": "\u4E3B\u8FD0\u52A8",
+      "role": "heave",
+      "show_in_curve": true,
+      "idle": {
+        "enabled": true,
+        "period_ms": 2700,
+        "blend_ms": 300,
+        "phase_mode": "continuous",
+        "keyframes": [
+          {
+            "time_ms": 0,
+            "value": 0.5,
+            "interpolation": "bezier"
+          },
+          {
+            "time_ms": 675,
+            "value": 0.62,
+            "interpolation": "bezier"
+          },
+          {
+            "time_ms": 1485.0000000000002,
+            "value": 0.55,
+            "interpolation": "bezier"
+          },
+          {
+            "time_ms": 2160,
+            "value": 0.68,
+            "interpolation": "bezier"
+          },
+          {
+            "time_ms": 2700,
+            "value": 0.5,
+            "interpolation": "bezier"
+          }
+        ]
+      },
+      "clips": [
+        {
+          "id": "clip_rise01_heave",
+          "start_ms": 3000,
+          "end_ms": 8000,
+          "keyframes": [
+            {
+              "time_ms": 0,
+              "value": 0.5,
+              "interpolation": "bezier"
+            },
+            {
+              "time_ms": 600,
+              "value": 0.88,
+              "interpolation": "bezier"
+            },
+            {
+              "time_ms": 1800,
+              "value": 0.58,
+              "interpolation": "bezier"
+            },
+            {
+              "time_ms": 4500,
+              "value": 0.5,
+              "interpolation": "ease_in_out"
+            }
+          ],
+          "action_instance_id": "act_rise_01",
+          "source_definition_id": "fx_weightless_rise",
+          "source_role": "heave",
+          "source_action_name": "\u5931\u91CD\u4E0A\u5347"
+        },
+        {
+          "id": "clip_fall01_heave",
+          "start_ms": 28000,
+          "end_ms": 42500,
+          "keyframes": [
+            {
+              "time_ms": 0,
+              "value": 0.5,
+              "interpolation": "bezier"
+            },
+            {
+              "time_ms": 500,
+              "value": 0.12,
+              "interpolation": "bezier"
+            },
+            {
+              "time_ms": 3600,
+              "value": 0.5,
+              "interpolation": "ease_in_out"
+            },
+            {
+              "time_ms": 13600,
+              "value": 1,
+              "interpolation": "ease_in_out"
+            }
+          ],
+          "action_instance_id": "act_fall_01",
+          "source_definition_id": "fx_weightless_fall",
+          "source_role": "heave",
+          "source_action_name": "\u5931\u91CD\u4E0B\u964D"
+        },
+        {
+          "id": "clip_dive01_heave",
+          "start_ms": 47350,
+          "end_ms": 52000,
+          "keyframes": [
+            {
+              "time_ms": 0,
+              "value": 0.5,
+              "interpolation": "bezier"
+            },
+            {
+              "time_ms": 800,
+              "value": 0.1,
+              "interpolation": "bezier"
+            },
+            {
+              "time_ms": 3000,
+              "value": 0.9,
+              "interpolation": "ease_in_out"
+            },
+            {
+              "time_ms": 3800,
+              "value": 0.5,
+              "interpolation": "bezier"
+            }
+          ],
+          "action_instance_id": "act_dive_01",
+          "source_definition_id": "fx_dive",
+          "source_role": "heave",
+          "source_action_name": "\u4FEF\u51B2"
+        }
+      ]
+    },
+    {
+      "id": "trk_pitch",
+      "device": "Motion Chair",
+      "oaction": "Axis",
+      "output_type": "oaxis",
+      "oaxis_channel": "OAxis_01",
+      "axis_name": "",
+      "label": "\u4FEF\u4EF0",
+      "color": "#A78BFA",
+      "value_type": "float",
+      "muted": false,
+      "enabled": true,
+      "locked": false,
+      "group": "\u4E3B\u8FD0\u52A8",
+      "role": "pitch",
+      "show_in_curve": true,
+      "idle": {
+        "enabled": true,
+        "period_ms": 1600,
+        "blend_ms": 300,
+        "phase_mode": "continuous",
+        "keyframes": [
+          {
+            "time_ms": 0,
+            "value": 0.5,
+            "interpolation": "bezier"
+          },
+          {
+            "time_ms": 480,
+            "value": 0.47,
+            "interpolation": "bezier"
+          },
+          {
+            "time_ms": 960,
+            "value": 0.53,
+            "interpolation": "bezier"
+          },
+          {
+            "time_ms": 1600,
+            "value": 0.5,
+            "interpolation": "bezier"
+          }
+        ]
+      },
+      "clips": [
+        {
+          "id": "clip_rise01_pitch",
+          "start_ms": 3000,
+          "end_ms": 8000,
+          "keyframes": [
+            {
+              "time_ms": 0,
+              "value": 0.5,
+              "interpolation": "bezier"
+            },
+            {
+              "time_ms": 600,
+              "value": 0.62,
+              "interpolation": "bezier"
+            },
+            {
+              "time_ms": 2400,
+              "value": 0.55,
+              "interpolation": "bezier"
+            },
+            {
+              "time_ms": 4500,
+              "value": 0.5,
+              "interpolation": "ease_in_out"
+            }
+          ],
+          "action_instance_id": "act_rise_01",
+          "source_definition_id": "fx_weightless_rise",
+          "source_role": "pitch",
+          "source_action_name": "\u5931\u91CD\u4E0A\u5347"
+        },
+        {
+          "id": "clip_fall01_pitch",
+          "start_ms": 28000,
+          "end_ms": 32500,
+          "keyframes": [
+            {
+              "time_ms": 0,
+              "value": 0.5,
+              "interpolation": "bezier"
+            },
+            {
+              "time_ms": 500,
+              "value": 0.38,
+              "interpolation": "bezier"
+            },
+            {
+              "time_ms": 1800,
+              "value": 0.6,
+              "interpolation": "bezier"
+            },
+            {
+              "time_ms": 3600,
+              "value": 0.5,
+              "interpolation": "ease_in_out"
+            }
+          ],
+          "action_instance_id": "act_fall_01",
+          "source_definition_id": "fx_weightless_fall",
+          "source_role": "pitch",
+          "source_action_name": "\u5931\u91CD\u4E0B\u964D"
+        },
+        {
+          "id": "clip_dive01_pitch",
+          "start_ms": 47350,
+          "end_ms": 52000,
+          "keyframes": [
+            {
+              "time_ms": 0,
+              "value": 0.5,
+              "interpolation": "bezier"
+            },
+            {
+              "time_ms": 800,
+              "value": 0.15,
+              "interpolation": "bezier"
+            },
+            {
+              "time_ms": 3000,
+              "value": 0.85,
+              "interpolation": "ease_in_out"
+            },
+            {
+              "time_ms": 3800,
+              "value": 0.5,
+              "interpolation": "bezier"
+            }
+          ],
+          "action_instance_id": "act_dive_01",
+          "source_definition_id": "fx_dive",
+          "source_role": "pitch",
+          "source_action_name": "\u4FEF\u51B2"
+        }
+      ]
+    },
+    {
+      "id": "trk_roll",
+      "device": "Motion Chair",
+      "oaction": "Axis",
+      "output_type": "oaxis",
+      "oaxis_channel": "OAxis_02",
+      "axis_name": "",
+      "label": "\u6A2A\u6EDA",
+      "color": "#34D399",
+      "value_type": "float",
+      "muted": false,
+      "enabled": true,
+      "locked": false,
+      "group": "\u4E3B\u8FD0\u52A8",
+      "role": "roll",
+      "show_in_curve": true,
+      "idle": {
+        "enabled": true,
+        "period_ms": 1600,
+        "blend_ms": 300,
+        "phase_mode": "continuous",
+        "keyframes": [
+          {
+            "time_ms": 0,
+            "value": 0.5,
+            "interpolation": "bezier"
+          },
+          {
+            "time_ms": 480,
+            "value": 0.53,
+            "interpolation": "bezier"
+          },
+          {
+            "time_ms": 960,
+            "value": 0.47,
+            "interpolation": "bezier"
+          },
+          {
+            "time_ms": 1600,
+            "value": 0.5,
+            "interpolation": "bezier"
+          }
+        ]
+      },
+      "clips": [
+        {
+          "id": "clip_rise01_roll",
+          "start_ms": 3000,
+          "end_ms": 8000,
+          "keyframes": [
+            {
+              "time_ms": 0,
+              "value": 0.5,
+              "interpolation": "bezier"
+            },
+            {
+              "time_ms": 600,
+              "value": 0.58,
+              "interpolation": "bezier"
+            },
+            {
+              "time_ms": 2400,
+              "value": 0.45,
+              "interpolation": "bezier"
+            },
+            {
+              "time_ms": 4500,
+              "value": 0.5,
+              "interpolation": "ease_in_out"
+            }
+          ],
+          "action_instance_id": "act_rise_01",
+          "source_definition_id": "fx_weightless_rise",
+          "source_role": "roll",
+          "source_action_name": "\u5931\u91CD\u4E0A\u5347"
+        },
+        {
+          "id": "clip_fall01_roll",
+          "start_ms": 28000,
+          "end_ms": 32500,
+          "keyframes": [
+            {
+              "time_ms": 0,
+              "value": 0.5,
+              "interpolation": "bezier"
+            },
+            {
+              "time_ms": 500,
+              "value": 0.42,
+              "interpolation": "bezier"
+            },
+            {
+              "time_ms": 1800,
+              "value": 0.58,
+              "interpolation": "bezier"
+            },
+            {
+              "time_ms": 3600,
+              "value": 0.5,
+              "interpolation": "ease_in_out"
+            }
+          ],
+          "action_instance_id": "act_fall_01",
+          "source_definition_id": "fx_weightless_fall",
+          "source_role": "roll",
+          "source_action_name": "\u5931\u91CD\u4E0B\u964D"
+        }
+      ]
+    },
+    {
+      "id": "trk_impact",
+      "device": "YDL-0",
+      "oaction": "",
+      "output_type": "oaxis",
+      "oaxis_channel": "OAxis_00",
+      "axis_name": "",
+      "label": "\u51B2\u51FB",
+      "color": "#FB7185",
+      "value_type": "float",
+      "muted": false,
+      "enabled": true,
+      "locked": false,
+      "group": "\u51B2\u51FB\u5C42",
+      "role": "impact",
+      "show_in_curve": true,
+      "idle": {
+        "enabled": true,
+        "period_ms": 1600,
+        "blend_ms": 300,
+        "phase_mode": "continuous",
+        "keyframes": [
+          {
+            "time_ms": 0,
+            "value": 0.5,
+            "interpolation": "bezier"
+          },
+          {
+            "time_ms": 400,
+            "value": 0.62,
+            "interpolation": "bezier"
+          },
+          {
+            "time_ms": 880.0000000000001,
+            "value": 0.55,
+            "interpolation": "bezier"
+          },
+          {
+            "time_ms": 1280,
+            "value": 0.68,
+            "interpolation": "bezier"
+          },
+          {
+            "time_ms": 1600,
+            "value": 0.5,
+            "interpolation": "bezier"
+          }
+        ]
+      },
+      "clips": [
+        {
+          "id": "clip_impact01",
+          "start_ms": 22000,
+          "end_ms": 24500,
+          "keyframes": [
+            {
+              "time_ms": 0,
+              "value": 0,
+              "interpolation": "step"
+            },
+            {
+              "time_ms": 50,
+              "value": 0.8,
+              "interpolation": "bezier"
+            },
+            {
+              "time_ms": 300,
+              "value": 0.3,
+              "interpolation": "bezier"
+            },
+            {
+              "time_ms": 600,
+              "value": 0.6,
+              "interpolation": "bezier"
+            },
+            {
+              "time_ms": 900,
+              "value": 0.4,
+              "interpolation": "bezier"
+            },
+            {
+              "time_ms": 1200,
+              "value": 0.55,
+              "interpolation": "bezier"
+            },
+            {
+              "time_ms": 1800,
+              "value": 0.2,
+              "interpolation": "bezier"
+            },
+            {
+              "time_ms": 2000,
+              "value": 0,
+              "interpolation": "ease_in_out"
+            }
+          ],
+          "action_instance_id": "act_impact_01",
+          "source_definition_id": "fx_impact_vibration",
+          "source_role": "impact",
+          "source_action_name": "\u649E\u51FB\u9707\u52A8"
+        }
+      ]
+    },
+    {
+      "id": "trk_stop",
+      "device": "Motion Chair",
+      "oaction": "Axis",
+      "output_type": "oaxis",
+      "oaxis_channel": "OAxis_01",
+      "axis_name": "",
+      "label": "\u6025\u505C",
+      "color": "#FBBF24",
+      "value_type": "float",
+      "muted": false,
+      "enabled": true,
+      "locked": false,
+      "group": "\u51B2\u51FB\u5C42",
+      "role": "stop",
+      "show_in_curve": true,
+      "clips": [
+        {
+          "id": "clip_stop01",
+          "start_ms": 26000,
+          "end_ms": 28500,
+          "keyframes": [
+            {
+              "time_ms": 0,
+              "value": 0,
+              "interpolation": "step"
+            },
+            {
+              "time_ms": 50,
+              "value": 0.3,
+              "interpolation": "bezier"
+            },
+            {
+              "time_ms": 150,
+              "value": 0.6,
+              "interpolation": "bezier"
+            },
+            {
+              "time_ms": 300,
+              "value": 0.45,
+              "interpolation": "bezier"
+            },
+            {
+              "time_ms": 2000,
+              "value": 0,
+              "interpolation": "ease_in_out"
+            }
+          ],
+          "action_instance_id": "act_stop_01",
+          "source_definition_id": "fx_emergency_stop",
+          "source_role": "stop",
+          "source_action_name": "\u6025\u505C"
+        }
+      ]
+    }
+  ],
+  "action_instances": [
+    {
+      "id": "act_rise_01",
+      "definition_id": "fx_weightless_rise",
+      "definition_revision": 1,
+      "name": "\u5931\u91CD\u4E0A\u5347",
+      "start_ms": 3000,
+      "duration_ms": 5000,
+      "intensity": 0.8,
+      "playback_rate": 1,
+      "loop_count": 1,
+      "enabled": true,
+      "role_track_ids": {
+        "heave": "trk_heave",
+        "pitch": "trk_pitch",
+        "roll": "trk_roll"
+      }
+    },
+    {
+      "id": "act_fall_01",
+      "definition_id": "fx_weightless_fall",
+      "definition_revision": 1,
+      "name": "\u5931\u91CD\u4E0B\u964D",
+      "start_ms": 28000,
+      "duration_ms": 4000,
+      "intensity": 0.8,
+      "playback_rate": 1,
+      "loop_count": 1,
+      "enabled": true,
+      "role_track_ids": {
+        "heave": "trk_heave",
+        "pitch": "trk_pitch",
+        "roll": "trk_roll"
+      }
+    },
+    {
+      "id": "act_dive_01",
+      "definition_id": "fx_dive",
+      "definition_revision": 1,
+      "name": "\u4FEF\u51B2",
+      "start_ms": 47350,
+      "duration_ms": 4000,
+      "intensity": 0.9,
+      "playback_rate": 1,
+      "loop_count": 1,
+      "enabled": true,
+      "role_track_ids": {
+        "heave": "trk_heave",
+        "pitch": "trk_pitch"
+      }
+    },
+    {
+      "id": "act_impact_01",
+      "definition_id": "fx_impact_vibration",
+      "definition_revision": 1,
+      "name": "\u649E\u51FB\u9707\u52A8",
+      "start_ms": 22000,
+      "duration_ms": 2000,
+      "intensity": 1,
+      "playback_rate": 1,
+      "loop_count": 1,
+      "enabled": true,
+      "role_track_ids": {
+        "impact": "trk_impact"
+      }
+    },
+    {
+      "id": "act_stop_01",
+      "definition_id": "fx_emergency_stop",
+      "definition_revision": 1,
+      "name": "\u6025\u505C",
+      "start_ms": 26000,
+      "duration_ms": 2000,
+      "intensity": 0.8,
+      "playback_rate": 1,
+      "loop_count": 1,
+      "enabled": true,
+      "role_track_ids": {
+        "stop": "trk_stop"
+      }
+    }
+  ],
+  "role_track_bindings": {
+    "heave": "trk_heave",
+    "pitch": "trk_pitch",
+    "roll": "trk_roll",
+    "impact": "trk_impact",
+    "stop": "trk_stop"
+  },
+  "embedded_presets": [
+    {
+      "id": "fx_weightless_rise",
+      "revision": 1,
+      "name": "\u5931\u91CD\u4E0A\u5347",
+      "category": "\u5931\u91CD\u6548\u679C",
+      "description": "\u8FC5\u901F\u4E0A\u5347\u5931\u91CD\u611F: \u5347\u964D\u8FC5\u901F\u4E0A\u51B2 \u2192 \u77ED\u6682\u60AC\u6D6E\u56DE\u843D \u2192 \u7A33\u5B9A\u56DE\u4E2D; \u4FEF\u4EF0\u540E\u4EF0 \u002B \u6EDA\u8F6C\u5FAE\u6446\u8054\u52A8",
+      "duration_ms": 3000,
+      "default_intensity": 0.8,
+      "min_intensity": 0.3,
+      "max_intensity": 1.2,
+      "channels": [
+        {
+          "role": "heave",
+          "scale": 1,
+          "keyframes": [
+            {
+              "time_ms": 0,
+              "value": 0.5,
+              "interpolation": "bezier"
+            },
+            {
+              "time_ms": 600,
+              "value": 0.88,
+              "interpolation": "bezier"
+            },
+            {
+              "time_ms": 1800,
+              "value": 0.58,
+              "interpolation": "bezier"
+            },
+            {
+              "time_ms": 3000,
+              "value": 0.5,
+              "interpolation": "ease_in_out"
+            }
+          ]
+        },
+        {
+          "role": "pitch",
+          "scale": 1,
+          "keyframes": [
+            {
+              "time_ms": 0,
+              "value": 0.5,
+              "interpolation": "bezier"
+            },
+            {
+              "time_ms": 600,
+              "value": 0.62,
+              "interpolation": "bezier"
+            },
+            {
+              "time_ms": 2400,
+              "value": 0.55,
+              "interpolation": "bezier"
+            },
+            {
+              "time_ms": 3000,
+              "value": 0.5,
+              "interpolation": "ease_in_out"
+            }
+          ]
+        },
+        {
+          "role": "roll",
+          "scale": 1,
+          "keyframes": [
+            {
+              "time_ms": 0,
+              "value": 0.5,
+              "interpolation": "bezier"
+            },
+            {
+              "time_ms": 600,
+              "value": 0.58,
+              "interpolation": "bezier"
+            },
+            {
+              "time_ms": 2400,
+              "value": 0.45,
+              "interpolation": "bezier"
+            },
+            {
+              "time_ms": 3000,
+              "value": 0.5,
+              "interpolation": "ease_in_out"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "fx_weightless_fall",
+      "revision": 1,
+      "name": "\u5931\u91CD\u4E0B\u964D",
+      "category": "\u5931\u91CD\u6548\u679C",
+      "description": "\u5FEB\u901F\u4E0B\u843D\u5931\u91CD\u611F: \u5347\u964D\u8FC5\u901F\u4E0B\u51B2 \u2192 \u56DE\u5F39 \u2192 \u7A33\u5B9A\u56DE\u4E2D; \u4FEF\u4EF0/\u6EDA\u8F6C\u8054\u52A8\u9519\u5CF0",
+      "duration_ms": 2000,
+      "default_intensity": 0.8,
+      "min_intensity": 0.3,
+      "max_intensity": 1.2,
+      "channels": [
+        {
+          "role": "heave",
+          "scale": 1,
+          "keyframes": [
+            {
+              "time_ms": 0,
+              "value": 0.5,
+              "interpolation": "bezier"
+            },
+            {
+              "time_ms": 500,
+              "value": 0.12,
+              "interpolation": "bezier"
+            },
+            {
+              "time_ms": 1800,
+              "value": 0.42,
+              "interpolation": "bezier"
+            },
+            {
+              "time_ms": 2000,
+              "value": 0.5,
+              "interpolation": "ease_in_out"
+            }
+          ]
+        },
+        {
+          "role": "pitch",
+          "scale": 1,
+          "keyframes": [
+            {
+              "time_ms": 0,
+              "value": 0.5,
+              "interpolation": "bezier"
+            },
+            {
+              "time_ms": 500,
+              "value": 0.38,
+              "interpolation": "bezier"
+            },
+            {
+              "time_ms": 1800,
+              "value": 0.6,
+              "interpolation": "bezier"
+            },
+            {
+              "time_ms": 2000,
+              "value": 0.5,
+              "interpolation": "ease_in_out"
+            }
+          ]
+        },
+        {
+          "role": "roll",
+          "scale": 1,
+          "keyframes": [
+            {
+              "time_ms": 0,
+              "value": 0.5,
+              "interpolation": "bezier"
+            },
+            {
+              "time_ms": 500,
+              "value": 0.42,
+              "interpolation": "bezier"
+            },
+            {
+              "time_ms": 1800,
+              "value": 0.58,
+              "interpolation": "bezier"
+            },
+            {
+              "time_ms": 2000,
+              "value": 0.5,
+              "interpolation": "ease_in_out"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "fx_dive",
+      "revision": 1,
+      "name": "\u4FEF\u51B2",
+      "category": "\u8FC7\u5C71\u8F66",
+      "description": "\u524D\u51B2\u4FEF\u51B2: \u5347\u964D\u524D\u51B2\u4E0B\u964D \u2192 \u4FEF\u4EF0\u524D\u503E \u2192 \u7A33\u5B9A\u56DE\u4E2D",
+      "duration_ms": 2000,
+      "default_intensity": 0.9,
+      "min_intensity": 0.3,
+      "max_intensity": 1.2,
+      "channels": [
+        {
+          "role": "heave",
+          "scale": 1,
+          "keyframes": [
+            {
+              "time_ms": 0,
+              "value": 0.5,
+              "interpolation": "bezier"
+            },
+            {
+              "time_ms": 800,
+              "value": 0.1,
+              "interpolation": "bezier"
+            },
+            {
+              "time_ms": 1600,
+              "value": 0.9,
+              "interpolation": "ease_in_out"
+            },
+            {
+              "time_ms": 2000,
+              "value": 0.5,
+              "interpolation": "bezier"
+            }
+          ]
+        },
+        {
+          "role": "pitch",
+          "scale": 1,
+          "keyframes": [
+            {
+              "time_ms": 0,
+              "value": 0.5,
+              "interpolation": "bezier"
+            },
+            {
+              "time_ms": 800,
+              "value": 0.15,
+              "interpolation": "bezier"
+            },
+            {
+              "time_ms": 1600,
+              "value": 0.85,
+              "interpolation": "ease_in_out"
+            },
+            {
+              "time_ms": 2000,
+              "value": 0.5,
+              "interpolation": "bezier"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "fx_impact_vibration",
+      "revision": 1,
+      "name": "\u649E\u51FB\u9707\u52A8",
+      "category": "\u51B2\u51FB\u9707\u52A8",
+      "description": "\u649E\u51FB\u51B2\u51FB\u6CE2: \u77AC\u95F4\u51B2\u51FB \u2192 \u9AD8\u9891\u8870\u51CF\u9707\u8361 \u2192 \u7A33\u5B9A\u56DE\u4E2D",
+      "duration_ms": 1000,
+      "default_intensity": 0.9,
+      "min_intensity": 0.3,
+      "max_intensity": 1.2,
+      "channels": [
+        {
+          "role": "impact",
+          "scale": 1,
+          "keyframes": [
+            {
+              "time_ms": 0,
+              "value": 0,
+              "interpolation": "step"
+            },
+            {
+              "time_ms": 50,
+              "value": 0.8,
+              "interpolation": "bezier"
+            },
+            {
+              "time_ms": 300,
+              "value": 0.3,
+              "interpolation": "bezier"
+            },
+            {
+              "time_ms": 600,
+              "value": 0.6,
+              "interpolation": "bezier"
+            },
+            {
+              "time_ms": 900,
+              "value": 0.4,
+              "interpolation": "bezier"
+            },
+            {
+              "time_ms": 1000,
+              "value": 0,
+              "interpolation": "ease_in_out"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "fx_emergency_stop",
+      "revision": 1,
+      "name": "\u6025\u505C",
+      "category": "\u51B2\u51FB\u9707\u52A8",
+      "description": "\u5FEB\u901F\u6025\u505C: \u77AC\u95F4\u51CF\u901F \u2192 \u8FC7\u51B2\u4FEE\u6B63 \u2192 \u7A33\u5B9A\u56DE\u4E2D",
+      "duration_ms": 500,
+      "default_intensity": 0.8,
+      "min_intensity": 0.2,
+      "max_intensity": 1.2,
+      "channels": [
+        {
+          "role": "stop",
+          "scale": 1,
+          "keyframes": [
+            {
+              "time_ms": 0,
+              "value": 0,
+              "interpolation": "step"
+            },
+            {
+              "time_ms": 50,
+              "value": 0.3,
+              "interpolation": "bezier"
+            },
+            {
+              "time_ms": 150,
+              "value": 0.6,
+              "interpolation": "bezier"
+            },
+            {
+              "time_ms": 300,
+              "value": 0.45,
+              "interpolation": "bezier"
+            },
+            {
+              "time_ms": 500,
+              "value": 0,
+              "interpolation": "ease_in_out"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "groups": [
+    {
+      "name": "\u4E3B\u8FD0\u52A8",
+      "color": "#64748B",
+      "collapsed": false
+    },
+    {
+      "name": "\u51B2\u51FB\u5C42",
+      "color": "#F97316",
+      "collapsed": false
+    }
+  ],
+  "events": [
+    {
+      "time_ms": 3000,
+      "event_name": "scene.start",
+      "event_data": "{\u0022scene\u0022:\u0022lift-off\u0022}",
+      "color": "#38BDF8",
+      "data_type": "json",
+      "lane": "scene"
+    },
+    {
+      "time_ms": 22000,
+      "event_name": "impact.hit",
+      "event_data": "{\u0022intensity\u0022:0.95}",
+      "color": "#FB7185",
+      "data_type": "json",
+      "lane": "effects"
+    },
+    {
+      "time_ms": 26000,
+      "event_name": "vehicle.stop",
+      "event_data": "{\u0022reason\u0022:\u0022emergency\u0022}",
+      "color": "#FBBF24",
+      "data_type": "json",
+      "lane": "effects"
+    },
+    {
+      "time_ms": 16000,
+      "event_name": "scene.climax",
+      "event_data": "{\u0022take\u0022:2}",
+      "color": "#C084FC",
+      "data_type": "json",
+      "lane": "scene"
+    }
+  ],
+  "markers": [
+    {
+      "time_ms": 0,
+      "name": "\u7247\u5934",
+      "color": "#94A3B8",
+      "note": "\u5F00\u573A\u5B9A\u4F4D",
+      "lane": "chapters"
+    },
+    {
+      "time_ms": 3000,
+      "name": "\u7B2C\u4E00\u6B21\u5931\u91CD",
+      "color": "#38BDF8",
+      "note": "\u4E0A\u5347\u5F15\u5165",
+      "lane": "chapters"
+    },
+    {
+      "time_ms": 16000,
+      "name": "\u9AD8\u6F6E\u4FEF\u51B2",
+      "color": "#C084FC",
+      "note": "\u5F3A\u5EA6\u63D0\u5347",
+      "lane": "chapters"
+    },
+    {
+      "time_ms": 22000,
+      "name": "\u7B2C\u4E00\u6B21\u649E\u51FB",
+      "color": "#FB7185",
+      "note": "\u649E\u51FB\u9707\u52A8\u8D77\u70B9",
+      "lane": "chapters"
+    },
+    {
+      "time_ms": 26000,
+      "name": "\u6025\u505C\u6536\u5C3E",
+      "color": "#FBBF24",
+      "note": "\u6536\u675F\u6BB5",
+      "lane": "chapters"
+    }
+  ],
+  "event_lanes": [
+    {
+      "id": "scene",
+      "name": "\u573A\u666F\u8282\u70B9",
+      "color": "#38BDF8"
+    },
+    {
+      "id": "effects",
+      "name": "\u7279\u6548\u89E6\u53D1",
+      "color": "#FB7185"
+    }
+  ],
+  "marker_lanes": [
+    {
+      "id": "chapters",
+      "name": "\u7AE0\u8282",
+      "color": "#94A3B8"
+    }
+  ]
+}

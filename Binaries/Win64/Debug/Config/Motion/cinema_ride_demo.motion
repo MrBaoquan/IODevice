@@ -1,0 +1,1159 @@
+{
+  "version": "2.0",
+  "name": "cinema_ride_demo",
+  "duration_ms": 383000,
+  "fps": 60,
+  "tracks": [
+    {
+      "id": "trk_ptch",
+      "device": "ExtDev",
+      "oaction": "Pitch",
+      "output_type": "oaction",
+      "oaxis_channel": "",
+      "axis_name": "",
+      "label": "\u4FEF\u4EF0",
+      "color": "#4FC3F7",
+      "value_type": "float",
+      "muted": false,
+      "enabled": true,
+      "locked": false,
+      "group": "\u59FF\u6001\u63A7\u5236",
+      "show_in_curve": true,
+      "clips": [
+        {
+          "id": "clip_p01",
+          "start_ms": 0,
+          "end_ms": 60500,
+          "keyframes": [
+            {
+              "time_ms": 0,
+              "value": 1,
+              "interpolation": "linear"
+            },
+            {
+              "time_ms": 2000,
+              "value": 0.5,
+              "interpolation": "linear"
+            },
+            {
+              "time_ms": 5000,
+              "value": 0.81239283,
+              "interpolation": "bezier",
+              "cp1y": -1.65,
+              "cp2y": 0.37500006,
+              "cp1x": 2.05,
+              "cp2x": 2.3
+            },
+            {
+              "time_ms": 8000,
+              "value": 0.35,
+              "interpolation": "ease_in_out"
+            },
+            {
+              "time_ms": 12000,
+              "value": 0.5809554,
+              "interpolation": "bezier"
+            },
+            {
+              "time_ms": 15000,
+              "value": 0.2,
+              "interpolation": "ease_in_out"
+            },
+            {
+              "time_ms": 18000,
+              "value": 0.65,
+              "interpolation": "bezier"
+            },
+            {
+              "time_ms": 18319.070904645476,
+              "value": 0.63825226,
+              "interpolation": "bezier"
+            },
+            {
+              "time_ms": 22000,
+              "value": 0,
+              "interpolation": "ease_in_out"
+            },
+            {
+              "time_ms": 26000,
+              "value": 0.85,
+              "interpolation": "bezier"
+            },
+            {
+              "time_ms": 29000,
+              "value": 0.15,
+              "interpolation": "ease_in_out"
+            },
+            {
+              "time_ms": 33000,
+              "value": 0.7,
+              "interpolation": "ease_in_out"
+            },
+            {
+              "time_ms": 37000,
+              "value": 0.25,
+              "interpolation": "bezier"
+            },
+            {
+              "time_ms": 41000,
+              "value": 0.9,
+              "interpolation": "ease_in_out"
+            },
+            {
+              "time_ms": 44000,
+              "value": 0.1,
+              "interpolation": "bezier"
+            },
+            {
+              "time_ms": 48000,
+              "value": 0.6,
+              "interpolation": "ease_in_out"
+            },
+            {
+              "time_ms": 52000,
+              "value": 0.4,
+              "interpolation": "ease_in_out"
+            },
+            {
+              "time_ms": 56000,
+              "value": 0.55,
+              "interpolation": "ease_in_out"
+            },
+            {
+              "time_ms": 60000,
+              "value": 0.5,
+              "interpolation": "linear"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "trk_roll",
+      "device": "ExtDev",
+      "oaction": "Roll",
+      "output_type": "oaction",
+      "oaxis_channel": "",
+      "axis_name": "",
+      "label": "\u6A2A\u6EDA",
+      "color": "#FF8A65",
+      "value_type": "float",
+      "muted": false,
+      "enabled": true,
+      "locked": false,
+      "group": "\u59FF\u6001\u63A7\u5236",
+      "show_in_curve": true,
+      "clips": [
+        {
+          "id": "clip_r01",
+          "start_ms": 0,
+          "end_ms": 60500,
+          "keyframes": [
+            {
+              "time_ms": 0,
+              "value": 0.5,
+              "interpolation": "linear"
+            },
+            {
+              "time_ms": 3000,
+              "value": 0.5,
+              "interpolation": "linear"
+            },
+            {
+              "time_ms": 6000,
+              "value": 0.7,
+              "interpolation": "ease_in_out"
+            },
+            {
+              "time_ms": 9000,
+              "value": 0.3,
+              "interpolation": "ease_in_out"
+            },
+            {
+              "time_ms": 13000,
+              "value": 0.72254336,
+              "interpolation": "bezier",
+              "cp1y": 0,
+              "cp2y": 1.2,
+              "cp1x": 1.1,
+              "cp2x": 3
+            },
+            {
+              "time_ms": 16000,
+              "value": 0.25,
+              "interpolation": "bezier"
+            },
+            {
+              "time_ms": 20000,
+              "value": 0.6,
+              "interpolation": "ease_in_out"
+            },
+            {
+              "time_ms": 24000,
+              "value": 0.35,
+              "interpolation": "ease_in_out"
+            },
+            {
+              "time_ms": 27000,
+              "value": 0.8,
+              "interpolation": "bezier"
+            },
+            {
+              "time_ms": 31000,
+              "value": 0.2,
+              "interpolation": "bezier"
+            },
+            {
+              "time_ms": 35000,
+              "value": 0.65,
+              "interpolation": "ease_in_out"
+            },
+            {
+              "time_ms": 39000,
+              "value": 0.4,
+              "interpolation": "ease_in_out"
+            },
+            {
+              "time_ms": 43000,
+              "value": 0.7,
+              "interpolation": "ease_in_out"
+            },
+            {
+              "time_ms": 47000,
+              "value": 0.3,
+              "interpolation": "ease_in_out"
+            },
+            {
+              "time_ms": 51000,
+              "value": 0.55,
+              "interpolation": "ease_in_out"
+            },
+            {
+              "time_ms": 56000,
+              "value": 0.5,
+              "interpolation": "ease_in_out"
+            },
+            {
+              "time_ms": 60000,
+              "value": 0.5,
+              "interpolation": "linear"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "trk_yaw0",
+      "device": "ExtDev",
+      "oaction": "Yaw",
+      "output_type": "oaction",
+      "oaxis_channel": "",
+      "axis_name": "",
+      "label": "\u504F\u822A",
+      "color": "#CE93D8",
+      "value_type": "float",
+      "muted": false,
+      "enabled": true,
+      "locked": false,
+      "group": "\u59FF\u6001\u63A7\u5236",
+      "show_in_curve": true,
+      "clips": [
+        {
+          "id": "clip_y01",
+          "start_ms": 0,
+          "end_ms": 60500,
+          "keyframes": [
+            {
+              "time_ms": 0,
+              "value": 1,
+              "interpolation": "linear"
+            },
+            {
+              "time_ms": 5000,
+              "value": 0.5,
+              "interpolation": "linear"
+            },
+            {
+              "time_ms": 10000,
+              "value": 0.6,
+              "interpolation": "ease_in_out"
+            },
+            {
+              "time_ms": 14000,
+              "value": 0.4,
+              "interpolation": "ease_in_out"
+            },
+            {
+              "time_ms": 20000,
+              "value": 0.65,
+              "interpolation": "ease_in_out"
+            },
+            {
+              "time_ms": 25000,
+              "value": 0.35,
+              "interpolation": "ease_in_out"
+            },
+            {
+              "time_ms": 30000,
+              "value": 0.55,
+              "interpolation": "ease_in_out"
+            },
+            {
+              "time_ms": 36000,
+              "value": 0.45,
+              "interpolation": "ease_in_out"
+            },
+            {
+              "time_ms": 42000,
+              "value": 0.6,
+              "interpolation": "ease_in_out"
+            },
+            {
+              "time_ms": 48000,
+              "value": 0.4,
+              "interpolation": "ease_in_out"
+            },
+            {
+              "time_ms": 55000,
+              "value": 0.52,
+              "interpolation": "ease_in_out"
+            },
+            {
+              "time_ms": 60000,
+              "value": 0.5,
+              "interpolation": "linear"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "trk_heav",
+      "device": "ExtDev",
+      "oaction": "Heave",
+      "output_type": "oaction",
+      "oaxis_channel": "",
+      "axis_name": "",
+      "label": "\u5347\u964D",
+      "color": "#81C784",
+      "value_type": "float",
+      "muted": false,
+      "enabled": true,
+      "locked": false,
+      "group": "\u59FF\u6001\u63A7\u5236",
+      "show_in_curve": true,
+      "clips": [
+        {
+          "id": "clip_h01",
+          "start_ms": 0,
+          "end_ms": 60500,
+          "keyframes": [
+            {
+              "time_ms": 0,
+              "value": 0.5,
+              "interpolation": "linear"
+            },
+            {
+              "time_ms": 2000,
+              "value": 0.5,
+              "interpolation": "linear"
+            },
+            {
+              "time_ms": 5000,
+              "value": 0.7,
+              "interpolation": "ease_in_out"
+            },
+            {
+              "time_ms": 7000,
+              "value": 0.3,
+              "interpolation": "ease_in_out"
+            },
+            {
+              "time_ms": 10000,
+              "value": 0.8,
+              "interpolation": "bezier"
+            },
+            {
+              "time_ms": 12000,
+              "value": 0.15,
+              "interpolation": "ease_in_out"
+            },
+            {
+              "time_ms": 15000,
+              "value": 0.9,
+              "interpolation": "bezier"
+            },
+            {
+              "time_ms": 17000,
+              "value": 0.2,
+              "interpolation": "ease_in_out"
+            },
+            {
+              "time_ms": 20000,
+              "value": 0.6,
+              "interpolation": "ease_in_out"
+            },
+            {
+              "time_ms": 24000,
+              "value": 0.75,
+              "interpolation": "ease_in_out"
+            },
+            {
+              "time_ms": 27000,
+              "value": 0.25,
+              "interpolation": "bezier"
+            },
+            {
+              "time_ms": 30000,
+              "value": 0.85,
+              "interpolation": "ease_in_out"
+            },
+            {
+              "time_ms": 33000,
+              "value": 0.1,
+              "interpolation": "ease_in_out"
+            },
+            {
+              "time_ms": 37000,
+              "value": 0.7,
+              "interpolation": "ease_in_out"
+            },
+            {
+              "time_ms": 41000,
+              "value": 0.3,
+              "interpolation": "ease_in_out"
+            },
+            {
+              "time_ms": 45000,
+              "value": 0.65,
+              "interpolation": "ease_in_out"
+            },
+            {
+              "time_ms": 50000,
+              "value": 0.4,
+              "interpolation": "ease_in_out"
+            },
+            {
+              "time_ms": 55000,
+              "value": 0.55,
+              "interpolation": "ease_in_out"
+            },
+            {
+              "time_ms": 60000,
+              "value": 0.5,
+              "interpolation": "linear"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "trk_surg",
+      "device": "ExtDev",
+      "oaction": "Surge",
+      "output_type": "oaction",
+      "oaxis_channel": "",
+      "axis_name": "",
+      "label": "\u524D\u540E\u5E73\u79FB",
+      "color": "#FFD54F",
+      "value_type": "float",
+      "muted": false,
+      "enabled": true,
+      "locked": false,
+      "group": "\u59FF\u6001\u63A7\u5236",
+      "show_in_curve": true,
+      "clips": [
+        {
+          "id": "clip_s01",
+          "start_ms": 0,
+          "end_ms": 60500,
+          "keyframes": [
+            {
+              "time_ms": 0,
+              "value": 0.5,
+              "interpolation": "linear"
+            },
+            {
+              "time_ms": 4000,
+              "value": 0.5,
+              "interpolation": "linear"
+            },
+            {
+              "time_ms": 8000,
+              "value": 0.7,
+              "interpolation": "ease_in_out"
+            },
+            {
+              "time_ms": 11000,
+              "value": 0.3,
+              "interpolation": "ease_in_out"
+            },
+            {
+              "time_ms": 15000,
+              "value": 0.75,
+              "interpolation": "bezier"
+            },
+            {
+              "time_ms": 19000,
+              "value": 0.25,
+              "interpolation": "ease_in_out"
+            },
+            {
+              "time_ms": 23000,
+              "value": 0.65,
+              "interpolation": "ease_in_out"
+            },
+            {
+              "time_ms": 28000,
+              "value": 0.35,
+              "interpolation": "ease_in_out"
+            },
+            {
+              "time_ms": 33000,
+              "value": 0.7,
+              "interpolation": "ease_in_out"
+            },
+            {
+              "time_ms": 38000,
+              "value": 0.3,
+              "interpolation": "ease_in_out"
+            },
+            {
+              "time_ms": 44000,
+              "value": 0.6,
+              "interpolation": "ease_in_out"
+            },
+            {
+              "time_ms": 50000,
+              "value": 0.45,
+              "interpolation": "ease_in_out"
+            },
+            {
+              "time_ms": 56000,
+              "value": 0.52,
+              "interpolation": "ease_in_out"
+            },
+            {
+              "time_ms": 60000,
+              "value": 0.5,
+              "interpolation": "linear"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "trk_sway",
+      "device": "ExtDev",
+      "oaction": "Sway",
+      "output_type": "oaction",
+      "oaxis_channel": "",
+      "axis_name": "",
+      "label": "\u5DE6\u53F3\u5E73\u79FB",
+      "color": "#F48FB1",
+      "value_type": "float",
+      "muted": false,
+      "enabled": true,
+      "locked": false,
+      "group": "\u59FF\u6001\u63A7\u5236",
+      "show_in_curve": true,
+      "clips": [
+        {
+          "id": "clip_sw01",
+          "start_ms": 0,
+          "end_ms": 60500,
+          "keyframes": [
+            {
+              "time_ms": 0,
+              "value": 0.5,
+              "interpolation": "linear"
+            },
+            {
+              "time_ms": 5000,
+              "value": 0.5,
+              "interpolation": "linear"
+            },
+            {
+              "time_ms": 9000,
+              "value": 0.65,
+              "interpolation": "ease_in_out"
+            },
+            {
+              "time_ms": 13000,
+              "value": 0.35,
+              "interpolation": "ease_in_out"
+            },
+            {
+              "time_ms": 17000,
+              "value": 0.7,
+              "interpolation": "ease_in_out"
+            },
+            {
+              "time_ms": 21000,
+              "value": 0.3,
+              "interpolation": "ease_in_out"
+            },
+            {
+              "time_ms": 26000,
+              "value": 0.6,
+              "interpolation": "ease_in_out"
+            },
+            {
+              "time_ms": 31000,
+              "value": 0.4,
+              "interpolation": "ease_in_out"
+            },
+            {
+              "time_ms": 37000,
+              "value": 0.55,
+              "interpolation": "ease_in_out"
+            },
+            {
+              "time_ms": 44000,
+              "value": 0.45,
+              "interpolation": "ease_in_out"
+            },
+            {
+              "time_ms": 52000,
+              "value": 0.52,
+              "interpolation": "ease_in_out"
+            },
+            {
+              "time_ms": 60000,
+              "value": 0.5,
+              "interpolation": "linear"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "trk_wind",
+      "device": "ExtDev",
+      "oaction": "Wind",
+      "output_type": "oaction",
+      "oaxis_channel": "",
+      "axis_name": "",
+      "label": "\u98CE\u6548",
+      "color": "#80DEEA",
+      "value_type": "bool",
+      "muted": false,
+      "enabled": true,
+      "locked": false,
+      "group": "\u7279\u6548\u63A7\u5236",
+      "show_in_curve": true,
+      "clips": [
+        {
+          "id": "clip_w01",
+          "start_ms": 3000,
+          "end_ms": 20500,
+          "keyframes": [
+            {
+              "time_ms": 0,
+              "value": 1,
+              "interpolation": "step"
+            },
+            {
+              "time_ms": 17000,
+              "value": 0,
+              "interpolation": "step"
+            }
+          ]
+        },
+        {
+          "id": "clip_w02",
+          "start_ms": 30000,
+          "end_ms": 50500,
+          "keyframes": [
+            {
+              "time_ms": 0,
+              "value": 1,
+              "interpolation": "step"
+            },
+            {
+              "time_ms": 20000,
+              "value": 0,
+              "interpolation": "step"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "trk_fog0",
+      "device": "ExtDev",
+      "oaction": "Fog",
+      "output_type": "oaction",
+      "oaxis_channel": "",
+      "axis_name": "",
+      "label": "\u70DF\u96FE",
+      "color": "#B0BEC5",
+      "value_type": "bool",
+      "muted": false,
+      "enabled": true,
+      "locked": false,
+      "group": "\u7279\u6548\u63A7\u5236",
+      "show_in_curve": true,
+      "clips": [
+        {
+          "id": "clip_f01",
+          "start_ms": 10000,
+          "end_ms": 25500,
+          "keyframes": [
+            {
+              "time_ms": 0,
+              "value": 1,
+              "interpolation": "step"
+            },
+            {
+              "time_ms": 15000,
+              "value": 0,
+              "interpolation": "step"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "trk_rain",
+      "device": "ExtDev",
+      "oaction": "Rain",
+      "output_type": "oaction",
+      "oaxis_channel": "",
+      "axis_name": "",
+      "label": "\u96E8\u6548",
+      "color": "#42A5F5",
+      "value_type": "bool",
+      "muted": false,
+      "enabled": true,
+      "locked": false,
+      "group": "\u7279\u6548\u63A7\u5236",
+      "show_in_curve": true,
+      "clips": [
+        {
+          "id": "clip_rn01",
+          "start_ms": 20000,
+          "end_ms": 40500,
+          "keyframes": [
+            {
+              "time_ms": 0,
+              "value": 1,
+              "interpolation": "step"
+            },
+            {
+              "time_ms": 20000,
+              "value": 0,
+              "interpolation": "step"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "trk_ltng",
+      "device": "ExtDev",
+      "oaction": "Lightning",
+      "output_type": "oaction",
+      "oaxis_channel": "",
+      "axis_name": "",
+      "label": "\u95EA\u7535",
+      "color": "#FFF176",
+      "value_type": "bool",
+      "muted": false,
+      "enabled": true,
+      "locked": false,
+      "group": "\u7279\u6548\u63A7\u5236",
+      "show_in_curve": true,
+      "clips": [
+        {
+          "id": "clip_lt01",
+          "start_ms": 22000,
+          "end_ms": 24000,
+          "keyframes": [
+            {
+              "time_ms": 0,
+              "value": 0,
+              "interpolation": "step"
+            },
+            {
+              "time_ms": 200,
+              "value": 1,
+              "interpolation": "step"
+            },
+            {
+              "time_ms": 400,
+              "value": 0,
+              "interpolation": "step"
+            },
+            {
+              "time_ms": 600,
+              "value": 1,
+              "interpolation": "step"
+            },
+            {
+              "time_ms": 800,
+              "value": 0,
+              "interpolation": "step"
+            },
+            {
+              "time_ms": 1200,
+              "value": 1,
+              "interpolation": "step"
+            },
+            {
+              "time_ms": 1500,
+              "value": 0,
+              "interpolation": "step"
+            }
+          ]
+        },
+        {
+          "id": "clip_lt02",
+          "start_ms": 35000,
+          "end_ms": 36500,
+          "keyframes": [
+            {
+              "time_ms": 0,
+              "value": 0,
+              "interpolation": "step"
+            },
+            {
+              "time_ms": 150,
+              "value": 1,
+              "interpolation": "step"
+            },
+            {
+              "time_ms": 350,
+              "value": 0,
+              "interpolation": "step"
+            },
+            {
+              "time_ms": 500,
+              "value": 1,
+              "interpolation": "step"
+            },
+            {
+              "time_ms": 700,
+              "value": 0,
+              "interpolation": "step"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "trk_lite",
+      "device": "ExtDev",
+      "oaction": "Light",
+      "output_type": "oaction",
+      "oaxis_channel": "",
+      "axis_name": "",
+      "label": "\u6C1B\u56F4\u706F",
+      "color": "#FFB74D",
+      "value_type": "bool",
+      "muted": false,
+      "enabled": true,
+      "locked": false,
+      "group": "\u7279\u6548\u63A7\u5236",
+      "show_in_curve": true,
+      "clips": [
+        {
+          "id": "clip_li01",
+          "start_ms": 0,
+          "end_ms": 60500,
+          "keyframes": [
+            {
+              "time_ms": 0,
+              "value": 1,
+              "interpolation": "step"
+            },
+            {
+              "time_ms": 22000,
+              "value": 0,
+              "interpolation": "step"
+            },
+            {
+              "time_ms": 24000,
+              "value": 1,
+              "interpolation": "step"
+            },
+            {
+              "time_ms": 35000,
+              "value": 0,
+              "interpolation": "step"
+            },
+            {
+              "time_ms": 36000,
+              "value": 1,
+              "interpolation": "step"
+            },
+            {
+              "time_ms": 60000,
+              "value": 0,
+              "interpolation": "step"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "trk_vibr",
+      "device": "ExtDev",
+      "oaction": "Vibration",
+      "output_type": "oaction",
+      "oaxis_channel": "",
+      "axis_name": "",
+      "label": "\u5EA7\u6905\u632F\u52A8",
+      "color": "#E57373",
+      "value_type": "bool",
+      "muted": false,
+      "enabled": true,
+      "locked": false,
+      "group": "\u7279\u6548\u63A7\u5236",
+      "show_in_curve": true,
+      "clips": [
+        {
+          "id": "clip_vb01",
+          "start_ms": 12000,
+          "end_ms": 30500,
+          "keyframes": [
+            {
+              "time_ms": 0,
+              "value": 1,
+              "interpolation": "step"
+            },
+            {
+              "time_ms": 18000,
+              "value": 0,
+              "interpolation": "step"
+            }
+          ]
+        },
+        {
+          "id": "clip_vb02",
+          "start_ms": 40000,
+          "end_ms": 88500,
+          "keyframes": [
+            {
+              "time_ms": 0,
+              "value": 1,
+              "interpolation": "step"
+            },
+            {
+              "time_ms": 48000,
+              "value": 0,
+              "interpolation": "step"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "trk_bkpk",
+      "device": "ExtDev",
+      "oaction": "BackPoke",
+      "output_type": "oaction",
+      "oaxis_channel": "",
+      "axis_name": "",
+      "label": "\u80CC\u90E8\u9876\u6746",
+      "color": "#A1887F",
+      "value_type": "bool",
+      "muted": false,
+      "solo": true,
+      "enabled": true,
+      "locked": false,
+      "group": "\u7279\u6548\u63A7\u5236",
+      "show_in_curve": true,
+      "clips": [
+        {
+          "id": "clip_bp01",
+          "start_ms": 14000,
+          "end_ms": 16000,
+          "keyframes": [
+            {
+              "time_ms": 0,
+              "value": 1,
+              "interpolation": "step"
+            },
+            {
+              "time_ms": 1500,
+              "value": 0,
+              "interpolation": "step"
+            }
+          ]
+        },
+        {
+          "id": "clip_bp02",
+          "start_ms": 43000,
+          "end_ms": 45500,
+          "keyframes": [
+            {
+              "time_ms": 0,
+              "value": 1,
+              "interpolation": "step"
+            },
+            {
+              "time_ms": 1800,
+              "value": 0,
+              "interpolation": "step"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "trk_lgsw",
+      "device": "ExtDev",
+      "oaction": "LegSweep",
+      "output_type": "oaction",
+      "oaxis_channel": "",
+      "axis_name": "",
+      "label": "\u626B\u817F",
+      "color": "#90A4AE",
+      "value_type": "bool",
+      "muted": false,
+      "enabled": true,
+      "locked": false,
+      "group": "\u7279\u6548\u63A7\u5236",
+      "show_in_curve": true,
+      "clips": [
+        {
+          "id": "clip_lg01",
+          "start_ms": 26000,
+          "end_ms": 28000,
+          "keyframes": [
+            {
+              "time_ms": 0,
+              "value": 1,
+              "interpolation": "step"
+            },
+            {
+              "time_ms": 1400,
+              "value": 0,
+              "interpolation": "step"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "groups": [
+    {
+      "name": "\u59FF\u6001\u63A7\u5236",
+      "color": "#4FC3F7",
+      "collapsed": true
+    },
+    {
+      "name": "\u7279\u6548\u63A7\u5236",
+      "color": "#FF8A65",
+      "collapsed": true
+    }
+  ],
+  "events": [
+    {
+      "time_ms": 0,
+      "event_name": "scene_start",
+      "color": "#4CAF50",
+      "data_type": "string",
+      "lane": "default"
+    },
+    {
+      "time_ms": 3000,
+      "event_name": "\u98CE\u8D77",
+      "event_data": "gentle",
+      "color": "#80DEEA",
+      "data_type": "string",
+      "lane": "default"
+    },
+    {
+      "time_ms": 10000,
+      "event_name": "\u8FDB\u5165\u8FF7\u96FE",
+      "color": "#B0BEC5",
+      "data_type": "string",
+      "lane": "default"
+    },
+    {
+      "time_ms": 12000,
+      "event_name": "\u98A0\u7C38\u5F00\u59CB",
+      "event_data": "{\u0022intensity\u0022:\u0022high\u0022}",
+      "color": "#E57373",
+      "data_type": "json",
+      "lane": "default"
+    },
+    {
+      "time_ms": 20000,
+      "event_name": "\u66B4\u98CE\u96E8",
+      "color": "#42A5F5",
+      "data_type": "string",
+      "lane": "default"
+    },
+    {
+      "time_ms": 22000,
+      "event_name": "\u96F7\u7535",
+      "color": "#FFF176",
+      "data_type": "string",
+      "lane": "default"
+    },
+    {
+      "time_ms": 30000,
+      "event_name": "\u98CE\u66B4\u9AD8\u6F6E",
+      "event_data": "{\u0022wind_level\u0022:\u0022max\u0022}",
+      "color": "#FF5722",
+      "data_type": "json",
+      "lane": "default"
+    },
+    {
+      "time_ms": 40000,
+      "event_name": "\u4E8C\u6B21\u98A0\u7C38",
+      "color": "#E57373",
+      "data_type": "string",
+      "lane": "default"
+    },
+    {
+      "time_ms": 50000,
+      "event_name": "\u8D8B\u4E8E\u5E73\u9759",
+      "color": "#81C784",
+      "data_type": "string",
+      "lane": "default"
+    },
+    {
+      "time_ms": 60000,
+      "event_name": "scene_end",
+      "color": "#F44336",
+      "data_type": "string",
+      "lane": "default"
+    }
+  ],
+  "markers": [
+    {
+      "time_ms": 20000,
+      "name": "\u66B4\u98CE\u96E8\u6BB5",
+      "color": "#42A5F5",
+      "lane": "default"
+    },
+    {
+      "time_ms": 30000,
+      "name": "\u98CE\u66B4\u9AD8\u6F6E",
+      "color": "#FF5722",
+      "lane": "default"
+    },
+    {
+      "time_ms": 40000,
+      "name": "\u4E8C\u6B21\u98A0\u7C38",
+      "color": "#E57373",
+      "lane": "default"
+    },
+    {
+      "time_ms": 50000,
+      "name": "\u56DE\u5F52\u5E73\u9759",
+      "color": "#81C784",
+      "lane": "default"
+    },
+    {
+      "time_ms": 60000,
+      "name": "\u7ED3\u675F",
+      "color": "#F44336",
+      "lane": "default"
+    }
+  ]
+}

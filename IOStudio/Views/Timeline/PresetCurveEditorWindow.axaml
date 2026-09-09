@@ -1,0 +1,33 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:tc="using:IOStudio.Controls.Timeline"
+        x:Class="IOStudio.Views.Timeline.PresetCurveEditorWindow"
+        Width="900" Height="520" MinWidth="700" MinHeight="420"
+        WindowStartupLocation="CenterOwner"
+        Title="编辑预设曲线">
+    <Grid RowDefinitions="Auto,*,Auto" Background="{DynamicResource TlPanelBg}">
+        <Border Padding="16,12" BorderBrush="{DynamicResource TlBorderBrush}" BorderThickness="0,0,0,1">
+            <Grid ColumnDefinitions="*,Auto">
+                <StackPanel Spacing="3">
+                    <TextBlock Name="PresetTitle" FontSize="16" FontWeight="SemiBold"
+                               Foreground="{DynamicResource TlTextSecondary}"/>
+                    <TextBlock Name="PresetHint" Text="编辑独立数值曲线；保存后生成新的预设修订。"
+                               FontSize="11" Foreground="{DynamicResource TlTextMuted}"/>
+                </StackPanel>
+                <TextBlock Name="KeyframeSummary" Grid.Column="1" VerticalAlignment="Center"
+                           FontSize="11" Foreground="{DynamicResource TlTextMuted}"/>
+            </Grid>
+        </Border>
+        <Border Grid.Row="1" Margin="12" BorderBrush="{DynamicResource TlBorderBrush}" BorderThickness="1">
+            <tc:CurveEditorControl Name="CurveEditor" DurationMs="3000" PixelsPerMs="0.25"
+                                   ValueZoom="1" ValueOffset="0"/>
+        </Border>
+        <Grid Grid.Row="2" ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8" Margin="12,0,12,12">
+            <TextBlock Text="双击曲线空白处添加关键帧；拖动点调整时间和值。"
+                       VerticalAlignment="Center" FontSize="11" Foreground="{DynamicResource TlTextMuted}"/>
+            <Button Grid.Column="1" Content="取消" Click="OnCancelClick" Padding="14,6"/>
+            <Button Grid.Column="2" Content="保存修订" Click="OnSaveClick" Padding="14,6"
+                    Background="{DynamicResource TlAccent}" Foreground="{DynamicResource TlAccentFg}"/>
+        </Grid>
+    </Grid>
+</Window>

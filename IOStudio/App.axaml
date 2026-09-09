@@ -1,0 +1,111 @@
+<Application xmlns="https://github.com/avaloniaui"
+			 xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+			 x:Class="IOStudio.App"
+			 xmlns:local="using:IOStudio"
+			 RequestedThemeVariant="Default">
+	<!-- "Default" ThemeVariant follows system theme variant. "Dark" or "Light" are other available options. -->
+
+	<Application.DataTemplates>
+		<local:ViewLocator/>
+	</Application.DataTemplates>
+
+	<Application.Styles>
+		<FluentTheme />
+		<StyleInclude Source="avares://IconPacks.Avalonia.Ionicons/Ionicons.axaml" />
+		<!-- Material 工业/硬件语义图标 (Memory/Usb/Ethernet/Devices 等, 与 Ionicons 通用操作互补) -->
+		<StyleInclude Source="avares://IconPacks.Avalonia.Material/Material.axaml" />
+		<StyleInclude Source="avares://IOStudio/Assets/Icons/IconStyles.axaml" />
+		<!-- 全局字体设置，支持中文 -->
+		<Style Selector="Window">
+			<Setter Property="FontFamily" Value="Microsoft YaHei UI,Segoe UI,微软雅黑,宋体,Arial,sans-serif" />
+		</Style>
+		<Style Selector="TextBox">
+			<Setter Property="FontFamily" Value="Microsoft YaHei UI,Segoe UI,微软雅黑,宋体,Arial,sans-serif" />
+		</Style>
+
+		<!-- 工作台基础控件：统一密度、焦点和主题语义 -->
+		<Style Selector="Button">
+			<Setter Property="CornerRadius" Value="4" />
+			<Setter Property="MinHeight" Value="32" />
+			<Setter Property="Padding" Value="10,5" />
+		</Style>
+		<Style Selector="Button.icon-button">
+			<Setter Property="Width" Value="32" />
+			<Setter Property="Height" Value="32" />
+			<Setter Property="Padding" Value="6" />
+			<Setter Property="Background" Value="Transparent" />
+			<Setter Property="BorderThickness" Value="0" />
+			<Setter Property="Foreground" Value="{DynamicResource TlTextSecondary}" />
+		</Style>
+		<Style Selector="Button.icon-button:pointerover">
+			<Setter Property="Background" Value="{DynamicResource TlBtnHover}" />
+			<Setter Property="Foreground" Value="{DynamicResource TlTextPrimary}" />
+		</Style>
+		<Style Selector="Button.icon-button:pressed">
+			<Setter Property="Background" Value="{DynamicResource TlAccentSoftBg}" />
+		</Style>
+		<Style Selector="Button.icon-button:disabled">
+			<Setter Property="Background" Value="Transparent" />
+			<Setter Property="BorderBrush" Value="Transparent" />
+			<Setter Property="Opacity" Value="0.45" />
+		</Style>
+		<Style Selector="Button.icon-button:disabled /template/ ContentPresenter#PART_ContentPresenter">
+			<Setter Property="Background" Value="Transparent" />
+			<Setter Property="BorderBrush" Value="Transparent" />
+		</Style>
+		<Style Selector="Button.primary-button">
+			<Setter Property="Background" Value="{DynamicResource TlAccent}" />
+			<Setter Property="Foreground" Value="{DynamicResource TlAccentFg}" />
+			<Setter Property="BorderThickness" Value="0" />
+		</Style>
+		<Style Selector="Button.primary-button:pointerover">
+			<Setter Property="Background" Value="{DynamicResource TlAccentHover}" />
+		</Style>
+		<Style Selector="Button.primary-button:disabled">
+			<Setter Property="Background" Value="{DynamicResource TlSurfaceRaised}" />
+			<Setter Property="BorderBrush" Value="{DynamicResource TlBorderLight}" />
+			<Setter Property="BorderThickness" Value="1" />
+			<Setter Property="Foreground" Value="{DynamicResource TlTextMuted}" />
+			<Setter Property="Opacity" Value="0.72" />
+		</Style>
+		<Style Selector="TabItem">
+			<Setter Property="MinHeight" Value="40" />
+			<Setter Property="Padding" Value="14,8" />
+		</Style>
+		<Style Selector="TabItem:selected">
+			<Setter Property="Foreground" Value="{DynamicResource TlAccentSoftFg}" />
+		</Style>
+		<Style Selector="ComboBox, NumericUpDown">
+			<Setter Property="MinHeight" Value="32" />
+			<Setter Property="Background" Value="{DynamicResource TlInputBg}" />
+			<Setter Property="BorderBrush" Value="{DynamicResource TlBorderLight}" />
+			<Setter Property="Foreground" Value="{DynamicResource TlTextPrimary}" />
+		</Style>
+
+		<!-- 文本按钮样式 (主题感知, 随深色/浅色切换) -->
+		<Style Selector="Button.text-button">
+			<Setter Property="Background" Value="Transparent" />
+			<Setter Property="BorderThickness" Value="1" />
+			<Setter Property="BorderBrush" Value="{DynamicResource TlBorderLight}" />
+			<Setter Property="Foreground" Value="{DynamicResource TlTextSecondary}" />
+			<Setter Property="CornerRadius" Value="4" />
+		</Style>
+		<Style Selector="Button.text-button:pointerover">
+			<Setter Property="Background" Value="{DynamicResource TlBtnHover}" />
+			<Setter Property="BorderBrush" Value="{DynamicResource TlTextMuted}" />
+			<Setter Property="Foreground" Value="{DynamicResource TlTextPrimary}" />
+		</Style>
+		<Style Selector="Button.text-button:pressed">
+			<Setter Property="Background" Value="{DynamicResource TlBtnHover}" />
+		</Style>
+	</Application.Styles>
+
+	<Application.Resources>
+		<ResourceDictionary>
+			<Thickness x:Key="ExpanderContentPadding">16</Thickness>
+			<ResourceDictionary.MergedDictionaries>
+				<ResourceInclude Source="avares://IOStudio/Assets/Themes/TimelineThemeResources.axaml"/>
+			</ResourceDictionary.MergedDictionaries>
+		</ResourceDictionary>
+	</Application.Resources>
+</Application>

@@ -1,0 +1,71 @@
+{
+  "dllName": "SIMULATOR",
+  "displayName": "SIMULATOR \u8BBE\u5907",
+  "version": "1.0",
+  "sections": [
+    {
+      "name": "connection",
+      "title": "\u8FDE\u63A5\u914D\u7F6E",
+      "collapsed": false,
+      "fields": [
+        {
+          "key": "web_port",
+          "label": "web_port",
+          "type": "number",
+          "default": "18080",
+          "required": false,
+          "showInSummary": false
+        }
+      ]
+    },
+    {
+      "name": "other",
+      "title": "\u5176\u4ED6\u914D\u7F6E",
+      "collapsed": true,
+      "fields": [
+        {
+          "key": "door_duration_ms",
+          "label": "door_duration_ms",
+          "type": "number",
+          "default": "3000",
+          "required": false,
+          "showInSummary": false
+        },
+        {
+          "key": "embedded_ui",
+          "label": "embedded_ui",
+          "type": "text",
+          "default": "0",
+          "required": false,
+          "showInSummary": false
+        },
+        {
+          "key": "tick_ms",
+          "label": "tick_ms",
+          "type": "number",
+          "default": "50",
+          "required": false,
+          "showInSummary": false
+        },
+        {
+          "key": "web_auto_open",
+          "label": "web_auto_open",
+          "type": "text",
+          "default": "resume",
+          "required": false,
+          "showInSummary": false
+        },
+        {
+          "key": "web_enabled",
+          "label": "web_enabled",
+          "type": "boolean",
+          "default": "1",
+          "required": false,
+          "showInSummary": false
+        }
+      ]
+    }
+  ],
+  "disabled": false,
+  "starred": false
+}

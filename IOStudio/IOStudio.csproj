@@ -1,0 +1,118 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <BuiltInComInteropSupport>true</BuiltInComInteropSupport>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <AvaloniaUseCompiledBindingsByDefault>True</AvaloniaUseCompiledBindingsByDefault>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
+    <ApplicationIcon>Assets\avalonia-logo.ico</ApplicationIcon>
+    <IODeviceRoot>$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildProjectDirectory), 'IODevice.sln'))</IODeviceRoot>
+    <BaseOutputPath>$(IODeviceRoot)\Binaries\Win64\</BaseOutputPath>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <!-- 软件分发版本号：自更新解析以 AssemblyInformationalVersion 为 current_version -->
+    <VersionPrefix>1.0.1</VersionPrefix>
+    <Version>$(VersionPrefix)</Version>
+    <AssemblyVersion>$(VersionPrefix).0</AssemblyVersion>
+    <FileVersion>$(VersionPrefix).0</FileVersion>
+    <InformationalVersion>$(VersionPrefix)</InformationalVersion>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <DebugType>full</DebugType>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+    <DebugType>none</DebugType>
+    <Optimize>True</Optimize>
+  </PropertyGroup>
+  <PropertyGroup Label="Avalonia">
+    <AvaloniaNameGeneratorAttachDevTools>False</AvaloniaNameGeneratorAttachDevTools>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <AvaloniaResource Include="Assets\**" Exclude="Assets\**\*.axaml" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Remove="Controls\IONodeView.axaml~RF6ab7485.TMP" />
+  </ItemGroup>
+
+  <Target Name="RunPostPublishScript" AfterTargets="Publish">
+    <Exec Command="call &quot;$(IODeviceRoot)\release_iodevice_test.bat&quot; Win64" />
+  </Target>
+
+  <ItemGroup>
+    <PackageReference Include="Avalonia" Version="11.3.10" />
+    <PackageReference Include="Avalonia.Controls.ItemsRepeater" Version="11.1.5" />
+    <PackageReference Include="Avalonia.Desktop" Version="11.3.10" />
+    <PackageReference Include="Avalonia.Themes.Fluent" Version="11.3.10" />
+    <PackageReference Include="Avalonia.Fonts.Inter" Version="11.3.10" />
+    <!--Condition below is needed to remove Avalonia.Diagnostics package from build output in Release configuration.-->
+    <PackageReference Condition="'$(Configuration)' == 'Debug'" Include="Avalonia.Diagnostics" Version="11.3.10" />
+    <PackageReference Include="IconPacks.Avalonia.Ionicons" Version="1.3.1" />
+    <PackageReference Include="IconPacks.Avalonia.Material" Version="1.3.1" />
+    <PackageReference Include="ini-parser-netstandard" Version="2.5.2" />
+    <PackageReference Include="MessageBox.Avalonia" Version="3.3.1.1" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="8.0.1" />
+    <PackageReference Include="ReactiveUI.Avalonia" Version="11.3.8" />
+    <PackageReference Include="System.IO.Ports" Version="10.0.1" />
+    <PackageReference Include="LibVLCSharp" Version="3.9.3" />
+    <PackageReference Include="VideoLAN.LibVLC.Windows" Version="3.0.21" />
+    <!-- HiMind 软件分发客户端（检查自更新能力） -->
+    <PackageReference Include="HiMind.Distribution" Version="1.0.0" />
+    <PackageReference Include="HiMind.Distribution.Windows" Version="1.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\DNHper\DNHper.csproj" />
+    <ProjectReference Include="..\IODevice_CSharp_Wrapper\IODevice_CSharp_Wrapper.csproj">
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+      <ExcludeFromSingleFile>false</ExcludeFromSingleFile>
+      <Private>True</Private>
+    </ProjectReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Update="Controls\IONodeView.axaml.cs">
+      <DependentUpon>IONodeView.axaml</DependentUpon>
+    </Compile>
+  </ItemGroup>
+
+  <ItemGroup>
+    <UpToDateCheckInput Remove="Controls\IODeviceView.axaml" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="Assets\avalonia-logo.ico" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- 自动包含所有schema文件 -->
+    <Content Include="Config\Schemas\*.schema.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <!-- 动作编排默认演示文件 -->
+    <Content Include="Config\Motion\*.motion">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+  <!-- HiMind 软件分发：distribution.json 随输出复制 -->
+  <ItemGroup>
+    <None Include="distribution.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </None>
+  </ItemGroup>
+
+  <!-- HiMind 软件分发：构建后将独立 Updater 部署到输出目录 updater/ 子目录。
+       源路径来自 HiMind.Distribution.Updater 的 publish 产物，若不存在则跳过（由发布流程负责补齐）。 -->
+  <Target Name="DeployHiMindUpdater" AfterTargets="Build">
+    <ItemGroup>
+      <_UpdaterSource Include="F:\VSProjects\工作流\publish\distribution-sdk\windows-updater\HiMind.Distribution.Updater.exe" Condition="Exists('F:\VSProjects\工作流\publish\distribution-sdk\windows-updater\HiMind.Distribution.Updater.exe')" />
+    </ItemGroup>
+    <Copy SourceFiles="@(_UpdaterSource)" DestinationFolder="$(OutDir)updater" SkipUnchangedFiles="true" />
+  </Target>
+
+</Project>

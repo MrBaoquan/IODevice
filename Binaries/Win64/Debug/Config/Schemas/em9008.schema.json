@@ -1,0 +1,33 @@
+{
+  "dllName": "EM9008",
+  "displayName": "EM9008",
+  "version": "1.0",
+  "category": "PCI板卡",
+  "sections": [
+    {
+      "name": "connection",
+      "title": "\u8FDE\u63A5\u914D\u7F6E",
+      "collapsed": false,
+      "fields": [
+        {
+          "key": "CMDPort",
+          "label": "CMDPort",
+          "type": "number",
+          "required": false
+        },
+        {
+          "key": "DataPort",
+          "label": "DataPort",
+          "type": "number",
+          "required": false
+        },
+        {
+          "key": "IP",
+          "label": "IP\u5730\u5740",
+          "type": "text",
+          "required": false
+        }
+      ]
+    }
+  ]
+}

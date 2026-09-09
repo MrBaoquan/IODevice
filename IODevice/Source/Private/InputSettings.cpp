@@ -14,13 +14,13 @@
 #include "IOLog.h"
 #include "IOApplication.h"
 
-DevelopHelper::UInputSettings& DevelopHelper::UInputSettings::Instance()
+IOToolkit::UInputSettings& IOToolkit::UInputSettings::Instance()
 {
     static UInputSettings instance;
     return instance;
 }
 
-int DevelopHelper::UInputSettings::Initialize()
+int IOToolkit::UInputSettings::Initialize()
 {
     using namespace rapidxml;
     
@@ -43,6 +43,7 @@ int DevelopHelper::UInputSettings::Initialize()
         doc.parse<0>(fdoc.data());
         xml_node<>* root = doc.first_node();
         uint8 deviceID = 0;
+
         for (xml_node<>* device = root->first_node("Device");device;device = device->next_sibling())
         {
             // All devices.
@@ -51,7 +52,7 @@ int DevelopHelper::UInputSettings::Initialize()
             std::string DllName = device->first_attribute("DllName") ? device->first_attribute("DllName")->value() : IOType::Invalid;
             uint8 deviceIndex = static_cast<uint8>(GetNodeValue(device->first_attribute("Index") ? device->first_attribute("Index")->value() : "", 0));
 
-            if (DeviceName == IOType::Invalid)
+            if (DeviceName == IOType::Invalid || IODevices::HasDevice(DeviceName))
             {
                 IOLog::Instance().Error("Please make sure that all of your Device node have a correct Name attribute. ");
                 continue;
@@ -60,7 +61,7 @@ int DevelopHelper::UInputSettings::Initialize()
             // Auto add standard device if no standard xml node in config file.
             if (IOType != IOType::Standard&&deviceID == 0)
             {
-                if(!AddDevcie(DevicePropeties(0, IOType::Standard, IOType::Standard, "", 0)))
+                if(!AddDevice(DeviceProperties(0, IOType::Standard, IOType::Standard, "", 0)))
                 {
                     IOLog::Instance().Error(std::string("Create standard device failed "));
                     return ErrorCode;
@@ -69,6 +70,7 @@ int DevelopHelper::UInputSettings::Initialize()
                 ActionMappings.push_back(std::vector<FInputActionKeyMapping>());
                 AxisMappings.push_back(std::vector<FInputAxisKeyMapping>());
                 KeyProperties.push_back(std::map<FKey, FInputKeyProperties, LessKey>());
+                OActionMappings.push_back(std::map<std::string, std::vector<FOutputActionKey>>());
             }
 
             // if standard device node not at the top position.
@@ -88,7 +90,7 @@ int DevelopHelper::UInputSettings::Initialize()
                 }
             }
 
-            if (!AddDevcie(DevicePropeties(deviceID, IOType, DeviceName, DllName, deviceIndex)))
+            if (!AddDevice(DeviceProperties(deviceID, IOType, DeviceName, DllName, deviceIndex)))
             {
                 continue;
             }
@@ -111,9 +113,11 @@ int DevelopHelper::UInputSettings::Initialize()
                     }
                     FInputKeyProperties keyProperty;
 
-                    
-					keyProperty.PreOffset = GetNodeValue(Key->first_attribute("PreOffset") ? Key->first_attribute("PreOffset")->value() : "", 0.f);
-					keyProperty.PreScale = GetNodeValue(Key->first_attribute("PreScale") ? Key->first_attribute("PreScale")->value() : "", 1.f);
+                    // 兼容旧版 PreOffset/PreScale 和新版 Offset/Scale
+                    auto offsetAttr = Key->first_attribute("Offset") ? Key->first_attribute("Offset") : Key->first_attribute("PreOffset");
+                    auto scaleAttr = Key->first_attribute("Scale") ? Key->first_attribute("Scale") : Key->first_attribute("PreScale");
+					keyProperty.Offset = GetNodeValue(offsetAttr ? offsetAttr->value() : "", 0.f);
+					keyProperty.Scale = GetNodeValue(scaleAttr ? scaleAttr->value() : "", 1.f);
 					keyProperty.DeadZone = GetNodeValue(Key->first_attribute("DeadZone") ? Key->first_attribute("DeadZone")->value() : "", 0.f);
 					keyProperty.bInvert = std::string(Key->first_attribute("Invert") ? Key->first_attribute("Invert")->value() : std::string("")) == "True" ? true : false;
                     keyProperty.bInvertEvent = std::string(Key->first_attribute("InvertEvent") ? Key->first_attribute("InvertEvent")->value() : std::string("")) == "True" ? true : false;
@@ -171,6 +175,36 @@ int DevelopHelper::UInputSettings::Initialize()
                     AxisMappings[deviceID].push_back(axisMapping);
                 }
             }
+
+			// All oactions
+			std::map<std::string, std::vector<FOutputActionKey>> _oactions;
+			for (xml_node<>* axis = device->first_node("OAction"); axis; axis = axis->next_sibling("OAction"))
+			{
+				std::string axisName = axis->first_attribute("Name") ? axis->first_attribute("Name")->value() : IOType::Invalid;
+				if (axisName == IOType::Invalid)
+				{
+					IOLog::Instance().Warning(std::string("Please make sure that all of your Axis node in ") + DeviceName + " have a correct Name attribute. ");
+					continue;
+				}
+				
+				std::vector<FOutputActionKey> _oactionKeys;
+				for (xml_node<>* key = axis->first_node("Key"); key; key = key->next_sibling("Key"))
+				{
+					std::string keyName = key->first_attribute("Name") ? key->first_attribute("Name")->value() : IOType::Invalid;
+					if (keyName == IOType::Invalid)
+					{
+						IOLog::Instance().Warning(std::string("Please make sure that all of your Key node in ") + DeviceName + "/" + axisName + " have a correct Name attribute. ");
+						continue;
+					}
+					float scale = GetNodeValue(key->first_attribute("Scale") ? key->first_attribute("Scale")->value() : "", 1.f);
+					bool _invertEvent = std::string(key->first_attribute("InvertEvent") ? key->first_attribute("InvertEvent")->value() : std::string("")) == "True" ? true : false;
+					_oactionKeys.push_back(FOutputActionKey(FKey(keyName.data()), scale,_invertEvent));
+				}
+				_oactions.insert(std::pair<std::string, std::vector<FOutputActionKey>>(axisName, _oactionKeys));
+			}
+			OActionMappings.push_back(_oactions);
+			
+
             deviceID++;
         }
         // Initlize KeyProperties of RawIO
@@ -205,16 +239,17 @@ int DevelopHelper::UInputSettings::Initialize()
 }
 
 
-int DevelopHelper::UInputSettings::Uninitialize()
+int IOToolkit::UInputSettings::Uninitialize()
 {
 	AxisMappings.clear();
 	ActionMappings.clear();
 	KeyProperties.clear();
+	OActionMappings.clear();
 
 	return 0;
 }
 
-const bool DevelopHelper::UInputSettings::HasAxis(uint8 deviceID, std::string axisName)
+const bool IOToolkit::UInputSettings::HasAxis(uint8 deviceID, std::string axisName)
 {
     if (deviceID < IODevices::GetDevicesCount())
     {
@@ -229,13 +264,23 @@ const bool DevelopHelper::UInputSettings::HasAxis(uint8 deviceID, std::string ax
     return false;
 }
 
-int DevelopHelper::UInputSettings::SetConfigPath(const char* InPath)
+const bool IOToolkit::UInputSettings::HasOAction(uint8 deviceID, std::string oActionName)
+{
+    if (deviceID < IODevices::GetDevicesCount())
+    {
+        auto& _oactions = OActionMappings[deviceID];
+        if (_oactions.find(oActionName) != _oactions.end()) return true;
+    }
+    return false;
+}
+
+int IOToolkit::UInputSettings::SetConfigPath(const char* InPath)
 {
     customConfigPath = InPath;
     return 1;
 }
 
-const bool DevelopHelper::UInputSettings::HasAction(uint8 deviceID, std::string actionName)
+const bool IOToolkit::UInputSettings::HasAction(uint8 deviceID, std::string actionName)
 {
     if (deviceID < IODevices::GetDevicesCount())
     {
@@ -250,19 +295,19 @@ const bool DevelopHelper::UInputSettings::HasAction(uint8 deviceID, std::string 
     return false;
 }
 
-bool DevelopHelper::UInputSettings::AddDevcie(DevicePropeties deviceProps)
+bool IOToolkit::UInputSettings::AddDevice(DeviceProperties deviceProps)
 {
     std::shared_ptr<RawIO> rawIO = RawIOFactory::CreateRawInput(deviceProps);
     if (!rawIO)
     {
         return false;
     }
-    IODeviceDetails ID(deviceProps.Name, rawIO);
+    IODeviceDetails ID(deviceProps, rawIO);
     IODevices::AddDevice(ID);
     return true;
 }
 
-float DevelopHelper::UInputSettings::GetNodeValue(const char* val, float defaultValue /*= 0.f*/)
+float IOToolkit::UInputSettings::GetNodeValue(const char* val, float defaultValue /*= 0.f*/)
 {
     float newVal = defaultValue;
     std::string strVal(val);

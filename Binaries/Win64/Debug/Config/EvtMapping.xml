@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<EventForwardConfig xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <ProtocolGroups>
+    <ProtocolGroup Id="99e31306-a5f3-4d54-8b82-50265d9e2e81" GroupName="新建协议组" ProtocolType="DirectOutput" TargetIP="127.0.0.1" TargetPort="20001" SerialPort="COM1" BaudRate="9600" DataBits="8" Parity="None" StopBits="1" Description="协议组描述" IsExpanded="true" IsCustomMode="false" CustomProtocolType="TCP-Client" SourceDevice="ExtDev" TargetDevice="ExtDev">
+      <Mappings>
+        <Mapping SourceKey="A" TargetKey="OAxis_01" IsEnabled="true" Description="新建映射" DataFormat="ASCII" PressedData="" ReleasedData="" Type="Digital" />
+        <Mapping SourceKey="Axis_01" TargetKey="OAxis_02" IsEnabled="true" Description="新建映射" DataFormat="ASCII" PressedData="" ReleasedData="" Type="Analog" />
+        <Mapping SourceKey="Button_05" TargetKey="Button_05" IsEnabled="true" Description="新建映射" DataFormat="ASCII" PressedData="" ReleasedData="" Type="Digital" />
+      </Mappings>
+    </ProtocolGroup>
+  </ProtocolGroups>
+</EventForwardConfig>

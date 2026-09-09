@@ -5,9 +5,10 @@
 
 #pragma once
 
+#include <mutex>
 #include "IODevice.h"
 
-namespace DevelopHelper
+namespace IOToolkit
 {
 
 class IOAPI IODeviceController
@@ -16,10 +17,14 @@ public:
     static IODeviceController& Instance();
 	int Load();
 	int Unload();
+    int EnterSafeState();
     IODevice& GetIODevice(const char* deviceName);
     const float GetDeltaSeconds() const;
     void Update();
     void ClearBindings();
+    
+    // Mutex to protect concurrent access between Update and Unload/ClearBindings
+    static std::recursive_mutex controllerMutex;
 
 private:
     IODeviceController();

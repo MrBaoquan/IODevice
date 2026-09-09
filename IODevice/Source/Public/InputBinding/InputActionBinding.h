@@ -8,7 +8,7 @@
 #include "InputBinding.h"
 #include "CoreTypes.inl"
 
-namespace DevelopHelper 
+namespace IOToolkit 
 {
 
 struct FInputActionBinding :public FInputBinding

@@ -1,0 +1,12 @@
+{
+  "enabled": true,
+  "baseUrl": "https://himind.andcrane.com",
+  "productId": "com.himind.iostudio",
+  "channel": "stable",
+  "platform": "windows",
+  "architecture": "x64",
+  "resolvePath": "/api/software-distribution/v1/updates/resolve",
+  "allowInsecureHttp": false,
+  "requireSignedUpdates": false,
+  "trustedSigningKeysDirectory": ""
+}

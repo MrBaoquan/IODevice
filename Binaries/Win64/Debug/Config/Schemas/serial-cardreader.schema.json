@@ -1,0 +1,93 @@
+{
+  "dllName": "SERIAL-CARDREADER",
+  "displayName": "串口读卡器",
+  "version": "1.0",
+  "category": "读卡器",
+  "sections": [
+    {
+      "name": "connection",
+      "title": "\u8FDE\u63A5\u914D\u7F6E",
+      "collapsed": false,
+      "fields": [
+        {
+          "key": "baud_rate",
+          "label": "\u6CE2\u7279\u7387",
+          "type": "select",
+          "default": "9600",
+          "required": false,
+          "options": [
+            {
+              "value": "9600",
+              "label": "9600"
+            },
+            {
+              "value": "19200",
+              "label": "19200"
+            },
+            {
+              "value": "38400",
+              "label": "38400"
+            },
+            {
+              "value": "57600",
+              "label": "57600"
+            },
+            {
+              "value": "115200",
+              "label": "115200"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "timing",
+      "title": "\u8F6E\u8BE2\u65F6\u5E8F",
+      "collapsed": true,
+      "fields": [
+        {
+          "key": "timeout",
+          "label": "timeout",
+          "type": "number",
+          "default": "500",
+          "required": false
+        }
+      ]
+    },
+    {
+      "name": "other",
+      "title": "\u5176\u4ED6\u914D\u7F6E",
+      "collapsed": true,
+      "fields": [
+        {
+          "key": "; \u8D85\u65F6(XXX)ms\u540E\u65E0\u4FE1\u53F7 (\u6B63\u5E38\u60C5\u51B5\u4E0B\u8BF7\u586B\u5199\u003E",
+          "label": "; \u8D85\u65F6(XXX)ms\u540E\u65E0\u4FE1\u53F7 (\u6B63\u5E38\u60C5\u51B5\u4E0B\u8BF7\u586B\u5199\u003E",
+          "type": "text",
+          "default": "100\u7684\u503C, \u9ED8\u8BA4500), \u901A\u9053\u7F6E\u4E3A0;\t\t\t\u8BE5\u503C\u82E5\u4E3A0   \u901A\u9053\u5219\u7ACB\u523B\u7F6E\u4E3A0",
+          "required": false
+        },
+        {
+          "key": "combo_mode",
+          "label": "combo_mode",
+          "type": "text",
+          "default": "1",
+          "required": false
+        },
+        {
+          "key": "frame_length",
+          "label": "frame_length",
+          "type": "text",
+          "default": "14",
+          "required": false
+        },
+        {
+          "key": "start_bits",
+          "label": "start_bits",
+          "type": "number",
+          "default": "02",
+          "required": false
+        }
+      ]
+    }
+  ]
+}

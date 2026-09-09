@@ -1,0 +1,116 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d" d:DesignWidth="480" d:DesignHeight="400"
+        x:Class="IOStudio.Views.Timeline.ExportDialog"
+        Title="导出 Motion 时间轴"
+        Width="480" Height="420"
+        CanResize="False"
+        WindowStartupLocation="CenterOwner"
+        ShowInTaskbar="False">
+
+    <Window.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceInclude Source="avares://IOStudio/Assets/Themes/TimelineThemeResources.axaml"/>
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </Window.Resources>
+
+    <Window.Styles>
+        <Style Selector="TextBlock.label">
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="Foreground" Value="{DynamicResource TlTextSecondary}"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+        <Style Selector="TextBlock.section">
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Foreground" Value="{DynamicResource TlTextPrimary}"/>
+            <Setter Property="Margin" Value="0,8,0,4"/>
+        </Style>
+    </Window.Styles>
+
+    <DockPanel Margin="20" Background="{DynamicResource TlPanelBg}">
+        <!-- 底部按钮 -->
+        <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal"
+                    HorizontalAlignment="Right" Spacing="8" Margin="0,16,0,0">
+            <Button Content="取消" Width="80" Click="OnCancel"
+                    Background="{DynamicResource TlToolbarBg}" Foreground="{DynamicResource TlTextSecondary}"/>
+            <Button Content="导出" Width="80" Click="OnExport"
+                    Classes="accent"
+                    Background="{DynamicResource TlAccent}" Foreground="{DynamicResource TlAccentFg}"/>
+        </StackPanel>
+
+        <ScrollViewer>
+            <StackPanel Spacing="6">
+                <!-- 标题 -->
+                <TextBlock Text="导出设置" FontSize="16" FontWeight="Bold"
+                           Foreground="{DynamicResource TlTextPrimary}" Margin="0,0,0,8"/>
+
+                <!-- 导出格式 -->
+                <TextBlock Classes="section" Text="📄 导出格式"/>
+                <ComboBox Name="FormatComboBox" SelectedIndex="0" Width="300"
+                          SelectionChanged="OnFormatChanged">
+                    <ComboBoxItem Content="Motion JSON (.motion) — 标准格式" Tag="MotionJson"/>
+                    <ComboBoxItem Content="CSV 逐帧数据 (.csv) — 采样导出" Tag="Csv"/>
+                    <ComboBoxItem Content="精简 JSON (.json) — 通道采样" Tag="CompactJson"/>
+                </ComboBox>
+
+                <!-- 采样设置 (仅 CSV/CompactJson) -->
+                <Border Name="SampleSettingsPanel" IsVisible="False"
+                        Background="{DynamicResource TlPropSectionBg}" CornerRadius="6" Padding="12" Margin="0,4">
+                    <StackPanel Spacing="6">
+                        <TextBlock Classes="section" Text="采样设置"/>
+                        <Grid ColumnDefinitions="100,*" RowDefinitions="Auto,Auto">
+                            <TextBlock Classes="label" Text="采样率 (Hz):" Grid.Row="0"/>
+                            <NumericUpDown Name="SampleRateInput" Grid.Row="0" Grid.Column="1"
+                                           Width="120" HorizontalAlignment="Left"
+                                           Minimum="1" Maximum="1000" Value="60"
+                                           Increment="10" FormatString="F0"/>
+                            <TextBlock Classes="label" Text="值精度:" Grid.Row="1" Margin="0,4,0,0"/>
+                            <NumericUpDown Name="PrecisionInput" Grid.Row="1" Grid.Column="1"
+                                           Width="120" HorizontalAlignment="Left"
+                                           Minimum="1" Maximum="8" Value="4"
+                                           Increment="1" FormatString="F0" Margin="0,4,0,0"/>
+                        </Grid>
+                    </StackPanel>
+                </Border>
+
+                <!-- 时间范围 -->
+                <TextBlock Classes="section" Text="⏱ 时间范围"/>
+                <Grid ColumnDefinitions="100,120,40,120" Margin="0,2">
+                    <TextBlock Classes="label" Text="起始 (ms):"/>
+                    <NumericUpDown Name="StartMsInput" Grid.Column="1"
+                                   Minimum="0" Maximum="999999" Value="0"
+                                   Increment="100" FormatString="F0"/>
+                    <TextBlock Classes="label" Text="→" Grid.Column="2"
+                               HorizontalAlignment="Center"/>
+                    <NumericUpDown Name="EndMsInput" Grid.Column="3"
+                                   Minimum="0" Maximum="999999" Value="0"
+                                   Increment="100" FormatString="F0"/>
+                </Grid>
+                <TextBlock FontSize="10" Foreground="#9ca3af"
+                           Text="结束时间为 0 表示使用时间轴总时长"/>
+
+                <!-- 选项 -->
+                <TextBlock Classes="section" Text="⚙ 选项"/>
+                <CheckBox Name="ExcludeMutedCheck" IsChecked="True" Margin="0,2">
+                    <TextBlock Text="排除已静音的轨道" FontSize="12"/>
+                </CheckBox>
+                <CheckBox Name="IncludeHeaderCheck" IsChecked="True" Margin="0,2">
+                    <TextBlock Text="包含 CSV 表头" FontSize="12"/>
+                </CheckBox>
+
+                <!-- 预览信息 -->
+                <Border Background="#eff6ff" CornerRadius="6" Padding="12" Margin="0,8,0,0">
+                    <StackPanel Spacing="2">
+                        <TextBlock Name="PreviewInfo" FontSize="11" Foreground="#3b82f6"
+                                   Text="就绪: 选择导出格式后点击导出"/>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+        </ScrollViewer>
+    </DockPanel>
+</Window>

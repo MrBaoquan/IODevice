@@ -1,0 +1,156 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:ctl="using:IOStudio.Controls.Timeline"
+        xmlns:win="using:IOStudio.Views.Timeline"
+        mc:Ignorable="d"
+        x:Class="IOStudio.Views.Timeline.IdleEditorWindow"
+        x:DataType="win:IdleEditorWindow"
+        Title="待机循环编辑器"
+        Width="680" Height="480"
+        MinWidth="520" MinHeight="400"
+        WindowStartupLocation="CenterOwner">
+
+    <Window.Styles>
+        <!-- 与动作编排窗口一致的浅色主题 (Tl 前缀资源来自 TimelineThemeResources) -->
+        <!-- 注意: 不重写 TextBox/NumericUpDown/ComboBox 窗口级样式, 交给 App.axaml 全局样式 (与正常窗口一致, 避免干扰输入控件模板) -->
+        <Style Selector="TextBlock.lbl">
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="Foreground" Value="{DynamicResource TlTextMuted}"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+        <Style Selector="TextBlock.hint">
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="Foreground" Value="{DynamicResource TlTextMuted}"/>
+        </Style>
+        <Style Selector="Button.tpl">
+            <Setter Property="Padding" Value="12,6"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="CornerRadius" Value="4"/>
+            <Setter Property="Background" Value="{DynamicResource TlPanelBg}"/>
+            <Setter Property="Foreground" Value="{DynamicResource TlTextPrimary}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource TlBorderBrush}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+        </Style>
+        <Style Selector="Button.tpl:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="{DynamicResource TlBtnHover}"/>
+        </Style>
+        <Style Selector="Button.primary">
+            <Setter Property="Padding" Value="14,6"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="CornerRadius" Value="4"/>
+            <Setter Property="Background" Value="{DynamicResource TlAccent}"/>
+            <Setter Property="Foreground" Value="{DynamicResource TlAccentFg}"/>
+            <Setter Property="BorderThickness" Value="0"/>
+        </Style>
+        <Style Selector="Button.primary:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="{DynamicResource TlAccentHover}"/>
+        </Style>
+    </Window.Styles>
+
+    <Border Background="{DynamicResource TlWindowBg}">
+        <Grid RowDefinitions="Auto,*,Auto">
+            <!-- 顶部区 (原生标题栏在下层; 这里是应用内容) -->
+            <StackPanel Grid.Row="0">
+                <!-- 工具条: 标题 + 预览按钮 -->
+                <Border Padding="12,10" Background="{DynamicResource TlToolbarBg}"
+                        BorderBrush="{DynamicResource TlBorderBrush}" BorderThickness="0,0,0,1">
+                    <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="12">
+                        <StackPanel Orientation="Horizontal" Spacing="10" Grid.Column="0"
+                                    VerticalAlignment="Center">
+                            <TextBlock Text="� 待机循环" FontSize="15" FontWeight="Bold"
+                                       Foreground="{DynamicResource TlTextPrimary}" VerticalAlignment="Center"/>
+                            <TextBlock Text="{Binding TrackName}" FontSize="12"
+                                       Foreground="{DynamicResource TlAccent}" VerticalAlignment="Center"/>
+                            <TextBlock Text="{Binding StatusText}" FontSize="11"
+                                       Foreground="{DynamicResource TlWarning}" VerticalAlignment="Center"/>
+                        </StackPanel>
+                        <Border Grid.Column="1" Width="1" Background="{DynamicResource TlBorderLight}"
+                                Margin="0,2"/>
+                        <Button Grid.Column="2" Classes="primary"
+                                Content="{Binding PreviewToggleText}"
+                                Click="OnPreviewClick"/>
+                    </Grid>
+                </Border>
+                <!-- 参数区 (周期/混合过渡/相位偏移 三列均分, 输入框自适应拉伸) -->
+                <Border Padding="12,10" Background="{DynamicResource TlPanelBg}"
+                        BorderBrush="{DynamicResource TlBorderBrush}" BorderThickness="0,0,0,1">
+                    <Grid ColumnDefinitions="*,*,*" ColumnSpacing="20">
+                        <!-- 周期 -->
+                        <StackPanel Spacing="4">
+                            <TextBlock Classes="hint" Text="周期"/>
+                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="5">
+                                <NumericUpDown Value="{Binding PeriodSeconds}" Minimum="0.1"
+                                               Maximum="60" Increment="0.1" FormatString="0.0"
+                                               MinWidth="90" HorizontalAlignment="Stretch"/>
+                                <TextBlock Grid.Column="1" Classes="hint" Text="s"
+                                           VerticalAlignment="Center"/>
+                            </Grid>
+                        </StackPanel>
+                        <!-- 混合过渡 -->
+                        <StackPanel Grid.Column="1" Spacing="4">
+                            <TextBlock Classes="hint" Text="混合过渡"
+                                       ToolTip.Tip="待机循环与相邻动作片段的过渡时长（越短切换越干脆）"/>
+                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="5">
+                                <NumericUpDown Value="{Binding BlendMs}" Minimum="0"
+                                               Maximum="5000" Increment="10" FormatString="0"
+                                               MinWidth="90" HorizontalAlignment="Stretch"/>
+                                <TextBlock Grid.Column="1" Classes="hint" Text="ms"
+                                           VerticalAlignment="Center"/>
+                            </Grid>
+                        </StackPanel>
+                        <!-- 相位偏移 -->
+                        <StackPanel Grid.Column="2" Spacing="4">
+                            <TextBlock Classes="hint" Text="相位偏移"/>
+                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="5">
+                                <NumericUpDown Value="{Binding PhaseOffsetMs}" Minimum="0"
+                                               Maximum="60000" Increment="10" FormatString="0"
+                                               MinWidth="90" HorizontalAlignment="Stretch"/>
+                                <TextBlock Grid.Column="1" Classes="hint" Text="ms"
+                                           VerticalAlignment="Center"/>
+                            </Grid>
+                        </StackPanel>
+                    </Grid>
+                </Border>
+                <!-- 模式 + 模板 -->
+                <Border Padding="12,10" Background="{DynamicResource TlPanelBg}"
+                        BorderBrush="{DynamicResource TlBorderBrush}" BorderThickness="0,0,0,1">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <TextBlock Classes="lbl" Text="相位模式:"/>
+                        <ComboBox MinWidth="150" FontSize="12"
+                                  ItemsSource="{Binding PhaseModeOptions}"
+                                  SelectedIndex="{Binding PhaseModeIndex}"/>
+                        <TextBlock Classes="lbl" Text="模板:"/>
+                        <Button Classes="tpl" Content="🫁 呼吸" Tag="breathing"
+                                Click="OnTemplateClick"
+                                ToolTip.Tip="上下平稳起伏（覆盖当前关键帧）"/>
+                        <Button Classes="tpl" Content="摇摆" Tag="sway"
+                                Click="OnTemplateClick"
+                                ToolTip.Tip="左右交叉摆动（覆盖当前关键帧）"/>
+                        <Button Classes="tpl" Content="微幅" Tag="micro"
+                                Click="OnTemplateClick"
+                                ToolTip.Tip="小幅高频微动（覆盖当前关键帧）"/>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+
+            <!-- 中部: 单周期曲线编辑器 (填满剩余空间) -->
+            <ctl:IdleCurveEditorControl x:Name="IdleCurve"
+                                        Grid.Row="1"
+                                        IdleLoop="{Binding IdleLoop}"
+                                        ValueType="{Binding ValueType}"/>
+
+            <!-- 底部: 提示 -->
+            <Border Grid.Row="2" Padding="12,8" Background="{DynamicResource TlToolbarBg}"
+                    BorderBrush="{DynamicResource TlBorderBrush}" BorderThickness="0,1,0,0">
+                <StackPanel Spacing="2">
+                    <TextBlock Text="双击空白添加关键帧 · 拖拽调整 · Delete 删除 · 首尾帧仅上下调整"
+                               Classes="hint"/>
+                    <TextBlock Text="Ctrl+Z 撤销 · Esc 关闭窗口 · ▶ 预览单个周期效果"
+                               Classes="hint"/>
+                </StackPanel>
+            </Border>
+        </Grid>
+    </Border>
+</Window>

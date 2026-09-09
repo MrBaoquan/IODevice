@@ -1,7 +1,8 @@
 <!--
-  Copyright (c) mrma617@gmail.com
+  Copyright (c) 2018 Hefei And Technology Co.,Ltd All rights reserved
   Author: MrBaoquan
   CreateTime: 2018-5-16 9:10
+  Email: mrma617@gmail.com
 -->
 
 <IORoot>
@@ -14,13 +15,17 @@
     </Properties>
 
     <!-- Action mapping start -->
-    <Action Name="TestAction">
-      <Key Name="AnyKey"></Key>
+    <Action Name="Jump">
+      <Key Name="SpaceBar"></Key>
     </Action>
 
+    <Action Name="Fire">
+      <Key Name="LeftMouseButton"></Key>
+    </Action>
+    <!-- Action mapping end -->
+
     <!-- Axis mapping start -->
-    
-    <Axis Name="TestAxis">
+    <Axis Name="MoveLR">
       <Key Name="Left" Scale="-1"></Key>
       <Key Name="Right" Scale="1"></Key>
     </Axis>
@@ -28,19 +33,27 @@
 
   </Device>
 
-  <Device Name="ExtDev" Type="External" DllName="IOUI"  Index="0">
+  <Device Name="ExternalDev" Type="External" DllName="PCI2312A" Index="0">
     <Properties>
-      <Key Name="Axis_00" PreOffset="0.0" PreScale="1.0" DeadZone="0.0" Sensitivity="1.0" Exponent="1.0" Invert="False" InvertEvent="False"></Key>
+      <Key Name="Left" DeadZone="0.0" Sensitivity="1.0" Exponent="1.0" Invert="False" InvertEvent="False"></Key>
     </Properties>
 
-    <Action Name="TestAction">
-      <Key Name="Axis_00"></Key>
+    <!-- Action mapping start -->
+    <Action Name="Jump">
+      <Key Name="SpaceBar"></Key>
     </Action>
 
-    <Axis Name="TestAxis">
-      <Key Name="Axis_00" Scale="1.0" />
-      <Key Name="Right" Scale="1" />
+    <Action Name="Fire">
+      <Key Name="LeftMouseButton"></Key>
+    </Action>
+    <!-- Action mapping end -->
+
+    <!-- Axis mapping start -->
+    <Axis Name="MoveLR">
+      <Key Name="Left" Scale="-1"></Key>
+      <Key Name="Right" Scale="1"></Key>
     </Axis>
+    <!-- Axis mapping end -->
 
   </Device>
 

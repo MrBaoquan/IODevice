@@ -1,0 +1,21 @@
+{
+  "dllName": "PCI8409",
+  "displayName": "PCI8409",
+  "version": "1.0",
+  "category": "PCI板卡",
+  "sections": [
+    {
+      "name": "other",
+      "title": "其它设置",
+      "collapsed": true,
+      "fields": [
+        {
+          "key": "group_1_mode",
+          "label": "group_1_mode",
+          "type": "text",
+          "required": false
+        }
+      ]
+    }
+  ]
+}

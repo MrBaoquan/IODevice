@@ -38,6 +38,24 @@
 			<Setter Property="BorderBrush" Value="{DynamicResource TlControlActiveBg}" />
 		</Style>
 
+		<!-- 通道控制按钮 hover 时不改变外观（覆盖 Fluent 模板层的 hover 高亮），避免歧义 -->
+		<Style Selector="Button.DIButton:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+			<Setter Property="Background" Value="{DynamicResource TlControlBg}" />
+			<Setter Property="BorderBrush" Value="{DynamicResource TlBorderLight}" />
+		</Style>
+		<Style Selector="Button.IOControl:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+			<Setter Property="Background" Value="{DynamicResource TlControlBg}" />
+			<Setter Property="BorderBrush" Value="{DynamicResource TlBorderLight}" />
+		</Style>
+		<Style Selector="Button.DIButton.active:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+			<Setter Property="Background" Value="{DynamicResource TlControlActiveBg}" />
+			<Setter Property="BorderBrush" Value="{DynamicResource TlControlActiveBg}" />
+		</Style>
+		<Style Selector="Button.IOControl.active:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+			<Setter Property="Background" Value="{DynamicResource TlControlActiveBg}" />
+			<Setter Property="BorderBrush" Value="{DynamicResource TlControlActiveBg}" />
+		</Style>
+
 		<Style Selector="Button.img-btn">
 			<Setter Property="Background" Value="Transparent" />
 			<Setter Property="BorderBrush" Value="Transparent" />

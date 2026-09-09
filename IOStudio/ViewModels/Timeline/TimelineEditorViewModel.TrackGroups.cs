@@ -494,6 +494,16 @@ namespace IOStudio.ViewModels.Timeline
             SelectedActionInstanceId = null;
             SelectedEvent = null;
 
+            // 独立高度是 ViewModel 层 UI 状态 (不在 MotionTimeline 模型中)。
+            // 快照替换会重建全部 TrackViewModel，先按轨道 Id 保存旧独立高度，重建后恢复，
+            // 避免拖拽移动动作实例/撤销重做等操作把轨道高度还原为全局默认。
+            var previousIndividualHeights = new Dictionary<string, double>();
+            foreach (var oldTrack in Tracks)
+            {
+                if (oldTrack.HasIndividualHeight)
+                    previousIndividualHeights[oldTrack.Id] = oldTrack.IndividualTrackHeight;
+            }
+
             // v2 文件没有动作编排元数据，加载时补齐为空集合并保持向后兼容。
             timeline.ActionInstances ??= new List<ActionInstance>();
             timeline.RoleTrackBindings ??= new Dictionary<string, string>();
@@ -505,7 +515,10 @@ namespace IOStudio.ViewModels.Timeline
             Tracks.Clear();
             foreach (var track in timeline.Tracks)
             {
-                Tracks.Add(new TrackViewModel(track));
+                var trackVm = new TrackViewModel(track);
+                if (previousIndividualHeights.TryGetValue(trackVm.Id, out double savedHeight))
+                    trackVm.SetIndividualHeight(savedHeight);
+                Tracks.Add(trackVm);
             }
 
             // 初始化各轨道紧凑显示状态

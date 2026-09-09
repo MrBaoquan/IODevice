@@ -3,300 +3,536 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:vm="using:IOStudio.ViewModels"
+        xmlns:ctl="using:IOStudio.Controls"
         xmlns:iconPacks="https://github.com/MahApps/IconPacks.Avalonia"
-        mc:Ignorable="d" d:DesignWidth="700" d:DesignHeight="600"
+        mc:Ignorable="d" d:DesignWidth="1200" d:DesignHeight="800"
         x:Class="IOStudio.Views.OutputTestWindow"
         x:DataType="vm:OutputTestViewModel"
         Title="{Binding Title}"
-        Width="750" Height="680"
+        Width="1200" Height="800"
+        MinWidth="900" MinHeight="600"
         CanResize="True"
         WindowStartupLocation="CenterOwner">
 
     <Window.Styles>
         <Style Selector="TextBlock.section-title">
-            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="FontSize" Value="13"/>
             <Setter Property="FontWeight" Value="SemiBold"/>
-            <Setter Property="Foreground" Value="#1f2937"/>
-        </Style>
-
-        <Style Selector="Border.section-border">
-            <Setter Property="BorderBrush" Value="#e5e7eb"/>
-            <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="Background" Value="White"/>
-            <Setter Property="CornerRadius" Value="6"/>
-            <Setter Property="Padding" Value="12"/>
-            <Setter Property="Margin" Value="0,0,0,8"/>
+            <Setter Property="Foreground" Value="{DynamicResource TlTextPrimary}"/>
         </Style>
 
         <Style Selector="Button.primary-btn">
-            <Setter Property="Background" Value="#3b82f6"/>
+            <Setter Property="Background" Value="{DynamicResource TlAccent}"/>
             <Setter Property="Foreground" Value="White"/>
             <Setter Property="Padding" Value="12,6"/>
             <Setter Property="CornerRadius" Value="4"/>
         </Style>
-
         <Style Selector="Button.primary-btn:pointerover /template/ ContentPresenter#PART_ContentPresenter">
-            <Setter Property="Background" Value="#2563eb"/>
+            <Setter Property="Background" Value="{DynamicResource TlAccentHover}"/>
         </Style>
 
         <Style Selector="Button.success-btn">
-            <Setter Property="Background" Value="#10b981"/>
+            <Setter Property="Background" Value="{DynamicResource TlSuccess}"/>
             <Setter Property="Foreground" Value="White"/>
             <Setter Property="Padding" Value="12,6"/>
             <Setter Property="CornerRadius" Value="4"/>
         </Style>
-
         <Style Selector="Button.success-btn:pointerover /template/ ContentPresenter#PART_ContentPresenter">
-            <Setter Property="Background" Value="#059669"/>
+            <Setter Property="Background" Value="{DynamicResource TlSuccess}"/>
+            <Setter Property="Opacity" Value="0.85"/>
         </Style>
 
         <Style Selector="Button.danger-btn">
-            <Setter Property="Background" Value="#ef4444"/>
+            <Setter Property="Background" Value="{DynamicResource TlDanger}"/>
             <Setter Property="Foreground" Value="White"/>
             <Setter Property="Padding" Value="12,6"/>
             <Setter Property="CornerRadius" Value="4"/>
         </Style>
-
         <Style Selector="Button.danger-btn:pointerover /template/ ContentPresenter#PART_ContentPresenter">
-            <Setter Property="Background" Value="#dc2626"/>
+            <Setter Property="Background" Value="{DynamicResource TlDanger}"/>
+            <Setter Property="Opacity" Value="0.85"/>
         </Style>
 
         <Style Selector="Button.secondary-btn">
-            <Setter Property="Background" Value="#e5e7eb"/>
-            <Setter Property="Foreground" Value="#374151"/>
+            <Setter Property="Background" Value="{DynamicResource TlBtnHover}"/>
+            <Setter Property="Foreground" Value="{DynamicResource TlTextPrimary}"/>
             <Setter Property="Padding" Value="12,6"/>
             <Setter Property="CornerRadius" Value="4"/>
         </Style>
-
         <Style Selector="Button.secondary-btn:pointerover /template/ ContentPresenter#PART_ContentPresenter">
-            <Setter Property="Background" Value="#d1d5db"/>
+            <Setter Property="Background" Value="{DynamicResource TlHoverBg}"/>
         </Style>
 
-        <!-- 通道按钮样式 -->
-        <Style Selector="Border.channel-item">
-            <Setter Property="Background" Value="#f3f4f6"/>
-            <Setter Property="CornerRadius" Value="6"/>
-            <Setter Property="Padding" Value="8"/>
-            <Setter Property="Margin" Value="4"/>
-            <Setter Property="MinWidth" Value="95"/>
-            <Setter Property="MinHeight" Value="70"/>
+        <!-- 通道行（选择 + 独立开关分离） -->
+        <Style Selector="Border.channel-row">
+            <Setter Property="Background" Value="{DynamicResource TlPanelBg}"/>
+            <Setter Property="CornerRadius" Value="5"/>
+            <Setter Property="Padding" Value="8,5"/>
+            <Setter Property="Margin" Value="2"/>
+            <Setter Property="MinHeight" Value="40"/>
             <Setter Property="Cursor" Value="Hand"/>
         </Style>
-
-        <Style Selector="Border.channel-item:pointerover">
-            <Setter Property="Background" Value="#e5e7eb"/>
+        <Style Selector="Border.channel-row:pointerover">
+            <Setter Property="Background" Value="{DynamicResource TlHoverBg}"/>
         </Style>
-
-        <Style Selector="Border.channel-item.selected">
-            <Setter Property="Background" Value="#dbeafe"/>
-            <Setter Property="BorderBrush" Value="#3b82f6"/>
-            <Setter Property="BorderThickness" Value="2"/>
+        <Style Selector="Border.channel-row.selected">
+            <Setter Property="Background" Value="{DynamicResource TlAccentSoftBg}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource TlAccent}"/>
+            <Setter Property="BorderThickness" Value="1.5"/>
         </Style>
-
-        <Style Selector="Border.channel-item.active">
-            <Setter Property="Background" Value="#10b981"/>
+        <Style Selector="Border.channel-row.highlighted">
+            <Setter Property="Background" Value="{DynamicResource TlWarning}"/>
         </Style>
-
-        <Style Selector="Border.channel-item.active TextBlock">
+        <Style Selector="Border.channel-row.highlighted TextBlock">
             <Setter Property="Foreground" Value="White"/>
         </Style>
 
-        <Style Selector="Border.channel-item.highlighted">
-            <Setter Property="Background" Value="#f59e0b"/>
+        <!-- 通道输出开关（独立 ON/OFF） -->
+        <Style Selector="Button.ch-switch">
+            <Setter Property="Background" Value="{DynamicResource TlBtnHover}"/>
+            <Setter Property="Foreground" Value="{DynamicResource TlTextSecondary}"/>
+            <Setter Property="Padding" Value="8,3"/>
+            <Setter Property="CornerRadius" Value="4"/>
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="MinWidth" Value="46"/>
+        </Style>
+        <Style Selector="Button.ch-switch:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="{DynamicResource TlHoverBg}"/>
+        </Style>
+        <Style Selector="Button.ch-switch.on">
+            <Setter Property="Background" Value="{DynamicResource TlSuccess}"/>
+            <Setter Property="Foreground" Value="White"/>
+        </Style>
+        <Style Selector="Button.ch-switch.on:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="{DynamicResource TlSuccess}"/>
+            <Setter Property="Opacity" Value="0.9"/>
         </Style>
 
-        <Style Selector="Border.channel-item.highlighted TextBlock">
-            <Setter Property="Foreground" Value="White"/>
+        <Style Selector="Border.panel-card">
+            <Setter Property="Background" Value="{DynamicResource TlPanelBg}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource TlBorderLight}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="6"/>
+            <Setter Property="Padding" Value="12"/>
         </Style>
     </Window.Styles>
 
     <DockPanel>
-        <!-- 顶部信息栏 -->
-        <Border DockPanel.Dock="Top" Background="#f8fafc" Padding="16,12" BorderBrush="#e5e7eb" BorderThickness="0,0,0,1">
-            <Grid ColumnDefinitions="Auto,*,Auto">
-                <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="12">
-                    <iconPacks:PackIconIonicons Kind="PulseiOS" Width="20" Height="20" Foreground="#3b82f6"/>
+        <!-- ========== L4 安全警示条 ========== -->
+        <Border DockPanel.Dock="Top" Background="{DynamicResource TlDanger}" Padding="16,6"
+                IsVisible="{Binding IsEstopActive}">
+            <TextBlock Text="⚠ 急停已触发 — 所有输出已强制归零并锁定写入。点击右上角 [复位] 恢复正常输出。"
+                       Foreground="White" FontWeight="Bold"/>
+        </Border>
+        <Border DockPanel.Dock="Top" Background="{DynamicResource TlWarning}" Padding="16,6"
+                IsVisible="{Binding !IsOutputEnabled}">
+            <TextBlock Text="🔒 输出未使能 — 通道写入被锁定（保险）。点击右上角 [ARM 使能] 解锁后即可输出。"
+                       Foreground="{DynamicResource TlTextPrimary}" FontWeight="SemiBold"/>
+        </Border>
+
+        <!-- ========== L0 顶部全局栏 ========== -->
+        <Border DockPanel.Dock="Top" Padding="16,10" BorderBrush="{DynamicResource TlBorderLight}" BorderThickness="0,0,0,1"
+                Background="{DynamicResource TlToolbarBg}">
+            <Grid ColumnDefinitions="Auto,Auto,*,Auto,Auto,Auto,Auto">
+                <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="10">
+                    <iconPacks:PackIconIonicons Kind="PulseiOS" Width="20" Height="20" Foreground="{DynamicResource TlAccent}"/>
                     <TextBlock Text="{Binding DataSourceType}" FontWeight="SemiBold" FontSize="14" VerticalAlignment="Center"/>
                 </StackPanel>
-                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8">
-                    <TextBlock Text="已选择:" VerticalAlignment="Center" Foreground="#6b7280"/>
-                    <TextBlock Text="{Binding SelectedCount}" FontWeight="Bold" VerticalAlignment="Center" Foreground="#3b82f6"/>
-                    <TextBlock Text="个通道" VerticalAlignment="Center" Foreground="#6b7280"/>
+                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6" Margin="24,0,0,0" VerticalAlignment="Center">
+                    <TextBlock Text="已选:" Foreground="{DynamicResource TlTextMuted}"/>
+                    <TextBlock Text="{Binding SelectedCount}" FontWeight="Bold" Foreground="{DynamicResource TlAccent}"/>
+                    <TextBlock Text="通道" Foreground="{DynamicResource TlTextMuted}"/>
                 </StackPanel>
+
+                <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center" Margin="16,0,0,0">
+                    <TextBlock Text="限幅" VerticalAlignment="Center" Foreground="{DynamicResource TlTextMuted}"/>
+                    <NumericUpDown Value="{Binding OutputLimitPercent}" Width="110" Minimum="0" Maximum="100" Increment="5" FormatString="0" VerticalAlignment="Center"/>
+                    <TextBlock Text="%" VerticalAlignment="Center" Foreground="{DynamicResource TlTextMuted}"/>
+                </StackPanel>
+
+                <Button Grid.Column="4" Content="{Binding ArmCountdownText}" Command="{Binding ArmCommand}"
+                        Classes="success-btn" FontWeight="Bold" Margin="16,0,0,0"
+                        IsEnabled="{Binding !IsArmed}" IsVisible="{Binding !IsArmed}"/>
+                <Border Grid.Column="4" Background="{DynamicResource TlSuccess}" CornerRadius="4" Padding="12,6" Margin="16,0,0,0"
+                        VerticalAlignment="Center" IsVisible="{Binding IsArmed}">
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                        <TextBlock Text="●" Foreground="White" FontSize="13"/>
+                        <TextBlock Text="输出已解锁" Foreground="White" FontWeight="Bold"/>
+                    </StackPanel>
+                </Border>
+
+                <Button Grid.Column="5" Content="急停" Command="{Binding EstopCommand}" Classes="danger-btn"
+                        FontSize="15" FontWeight="Bold" Padding="22,6" Margin="12,0,0,0"/>
+                <Button Grid.Column="6" Content="复位" Command="{Binding ResetEstopCommand}" Classes="secondary-btn"
+                        Margin="8,0,0,0" IsVisible="{Binding IsEstopActive}"/>
             </Grid>
         </Border>
 
-        <!-- 底部快捷操作栏 -->
-        <Border DockPanel.Dock="Bottom" Background="#f9fafb" Padding="16,12" BorderBrush="#e5e7eb" BorderThickness="0,1,0,0">
-            <Grid ColumnDefinitions="Auto,*,Auto">
-                <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8">
-                    <Button Content="全开" Command="{Binding AllOnCommand}" Classes="success-btn"/>
-                    <Button Content="全关" Command="{Binding AllOffCommand}" Classes="danger-btn"/>
-                </StackPanel>
-                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8">
-                    <Button Content="全选" Command="{Binding SelectAllCommand}" Classes="secondary-btn"/>
-                    <Button Content="反选" Command="{Binding InvertSelectionCommand}" Classes="secondary-btn"/>
-                    <Button Content="清空选择" Command="{Binding SelectNoneCommand}" Classes="secondary-btn"/>
-                </StackPanel>
+        <!-- ========== L3 底部状态栏 ========== -->
+        <Border DockPanel.Dock="Bottom" Padding="16,6" BorderBrush="{DynamicResource TlBorderLight}" BorderThickness="0,1,0,0"
+                Background="{DynamicResource TlToolbarBg}">
+            <Grid ColumnDefinitions="Auto,Auto,Auto,Auto,Auto,*,Auto">
+                <Ellipse Grid.Column="0" Width="10" Height="10" Fill="{DynamicResource TlSuccess}" VerticalAlignment="Center" IsVisible="{Binding IsOutputEnabled}"/>
+                <Ellipse Grid.Column="0" Width="10" Height="10" Fill="{DynamicResource TlDanger}" VerticalAlignment="Center" IsVisible="{Binding !IsOutputEnabled}"/>
+                <TextBlock Grid.Column="1" Text=" 输出" Foreground="{DynamicResource TlTextSecondary}" FontSize="12" VerticalAlignment="Center"/>
+                <TextBlock Grid.Column="2" Text="{Binding GenStatusText}" Foreground="{DynamicResource TlTextSecondary}" FontSize="12" VerticalAlignment="Center" Margin="16,0,0,0"/>
+                <TextBlock Grid.Column="3" Text="{Binding RecordStatusText}" Foreground="{DynamicResource TlTextSecondary}" FontSize="12" VerticalAlignment="Center" Margin="16,0,0,0"/>
+                <TextBlock Grid.Column="4" Text="{Binding RecordFrameCount, StringFormat='录波 {0} 帧'}" Foreground="{DynamicResource TlTextMuted}" FontSize="12" VerticalAlignment="Center" Margin="16,0,0,0"/>
+                <TextBlock Grid.Column="6" Text="{Binding Title}" Foreground="{DynamicResource TlTextMuted}" FontSize="12" VerticalAlignment="Center"/>
             </Grid>
         </Border>
 
-        <!-- 主内容区 -->
-        <ScrollViewer>
-            <StackPanel Margin="16">
-                <!-- 模拟量输出 -->
-                <Border Classes="section-border">
-                    <StackPanel Spacing="12">
-                        <StackPanel Orientation="Horizontal" Spacing="8">
-                            <iconPacks:PackIconIonicons Kind="FlashiOS" Width="18" Height="18" Foreground="#6b7280"/>
-                            <TextBlock Classes="section-title" Text="模拟量输出"/>
-                        </StackPanel>
+        <!-- ========== L1 左侧通道分组面板 ========== -->
+        <Border DockPanel.Dock="Left" Width="300" BorderBrush="{DynamicResource TlBorderLight}" BorderThickness="0,0,1,0"
+                Background="{DynamicResource TlPanelBg}">
+            <DockPanel>
+                <StackPanel DockPanel.Dock="Top" Spacing="6" Margin="10" Orientation="Horizontal">
+                    <TextBox Text="{Binding ChannelFilter}" Watermark="搜索通道…" Width="140" VerticalContentAlignment="Center"/>
+                    <Button Content="全选" Command="{Binding SelectAllCommand}" Classes="secondary-btn" Padding="8,4" FontSize="12"/>
+                    <Button Content="反选" Command="{Binding InvertSelectionCommand}" Classes="secondary-btn" Padding="8,4" FontSize="12"/>
+                    <Button Content="清空" Command="{Binding SelectNoneCommand}" Classes="secondary-btn" Padding="8,4" FontSize="12"/>
+                </StackPanel>
 
-                        <Grid ColumnDefinitions="Auto,Auto,Auto,Auto,*,Auto" RowDefinitions="Auto">
-                            <TextBlock Grid.Column="0" Text="输出范围:" VerticalAlignment="Center" Margin="0,0,8,0"/>
-                            <NumericUpDown Grid.Column="1" Value="{Binding AnalogMin}" Width="120" Minimum="0" Maximum="100" Increment="0.1" FormatString="F2"/>
-                            <TextBlock Grid.Column="2" Text=" ~ " VerticalAlignment="Center"/>
-                            <NumericUpDown Grid.Column="3" Value="{Binding AnalogMax}" Width="120" Minimum="0" Maximum="100" Increment="0.1" FormatString="F2"/>
-                        </Grid>
-
-                        <Grid ColumnDefinitions="Auto,*,Auto,Auto">
-                            <TextBlock Grid.Column="0" Text="当前值:" VerticalAlignment="Center" Margin="0,0,8,0"/>
-                            <Slider Grid.Column="1"
-                                    Value="{Binding AnalogValue}"
-                                    Minimum="{Binding AnalogMin}"
-                                    Maximum="{Binding AnalogMax}"
-                                    VerticalAlignment="Center"/>
-                            <TextBlock Grid.Column="2"
-                                       Text="{Binding AnalogValue, StringFormat='{}{0:F2}'}"
-                                       VerticalAlignment="Center"
-                                       Width="50"
-                                       TextAlignment="Center"
-                                       FontWeight="Bold"
-                                       Foreground="#3b82f6"
-                                       Margin="8,0,0,0"/>
-                            <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="8" Margin="16,0,0,0">
-                                <Button Content="发送到选中" Command="{Binding SendAnalogCommand}" Classes="primary-btn"/>
-                                <Button Content="发送到全部" Command="{Binding SendAnalogToAllCommand}" Classes="secondary-btn"/>
-                            </StackPanel>
-                        </Grid>
-                    </StackPanel>
-                </Border>
-
-                <!-- 脉冲测试 -->
-                <Border Classes="section-border">
-                    <StackPanel Spacing="12">
-                        <StackPanel Orientation="Horizontal" Spacing="8">
-                            <iconPacks:PackIconIonicons Kind="PulseiOS" Width="18" Height="18" Foreground="#6b7280"/>
-                            <TextBlock Classes="section-title" Text="脉冲测试"/>
-                        </StackPanel>
-
-                        <Grid ColumnDefinitions="Auto,Auto,Auto,*,Auto">
-                            <TextBlock Grid.Column="0" Text="脉冲时长:" VerticalAlignment="Center" Margin="0,0,8,0"/>
-                            <NumericUpDown Grid.Column="1" Value="{Binding PulseDuration}" Width="120" Minimum="10" Maximum="10000" Increment="10" FormatString="0"/>
-                            <TextBlock Grid.Column="2" Text=" ms" VerticalAlignment="Center"/>
-
-                            <StackPanel Grid.Column="4" Orientation="Horizontal" Spacing="8">
-                                <Button Content="单次脉冲" Command="{Binding SendPulseCommand}" Classes="primary-btn"/>
-                                <Button Content="开始连续"
-                                        Command="{Binding StartContinuousPulseCommand}"
-                                        Classes="success-btn"
-                                        IsVisible="{Binding !IsPulseRunning}"/>
-                                <Button Content="停止连续"
-                                        Command="{Binding StopContinuousPulseCommand}"
-                                        Classes="danger-btn"
-                                        IsVisible="{Binding IsPulseRunning}"/>
-                            </StackPanel>
-                        </Grid>
-                    </StackPanel>
-                </Border>
-
-                <!-- 跑马灯测试 -->
-                <Border Classes="section-border">
-                    <StackPanel Spacing="12">
-                        <StackPanel Orientation="Horizontal" Spacing="8">
-                            <iconPacks:PackIconIonicons Kind="RefreshiOS" Width="18" Height="18" Foreground="#6b7280"/>
-                            <TextBlock Classes="section-title" Text="跑马灯测试"/>
-                            <Border Background="#fef3c7" CornerRadius="4" Padding="8,2" Margin="12,0,0,0"
-                                    IsVisible="{Binding IsSequenceRunning}">
-                                <StackPanel Orientation="Horizontal" Spacing="4">
-                                    <TextBlock Text="当前:" Foreground="#92400e" FontSize="12"/>
-                                    <TextBlock Text="{Binding CurrentSequenceKey}" Foreground="#92400e" FontWeight="Bold" FontSize="12"/>
-                                </StackPanel>
-                            </Border>
-                        </StackPanel>
-
-                        <Grid ColumnDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,*,Auto">
-                            <TextBlock Grid.Column="0" Text="扫描间隔:" VerticalAlignment="Center" Margin="0,0,8,0"/>
-                            <NumericUpDown Grid.Column="1" Value="{Binding SequenceInterval}" Width="120" Minimum="50" Maximum="5000" Increment="50" FormatString="0"/>
-                            <TextBlock Grid.Column="2" Text=" ms" VerticalAlignment="Center"/>
-
-                            <TextBlock Grid.Column="3" Text="方向:" VerticalAlignment="Center" Margin="16,0,8,0"/>
-                            <ComboBox Grid.Column="4" SelectedIndex="{Binding SequenceDirectionIndex}" Width="90">
-                                <ComboBoxItem Content="正向"/>
-                                <ComboBoxItem Content="反向"/>
-                                <ComboBoxItem Content="往返"/>
-                            </ComboBox>
-
-                            <CheckBox Grid.Column="5" Content="循环" IsChecked="{Binding IsLooping}" Margin="16,0,0,0" VerticalAlignment="Center"/>
-
-                            <StackPanel Grid.Column="8" Orientation="Horizontal" Spacing="8">
-                                <Button Content="▶ 开始"
-                                        Command="{Binding StartSequenceCommand}"
-                                        Classes="success-btn"
-                                        IsVisible="{Binding !IsSequenceRunning}"/>
-                                <Button Content="⏹ 停止"
-                                        Command="{Binding StopSequenceCommand}"
-                                        Classes="danger-btn"
-                                        IsVisible="{Binding IsSequenceRunning}"/>
-                            </StackPanel>
-                        </Grid>
-                    </StackPanel>
-                </Border>
-
-                <!-- 通道列表 -->
-                <Border Classes="section-border">
-                    <StackPanel Spacing="12">
-                        <StackPanel Orientation="Horizontal" Spacing="8">
-                            <iconPacks:PackIconIonicons Kind="GridiOS" Width="18" Height="18" Foreground="#6b7280"/>
-                            <TextBlock Classes="section-title" Text="通道列表"/>
-                            <TextBlock Text="(点击选中/取消，双击切换开关)" Foreground="#9ca3af" FontSize="12" VerticalAlignment="Center" Margin="8,0,0,0"/>
-                        </StackPanel>
-
-                        <ItemsControl ItemsSource="{Binding TestKeys}">
-                            <ItemsControl.ItemsPanel>
-                                <ItemsPanelTemplate>
-                                    <WrapPanel Orientation="Horizontal"/>
-                                </ItemsPanelTemplate>
-                            </ItemsControl.ItemsPanel>
+                <ScrollViewer>
+                    <StackPanel Margin="10,0,10,10" Spacing="8">
+                        <ItemsControl ItemsSource="{Binding ChannelGroups}">
                             <ItemsControl.ItemTemplate>
-                                <DataTemplate DataType="vm:TestableKey">
-                                    <Border Classes="channel-item"
-                                            Classes.selected="{Binding IsSelected}"
-                                            Classes.active="{Binding IsActive}"
-                                            Classes.highlighted="{Binding IsHighlighted}"
-                                            PointerPressed="OnChannelPointerPressed"
-                                            DoubleTapped="OnChannelDoubleTapped">
-                                        <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
-                                            <CheckBox IsChecked="{Binding IsSelected}"
-                                                      HorizontalAlignment="Center"
-                                                      Margin="0,0,0,4"
-                                                      PointerPressed="OnCheckBoxPointerPressed"/>
-                                            <TextBlock Text="{Binding DisplayName}"
-                                                       HorizontalAlignment="Center"
-                                                       FontSize="11"
-                                                       FontWeight="Medium"/>
-                                            <TextBlock Text="{Binding Value, StringFormat='{}{0:F2}'}"
-                                                       HorizontalAlignment="Center"
-                                                       FontSize="10"
-                                                       Foreground="#6b7280"/>
-                                        </StackPanel>
-                                    </Border>
+                                <DataTemplate DataType="vm:ChannelGroup">
+                                    <StackPanel Margin="0,0,0,6">
+                                        <TextBlock Text="{Binding Name}" FontWeight="SemiBold" FontSize="12"
+                                                   Foreground="{DynamicResource TlTextSecondary}" Margin="2,0,0,4"/>
+                                        <ItemsControl ItemsSource="{Binding Items}">
+                                            <ItemsControl.ItemsPanel>
+                                                <ItemsPanelTemplate>
+                                                    <WrapPanel Orientation="Horizontal"/>
+                                                </ItemsPanelTemplate>
+                                            </ItemsControl.ItemsPanel>
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate DataType="vm:TestableKey">
+                                                    <Border Classes="channel-row"
+                                                          Classes.highlighted="{Binding IsHighlighted}"
+                                                          Classes.selected="{Binding IsSelected}"
+                                                          PointerPressed="OnChannelPointerPressed">
+                                                        <Grid ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="8">
+                                                            <!-- 颜色点 -->
+                                                            <Ellipse Grid.Column="0" Width="9" Height="9" Fill="{Binding ColorBrush}" VerticalAlignment="Center"/>
+                                                            <!-- 名称 + 实时值 -->
+                                                            <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                                                <TextBlock Text="{Binding DisplayName}" FontSize="11" FontWeight="Medium"
+                                                                           Foreground="{DynamicResource TlTextPrimary}" TextTrimming="CharacterEllipsis"/>
+                                                                <TextBlock Text="{Binding Value, StringFormat='{}{0:P0}'}" FontSize="10"
+                                                                           Foreground="{DynamicResource TlTextMuted}"/>
+                                                            </StackPanel>
+                                                            <!-- 选择（参与批量输出 / 录波 / 示波器） -->
+                                                            <CheckBox Grid.Column="3" IsChecked="{Binding IsSelected}" VerticalAlignment="Center"
+                                                                      PointerPressed="OnCheckBoxPointerPressed"
+                                                                      ToolTip.Tip="选中该通道参与批量输出 / 录波 / 示波器"/>
+                                                        </Grid>
+                                                    </Border>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                    </StackPanel>
                                 </DataTemplate>
                             </ItemsControl.ItemTemplate>
                         </ItemsControl>
+                        <TextBlock Text="点击行 / 勾选框 = 选择通道（参与批量输出、录波、示波器）" Foreground="{DynamicResource TlTextMuted}" FontSize="11" TextWrapping="Wrap"/>
                     </StackPanel>
-                </Border>
-            </StackPanel>
-        </ScrollViewer>
+                </ScrollViewer>
+            </DockPanel>
+        </Border>
+
+        <!-- ========== L2 中央 Tab 内容区 ========== -->
+        <TabControl SelectedIndex="{Binding SelectedModeIndex}" Margin="8,10,10,10">
+            <!-- Tab0 通道调试（核心：通道级强制调试表） -->
+            <TabItem Header="通道调试">
+                <DockPanel Grid.IsSharedSizeScope="True">
+                    <!-- 批量工具条 -->
+                    <Border DockPanel.Dock="Top" Background="{DynamicResource TlPanelBg}" BorderBrush="{DynamicResource TlBorderLight}"
+                            BorderThickness="1" CornerRadius="6" Padding="10,8" Margin="0,0,0,8">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <TextBlock Text="已选" Foreground="{DynamicResource TlTextMuted}" VerticalAlignment="Center"/>
+                            <TextBlock Text="{Binding SelectedCount}" FontWeight="Bold" Foreground="{DynamicResource TlAccent}" VerticalAlignment="Center"/>
+                            <TextBlock Text="通道" Foreground="{DynamicResource TlTextMuted}" VerticalAlignment="Center"/>
+                            <Border Width="1" Height="20" Background="{DynamicResource TlBorderLight}" Margin="4,0"/>
+                            <Button Content="全开选中" Command="{Binding BatchOnCommand}" Classes="success-btn" Padding="10,5"/>
+                            <Button Content="全关选中" Command="{Binding BatchOffCommand}" Classes="secondary-btn" Padding="10,5"/>
+                            <Border Width="1" Height="20" Background="{DynamicResource TlBorderLight}" Margin="4,0"/>
+                            <TextBlock Text="批量设值" Foreground="{DynamicResource TlTextSecondary}" VerticalAlignment="Center"/>
+                            <NumericUpDown Value="{Binding BatchValuePercent}" Width="110" Minimum="0" Maximum="100" Increment="5"
+                                           FormatString="0" VerticalAlignment="Center" PointerPressed="OnCheckBoxPointerPressed"/>
+                            <TextBlock Text="%" Foreground="{DynamicResource TlTextMuted}" VerticalAlignment="Center"/>
+                            <Button Content="应用到选中" Command="{Binding BatchSetValueCommand}" Classes="primary-btn" Padding="10,5"/>
+                            <Border Width="1" Height="20" Background="{DynamicResource TlBorderLight}" Margin="4,0"/>
+                            <Button Content="全部复位 0" Command="{Binding AllOffCommand}" Classes="danger-btn" Padding="10,5"
+                                    ToolTip.Tip="所有通道强制输出 0"/>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- 表头 -->
+                    <Grid DockPanel.Dock="Top" ColumnDefinitions="Auto,*,Auto,Auto,Auto,Auto" ColumnSpacing="8" Margin="4,0,4,6">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition SharedSizeGroup="dbgStatus" Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition SharedSizeGroup="dbgType" Width="Auto"/>
+                            <ColumnDefinition SharedSizeGroup="dbgValue" Width="Auto"/>
+                            <ColumnDefinition SharedSizeGroup="dbgSwitch" Width="Auto"/>
+                            <ColumnDefinition SharedSizeGroup="dbgAnalog" Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0" Text="状态" Foreground="{DynamicResource TlTextMuted}" FontSize="11" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                        <TextBlock Grid.Column="1" Text="通道" Foreground="{DynamicResource TlTextMuted}" FontSize="11" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                        <TextBlock Grid.Column="2" Text="类型" Foreground="{DynamicResource TlTextMuted}" FontSize="11" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                        <TextBlock Grid.Column="3" Text="当前值" Foreground="{DynamicResource TlTextMuted}" FontSize="11" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                        <TextBlock Grid.Column="4" Text="开关输出" Foreground="{DynamicResource TlTextMuted}" FontSize="11" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                        <TextBlock Grid.Column="5" Text="数值输出" Foreground="{DynamicResource TlTextMuted}" FontSize="11" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                    </Grid>
+
+                    <!-- 调试表 -->
+                    <ScrollViewer>
+                        <StackPanel Margin="0,0,4,0" Spacing="4">
+                            <ItemsControl ItemsSource="{Binding ChannelGroups}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate DataType="vm:ChannelGroup">
+                                        <StackPanel Margin="0,0,0,8">
+                                            <TextBlock Text="{Binding Name}" FontWeight="SemiBold" FontSize="12"
+                                                       Foreground="{DynamicResource TlTextSecondary}" Margin="2,0,0,4"/>
+                                            <ItemsControl ItemsSource="{Binding Items}">
+                                                <ItemsControl.ItemTemplate>
+                                                    <DataTemplate DataType="vm:TestableKey">
+                                                        <Border Classes="channel-row"
+                                                              Classes.selected="{Binding IsSelected}"
+                                                              Classes.highlighted="{Binding IsHighlighted}"
+                                                              PointerPressed="OnChannelPointerPressed">
+                                                            <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto,Auto" ColumnSpacing="8">
+                                                                <Grid.ColumnDefinitions>
+                                                                    <ColumnDefinition SharedSizeGroup="dbgStatus" Width="Auto"/>
+                                                                    <ColumnDefinition Width="*"/>
+                                                                    <ColumnDefinition SharedSizeGroup="dbgType" Width="Auto"/>
+                                                                    <ColumnDefinition SharedSizeGroup="dbgValue" Width="Auto"/>
+                                                                    <ColumnDefinition SharedSizeGroup="dbgSwitch" Width="Auto"/>
+                                                                    <ColumnDefinition SharedSizeGroup="dbgAnalog" Width="Auto"/>
+                                                                </Grid.ColumnDefinitions>
+
+                                                                <!-- 状态灯 -->
+                                                                <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                                                    <Ellipse Width="10" Height="10" Fill="{DynamicResource TlSuccess}"
+                                                                             IsVisible="{Binding IsActive}" VerticalAlignment="Center"/>
+                                                                    <Ellipse Width="10" Height="10" Fill="{DynamicResource TlBorderLight}"
+                                                                             IsVisible="{Binding !IsActive}" VerticalAlignment="Center"/>
+                                                                </StackPanel>
+
+                                                                <!-- 名称 + 实时值 -->
+                                                                <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                                                    <TextBlock Text="{Binding DisplayName}" FontSize="12" FontWeight="Medium"
+                                                                               Foreground="{DynamicResource TlTextPrimary}" TextTrimming="CharacterEllipsis"/>
+                                                                    <TextBlock Text="{Binding Value, StringFormat='{}{0:F2}'}" FontSize="10"
+                                                                               Foreground="{DynamicResource TlTextMuted}"/>
+                                                                </StackPanel>
+
+                                                                <!-- 类型徽章 -->
+                                                                <Border Grid.Column="2" Background="{DynamicResource TlBtnHover}" CornerRadius="3" Padding="6,2" VerticalAlignment="Center">
+                                                                    <StackPanel Orientation="Horizontal" Spacing="6">
+                                                                        <TextBlock Text="AO" FontSize="10" FontWeight="Bold" Foreground="{DynamicResource TlAccent}"
+                                                                                   IsVisible="{Binding IsAnalog}"/>
+                                                                        <TextBlock Text="DO" FontSize="10" FontWeight="Bold" Foreground="{DynamicResource TlTextSecondary}"
+                                                                                   IsVisible="{Binding !IsAnalog}"/>
+                                                                    </StackPanel>
+                                                                </Border>
+
+                                                                <!-- 当前值 % -->
+                                                                <TextBlock Grid.Column="3" Text="{Binding Value, StringFormat='{}{0:P1}'}"
+                                                                           FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center"
+                                                                           Foreground="{DynamicResource TlTextPrimary}"/>
+
+                                                                <!-- 开关输出：置1 / 置0 -->
+                                                                <StackPanel Grid.Column="4" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                                                    <Button Classes="ch-switch" Classes.on="{Binding IsActive}"
+                                                                            Command="{Binding $parent[Window].((vm:OutputTestViewModel)DataContext).SetKeyOnCommand}"
+                                                                            CommandParameter="{Binding}"
+                                                                            PointerPressed="OnCheckBoxPointerPressed" ToolTip.Tip="置 1（100%）">
+                                                                        <TextBlock Text="置 1" FontWeight="Bold" FontSize="11"/>
+                                                                    </Button>
+                                                                    <Button Classes="ch-switch"
+                                                                            Command="{Binding $parent[Window].((vm:OutputTestViewModel)DataContext).SetKeyOffCommand}"
+                                                                            CommandParameter="{Binding}"
+                                                                            PointerPressed="OnCheckBoxPointerPressed" ToolTip.Tip="置 0（0%）">
+                                                                        <TextBlock Text="置 0" FontWeight="Bold" FontSize="11"/>
+                                                                    </Button>
+                                                                </StackPanel>
+
+                                                                <!-- 数值输出：输入 + 发送 -->
+                                                                <StackPanel Grid.Column="5" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                                                    <NumericUpDown Value="{Binding TargetPercent}" Width="100" Minimum="0" Maximum="100"
+                                                                                   Increment="5" FormatString="0" VerticalAlignment="Center"
+                                                                                   PointerPressed="OnCheckBoxPointerPressed"
+                                                                                   ToolTip.Tip="输入 0~100% 后点击发送"/>
+                                                                    <Button Content="发送" Classes="primary-btn" Padding="10,4"
+                                                                            Command="{Binding $parent[Window].((vm:OutputTestViewModel)DataContext).SendKeyValueCommand}"
+                                                                            CommandParameter="{Binding}"
+                                                                            PointerPressed="OnCheckBoxPointerPressed"/>
+                                                                </StackPanel>
+                                                            </Grid>
+                                                        </Border>
+                                                    </DataTemplate>
+                                                </ItemsControl.ItemTemplate>
+                                            </ItemsControl>
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+                    </ScrollViewer>
+                </DockPanel>
+            </TabItem>
+
+            <!-- Scope 示波器 -->
+            <TabItem Header="示波器 Scope">
+                <DockPanel>
+                    <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Spacing="8" Margin="2,0,0,8">
+                        <TextBlock Text="时基" VerticalAlignment="Center" Foreground="{DynamicResource TlTextSecondary}"/>
+                        <ComboBox SelectedIndex="{Binding TimeBaseIndex}" Width="92">
+                            <ComboBoxItem Content="10 ms/格"/><ComboBoxItem Content="20 ms/格"/>
+                            <ComboBoxItem Content="50 ms/格"/><ComboBoxItem Content="100 ms/格"/>
+                            <ComboBoxItem Content="200 ms/格"/><ComboBoxItem Content="500 ms/格"/>
+                            <ComboBoxItem Content="1 s/格"/><ComboBoxItem Content="2 s/格"/>
+                            <ComboBoxItem Content="5 s/格"/>
+                        </ComboBox>
+                        <TextBlock Text="采样率" VerticalAlignment="Center" Foreground="{DynamicResource TlTextSecondary}"/>
+                        <ComboBox SelectedIndex="{Binding SampleRateIndex}" Width="88">
+                            <ComboBoxItem Content="10 Hz"/><ComboBoxItem Content="50 Hz"/>
+                            <ComboBoxItem Content="100 Hz"/><ComboBoxItem Content="200 Hz"/>
+                            <ComboBoxItem Content="500 Hz"/><ComboBoxItem Content="1 kHz"/>
+                        </ComboBox>
+                        <TextBlock Text="触发" VerticalAlignment="Center" Foreground="{DynamicResource TlTextSecondary}"/>
+                        <ComboBox SelectedIndex="{Binding TriggerModeIndex}" Width="92">
+                            <ComboBoxItem Content="自由运行"/><ComboBoxItem Content="上升沿"/><ComboBoxItem Content="下降沿"/>
+                        </ComboBox>
+                        <ToggleButton IsChecked="{Binding IsScopePaused}" Content="❚❚ 暂停" Margin="12,0,0,0"/>
+                        <TextBlock Text="纵向" VerticalAlignment="Center" Foreground="{DynamicResource TlTextSecondary}" Margin="12,0,0,0"/>
+                        <NumericUpDown Value="{Binding VerticalScalePercent}" Width="110" Minimum="20" Maximum="500" Increment="10" FormatString="0" VerticalAlignment="Center"/>
+                        <TextBlock Text="% 缩放" VerticalAlignment="Center" Foreground="{DynamicResource TlTextMuted}"/>
+                        <NumericUpDown Value="{Binding VerticalOffsetPercent}" Width="110" Minimum="-100" Maximum="100" Increment="5" FormatString="0" VerticalAlignment="Center"/>
+                        <TextBlock Text="% 偏移" VerticalAlignment="Center" Foreground="{DynamicResource TlTextMuted}"/>
+                    </StackPanel>
+                    <ctl:ScopeView x:Name="ScopePlot"
+                                   TimeBaseMs="{Binding ScopeTimeBaseMs}"
+                                   VerticalScalePercent="{Binding VerticalScalePercent}"
+                                   VerticalOffsetPercent="{Binding VerticalOffsetPercent}"
+                                   HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
+                </DockPanel>
+            </TabItem>
+
+            <!-- Generator 信号发生器 -->
+            <TabItem Header="信号发生器 Generator">
+                <ScrollViewer>
+                    <StackPanel Margin="4" Spacing="14">
+                        <Border Classes="panel-card">
+                            <StackPanel Spacing="10">
+                                <TextBlock Classes="section-title" Text="波形信号输出 — 输出到所有选中通道"/>
+                                <Grid ColumnDefinitions="Auto,150,Auto,150" RowDefinitions="Auto,Auto,Auto,Auto,Auto" ColumnSpacing="12" RowSpacing="10">
+                                    <TextBlock Grid.Row="0" Grid.Column="0" Text="波形类型" VerticalAlignment="Center"/>
+                                    <ComboBox Grid.Row="0" Grid.Column="1" SelectedIndex="{Binding GenWaveTypeIndex}">
+                                        <ComboBoxItem Content="正弦 Sine"/><ComboBoxItem Content="方波 Square"/>
+                                        <ComboBoxItem Content="三角 Triangle"/><ComboBoxItem Content="锯齿 Ramp"/>
+                                        <ComboBoxItem Content="阶跃 Step"/><ComboBoxItem Content="PWM"/>
+                                        <ComboBoxItem Content="扫频 Sweep"/>
+                                    </ComboBox>
+                                    <TextBlock Grid.Row="0" Grid.Column="2" Text="频率 (Hz)" VerticalAlignment="Center"/>
+                                    <NumericUpDown Grid.Row="0" Grid.Column="3" Width="140" Value="{Binding GenFrequency}" Minimum="0.1" Maximum="100" Increment="0.1" FormatString="F2" VerticalAlignment="Center"/>
+
+                                    <TextBlock Grid.Row="1" Grid.Column="0" Text="幅值 (峰峰 %)" VerticalAlignment="Center"/>
+                                    <NumericUpDown Grid.Row="1" Grid.Column="1" Width="140" Value="{Binding GenAmplitude}" Minimum="0" Maximum="100" Increment="5" FormatString="0" VerticalAlignment="Center"/>
+                                    <TextBlock Grid.Row="1" Grid.Column="2" Text="偏置 (中心 %)" VerticalAlignment="Center"/>
+                                    <NumericUpDown Grid.Row="1" Grid.Column="3" Width="140" Value="{Binding GenOffset}" Minimum="0" Maximum="100" Increment="5" FormatString="0" VerticalAlignment="Center"/>
+
+                                    <TextBlock Grid.Row="2" Grid.Column="0" Text="占空比 (方波/PWM %)" VerticalAlignment="Center"/>
+                                    <NumericUpDown Grid.Row="2" Grid.Column="1" Width="140" Value="{Binding GenDutyCycle}" Minimum="1" Maximum="99" Increment="1" FormatString="0" VerticalAlignment="Center"/>
+                                    <TextBlock Grid.Row="2" Grid.Column="2" Text="相位 (°)" VerticalAlignment="Center"/>
+                                    <NumericUpDown Grid.Row="2" Grid.Column="3" Width="140" Value="{Binding GenPhase}" Minimum="0" Maximum="360" Increment="5" FormatString="0" VerticalAlignment="Center"/>
+
+                                    <TextBlock Grid.Row="3" Grid.Column="0" Text="扫频时长 (ms)" VerticalAlignment="Center"/>
+                                    <NumericUpDown Grid.Row="3" Grid.Column="1" Width="140" Value="{Binding GenDurationMs}" Minimum="10" Maximum="600000" Increment="100" FormatString="0" VerticalAlignment="Center"/>
+                                    <TextBlock Grid.Row="3" Grid.Column="2" Text="循环输出" VerticalAlignment="Center"/>
+                                    <CheckBox Grid.Row="3" Grid.Column="3" IsChecked="{Binding IsGenLoop}" VerticalAlignment="Center"/>
+                                </Grid>
+                                <StackPanel Orientation="Horizontal" Spacing="10">
+                                    <Button Content="▶ 开始输出" Command="{Binding StartGenCommand}" Classes="success-btn" FontWeight="Bold"/>
+                                    <Button Content="⏹ 停止" Command="{Binding StopGenCommand}" Classes="danger-btn" IsVisible="{Binding IsGenRunning}"/>
+                                    <TextBlock Text="运行状态:" Foreground="{DynamicResource TlTextSecondary}" VerticalAlignment="Center"/>
+                                    <TextBlock Text="{Binding GenStatusText}" FontWeight="SemiBold" VerticalAlignment="Center"
+                                               Foreground="{DynamicResource TlAccent}"/>
+                                </StackPanel>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+
+            <!-- Pattern 跑马灯 -->
+            <TabItem Header="跑马灯 Pattern">
+                <StackPanel Margin="4" Spacing="14">
+                    <Border Classes="panel-card">
+                        <StackPanel Spacing="12">
+                            <TextBlock Classes="section-title" Text="跑马灯扫描 — 依次点亮/熄灭选中通道"/>
+                            <Grid ColumnDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,*,Auto" ColumnSpacing="8" RowDefinitions="Auto" VerticalAlignment="Center">
+                                <TextBlock Grid.Column="0" Text="扫描间隔" VerticalAlignment="Center"/>
+                                <NumericUpDown Grid.Column="1" Value="{Binding SequenceInterval}" Width="130" Minimum="50" Maximum="5000" Increment="50" FormatString="0" VerticalAlignment="Center"/>
+                                <TextBlock Grid.Column="2" Text=" ms" VerticalAlignment="Center"/>
+                                <TextBlock Grid.Column="3" Text="方向" VerticalAlignment="Center" Margin="12,0,0,0"/>
+                                <ComboBox Grid.Column="4" SelectedIndex="{Binding SequenceDirectionIndex}" Width="88">
+                                    <ComboBoxItem Content="正向"/><ComboBoxItem Content="反向"/><ComboBoxItem Content="往返"/>
+                                </ComboBox>
+                                <CheckBox Grid.Column="5" Content="循环" IsChecked="{Binding IsLooping}" VerticalAlignment="Center" Margin="16,0,0,0"/>
+                                <StackPanel Grid.Column="7" Orientation="Horizontal" Spacing="8">
+                                    <Button Content="▶ 开始" Command="{Binding StartSequenceCommand}" Classes="success-btn" IsVisible="{Binding !IsSequenceRunning}"/>
+                                    <Button Content="⏹ 停止" Command="{Binding StopSequenceCommand}" Classes="danger-btn" IsVisible="{Binding IsSequenceRunning}"/>
+                                </StackPanel>
+                            </Grid>
+                            <Border Background="{DynamicResource TlAccentSoftBg}" CornerRadius="4" Padding="10,6"
+                                    IsVisible="{Binding IsSequenceRunning}">
+                                <StackPanel Orientation="Horizontal" Spacing="6">
+                                    <TextBlock Text="当前点亮:" Foreground="{DynamicResource TlAccent}" FontSize="12"/>
+                                    <TextBlock Text="{Binding CurrentSequenceKey}" FontWeight="Bold" Foreground="{DynamicResource TlAccent}" FontSize="12"/>
+                                </StackPanel>
+                            </Border>
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <Button Content="全开" Command="{Binding AllOnCommand}" Classes="primary-btn"/>
+                                <Button Content="全关" Command="{Binding AllOffCommand}" Classes="secondary-btn"/>
+                                <TextBlock Text="注：可配合示波器观察各通道时序" Foreground="{DynamicResource TlTextMuted}" FontSize="12" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+            </TabItem>
+
+            <!-- Recorder 录波 -->
+            <TabItem Header="录波 Recorder">
+                <StackPanel Margin="4" Spacing="14">
+                    <Border Classes="panel-card">
+                        <StackPanel Spacing="12">
+                            <TextBlock Classes="section-title" Text="输出录波 — 按 100ms 周期采集选中通道，可保存为 CSV"/>
+                            <Grid ColumnDefinitions="Auto,Auto,Auto,Auto,Auto,*,Auto" ColumnSpacing="8">
+                                <Button Grid.Column="0" Content="● 开始录制" Command="{Binding RecordCommand}" Classes="danger-btn" IsVisible="{Binding !IsRecording}"/>
+                                <Button Grid.Column="0" Content="■ 停止录制" Command="{Binding StopRecordCommand}" Classes="danger-btn" IsVisible="{Binding IsRecording}"/>
+                                <Button Grid.Column="1" Content="保存 CSV" Command="{Binding SaveRecordCommand}" Classes="primary-btn"/>
+                                <Button Grid.Column="2" Content="加载最新" Command="{Binding LoadRecordCommand}" Classes="secondary-btn"/>
+                                <Button Grid.Column="3" Content="清空" Command="{Binding ClearRecordCommand}" Classes="secondary-btn"/>
+                                <TextBlock Grid.Column="5" Text="{Binding RecordFrameCount, StringFormat='已采集 {0} 帧'}" VerticalAlignment="Center" FontWeight="SemiBold" Foreground="{DynamicResource TlAccent}"/>
+                            </Grid>
+                            <Border Background="{DynamicResource TlAccentSoftBg}" CornerRadius="4" Padding="10,6" IsVisible="{Binding IsRecording}">
+                                <TextBlock Text="● 录制中 — 请确保已选择需要录制的通道" Foreground="{DynamicResource TlDanger}" FontWeight="Bold" FontSize="12"/>
+                            </Border>
+                            <StackPanel Spacing="4">
+                                <TextBlock Text="录制状态" Foreground="{DynamicResource TlTextSecondary}" FontSize="12"/>
+                                <TextBlock Text="{Binding RecordStatusText}" Foreground="{DynamicResource TlTextPrimary}" FontWeight="Medium"/>
+                                <TextBlock Text="文件位置" Foreground="{DynamicResource TlTextSecondary}" FontSize="12" Margin="0,6,0,0"/>
+                                <TextBlock Text="{Binding RecordFilePath}" Foreground="{DynamicResource TlTextMuted}" FontSize="11" TextWrapping="Wrap"/>
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+            </TabItem>
+        </TabControl>
     </DockPanel>
 </Window>

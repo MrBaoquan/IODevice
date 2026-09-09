@@ -80,6 +80,11 @@
 			<Setter Property="Background" Value="{DynamicResource TlBtnHover}" />
 			<Setter Property="Opacity" Value="1" />
 		</Style>
+		<!-- DO 切换按钮不显示 hover 背景，避免与激活状态产生歧义 -->
+		<Style Selector="Button.node-do-btn:pointerover">
+			<Setter Property="Background" Value="Transparent" />
+			<Setter Property="Opacity" Value="1" />
+		</Style>
 		<Style Selector="DockPanel.active Button.node-tool-btn">
 			<Setter Property="Background" Value="Transparent" />
 			<Setter Property="Foreground" Value="{DynamicResource TlControlActiveFg}" />
@@ -211,6 +216,10 @@
 					<Setter Property="Background" Value="{DynamicResource TlBtnHover}"/>
 					<Setter Property="Foreground" Value="{DynamicResource TlControlActiveFg}"/>
 				</Style>
+				<Style Selector="DockPanel.active Button.node-do-btn:pointerover">
+					<Setter Property="Background" Value="Transparent"/>
+					<Setter Property="Foreground" Value="{DynamicResource TlControlActiveFg}"/>
+				</Style>
 
 			</StackPanel.Styles>
 
@@ -228,7 +237,7 @@
 								   Margin="0 0 4 0"
 								   IsVisible="{Binding ShowNodeValue}"/>
 						<!-- OAction 显示 DO 切换按钮 -->
-						<Button Classes="node-tool-btn" HorizontalAlignment="Center" VerticalAlignment="Center"
+						<Button Classes="node-tool-btn node-do-btn" HorizontalAlignment="Center" VerticalAlignment="Center"
 								Command="{Binding ToggleDOCommand}"
 								Width="24"
 								AutomationProperties.Name="切换输出"
@@ -295,7 +304,7 @@
 											   Margin="0 0 4 0"
 											   IsVisible="{Binding $parent[UserControl].DataContext.ShowKeyValue, FallbackValue=False}"/>
 									<!-- OAction 显示 DO 切换按钮 -->
-									<Button Classes="node-tool-btn" Command="{Binding ToggleDOCommand}"
+									<Button Classes="node-tool-btn node-do-btn" Command="{Binding ToggleDOCommand}"
 											HorizontalAlignment="Center" VerticalAlignment="Center"
 											Width="24"
 											IsVisible="{Binding $parent[UserControl].DataContext.ShowBtn, FallbackValue=False}">

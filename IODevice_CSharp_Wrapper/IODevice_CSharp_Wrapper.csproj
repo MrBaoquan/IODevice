@@ -47,6 +47,8 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="IOToolkit\Core\IONativeWrapper.cs" />
+    <Compile Include="IOToolkit\Core\NativeCallbackBridge.cs" />
+    <Compile Include="IOToolkit\Core\NativeThunks.g.cs" />
     <Compile Include="IOToolkit\Facades\ChannelTypes.cs" />
     <Compile Include="IOToolkit\Facades\IODevice.Channel.cs" />
     <Compile Include="IOToolkit\Facades\InputCoreTypes.cs" />

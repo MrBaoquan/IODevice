@@ -63,14 +63,15 @@ namespace IOToolkit
 
             // 同时订阅: 普通单向消息 (SubscribeChannel) + 对端 RPC 请求 (SubscribeChannelRequest).
             // 业务回调通过 ctx.Respond(...) 触发响应; 单向消息路径上 CanRespond=false, Respond 为 no-op.
+            //
+            // IL2CPP 不接受把闭包委托封送到原生代码, 故交给原生的是 NativeCallbackBridge 的
+            // 静态入口; 下面两个闭包作为托管回调登记在桥接层, 由 topic 名分发。
 
             PluginChannelCallback msgProxy = (_, dataPtr, size) =>
             {
                 byte[] bytes = ReadBuffer(dataPtr, size);
                 DispatchMessage(name, bytes, handler);
             };
-            delegateRefs.Add(msgProxy);
-            int msgHandlerId = IONativeWrapper.SubscribeChannel(ID, name, msgProxy);
 
             IONativeWrapper.ChannelRequestCallback reqProxy = (
                 topic,
@@ -85,21 +86,30 @@ namespace IOToolkit
                 string metadataJson = ReadString(metadataPtr, metadataSize);
                 DispatchRequest(name, requestId, payloadJson, metadataJson, handler);
             };
-            delegateRefs.Add(reqProxy);
-            int reqHandlerId = IONativeWrapper.SubscribeChannelRequest(ID, name, reqProxy);
 
-            // capture proxy refs in closure so Dispose can release them from delegateRefs.
-            var localMsgProxy = msgProxy;
-            var localReqProxy = reqProxy;
+            // 槽位制登记: 原生回调回传的通道名是插件信封层名字 (非业务 topic), 不能靠名字分发,
+            // 故按槽位索引还原订阅, 与按键绑定一致。
+            int slot = NativeCallbackBridge.RegisterChannel(ID, name, msgProxy, reqProxy);
+
+            int msgHandlerId = IONativeWrapper.SubscribeChannel(
+                ID,
+                name,
+                NativeCallbackBridge.MessageThunkAt(slot)
+            );
+            int reqHandlerId = IONativeWrapper.SubscribeChannelRequest(
+                ID,
+                name,
+                NativeCallbackBridge.RequestThunkAt(slot)
+            );
+
             return new ChannelSubscription(() =>
             {
                 if (msgHandlerId >= 0)
                     IONativeWrapper.UnsubscribeChannel(ID, msgHandlerId);
                 if (reqHandlerId >= 0)
                     IONativeWrapper.UnsubscribeChannelRequest(ID, reqHandlerId);
-                // 解除 delegateRefs 强引用, 允许 GC 回收 proxy 委托, 避免长程订阅导致的内存累积.
-                delegateRefs.Remove(localMsgProxy);
-                delegateRefs.Remove(localReqProxy);
+                // 释放槽位, 允许 GC 回收这两个闭包, 避免长程订阅导致的内存累积.
+                NativeCallbackBridge.UnregisterChannel(slot);
             });
         }
 

@@ -19,6 +19,43 @@ namespace IOToolkit
             this.ID = InID;
         }
 
+        // ── 原生回调注册（IL2CPP 兼容）────────────────────────────────────
+        //
+        // IL2CPP 不接受把"指向实例方法的委托"（闭包即实例方法）封送到原生代码，运行时抛
+        // NotSupportedException；Mono 允许，故此前只在 Android 上失效。这里统一改走
+        // NativeCallbackBridge：交给原生的是静态 thunk，真实回调登记在托管侧。
+        //
+        // 槽位按"绑定身份"分配（设备 + 类型 + 目标名 + 事件），因此同一绑定的重复注册
+        // （典型如每轮 ReCompile 都会跑的 rebindIOEvents）只刷新回调，不会持续占用新槽位。
+
+        private string BindingKey(string kind, string target, InputEvent InEvent)
+        {
+            return NativeCallbackBridge.BindingKey(this.ID, kind, target, (int)InEvent);
+        }
+
+        /// <summary>调试用通道绑定的原生 handlerId → 桥接登记句柄，用于反注册。</summary>
+        private Dictionary<int, int> _channelHandles;
+
+        private void TrackChannelHandle(int nativeHandlerId, int bridgeHandle)
+        {
+            if (nativeHandlerId < 0 || bridgeHandle < 0)
+                return;
+            if (_channelHandles == null)
+                _channelHandles = new Dictionary<int, int>();
+            _channelHandles[nativeHandlerId] = bridgeHandle;
+        }
+
+        private int TakeChannelHandle(int nativeHandlerId)
+        {
+            if (_channelHandles == null || nativeHandlerId < 0)
+                return -1;
+            int bridgeHandle;
+            if (!_channelHandles.TryGetValue(nativeHandlerId, out bridgeHandle))
+                return -1;
+            _channelHandles.Remove(nativeHandlerId);
+            return bridgeHandle;
+        }
+
         public string DllName()
         {
             return IONativeWrapper.DeviceDllName(this.ID);
@@ -52,12 +89,12 @@ namespace IOToolkit
         /// <param name="InHandler">事件响应回调</param>
         public void BindKey(Key InKey, InputEvent InEvent, Action InHandler)
         {
-            NativeActionSignature _proxy = new NativeActionSignature(() =>
-            {
-                InHandler();
-            });
-            delegateRefs.Add(_proxy);
-            IONativeWrapper.BindKey(this.ID, InKey, (int)InEvent, _proxy);
+            IONativeWrapper.BindKey(
+                this.ID,
+                InKey,
+                (int)InEvent,
+                NativeCallbackBridge.RegisterAction(BindingKey("key", InKey, InEvent), InHandler)
+            );
         }
 
         /// <summary>
@@ -68,14 +105,15 @@ namespace IOToolkit
         /// <param name="InHandler">事件响应回调</param>
         public void BindKey(Key InKey, InputEvent InEvent, Action<Key> InHandler)
         {
-            NativeActionWithKeySignature _proxy = new NativeActionWithKeySignature(
-                (string _key) =>
-                {
-                    InHandler(_key);
-                }
+            IONativeWrapper.BindKeyWithKey(
+                this.ID,
+                InKey,
+                (int)InEvent,
+                NativeCallbackBridge.RegisterActionWithKey(
+                    BindingKey("key", InKey, InEvent),
+                    key => InHandler(key)
+                )
             );
-            delegateRefs.Add(_proxy);
-            IONativeWrapper.BindKeyWithKey(this.ID, InKey, (int)InEvent, _proxy);
         }
 
         public void BindKey<T1>(Key InKey, InputEvent InEvent, Action<T1> InHandler, T1 _param1)
@@ -157,14 +195,15 @@ namespace IOToolkit
 
         public void BindAction(string InActionName, InputEvent InEvent, Action InHandler)
         {
-            NativeActionWithKeySignature _proxy = new NativeActionWithKeySignature(
-                (string InKey) =>
-                {
-                    InHandler();
-                }
+            IONativeWrapper.BindAction(
+                this.ID,
+                InActionName,
+                (int)InEvent,
+                NativeCallbackBridge.RegisterActionWithKey(
+                    BindingKey("action", InActionName, InEvent),
+                    key => InHandler()
+                )
             );
-            delegateRefs.Add(_proxy);
-            IONativeWrapper.BindAction(this.ID, InActionName, (int)InEvent, _proxy);
         }
 
         /// <summary>
@@ -175,14 +214,15 @@ namespace IOToolkit
         /// <param name="InHandler">事件响应回调</param>
         public void BindAction(string InActionName, InputEvent InEvent, Action<Key> InHandler)
         {
-            NativeActionWithKeySignature _proxy = new NativeActionWithKeySignature(
-                (string InKey) =>
-                {
-                    InHandler(InKey);
-                }
+            IONativeWrapper.BindAction(
+                this.ID,
+                InActionName,
+                (int)InEvent,
+                NativeCallbackBridge.RegisterActionWithKey(
+                    BindingKey("action", InActionName, InEvent),
+                    key => InHandler(key)
+                )
             );
-            delegateRefs.Add(_proxy);
-            IONativeWrapper.BindAction(this.ID, InActionName, (int)InEvent, _proxy);
         }
 
         /// <summary>
@@ -201,14 +241,7 @@ namespace IOToolkit
             T1 _param1
         )
         {
-            NativeActionWithKeySignature _proxy = new NativeActionWithKeySignature(
-                (string InKey) =>
-                {
-                    InHandler(_param1);
-                }
-            );
-            delegateRefs.Add(_proxy);
-            IONativeWrapper.BindAction(this.ID, InActionName, (int)InEvent, _proxy);
+            BindAction(InActionName, InEvent, (Key _key) => InHandler(_param1));
         }
 
         /// <summary>
@@ -226,14 +259,7 @@ namespace IOToolkit
             T1 _param1
         )
         {
-            NativeActionWithKeySignature _proxy = new NativeActionWithKeySignature(
-                (string InKey) =>
-                {
-                    InHandler(InKey, _param1);
-                }
-            );
-            delegateRefs.Add(_proxy);
-            IONativeWrapper.BindAction(this.ID, InActionName, (int)InEvent, _proxy);
+            BindAction(InActionName, InEvent, (Key key) => InHandler(key, _param1));
         }
 
         /// <summary>
@@ -254,14 +280,7 @@ namespace IOToolkit
             T2 _param2
         )
         {
-            NativeActionWithKeySignature _proxy = new NativeActionWithKeySignature(
-                (string InKey) =>
-                {
-                    InHandler(_param1, _param2);
-                }
-            );
-            delegateRefs.Add(_proxy);
-            IONativeWrapper.BindAction(this.ID, InActionName, (int)InEvent, _proxy);
+            BindAction(InActionName, InEvent, (Key _key) => InHandler(_param1, _param2));
         }
 
         /// <summary>
@@ -282,14 +301,7 @@ namespace IOToolkit
             T2 _param2
         )
         {
-            NativeActionWithKeySignature _proxy = new NativeActionWithKeySignature(
-                (string InKey) =>
-                {
-                    InHandler(InKey, _param1, _param2);
-                }
-            );
-            delegateRefs.Add(_proxy);
-            IONativeWrapper.BindAction(this.ID, InActionName, (int)InEvent, _proxy);
+            BindAction(InActionName, InEvent, (Key key) => InHandler(key, _param1, _param2));
         }
 
         /// <summary>
@@ -313,14 +325,7 @@ namespace IOToolkit
             T3 _param3
         )
         {
-            NativeActionWithKeySignature _proxy = new NativeActionWithKeySignature(
-                (string InKey) =>
-                {
-                    InHandler(_param1, _param2, _param3);
-                }
-            );
-            delegateRefs.Add(_proxy);
-            IONativeWrapper.BindAction(this.ID, InActionName, (int)InEvent, _proxy);
+            BindAction(InActionName, InEvent, (Key _key) => InHandler(_param1, _param2, _param3));
         }
 
         /// <summary>
@@ -344,14 +349,11 @@ namespace IOToolkit
             T3 _param3
         )
         {
-            NativeActionWithKeySignature _proxy = new NativeActionWithKeySignature(
-                (string InKey) =>
-                {
-                    InHandler(InKey, _param1, _param2, _param3);
-                }
+            BindAction(
+                InActionName,
+                InEvent,
+                (Key key) => InHandler(key, _param1, _param2, _param3)
             );
-            delegateRefs.Add(_proxy);
-            IONativeWrapper.BindAction(this.ID, InActionName, (int)InEvent, _proxy);
         }
 
         /// <summary>
@@ -361,26 +363,26 @@ namespace IOToolkit
         /// <param name="InHandler">事件响应回调</param>
         public void BindAxis(string InAxisName, Action<float> InHandler)
         {
-            NativeAxisSignature _proxy = new NativeAxisSignature(
-                (float InVal) =>
-                {
-                    InHandler(InVal);
-                }
+            IONativeWrapper.BindAxis(
+                this.ID,
+                InAxisName,
+                NativeCallbackBridge.RegisterAxis(
+                    BindingKey("axis", InAxisName, InputEvent.IE_Axis),
+                    InHandler
+                )
             );
-            delegateRefs.Add(_proxy);
-            IONativeWrapper.BindAxis(this.ID, InAxisName, _proxy);
         }
 
         public void BindAxisKey(Key InKey, Action<float> InHandler)
         {
-            NativeAxisSignature _proxy = new NativeAxisSignature(
-                (float InVal) =>
-                {
-                    InHandler(InVal);
-                }
+            IONativeWrapper.BindAxisKey(
+                this.ID,
+                InKey,
+                NativeCallbackBridge.RegisterAxis(
+                    BindingKey("axis", InKey, InputEvent.IE_Axis),
+                    InHandler
+                )
             );
-            delegateRefs.Add(_proxy);
-            IONativeWrapper.BindAxisKey(this.ID, InKey, _proxy);
         }
 
         /// <summary>
@@ -632,8 +634,8 @@ namespace IOToolkit
         //  ------------- Properties -------------
         public string ID;
 
-        // 引用回调函数,防止被GC
-        private List<Delegate> delegateRefs = new List<Delegate>();
+        // 回调委托的强引用统一由 NativeCallbackBridge 的 static 数组持有（防 GC 回收），
+        // 原按设备实例挂 delegateRefs 的做法已随 IL2CPP 改造移除。
 
         /// <summary>
         /// 查询插件通道能力声明，返回插件通过 _capabilities 通道提供的 UTF-8 JSON。
@@ -709,8 +711,15 @@ namespace IOToolkit
                 }
                 catch { }
             };
-            delegateRefs.Add(proxy);
-            return IONativeWrapper.BindPluginEvent(this.ID, eventName ?? string.Empty, proxy);
+            var name = eventName ?? string.Empty;
+            int slot = NativeCallbackBridge.RegisterChannel(this.ID, name, proxy, null);
+            int nativeId = IONativeWrapper.BindPluginEvent(
+                this.ID,
+                name,
+                NativeCallbackBridge.MessageThunkAt(slot)
+            );
+            TrackChannelHandle(nativeId, slot);
+            return nativeId;
         }
 
         /// <summary>
@@ -720,6 +729,7 @@ namespace IOToolkit
         {
             if (handlerId < 0)
                 return 0;
+            NativeCallbackBridge.UnregisterChannel(TakeChannelHandle(handlerId));
             return IONativeWrapper.UnbindPluginEvent(this.ID, handlerId);
         }
 
@@ -771,8 +781,19 @@ namespace IOToolkit
                 }
                 catch { }
             };
-            delegateRefs.Add(proxy);
-            return IONativeWrapper.BindPluginChannel(this.ID, channelName, proxy);
+            int slot = NativeCallbackBridge.RegisterChannel(
+                this.ID,
+                channelName,
+                proxy,
+                null
+            );
+            int nativeId = IONativeWrapper.BindPluginChannel(
+                this.ID,
+                channelName,
+                NativeCallbackBridge.MessageThunkAt(slot)
+            );
+            TrackChannelHandle(nativeId, slot);
+            return nativeId;
         }
 
         /// <summary>
@@ -782,6 +803,7 @@ namespace IOToolkit
         {
             if (string.IsNullOrEmpty(channelName) || handlerId < 0)
                 return 0;
+            NativeCallbackBridge.UnregisterChannel(TakeChannelHandle(handlerId));
             return IONativeWrapper.UnbindPluginChannel(this.ID, channelName, handlerId);
         }
     }

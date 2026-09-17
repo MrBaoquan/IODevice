@@ -83,6 +83,13 @@ namespace IOToolkit.Core
         [DllImport(DllName, CallingConvention = NativeCallingConvention)]
         public static extern int SetIORuntimeRoot([MarshalAs(NativeStringType)] string InRuntimeRoot);
 
+        /// <summary>
+        /// 设置插件配置根目录（项目模式下把项目根注入 native 层，使插件 config.ini 重定向）。
+        /// 原生侧自 v2.4.1 起已导出该符号，此处补齐托管门面以保持与发布产物一致的 API 面。
+        /// </summary>
+        [DllImport(DllName, CallingConvention = NativeCallingConvention)]
+        public static extern int SetPluginConfigRoot([MarshalAs(NativeStringType)] string InRoot);
+
         [DllImport(
             DllName,
             CallingConvention = NativeCallingConvention,

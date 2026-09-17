@@ -99,13 +99,15 @@ namespace IOToolkit
         {
             if (callback != null)
             {
-                _eventCallbackDelegate = (slotId, eventType) =>
-                    callback(slotId, (MotionEvent)eventType);
-                IONativeWrapper.MotionSetEventCallback(_eventCallbackDelegate);
+                // 原生回调统一走 NativeCallbackBridge 的静态入口（IL2CPP 不接受闭包委托封送）。
+                NativeCallbackBridge.SetMotionEventHandler(
+                    (slotId, eventType) => callback(slotId, (MotionEvent)eventType)
+                );
+                IONativeWrapper.MotionSetEventCallback(NativeCallbackBridge.MotionEventThunk);
             }
             else
             {
-                _eventCallbackDelegate = null;
+                NativeCallbackBridge.SetMotionEventHandler(null);
                 IONativeWrapper.MotionSetEventCallback(null);
             }
         }
@@ -118,13 +120,17 @@ namespace IOToolkit
         {
             if (callback != null)
             {
-                _eventDataCallbackDelegate = (slotId, eventType, eventData) =>
-                    callback(slotId, (MotionEvent)eventType, eventData);
-                IONativeWrapper.MotionSetEventDataCallback(_eventDataCallbackDelegate);
+                NativeCallbackBridge.SetMotionEventDataHandler(
+                    (slotId, eventType, eventData) =>
+                        callback(slotId, (MotionEvent)eventType, eventData)
+                );
+                IONativeWrapper.MotionSetEventDataCallback(
+                    NativeCallbackBridge.MotionEventDataThunk
+                );
             }
             else
             {
-                _eventDataCallbackDelegate = null;
+                NativeCallbackBridge.SetMotionEventDataHandler(null);
                 IONativeWrapper.MotionSetEventDataCallback(null);
             }
         }
@@ -146,9 +152,7 @@ namespace IOToolkit
         private static readonly Dictionary<string, MotionSlot> _slots =
             new Dictionary<string, MotionSlot>();
 
-        // 保持 delegate 引用防止 GC 回收
-        private static IONativeWrapper.MotionEventCallbackDelegate _eventCallbackDelegate;
-        private static IONativeWrapper.MotionEventDataCallbackDelegate _eventDataCallbackDelegate;
+        // 事件委托的强引用由 NativeCallbackBridge 的 static 字段持有（防 GC 回收）。
     }
 
     public enum MotionState

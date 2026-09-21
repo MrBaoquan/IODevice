@@ -14,6 +14,7 @@
 #include "RawIOFactory.h"
 #include "Paths.hpp"
 #include "IOLog.h"
+#include "IODiag.h"
 
 #if IODEVICE_PLATFORM_WINDOWS
 #pragma comment(lib,"Winmm.lib")
@@ -141,7 +142,9 @@ int IOToolkit::IOApplication::DyLoad()
 #endif
     
 	/** Device initializtion */
-	IODevices::Initialize();
+IODIAG("DyLoad begin");
+ int _devInitResult = IODevices::Initialize();
+ IODIAG("DyLoad after IODevices::Initialize result=%d deviceCount=%u", _devInitResult, static_cast<unsigned>(IODevices::GetDevicesCount()));
 	PlayerInput::Instance().Initialize();
 	
 	bLoaded = true;
@@ -203,7 +206,13 @@ void IOToolkit::IOApplication::Cleanup()
     if (!bLoaded) {
         return;  // Already cleaned up
     }
-    
+
+    // 必须先落 bLoaded 再拆任何东西：所有 IODevice::* 入口都以它为闸门。
+    // 放到最后的话，整个拆除过程中其它线程（HTTP 回调、插件上行）仍能进来，
+    // 遍历正在被 clear 的设备表拿到悬垂引用，再去调用已析构的 ExternalIO
+    // （其析构会 dlclose 插件 DLL）—— 表现为跳进未映射地址的 SIGSEGV。
+    bLoaded = false;
+
     IOLog::Instance().Log("IOToolkit cleanup started...");
     
 #if IODEVICE_PLATFORM_WINDOWS
@@ -222,9 +231,6 @@ void IOToolkit::IOApplication::Cleanup()
     // 4. Clear window list
     mainWindows.clear();
 #endif
-    
-    // 5. Mark as unloaded
-    bLoaded = false;
     
     IOLog::Instance().Log("IOToolkit cleanup completed.");
 }

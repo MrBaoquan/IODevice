@@ -60,6 +60,8 @@ int IOToolkit::IODeviceController::Unload()
 int IOToolkit::IODeviceController::EnterSafeState()
 {
     std::lock_guard<std::recursive_mutex> lock(controllerMutex);
+    std::lock_guard<std::recursive_mutex> registryLock(IODevices::RegistryMutex());
+
     MotionPlayer::Instance().EnterSafeState();
     for (auto& deviceIt : IODevices::GetDevcies())
     {
@@ -87,7 +89,10 @@ void IOToolkit::IODeviceController::Update()
     
     // Early return if IOToolkit is not loaded (during shutdown)
     if (!IOApplication::bLoaded) return;
-    
+
+    // 与 UnInitialize 的 devices.clear() 串行化：设备 tick 期间设备表必须稳定
+    std::lock_guard<std::recursive_mutex> registryLock(IODevices::RegistryMutex());
+
     static float minDelta = 0.02f;
     static std::uint64_t lastTime = IOClock::GetMilliseconds();
     
@@ -121,6 +126,7 @@ void IOToolkit::IODeviceController::ClearBindings()
 {
     // Lock mutex to ensure Update is not running
     std::lock_guard<std::recursive_mutex> lock(controllerMutex);
+    std::lock_guard<std::recursive_mutex> registryLock(IODevices::RegistryMutex());
     
     for (auto& deviceIt : IODevices::GetDevcies())
     {

@@ -21,6 +21,7 @@
 #include <winbase.h>
 #endif
 #include <string>
+#include <map>
 #define FUNC_LOADED 3456
 
 #if IODEVICE_PLATFORM_WINDOWS
@@ -352,6 +353,40 @@ inline int strcpy_s(char* dest, size_t destSize, const char* src)
     ClassName (const char* name) : PDLL() {LoadDll(name);} \
     ClassName () : PDLL() {}
 
+// ── 插件句柄常驻 ────────────────────────────────────────────────────
+// Unload/Load 是成对发生的（运维侧重载、编辑器 F5/F6 重编译都会走），若每次都
+// dlclose 再 dlopen，插件里正在退出的线程与已缓存的函数指针会整类失效 —— 表现是
+// 重载第二次起跳进未映射地址(SIGSEGV #00 <unknown>)。
+// 这里让句柄进程级常驻：卸载只归还引用计数，不 unmap 代码段；同名库再次加载直接复用。
+// 代价是插件代码段随进程存活（本就在进程生命周期内反复使用，不构成额外泄漏）。
+inline std::map<std::string, PDLLHandle>& PDLLStickyHandleCache()
+{
+    static std::map<std::string, PDLLHandle> s_handles;
+    return s_handles;
+}
+
+inline PDLLHandle PDLLLoadLibrarySticky(const char* name)
+{
+    if (!name)
+        return NULL;
+
+    auto& cache = PDLLStickyHandleCache();
+    auto it = cache.find(name);
+    if (it != cache.end())
+        return it->second;
+
+    PDLLHandle handle = PDLLLoadLibrary(name);
+    if (handle)
+        cache.emplace(name, handle);
+    return handle;
+}
+
+// 故意不 dlclose：句柄常驻见 PDLLLoadLibrarySticky 注释。
+inline void PDLLFreeLibrarySticky(PDLLHandle handle)
+{
+    (void)handle;
+}
+
 class PDLL
 {
 
@@ -378,7 +413,7 @@ public:
             SetDllName(name);
 
         //try to load
-		m_dllHandle = PDLLLoadLibrary(m_dllName);
+		m_dllHandle = PDLLLoadLibrarySticky(m_dllName);
         if (m_dllHandle == NULL /*&& showMsg*/)
         {
 			errCode = PDLLLastError();
@@ -458,7 +493,7 @@ public:
         {
             if (m_dllHandle)
             {
-				PDLLFreeLibrary(m_dllHandle);
+				PDLLFreeLibrarySticky(m_dllHandle);
                 m_dllHandle = NULL;
             }
 

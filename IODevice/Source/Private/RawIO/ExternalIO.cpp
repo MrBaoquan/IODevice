@@ -10,12 +10,15 @@
 #include "IOLog.h"
 #include "IODeviceDetails.h"
 #include "Paths.hpp"
+#include "IODiag.h"
 
 IOToolkit::ExternalIO::ExternalIO(uint8 InID, uint8 InDeviceIndex, std::string InFullDllName):
                                  CustomIOBase(InID,InDeviceIndex,IOType::External)
                                 ,externalDll(InFullDllName.data())
                                 ,bValid(false)
 {
+	IODIAG("ExternalIO ctor this=%p idx=%u dll=%s", static_cast<void*>(this),
+		static_cast<unsigned>(InDeviceIndex), InFullDllName.c_str());
 	Constructor();
 }
 
@@ -84,7 +87,23 @@ void IOToolkit::ExternalIO::Destroy()
 	
 	// Use mutex to ensure no Tick() is in progress
 	std::lock_guard<std::mutex> lock(tickMutex);
-	
+
+	// 先解绑插件→宿主回调。交给插件的 user 指针就是本 IODeviceDetails 的地址，
+	// 宿主随即会被 devices.clear() 析构（externalDll 析构还会 dlclose 插件本身），
+	// 插件若再上行就会写已释放内存。
+	if (pluginChannelDetails != nullptr)
+	{
+		try
+		{
+			externalDll.SetPluginChannelDispatcher(deviceIndex, nullptr, nullptr);
+		}
+		catch (...)
+		{
+			// 插件不支持解绑时忽略：仍要清空本地记录，避免再次交给插件
+		}
+		pluginChannelDetails = nullptr;
+	}
+
 	try
 	{
 		// Close device in external DLL
@@ -341,7 +360,7 @@ int IOToolkit::ExternalIO::SetDO(std::vector<float>& InDOStatus)
 
 IOToolkit::ExternalIO::~ExternalIO()
 {
-    
+    IODIAG("ExternalIO dtor this=%p idx=%u", static_cast<void*>(this), static_cast<unsigned>(deviceIndex));
 }
 
 void IOToolkit::ExternalIO::Constructor()

@@ -198,6 +198,9 @@ namespace IOToolkit.Core
             s_actionPool.Clear();
             s_actionWithKeyPool.Clear();
             s_axisPool.Clear();
+            // 通道订阅同样必须归还：原生设备已随 Unload 销毁，残留槽位会在重绑时耗尽
+            // （池容量 64，rebindIOEvents 一轮占 26）。
+            s_channelPool.Clear();
         }
 
         // ── thunk 入口（由 NativeThunks 的静态方法调用）────────────────
@@ -278,7 +281,12 @@ namespace IOToolkit.Core
                 get { return _slots.Length; }
             }
 
-            public int Allocate(string device, string name, PluginChannelCallback message, ChannelRequestCallback request)
+            public int Allocate(
+                string device,
+                string name,
+                PluginChannelCallback message,
+                ChannelRequestCallback request
+            )
             {
                 lock (_slots)
                 {
@@ -373,7 +381,12 @@ namespace IOToolkit.Core
 
         // 由静态 thunk 转发进来的入口（每个封送方法均带 [AOT.MonoPInvokeCallback]）
 
-        internal static void InvokeChannelMessage(int slot, string channelName, IntPtr data, uint size)
+        internal static void InvokeChannelMessage(
+            int slot,
+            string channelName,
+            IntPtr data,
+            uint size
+        )
         {
             var entry = s_channelPool.Peek(slot);
             var handler = entry == null ? null : entry.Message;

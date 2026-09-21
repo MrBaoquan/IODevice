@@ -24,6 +24,10 @@ namespace IOToolkit
         /// <returns></returns>
         public static int Load()
         {
+            // 每轮 Load 都从干净的托管状态开始：上一轮的原生设备已随 Unload 销毁，
+            // 缓存的 IODevice 与桥接槽位全都指向已不存在的设备。
+            ResetManagedState();
+
             return IONativeWrapper.Load();
         }
 
@@ -34,7 +38,27 @@ namespace IOToolkit
 
         public static int Unload()
         {
-            return IONativeWrapper.Unload();
+            try
+            {
+                return IONativeWrapper.Unload();
+            }
+            finally
+            {
+                // 原生设备已销毁，托管侧缓存与绑定随之失效，必须一并清掉，
+                // 否则下一轮 Load 会复用指向已销毁设备的包装器。
+                ResetManagedState();
+            }
+        }
+
+        /// <summary>
+        /// 清空设备缓存并归还全部桥接槽位。
+        ///
+        /// 只在设备整体加载/卸载的边界调用：此时原生设备已销毁，绑定已全部失效。
+        /// </summary>
+        private static void ResetManagedState()
+        {
+            devices.Clear();
+            NativeCallbackBridge.ReleaseAllBindings();
         }
 
         public static int EnterSafeState()

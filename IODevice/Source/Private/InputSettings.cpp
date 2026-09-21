@@ -13,6 +13,7 @@
 #include "RawIOFactory.h"
 #include "IOLog.h"
 #include "IOApplication.h"
+#include "IODiag.h"
 
 IOToolkit::UInputSettings& IOToolkit::UInputSettings::Instance()
 {
@@ -43,6 +44,7 @@ int IOToolkit::UInputSettings::Initialize()
         doc.parse<0>(fdoc.data());
         xml_node<>* root = doc.first_node();
         uint8 deviceID = 0;
+        IODIAG("UInputSettings::Initialize parsing configFilePath=%s", configFilePath.c_str());
 
         for (xml_node<>* device = root->first_node("Device");device;device = device->next_sibling())
         {
@@ -63,8 +65,11 @@ int IOToolkit::UInputSettings::Initialize()
             {
                 if(!AddDevice(DeviceProperties(0, IOType::Standard, IOType::Standard, "", 0)))
                 {
-                    IOLog::Instance().Error(std::string("Create standard device failed "));
-                    return ErrorCode;
+                    // 该平台没有 Standard 设备(Android 无键盘/鼠标)。这里必须跳过而非中止:
+                    // 中止会让整个设备表为空, 之后所有 IO 查询都落到 Invalid, 现象是
+                    // 「IO 全部静默失效」而不是报错。槽位编号照旧递增, 与映射表下标保持一致。
+                    IODIAG("Initialize Standard skipped (not available on this platform)");
+                    IOLog::Instance().Warning(std::string("Create standard device skipped (not available on this platform)"));
                 }
                 deviceID++;
                 ActionMappings.push_back(std::vector<FInputActionKeyMapping>());
@@ -92,8 +97,10 @@ int IOToolkit::UInputSettings::Initialize()
 
             if (!AddDevice(DeviceProperties(deviceID, IOType, DeviceName, DllName, deviceIndex)))
             {
+                IODIAG("Initialize AddDevice FAILED name=%s dll=%s type=%s", DeviceName.c_str(), DllName.c_str(), IOType.c_str());
                 continue;
             }
+            IODIAG("Initialize AddDevice OK name=%s mapSize=%zu", DeviceName.c_str(), IODevices::GetDevcies().size());
 
             ActionMappings.push_back(std::vector<FInputActionKeyMapping>());
             AxisMappings.push_back(std::vector<FInputAxisKeyMapping>());
@@ -208,29 +215,36 @@ int IOToolkit::UInputSettings::Initialize()
             deviceID++;
         }
         // Initlize KeyProperties of RawIO
-        for(auto& deviceIt:IODevices::GetDevcies())
         {
-            deviceIt.second.Initialize();
+            std::lock_guard<std::recursive_mutex> registryLock(IODevices::RegistryMutex());
+            for(auto& deviceIt:IODevices::GetDevcies())
+            {
+                deviceIt.second.Initialize();
+            }
         }
     }
     catch (const std::runtime_error& e)
     {
+        IODIAG("Initialize RUNTIME_ERROR: %s", e.what());
         IOLog::Instance().Log(e.what());
         return ErrorCode;
     }
     catch (const rapidxml::parse_error& e)
     {
+        IODIAG("Initialize PARSE_ERROR: %s at %s", e.what(), configFilePath.c_str());
         IOLog::Instance().Log(std::string("XML syntax error: ")+e.what()+ " at " + configFilePath);
         return ErrorCode;
     }
-    catch (const std::exception&)
+    catch (const std::exception& e)
     {
+        IODIAG("Initialize STD_EXCEPTION: %s (file=%s)", e.what(), configFilePath.c_str());
         std::string msg = std::string("Please make sure the file ") + configFilePath + " exists.";
         IOLog::Instance().Error(msg);
         return ErrorCode;
     }
     catch (...)
     {
+        IODIAG("Initialize UNKNOWN_ERROR (file=%s)", configFilePath.c_str());
         IOLog::Instance().Error("Unknow xml error.");
         return ErrorCode;
     }

@@ -174,7 +174,10 @@ void IOToolkit::PlayerInput::ProcessInputStack()
     // Note: This function is called from Tick() which already holds the mutex lock
     // Early return if data has been cleared
     if (KeyStateMaps.empty()) return;
-    
+
+    // 与 UnInitialize 的 devices.clear() 串行化：下方按设备表派发 delegate
+    std::lock_guard<std::recursive_mutex> registryLock(IODevices::RegistryMutex());
+
     // Copy standard KeyStateMap to Others
     if (KeyStateMaps.size() > 1)
     {

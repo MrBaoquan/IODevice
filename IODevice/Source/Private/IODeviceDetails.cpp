@@ -8,6 +8,7 @@
 #include "IOStatics.h"
 #include "InputSettings.h"
 #include "IOLog.h"
+#include "IODiag.h"
 
 IOToolkit::IODevice& IOToolkit::IODeviceDetails::GetDevice()
 {
@@ -297,12 +298,12 @@ int IOToolkit::IODeviceDetails::RefreshStreamingData(BYTE* StreamingData, unsign
 
 int IOToolkit::IODeviceDetails::WritePluginChannel(const char* channelName, const BYTE* data, unsigned int size)
 {
-	if (!ValidDevcie(std::string(" [WritePluginChannel] ")))
-	{
-		return 0;
-	}
-	if (!channelName) return 0;
-	return rawIO ? rawIO->WritePluginChannel(channelName, data, size) : 0;
+    if (!ValidDevcie(std::string(" [WritePluginChannel] ")))
+    {
+        return 0;
+    }
+    if (!channelName) return 0;
+    return rawIO ? rawIO->WritePluginChannel(channelName, data, size) : 0;
 }
 
 int IOToolkit::IODeviceDetails::BindPluginChannel(const char* channelName,

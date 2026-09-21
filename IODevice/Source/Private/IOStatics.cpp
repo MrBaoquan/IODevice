@@ -8,22 +8,30 @@
 #include "RawIOFactory.h"
 #include "InputSettings.h"
 #include "IOLog.h"
+#include "IODiag.h"
 
 void IOToolkit::IODevices::AddDevice(IODeviceDetails& deviceDetails)
 {
+    std::lock_guard<std::recursive_mutex> lock(RegistryMutex());
+
     if (HasDevice(deviceDetails.getName())) 
     {
+        IODIAG("AddDevice REFUSED(dup) name=%s mapSize=%zu", deviceDetails.getName().c_str(), devices.size());
         std::string msg = std::string("There is already a device named <") + deviceDetails.getName() + ">, Create device failed.";
         IOLog::Instance().Error(msg);
         return; 
     }
     devices.insert(std::pair<std::string,IODeviceDetails>(deviceDetails.getName(), deviceDetails));
+    IODIAG("AddDevice OK name=%s mapSize=%zu entry=%p valid=%d", deviceDetails.getName().c_str(), devices.size(),
+        static_cast<void*>(&devices[deviceDetails.getName()]), devices[deviceDetails.getName()].isValid() ? 1 : 0);
     std::string msg = std::string("Create device <") + deviceDetails.getName() + "> succeed.";
     IOLog::Instance().Log(msg);
 }
 
 IOToolkit::IODevice& IOToolkit::IODevices::GetDevice(const std::string deviceName)
 {
+    std::lock_guard<std::recursive_mutex> lock(RegistryMutex());
+
     if (HasDevice(deviceName))
     {
         return devices[deviceName].GetDevice();
@@ -35,6 +43,8 @@ IOToolkit::IODevice& IOToolkit::IODevices::GetDevice(const std::string deviceNam
 
 IOToolkit::IODeviceDetails& IOToolkit::IODevices::GetDeviceDetail(const std::string deviceName)
 {
+    std::lock_guard<std::recursive_mutex> lock(RegistryMutex());
+
     if (HasDevice(deviceName))
     {
         return devices[deviceName];
@@ -46,6 +56,8 @@ IOToolkit::IODeviceDetails& IOToolkit::IODevices::GetDeviceDetail(const std::str
 
 IOToolkit::IODeviceDetails& IOToolkit::IODevices::GetDeviceDetail(uint8 deviceID)
 {
+    std::lock_guard<std::recursive_mutex> lock(RegistryMutex());
+
     for (auto&deviceIt : devices)
     {
         IODeviceDetails& deviceDetails = deviceIt.second;
@@ -54,11 +66,15 @@ IOToolkit::IODeviceDetails& IOToolkit::IODevices::GetDeviceDetail(uint8 deviceID
             return deviceDetails;
         }
     }
+    // 注意：此处不得打印日志。设备表为空时每帧会有上千次查找，
+    // 逐帧输出会在 1 分钟内冲掉 logcat 的 256KB 环形缓冲，反而丢掉关键日志。
     return Invalid;
 }
 
 IOToolkit::IODeviceDetails& IOToolkit::IODevices::GetDeviceDetail(const IODevice& InDevice)
 {
+    std::lock_guard<std::recursive_mutex> lock(RegistryMutex());
+
     for (auto&deviceIt : devices)
     {
         IODeviceDetails& deviceDetails = deviceIt.second;
@@ -72,11 +88,14 @@ IOToolkit::IODeviceDetails& IOToolkit::IODevices::GetDeviceDetail(const IODevice
 
 const IOToolkit::uint8 IOToolkit::IODevices::GetDevicesCount()
 {
+    std::lock_guard<std::recursive_mutex> lock(RegistryMutex());
     return static_cast<uint8>(IODevices::devices.size());
 }
 
 const IOToolkit::uint8 IOToolkit::IODevices::GetDevicesCount(std::string InType)
 {
+    std::lock_guard<std::recursive_mutex> lock(RegistryMutex());
+
     uint8 count = 0;
     for (auto& device:devices)
     {
@@ -91,30 +110,44 @@ const IOToolkit::uint8 IOToolkit::IODevices::GetDevicesCount(std::string InType)
 
 int IOToolkit::IODevices::Initialize()
 {
-    return UInputSettings::Instance().Initialize();
+    IODIAG("IODevices::Initialize enter");
+    int _r = UInputSettings::Instance().Initialize();
+    IODIAG("IODevices::Initialize exit result=%d mapSize=%zu", _r, devices.size());
+    return _r;
 }
 
 
 int IOToolkit::IODevices::UnInitialize()
 {
 	UInputSettings::Instance().Uninitialize();
-	
-	// Destroy each device with exception protection
-	for (auto& device : devices) {
-		try {
-			device.second.Destroy();
+
+	{
+		std::lock_guard<std::recursive_mutex> lock(RegistryMutex());
+
+		IODIAG("UnInitialize begin mapSize=%zu", devices.size());
+
+		// Destroy each device with exception protection
+		for (auto& device : devices) {
+			try {
+				IODIAG("UnInitialize destroying '%s' entry=%p valid=%d", device.first.c_str(),
+					static_cast<void*>(&device.second), device.second.isValid() ? 1 : 0);
+				device.second.Destroy();
+			}
+			catch (...) {
+				// Ignore exceptions during device cleanup to prevent cascade failures
+			}
 		}
-		catch (...) {
-			// Ignore exceptions during device cleanup to prevent cascade failures
-		}
+
+		devices.clear();
+		IODIAG("UnInitialize end mapSize=%zu", devices.size());
 	}
-	
-	devices.clear();
 	return 0;
 }
 
 bool IOToolkit::IODevices::HasDevice(const std::string deviceName)
 {
+    std::lock_guard<std::recursive_mutex> lock(RegistryMutex());
+
     if (devices.count(deviceName))
     {
         return true;
@@ -125,6 +158,12 @@ bool IOToolkit::IODevices::HasDevice(const std::string deviceName)
 std::map<std::string, IOToolkit::IODeviceDetails>& IOToolkit::IODevices::GetDevcies()
 {
     return devices;
+}
+
+std::recursive_mutex& IOToolkit::IODevices::RegistryMutex()
+{
+    static std::recursive_mutex registryMutex;
+    return registryMutex;
 }
 
 std::map<std::string, IOToolkit::IODeviceDetails> IOToolkit::IODevices::devices;

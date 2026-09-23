@@ -23,6 +23,12 @@ namespace IOStudio.Services.Motion
         bool LiveOutputToDevice { get; set; }
 
         /// <summary>
+        /// 是否由 native 承担派发 (量程换算 + 限速 + 写设备都在 native, 与放映端同源)。
+        /// 默认 false = 由 C# 侧驱动并直接写设备。
+        /// </summary>
+        bool UseNativeDispatch { get; set; }
+
+        /// <summary>
         /// 统一通知事件 — 所有引擎通知通过此单一事件发出。
         /// 使用 pattern matching 处理不同类型:
         /// <code>

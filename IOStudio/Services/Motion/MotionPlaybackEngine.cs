@@ -80,6 +80,12 @@ namespace IOStudio.Services.Motion
         }
 
         /// <summary>
+        /// native 派发 — 本引擎为废弃回退实现, 不支持 (派发在 native 的能力由
+        /// <see cref="NativeMotionPlaybackEngine"/> 提供), 故为 no-op。
+        /// </summary>
+        public bool UseNativeDispatch { get; set; }
+
+        /// <summary>
         /// 加载 .motion 文件
         /// </summary>
         public bool Load(string motionFilePath)

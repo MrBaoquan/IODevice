@@ -154,7 +154,22 @@ namespace IOStudio.Services.Motion
             _rateLimiter.Reset();
             _lastDispatchMs = double.NaN;
 
-            // 不调用 _slot.Play() — 完全由 C# 端驱动时间, 控制设备输出
+            // native 派发模式: 让 native Slot 走外部时钟并开始播放, 由它执行换算+限速+写设备。
+            // (非该模式下不调用 _slot.Play() —— 时间与输出完全由 C# 端驱动)
+            if (UseNativeDispatch && _slot != null)
+            {
+                try
+                {
+                    _slot.ClockMode = IOToolkit.ClockMode.External;
+                    _slot.Seek((float)_lastPositionMs);
+                    _slot.Play();
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine($"[NativeEngine] native 派发启动失败: {ex.Message}");
+                }
+            }
+
             _playStartMs = _lastPositionMs;
             _playStopwatch.Restart();
             SetState(PlaybackState.Playing);
@@ -185,6 +200,22 @@ namespace IOStudio.Services.Motion
                 return;
 
             _playStopwatch.Stop();
+
+            // native 派发模式: 回中也交给 native (它自带平滑回中), C# 不再重复做一遍
+            if (UseNativeDispatch && _slot != null)
+            {
+                try
+                {
+                    _slot.Stop();
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine($"[NativeEngine] native 停止失败: {ex.Message}");
+                }
+                _lastPositionMs = 0;
+                SetState(PlaybackState.Idle);
+                return;
+            }
 
             if (LiveOutputToDevice && _currentTimeline != null)
             {
@@ -268,8 +299,7 @@ namespace IOStudio.Services.Motion
             if (_currentTimeline == null)
                 return;
 
-            double currentMs;
-            if (_externalClockMs is { } mediaMs && mediaMs >= 0)
+            double currentMs;            if (_externalClockMs is { } mediaMs && mediaMs >= 0)
             {
                 // 媒体时钟为主: 位置由媒体决定, 不叠加 speed (媒体按 1x 播放)。
                 // 同时把 Stopwatch 对齐到当前位置, 媒体时钟掉线时可无缝回退。
@@ -311,6 +341,23 @@ namespace IOStudio.Services.Motion
             }
 
             _lastPositionMs = currentMs;
+
+            // native 派发模式: 把当前时间推给 native Slot, 并驱动它 Tick。
+            // 外部时钟模式下 Tick 的 delta 不参与计时 (时间由外部给定), 而 SafetyGuard
+            // 用内部时钟测间隔 —— 因此这里的 delta 取值不影响行为。
+            if (UseNativeDispatch && _slot != null)
+            {
+                try
+                {
+                    _slot.SetExternalTime((float)currentMs);
+                    IOToolkit.MotionPlayer.Tick(1f / 60f);
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine($"[NativeEngine] native 派发失败: {ex.Message}");
+                }
+            }
+
             PositionChanged?.Invoke(currentMs);
             Notified?.Invoke(new PlaybackNotification.Position(currentMs));
             SyncLiveValues((float)currentMs);
@@ -451,18 +498,22 @@ namespace IOStudio.Services.Motion
 
                 // 安全限速 (仅当设备声明速率): 限制单帧归一化变化量, 防止命令出物理上过猛的跳变。
                 // 限速后的值同时用于 UI 批量值, 保证"看到的就是下发的"。
-                float? maxRate = DeviceMaxRateProvider?.Invoke(track.DeviceName);
-                if (maxRate is { } rate && rate > 0f)
-                    value = _rateLimiter.Limit(
-                        track.DeviceName + "|" + channelName,
-                        value,
-                        deltaSec,
-                        rate
-                    );
+                // native 派发模式下限速与写设备都在 native (所以这里只更新 UI 值)。
+                if (!UseNativeDispatch)
+                {
+                    float? maxRate = DeviceMaxRateProvider?.Invoke(track.DeviceName);
+                    if (maxRate is { } rate && rate > 0f)
+                        value = _rateLimiter.Limit(
+                            track.DeviceName + "|" + channelName,
+                            value,
+                            deltaSec,
+                            rate
+                        );
+                }
 
                 _batchBuffer.Add((track.DeviceName, channelName, value));
 
-                if (LiveOutputToDevice)
+                if (LiveOutputToDevice && !UseNativeDispatch)
                     WriteToDevice(track, value);
             }
 
@@ -567,6 +618,16 @@ namespace IOStudio.Services.Motion
         public static Func<string, float?>? DeviceMaxRateProvider { get; set; }
 
         /// <summary>
+        /// 是否由 native 承担**派发** (量程换算 + SafetyGuard 限速都在 native, 与放映端同一段代码)。
+        ///
+        /// <para>默认关闭: C# 侧驱动时间并直接写设备。打开后: 把解析后的量程推给 native、按帧驱动
+        /// native Tick, C# 只负责驱动时间与 UI 显示 (不再直接写设备)。</para>
+        ///
+        /// <para>限速强度与驱动频率无关 —— native SafetyGuard 用内部时钟测实际间隔。</para>
+        /// </summary>
+        public bool UseNativeDispatch { get; set; }
+
+        /// <summary>
         /// Device-range warm-up hook. Invoked at safe points (timeline load / play), NEVER from the
         /// dispatch path: reading capabilities goes through a native RPC, and device dispatch itself
         /// runs inside the native tick.
@@ -576,7 +637,7 @@ namespace IOStudio.Services.Motion
         /// <summary>Warm up device ranges for every device the timeline touches (safe-point only).</summary>
         private static void PrimeDeviceRanges(MotionTimeline? timeline)
         {
-            if (timeline == null || DeviceRangePrimer == null)
+            if (timeline == null)
                 return;
             try
             {
@@ -585,7 +646,32 @@ namespace IOStudio.Services.Motion
                     if (!string.IsNullOrEmpty(track.DeviceName))
                         names.Add(track.DeviceName);
                 if (names.Count > 0)
-                    DeviceRangePrimer(names);
+                    DeviceRangePrimer?.Invoke(names);
+
+                // 把三级优先级**解析后的绝对区间**推给 native (换算由 native 执行,
+                // 与放映端共用同一段代码)。解析在宿主侧完成 —— 只有它知道轨道与设备声明。
+                IOToolkit.MotionPlayer.ClearChannelRanges();
+                foreach (var track in timeline.Tracks)
+                {
+                    string channel = ChannelKeyOf(track);
+                    if (string.IsNullOrEmpty(track.DeviceName) || string.IsNullOrEmpty(channel))
+                        continue;
+
+                    var declared = DeviceRangeProvider?.Invoke(track.DeviceName, channel);
+                    var resolved = EngineeringValueConverter.ResolveRange(
+                        track.ValueType,
+                        track.NeutralValue,
+                        track.EngineeringRange,
+                        declared
+                    );
+                    if (resolved is { } range)
+                        IOToolkit.MotionPlayer.SetChannelRange(
+                            track.DeviceName,
+                            channel,
+                            range.Min,
+                            range.Max
+                        );
+                }
             }
             catch (Exception ex)
             {

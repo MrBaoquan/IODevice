@@ -41,6 +41,8 @@ namespace IOStudio.Cli
         public bool Headless { get; private set; }
         public bool ShowHelp { get; private set; }
         public bool DumpTracks { get; private set; }
+        /// <summary>由 native 承担派发 (量程换算 + 限速 + 写设备都在 native)。默认 C# 侧派发。</summary>
+        public bool NativeDispatch { get; private set; }
         /// <summary>仅做编排预检并输出问题清单, 然后退出。发现 Error 级问题时退出码为 2 (自动化门禁)。</summary>
         public bool Validate { get; private set; }
         public string? StatusFile { get; private set; }
@@ -53,6 +55,7 @@ namespace IOStudio.Cli
             "  --motion <path>        打开动作编排编辑器并加载 .motion 文件\n" +
             "  --play                 加载后自动播放\n" +
             "  --live-output          播放时把值实时下发到设备（编辑器「设备输出」开关；默认关闭）\n" +
+            "  --native-dispatch      由 native 承担派发（量程换算/限速/写设备都在 native，与放映端同源）\n" +
             "  --loop                 开启循环播放\n" +
             "  --exit-after <ms>      运行指定毫秒后自动退出（脚本化必用）\n" +
             "  --headless             窗口最小化且不占任务栏（便于自动化时不抢焦点）\n" +
@@ -74,6 +77,7 @@ namespace IOStudio.Cli
                 {
                     case "--play": o.Play = true; break;
                     case "--live-output": o.LiveOutput = true; break;
+                    case "--native-dispatch": o.NativeDispatch = true; break;
                     case "--loop": o.Loop = true; break;
                     case "--headless": o.Headless = true; break;
                     case "--dump-tracks": o.DumpTracks = true; break;
@@ -265,6 +269,8 @@ namespace IOStudio.Cli
                         // 关键：编辑器默认「设备输出」是关闭的，动作只做预览、不下发设备。
                         // 脚本化播放必须先打开它，否则 Simulator 收到的 DO 永远是 0。
                         if (options.LiveOutput) { editor.IsLiveOutputEnabled = true; }
+                        // native 派发: 量程换算/限速/写设备都交给 native (与放映端同源)
+                        if (options.NativeDispatch) { editor.IsNativeDispatchEnabled = true; }
 
                         if (options.Play)
                         {

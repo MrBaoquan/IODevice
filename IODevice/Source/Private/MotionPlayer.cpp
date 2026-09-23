@@ -313,13 +313,31 @@ namespace {
 
     class SafetyGuard {
     public:
-        float Check(const std::string& channelKey, float rawValue, double deltaSec) {
-            float clamped = Clamp01(rawValue);
+        /// 间隔超过该值视为"不连续" → 重置基线而非限速 (通道被静音一段、暂停后恢复等)。
+        static constexpr double kDiscontinuitySec = 0.5;
 
-            // 速率限制
-            auto it = _lastValues.find(channelKey);
-            if (it != _lastValues.end() && deltaSec > 0.0001) {
-                float lastVal = it->second;
+        /// 限速一次。**用内部时钟测实际间隔**, 不信任调用方传的 delta ——
+        /// 否则 tick 频率一变 (编排端 10Hz 轮询 vs 放映端 Unity 逐帧), 限速强度就跟着变,
+        /// 甚至被放大到失效 (10Hz 下每次允许 0.5 归一化变化)。
+        float Check(const std::string& channelKey, float rawValue) {
+            const double nowMs = static_cast<double>(IOClock::GetMilliseconds());
+
+            auto valueIt = _lastValues.find(channelKey);
+            auto timeIt = _lastTimes.find(channelKey);
+            if (valueIt == _lastValues.end() || timeIt == _lastTimes.end()) {
+                // 首次见到该通道: 建立基线, 不限制
+                float first = Clamp01(rawValue);
+                _lastValues[channelKey] = first;
+                _lastTimes[channelKey] = nowMs;
+                return first;
+            }
+
+            const double deltaSec = (nowMs - timeIt->second) / 1000.0;
+            _lastTimes[channelKey] = nowMs;
+
+            float clamped = Clamp01(rawValue);
+            if (deltaSec > 0.0001 && deltaSec < kDiscontinuitySec) {
+                float lastVal = valueIt->second;
                 float maxDelta = _config.maxRatePerSecond * static_cast<float>(deltaSec);
                 float diff = clamped - lastVal;
                 if (std::abs(diff) > maxDelta) {
@@ -332,13 +350,17 @@ namespace {
             return clamped;
         }
 
-        void Reset() { _lastValues.clear(); }
+        void Reset() {
+            _lastValues.clear();
+            _lastTimes.clear();
+        }
 
         void SetMaxRatePerSecond(float rate) { _config.maxRatePerSecond = rate; }
         float GetMaxRatePerSecond() const { return _config.maxRatePerSecond; }
     private:
         SafetyConfig _config;
         std::map<std::string, float> _lastValues;
+        std::map<std::string, double> _lastTimes;
     };
 
     // ── .motion JSON 解析 ───────────────────────────
@@ -729,9 +751,10 @@ public:
     }
 
     // 分发混合后的通道值
-    void DispatchMixedChannels(const std::map<std::string, float>& channels, float deltaSec) {
+    void DispatchMixedChannels(const std::map<std::string, float>& channels) {
         for (const auto& [channelKey, rawValue] : channels) {
-            float safeValue = safetyGuard.Check(channelKey, rawValue, deltaSec);
+            // 间隔由 SafetyGuard 自己用内部时钟测 (不再由调用方传 delta)
+            float safeValue = safetyGuard.Check(channelKey, rawValue);
             DispatchChannel(channelKey, safeValue);
         }
     }
@@ -1276,5 +1299,6 @@ void MotionPlayer::Tick(float deltaSeconds) {
     auto mixedChannels = MixChannels(slotOutputs);
 
     // Phase 4: SafetyGuard 检查 + 设备派发
-    _impl->DispatchMixedChannels(mixedChannels, deltaSeconds);
+    // (deltaSeconds 已不再传给 SafetyGuard —— 它用内部时钟测实际间隔, 使限速与 tick 频率无关)
+    _impl->DispatchMixedChannels(mixedChannels);
 }

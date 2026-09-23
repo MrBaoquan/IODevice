@@ -606,5 +606,9 @@ namespace IOToolkit.Core
             [Out] float[] OutValues,
             int InMaxChannels
         );
+
+        /// <summary>驱动 native Tick (单位: 秒)。</summary>
+        [DllImport(DllName, CallingConvention = NativeCallingConvention)]
+        public static extern void MotionTick(float InDeltaSeconds);
     }
 }

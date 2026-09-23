@@ -174,6 +174,20 @@ namespace IOToolkit
             return IONativeWrapper.MotionToEngineering(deviceName, channel, normalized);
         }
 
+        // ── native Tick 驱动 ─────────────────────────
+
+        /// <summary>
+        /// 驱动 native Tick (单位: 秒)。
+        ///
+        /// <para>平时由 <c>IODeviceController.Update()</c> 以状态轮询频率 (约 10Hz) 驱动;
+        /// 编排端播放时可额外按帧调用它, 让 native 承担派发 (量程换算 + SafetyGuard 限速都在
+        /// native 侧)。限速强度与调用频率无关 —— SafetyGuard 用内部时钟测实际间隔。</para>
+        /// </summary>
+        public static void Tick(float deltaSeconds)
+        {
+            IONativeWrapper.MotionTick(deltaSeconds);
+        }
+
         // ── 内部方法 ─────────────────────────────────
 
         internal static void RemoveSlot(string slotId) => _slots.Remove(slotId);

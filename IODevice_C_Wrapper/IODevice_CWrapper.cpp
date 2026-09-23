@@ -622,6 +622,13 @@ IOCAPI void __stdcall MotionClearChannelRanges()
 	dh::MotionPlayer::Instance().ClearChannelRanges();
 }
 
+// 驱动 native Tick (单位: 秒)。编排端用它按 60fps 驱动 native 派发,
+// 使"编辑器下发的"与"放映端下发的"走同一段代码 (含量程换算与 SafetyGuard 限速)。
+IOCAPI void __stdcall MotionTick(float InDeltaSeconds)
+{
+	dh::MotionPlayer::Instance().Tick(InDeltaSeconds);
+}
+
 IOCAPI float __stdcall MotionToEngineering(BSTR InDeviceName, BSTR InChannel, float InNormalized)
 {
 	return dh::MotionPlayer::Instance().ToEngineering(

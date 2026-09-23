@@ -180,6 +180,9 @@ extern "C"
 	IOCAPI void  __stdcall MotionClearChannelRanges();
 	IOCAPI float __stdcall MotionToEngineering(BSTR InDeviceName, BSTR InChannel, float InNormalized);
 	IOCAPI int   __stdcall MotionEvaluateSlotAtEngineering(BSTR InSlotId, float InTimeMs, float* OutValues, int InMaxChannels);
+
+	/// 驱动 native Tick (单位: 秒)。编排端按 60fps 调用即可让 native 承担派发。
+	IOCAPI void  __stdcall MotionTick(float InDeltaSeconds);
 }
 
 // typedef outside extern "C" for C++ usage

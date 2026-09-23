@@ -156,7 +156,7 @@
                             </Grid>
                             <Border BorderBrush="{DynamicResource TlBorderBrush}"
                                     BorderThickness="0,1,0,0" Padding="0,8,0,0">
-                                <Grid ColumnDefinitions="Auto,Auto,Auto,*,Auto,Auto" ColumnSpacing="3">
+                                <Grid ColumnDefinitions="Auto,Auto,Auto,Auto,Auto,*,Auto,Auto" ColumnSpacing="3">
                                     <Button Grid.Column="0" Classes="nav-btn" ToolTip.Tip="复制到播放头"
                                             IsEnabled="{Binding !ActionEditLocked}"
                                             Click="OnDuplicateActionClick">
@@ -175,10 +175,24 @@
                                         <iconPacks:PackIconIonicons Kind="SaveiOS" Width="15" Height="15"
                                                                     Foreground="{DynamicResource TlTextSecondary}"/>
                                     </Button>
-                                    <Border Grid.Column="4" Width="1" Height="18"
+                                    <!-- 重建: 手动改过 clip 后恢复成预设定义的样子 (按项目内快照, 不会因库变化漂移) -->
+                                    <Button Grid.Column="3" Classes="nav-btn" ToolTip.Tip="按预设重建（项目内快照）"
+                                            IsEnabled="{Binding !ActionEditLocked}"
+                                            Click="OnRebuildActionClick">
+                                        <iconPacks:PackIconIonicons Kind="RefreshiOS" Width="15" Height="15"
+                                                                    Foreground="{DynamicResource TlTextSecondary}"/>
+                                    </Button>
+                                    <!-- 从库更新并重建: 改了预设后让已放置实例跟着更新 -->
+                                    <Button Grid.Column="4" Classes="nav-btn" ToolTip.Tip="从预设库更新并重建"
+                                            IsEnabled="{Binding !ActionEditLocked}"
+                                            Click="OnRebuildFromLibraryClick">
+                                        <iconPacks:PackIconIonicons Kind="CloudDownloadiOS" Width="15" Height="15"
+                                                                    Foreground="{DynamicResource TlTextSecondary}"/>
+                                    </Button>
+                                    <Border Grid.Column="6" Width="1" Height="18"
                                             Margin="5,0,2,0" VerticalAlignment="Center"
                                             Background="{DynamicResource TlBorderBrush}"/>
-                                    <Button Grid.Column="5" Classes="nav-btn" ToolTip.Tip="删除动作（可撤销）"
+                                    <Button Grid.Column="7" Classes="nav-btn" ToolTip.Tip="删除动作（可撤销）"
                                             IsEnabled="{Binding !ActionEditLocked}"
                                             Click="OnDeleteActionClick">
                                         <iconPacks:PackIconIonicons Kind="TrashiOS" Width="15" Height="15"

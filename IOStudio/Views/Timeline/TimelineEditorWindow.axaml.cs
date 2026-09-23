@@ -420,6 +420,16 @@ namespace IOStudio.Views.Timeline
                     instanceId => ViewModel?.DeleteActionInstance(instanceId),
                     refreshInspector: true
                 );
+            panel.RebuildActionRequested += () =>
+                ExecuteSelectedActionCommand(
+                    instanceId => ViewModel?.RebuildActionInstance(instanceId),
+                    refreshInspector: true
+                );
+            panel.RebuildFromLibraryRequested += () =>
+                ExecuteSelectedActionCommand(
+                    instanceId => ViewModel?.RebuildActionInstanceFromLibrary(instanceId),
+                    refreshInspector: true
+                );
 
             // DataContext 变更时重新连接
             this.GetObservable(DataContextProperty)

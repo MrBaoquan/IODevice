@@ -325,9 +325,60 @@ namespace IOStudio.ViewModels.Timeline
             PresetPanelVm.RefreshCategories();
         }
 
-        /// <summary>复制动作实例，并将副本起点放到当前播放头。</summary>
-        public void DuplicateActionInstanceAtPlayhead(string instanceId)
+        /// <summary>
+        /// 按项目内的预设快照重建该实例的全部 Clip（可撤销）。
+        ///
+        /// 用途: 手动改过某个 clip 的关键帧后, 想恢复成预设定义的样子。
+        /// 注意它依据的是**项目内嵌快照**, 所以不会因为预设库变化而漂移。
+        /// </summary>
+        public void RebuildActionInstance(string instanceId)
         {
+            ExecuteActionMutation(
+                "重建动作实例",
+                candidate => ActionInstanceService.RebuildInstance(candidate, instanceId),
+                result => $"已按预设重建“{result.Instance?.Name}”"
+            );
+        }
+
+        /// <summary>
+        /// 从预设库取最新定义刷新项目内快照, 再重建该实例（可撤销）。
+        ///
+        /// 这是"改了预设 → 已放置实例跟着更新"的入口 —— 预设是长片编排的核心手段,
+        /// 没有它就只能删掉重放。
+        /// </summary>
+        public void RebuildActionInstanceFromLibrary(string instanceId)
+        {
+            var timeline = Timeline;
+            var instance = timeline?.ActionInstances?.FirstOrDefault(i => i.Id == instanceId);
+            if (timeline == null || instance == null)
+                return;
+
+            var latest = _presetLibrary.FindPreset(instance.DefinitionId);
+            if (latest == null)
+            {
+                PushStatus($"预设库中找不到“{instance.DefinitionId}”，无法更新");
+                return;
+            }
+
+            ExecuteActionMutation(
+                "按预设库更新并重建",
+                candidate =>
+                {
+                    var target = candidate.ActionInstances?.FirstOrDefault(i => i.Id == instanceId);
+                    if (target == null)
+                        return ActionPlacementResult.Fail("动作实例不存在");
+
+                    // 先让项目快照与修订号对齐到库版本, 再按快照重建
+                    target.DefinitionRevision = latest.Revision;
+                    ActionInstanceService.UpsertEmbeddedPreset(candidate, latest);
+                    return ActionInstanceService.RebuildInstance(candidate, instanceId);
+                },
+                result => $"已更新到预设库版本并重建“{result.Instance?.Name}”"
+            );
+        }
+
+        /// <summary>复制动作实例，并将副本起点放到当前播放头。</summary>
+        public void DuplicateActionInstanceAtPlayhead(string instanceId)        {
             ExecuteActionMutation(
                 "复制动作实例",
                 candidate =>

@@ -702,7 +702,10 @@ namespace IOStudio.Services.Motion
             }
         }
 
-        private static void UpsertEmbeddedPreset(MotionTimeline timeline, EffectPreset preset)
+        /// <summary>
+        /// 把预设写入/更新到项目的内嵌快照 (公开: "从预设库更新并重建"需要先刷新快照)。
+        /// </summary>
+        public static void UpsertEmbeddedPreset(MotionTimeline timeline, EffectPreset preset)
         {
             int index = timeline.EmbeddedPresets.FindIndex(
                 p => p.Id == preset.Id && p.Revision == preset.Revision

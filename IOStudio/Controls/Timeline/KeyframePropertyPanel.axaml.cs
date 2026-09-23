@@ -26,6 +26,10 @@ namespace IOStudio.Controls.Timeline
         public event Action? MoveActionRequested;
         public event Action? SaveActionAsPresetRequested;
         public event Action? DeleteActionRequested;
+        /// <summary>按项目内预设快照重建该实例。</summary>
+        public event Action? RebuildActionRequested;
+        /// <summary>从预设库取最新定义更新快照并重建该实例。</summary>
+        public event Action? RebuildFromLibraryRequested;
 
         private void OnDataContextChanged(object? sender, EventArgs e)
         {
@@ -92,6 +96,12 @@ namespace IOStudio.Controls.Timeline
 
         private void OnDeleteActionClick(object? sender, RoutedEventArgs e) =>
             DeleteActionRequested?.Invoke();
+
+        private void OnRebuildActionClick(object? sender, RoutedEventArgs e) =>
+            RebuildActionRequested?.Invoke();
+
+        private void OnRebuildFromLibraryClick(object? sender, RoutedEventArgs e) =>
+            RebuildFromLibraryRequested?.Invoke();
 
         // ── 值编辑 (Float) ──
 

@@ -144,7 +144,8 @@ namespace IOStudio.Tests.Services
         public void Cpp_And_CSharp_Agree_On_RandomizedTimelines()
         {
             var rnd = new Random(20260923); // 固定种子 → 失败可复现
-            const int caseCount = 8;
+            // 组合矩阵: 值类型(2) × idle 模式(无|continuous|restart = 3) × blend(2) × overlay(2)
+            const int caseCount = 24;
             const int samplesPerCase = 140;
             var report = new List<string>();
             int totalMismatch = 0;
@@ -213,14 +214,28 @@ namespace IOStudio.Tests.Services
 
         /// <summary>
         /// 随机生成一条"有代表性"的时间轴, 并返回用于诊断的维度标签。
-        /// 刻意保证 clip 不重叠 (否则"取第一个命中"的顺序语义会引入无关歧义)。
+        ///
+        /// <para><b>组合由 caseIndex 确定性决定</b> (而不是靠随机撞): 值类型 × idle 模式
+        /// (无 / continuous / restart) × 是否有 blend × 是否有 overlay 的完整矩阵 ——
+        /// 否则某些组合可能一直没被测到 (之前就漏过 float+continuous+blend)。
+        /// 其余 (时长/数量/取值/插值) 仍然随机。</para>
+        ///
+        /// <para>刻意保证 clip 不重叠 (否则"取第一个命中"的顺序语义会引入无关歧义)。</para>
         /// </summary>
         private static (MotionTimeline Timeline, string Label) BuildRandomTimeline(
             Random rnd,
             int caseIndex
         )
         {
-            bool isBool = caseIndex % 2 == 0;
+            int selector = caseIndex;
+            bool isBool = selector % 2 == 0;
+            selector /= 2;
+            int idleMode = selector % 3; // 0=无 idle, 1=continuous, 2=restart
+            selector /= 3;
+            bool wantBlend = selector % 2 == 1;
+            selector /= 2;
+            bool wantOverlay = selector % 2 == 1;
+
             var interps = new[] { "linear", "step", "ease_in_out" };
             var parts = new List<string> { isBool ? "bool" : "float" };
 
@@ -265,12 +280,12 @@ namespace IOStudio.Tests.Services
             }
             parts.Add($"clips={clipCount}");
 
-            // ── 待机循环 ──
-            if (rnd.NextDouble() < 0.75)
+            // ── 待机循环 (是否存在/相位模式/blend 由矩阵决定, 不是随机撞) ──
+            if (idleMode > 0)
             {
                 double period = 800 + rnd.NextDouble() * 3000;
-                bool blend = rnd.NextDouble() < 0.5;
-                bool restart = rnd.NextDouble() < 0.5;
+                bool blend = wantBlend;
+                bool restart = idleMode == 2;
                 var idle = new IdleLoop
                 {
                     Enabled = true,
@@ -297,8 +312,8 @@ namespace IOStudio.Tests.Services
                     + (idle.PhaseOffsetMs > 0 ? $"+off{idle.PhaseOffsetMs:F0}" : ""));
             }
 
-            // ── 空窗覆盖点 ──
-            if (rnd.NextDouble() < 0.45)
+            // ── 空窗覆盖点 (由矩阵决定) ──
+            if (wantOverlay)
             {
                 int okf = 1 + rnd.Next(3);
                 var ov = new List<MotionKeyframe>();

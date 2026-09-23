@@ -101,6 +101,25 @@ namespace IOStudio.Services.Motion
             List<MotionValidationIssue> issues
         )
         {
+            // 版本: 未来版本的字段会被**静默忽略** → 明确提示而不是当作正常文件打开
+            if (
+                !string.IsNullOrEmpty(timeline.Version)
+                && timeline.Version != "2.0"
+                && timeline.Version != "3.0"
+            )
+            {
+                issues.Add(
+                    new MotionValidationIssue
+                    {
+                        Severity = MotionIssueSeverity.Warning,
+                        Code = "timeline.unknown_version",
+                        Message =
+                            $"未知的格式版本 '{timeline.Version}' (当前支持 3.0), "
+                            + "其中的新字段可能被忽略",
+                    }
+                );
+            }
+
             if (tracks.Count == 0)
             {
                 issues.Add(

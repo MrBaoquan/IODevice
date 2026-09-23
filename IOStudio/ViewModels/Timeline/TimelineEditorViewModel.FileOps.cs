@@ -61,6 +61,17 @@ namespace IOStudio.ViewModels.Timeline
             WindowTitle = $"动作编排 — {name}{dirty}";
         }
 
+        /// <summary>
+        /// 写盘前把所有"派生状态"同步回模型 —— 三条写盘路径 (自动保存/保存/另存为) **必须**走
+        /// 同一套, 否则某条路径会写出过期数据 (例如自动保存漏同步标记 → 新加的标记被旧列表覆盖,
+        /// 崩溃后即丢失)。
+        /// </summary>
+        private void SyncDerivedStateToTimeline()
+        {
+            _markerService.SyncToTimeline();
+            SyncMediaToTimeline();
+        }
+
         /// <summary>启动自动保存定时器</summary>
         private void StartAutoSave()
         {
@@ -74,7 +85,8 @@ namespace IOStudio.ViewModels.Timeline
                     {
                         if (IsDirty && Timeline != null && !string.IsNullOrEmpty(CurrentFilePath))
                         {
-                            SyncMediaToTimeline();
+                            // 与保存/另存为走同一套同步 (原来这里漏了标记同步)
+                            SyncDerivedStateToTimeline();
                             if (MotionFileReader.Write(Timeline, CurrentFilePath))
                             {
                                 IsDirty = false;
@@ -162,10 +174,8 @@ namespace IOStudio.ViewModels.Timeline
             if (Timeline is null)
                 return false;
 
-            // 同步标记到 Timeline 模型
-            _markerService.SyncToTimeline();
-            // 同步影片媒体绑定 (视频路径 + 时长) 到模型
-            SyncMediaToTimeline();
+            // 同步派生状态 (标记 + 影片媒体绑定) 到模型
+            SyncDerivedStateToTimeline();
 
             if (!string.IsNullOrEmpty(CurrentFilePath))
             {
@@ -219,10 +229,8 @@ namespace IOStudio.ViewModels.Timeline
             if (Timeline == null)
                 return false;
 
-            // 同步标记到 Timeline 模型
-            _markerService.SyncToTimeline();
-            // 同步影片媒体绑定 (视频路径 + 时长) 到模型
-            SyncMediaToTimeline();
+            // 同步派生状态 (标记 + 影片媒体绑定) 到模型
+            SyncDerivedStateToTimeline();
 
             if (MotionFileReader.Write(Timeline, filePath))
             {

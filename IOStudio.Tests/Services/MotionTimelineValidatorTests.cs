@@ -114,6 +114,29 @@ namespace IOStudio.Tests.Services
         }
 
         [Fact]
+        public void UnknownFormatVersion_IsWarning()
+        {
+            // 未来版本的字段会被静默忽略, 必须提示而不是当正常文件打开
+            var tl = Timeline(1000, Track(clips: Clip(0, 1000, (0, 0.5f))));
+            tl.Version = "4.0";
+            var issue = Assert.Single(
+                MotionTimelineValidator.Validate(tl),
+                i => i.Code == "timeline.unknown_version"
+            );
+            Assert.Equal(MotionIssueSeverity.Warning, issue.Severity);
+        }
+
+        [Theory]
+        [InlineData("2.0")]
+        [InlineData("3.0")]
+        public void KnownFormatVersions_AreClean(string version)
+        {
+            var tl = Timeline(1000, Track(clips: Clip(0, 1000, (0, 0.5f))));
+            tl.Version = version;
+            Assert.Empty(MotionTimelineValidator.Validate(tl));
+        }
+
+        [Fact]
         public void InstanceBeyondDuration_IsError()
         {
             var tl = Timeline(5000, Track(clips: Clip(0, 1000, (0, 0.5f))));

@@ -209,11 +209,35 @@ namespace {
         return v;
     }
 
+    // bool 轨专用阶梯求值 —— 镜像 C# TrackValueEvaluator.EvaluateBoolStep (编辑器亦按阶梯渲染)。
+    // 开关不应在插值中点翻转: 曾用"插值后再量化", 于是 0→1 的线性段会在中点翻, 与编辑器不一致。
+    float EvaluateBoolStep(const MotionClip& clip, double localTimeMs) {
+        if (clip.keyframes.empty())
+            return 0.0f;
+        float val = clip.keyframes.front().value;
+        for (const auto& kf : clip.keyframes) {
+            if (kf.timeMs <= localTimeMs)
+                val = kf.value;
+            else
+                break;
+        }
+        return val >= 0.5f ? 1.0f : 0.0f;
+    }
+
     float EvaluateTrack(const MotionTrack& track, double absoluteTimeMs) {
         // 1) 真实 clip 覆盖 (最高优先级, 永不被打断)
         for (const auto& clip : track.clips) {
-            if (absoluteTimeMs >= clip.startMs && absoluteTimeMs <= clip.endMs)
-                return QuantizeTrackValue(track, EvaluateClip(clip, absoluteTimeMs, track.neutralValue));
+            if (absoluteTimeMs >= clip.startMs && absoluteTimeMs <= clip.endMs) {
+                // 关键帧时间**相对 clip 起点** (与编辑器写入 .motion 的约定一致:
+                // 编辑器用 `绝对时间 - clip.StartMs` 求值、拖动时也用 `clip.StartMs + 相对`)。
+                // 这里曾误传绝对时间, 导致所有"起始不为 0 的 clip"在放映端取错时间点
+                // (常量曲线看不出差异, 一旦关键帧有变化就会与编辑器预览不一致)。
+                const double localMs = absoluteTimeMs - clip.startMs;
+                // bool 轨走阶梯 (镜像 C#); float 轨走插值后钳位
+                if (track.valueType == "bool")
+                    return EvaluateBoolStep(clip, localMs);
+                return QuantizeTrackValue(track, EvaluateClip(clip, localMs, track.neutralValue));
+            }
         }
 
         // 2) Overlay 覆盖关键帧 (空窗自由数值点, 优先级高于 idle)

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using Xunit;
 using Xunit.Abstractions;
 using IOToolkit;
+using IOStudio.Models.Motion;
 using IOStudio.Services.Motion;
 
 namespace IOStudio.Tests.Services
@@ -129,6 +130,201 @@ namespace IOStudio.Tests.Services
             {
                 slot.Unload();
             }
+        }
+
+        // ═══════ 随机对拍: 把"镜像"钉死在权威上 ═══════
+
+        /// <summary>
+        /// 随机对拍 —— 比"若干手挑采样点"强得多: 随机生成时间轴 (含 idle 的 continuous/restart、
+        /// blend、overlay、空窗、边界、步进/缓动/贝塞尔插值), 逐点比对两侧。
+        ///
+        /// <para>这是后续任何"让 C++ 更权威"改动的前提: 先证明镜像现在真的是准的。</para>
+        /// </summary>
+        [Fact]
+        public void Cpp_And_CSharp_Agree_On_RandomizedTimelines()
+        {
+            var rnd = new Random(20260923); // 固定种子 → 失败可复现
+            const int caseCount = 8;
+            const int samplesPerCase = 140;
+            var report = new List<string>();
+            int totalMismatch = 0;
+
+            for (int ci = 0; ci < caseCount; ci++)
+            {
+                var (timeline, label) = BuildRandomTimeline(rnd, ci);
+                string json = MotionFileReader.ToJson(timeline);
+
+                var slot = MotionPlayer.LoadSlotFromJson($"fuzz_{ci}", json);
+                try
+                {
+                    var track = timeline.Tracks[0];
+                    int caseMismatch = 0;
+                    string firstExample = "";
+
+                    for (int s = 0; s < samplesPerCase; s++)
+                    {
+                        double t = rnd.NextDouble() * timeline.DurationMs;
+                        var native = NativeEvaluate(slot, (float)t);
+                        if (native.Length == 0)
+                        {
+                            report.Add($"case{ci} [{label}] 原生未解析出轨道");
+                            break;
+                        }
+
+                        float csharp = TrackValueEvaluator.Evaluate(
+                            track.Clips,
+                            track.ValueType,
+                            track.NeutralValue,
+                            track.IdleLoop,
+                            track.OverrideKeyframes,
+                            t
+                        );
+
+                        if (Math.Abs(native[0] - csharp) > 1e-3f)
+                        {
+                            caseMismatch++;
+                            if (firstExample.Length == 0)
+                                firstExample =
+                                    $"首例 t={t:F0}ms native={native[0]:F4} csharp={csharp:F4}";
+                        }
+                    }
+
+                    totalMismatch += caseMismatch;
+                    report.Add(
+                        $"case{ci} [{label}] 采样={samplesPerCase} 不一致={caseMismatch}"
+                            + (caseMismatch > 0 ? $"  {firstExample}" : "")
+                    );
+                }
+                finally
+                {
+                    slot.Unload();
+                }
+            }
+
+            foreach (var line in report)
+                _out.WriteLine(line);
+
+            Assert.True(
+                totalMismatch == 0,
+                $"随机对拍发现 C++(权威) 与 C#(镜像) 不一致, 共 {totalMismatch} 处:\n  "
+                    + string.Join("\n  ", report)
+            );
+        }
+
+        /// <summary>
+        /// 随机生成一条"有代表性"的时间轴, 并返回用于诊断的维度标签。
+        /// 刻意保证 clip 不重叠 (否则"取第一个命中"的顺序语义会引入无关歧义)。
+        /// </summary>
+        private static (MotionTimeline Timeline, string Label) BuildRandomTimeline(
+            Random rnd,
+            int caseIndex
+        )
+        {
+            bool isBool = caseIndex % 2 == 0;
+            var interps = new[] { "linear", "step", "ease_in_out" };
+            var parts = new List<string> { isBool ? "bool" : "float" };
+
+            double duration = 6000 + rnd.NextDouble() * 12000;
+
+            var track = new MotionTrack
+            {
+                Id = $"t{caseIndex}",
+                DeviceName = "Simulator-1",
+                OutputType = "oaxis",
+                OAxisChannel = "OAxis_01",
+                Label = $"随机{caseIndex}",
+                ValueType = isBool ? "bool" : "float",
+                Clips = new List<MotionClip>(),
+            };
+
+            float RandValue() =>
+                isBool ? (rnd.Next(2) == 0 ? 0f : 1f) : (float)(0.05 + rnd.NextDouble() * 0.9);
+
+            // ── 不重叠 clip (中间留空窗, 让 idle/overlay 有作用域) ──
+            double cursor = 0;
+            int clipCount = 1 + rnd.Next(3);
+            for (int i = 0; i < clipCount; i++)
+            {
+                cursor += rnd.NextDouble() * 900;
+                double span = 600 + rnd.NextDouble() * 2600;
+                var clip = new MotionClip { Id = $"c{i}", StartMs = cursor, EndMs = cursor + span };
+                int kfCount = 2 + rnd.Next(3);
+                for (int k = 0; k < kfCount; k++)
+                {
+                    clip.Keyframes.Add(
+                        new MotionKeyframe
+                        {
+                            TimeMs = span * k / (kfCount - 1),
+                            Value = RandValue(),
+                            Interpolation = interps[rnd.Next(interps.Length)],
+                        }
+                    );
+                }
+                track.Clips.Add(clip);
+                cursor += span;
+            }
+            parts.Add($"clips={clipCount}");
+
+            // ── 待机循环 ──
+            if (rnd.NextDouble() < 0.75)
+            {
+                double period = 800 + rnd.NextDouble() * 3000;
+                bool blend = rnd.NextDouble() < 0.5;
+                bool restart = rnd.NextDouble() < 0.5;
+                var idle = new IdleLoop
+                {
+                    Enabled = true,
+                    PeriodMs = period,
+                    BlendMs = blend ? rnd.NextDouble() * 400 : 0,
+                    PhaseMode = restart ? "restart" : "continuous",
+                    PhaseOffsetMs = rnd.NextDouble() < 0.4 ? rnd.NextDouble() * 500 : 0,
+                };
+                int ikf = 2 + rnd.Next(3);
+                for (int k = 0; k < ikf; k++)
+                {
+                    idle.Keyframes.Add(
+                        new MotionKeyframe
+                        {
+                            TimeMs = period * k / (ikf - 1),
+                            Value = RandValue(),
+                            Interpolation = interps[rnd.Next(interps.Length)],
+                        }
+                    );
+                }
+                track.IdleLoop = idle;
+                parts.Add($"idle={idle.PhaseMode}"
+                    + (blend ? $"+blend{idle.BlendMs:F0}" : "")
+                    + (idle.PhaseOffsetMs > 0 ? $"+off{idle.PhaseOffsetMs:F0}" : ""));
+            }
+
+            // ── 空窗覆盖点 ──
+            if (rnd.NextDouble() < 0.45)
+            {
+                int okf = 1 + rnd.Next(3);
+                var ov = new List<MotionKeyframe>();
+                for (int k = 0; k < okf; k++)
+                {
+                    ov.Add(
+                        new MotionKeyframe
+                        {
+                            TimeMs = 400 + rnd.NextDouble() * Math.Max(500, duration - 800),
+                            Value = RandValue(),
+                            Interpolation = "linear",
+                        }
+                    );
+                }
+                ov.Sort((a, b) => a.TimeMs.CompareTo(b.TimeMs));
+                track.OverrideKeyframes = ov;
+                parts.Add($"overlay={okf}");
+            }
+
+            var timeline = new MotionTimeline
+            {
+                Name = $"fuzz{caseIndex}",
+                DurationMs = Math.Max(duration, cursor + 200),
+                Tracks = new List<MotionTrack> { track },
+            };
+            return (timeline, string.Join(" ", parts));
         }
     }
 }

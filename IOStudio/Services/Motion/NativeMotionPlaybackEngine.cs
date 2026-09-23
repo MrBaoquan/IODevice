@@ -150,6 +150,10 @@ namespace IOStudio.Services.Motion
             // 安全时机 (不在派发路径上): 读设备自述量程
             PrimeDeviceRanges(_currentTimeline);
 
+            // 新一次播放: 清空限速基线, 避免上次的值影响本次起步
+            _rateLimiter.Reset();
+            _lastDispatchMs = double.NaN;
+
             // 不调用 _slot.Play() — 完全由 C# 端驱动时间, 控制设备输出
             _playStartMs = _lastPositionMs;
             _playStopwatch.Restart();
@@ -409,6 +413,11 @@ namespace IOStudio.Services.Motion
         /// <summary>
         /// C# InterpolationEngine 求值 → 批量 UI 更新 → 可选设备输出。
         /// </summary>
+        private readonly SafetyRateLimiter _rateLimiter = new();
+
+        /// <summary>上次派发的时间 (ms)。NaN = 尚未派发过。</summary>
+        private double _lastDispatchMs = double.NaN;
+
         private void SyncLiveValues(float timeMs)
         {
             if (_currentTimeline == null)
@@ -417,6 +426,13 @@ namespace IOStudio.Services.Motion
             var tracks = _currentTimeline.Tracks;
             if (tracks.Count == 0)
                 return;
+
+            // 速率限制的时间步长由实际派发时间差得出: Seek / 开始播放 / 长卡顿会自然
+            // 形成"不连续", 由 SafetyRateLimiter 识别为重置而非限速。
+            double deltaSec = double.IsNaN(_lastDispatchMs)
+                ? 0
+                : (timeMs - _lastDispatchMs) / 1000.0;
+            _lastDispatchMs = timeMs;
 
             _batchBuffer.Clear();
 
@@ -432,6 +448,17 @@ namespace IOStudio.Services.Motion
                     track.OutputType == "oaxis" && !string.IsNullOrEmpty(track.OAxisChannel)
                         ? track.OAxisChannel
                         : track.OActionName;
+
+                // 安全限速 (仅当设备声明速率): 限制单帧归一化变化量, 防止命令出物理上过猛的跳变。
+                // 限速后的值同时用于 UI 批量值, 保证"看到的就是下发的"。
+                float? maxRate = DeviceMaxRateProvider?.Invoke(track.DeviceName);
+                if (maxRate is { } rate && rate > 0f)
+                    value = _rateLimiter.Limit(
+                        track.DeviceName + "|" + channelName,
+                        value,
+                        deltaSec,
+                        rate
+                    );
 
                 _batchBuffer.Add((track.DeviceName, channelName, value));
 
@@ -530,6 +557,14 @@ namespace IOStudio.Services.Motion
         /// device+channel, or null when not declared.
         /// </summary>
         public static Func<string, string, (float Min, float Max)?>? DeviceRangeProvider { get; set; }
+
+        /// <summary>
+        /// 设备声明的最大变化速率 (归一化单位/秒)。由宿主注入; 返回 null = 未声明 → **不限速**。
+        ///
+        /// <para>只在设备自己声明速率时才启用限速, 因此对未声明的设备行为与引入前完全一致。
+        /// 与 DeviceRangeProvider 一样是纯缓存查表, 可在派发路径安全调用。</para>
+        /// </summary>
+        public static Func<string, float?>? DeviceMaxRateProvider { get; set; }
 
         /// <summary>
         /// Device-range warm-up hook. Invoked at safe points (timeline load / play), NEVER from the

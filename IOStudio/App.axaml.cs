@@ -28,6 +28,8 @@ namespace IOStudio
             // IOStudio 不硬编码任何设备语义。读不到就直通（不影响既有动作文件）。
             Services.Motion.NativeMotionPlaybackEngine.DeviceRangeProvider =
                 Services.Motion.DeviceRangeCatalog.Resolve;
+            Services.Motion.NativeMotionPlaybackEngine.DeviceMaxRateProvider =
+                Services.Motion.DeviceRangeCatalog.ResolveMaxRate;
             Services.Motion.NativeMotionPlaybackEngine.DeviceRangePrimer =
                 Services.Motion.DeviceRangeCatalog.Prime;
 

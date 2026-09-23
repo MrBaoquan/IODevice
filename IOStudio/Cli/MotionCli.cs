@@ -213,6 +213,10 @@ namespace IOStudio.Cli
                         payload["tickMaxMediaMs"] = vm.TickMaxMediaMs;
                         payload["tickStartCount"] = vm.TickStartCount;
                         payload["tickStopCount"] = vm.TickStopCount;
+                        // 后台设备轮询耗时 (定位"定时调度被饿死")
+                        payload["pollCount"] = Services.Motion.PollDiagnostics.UpdateCount;
+                        payload["pollMaxMs"] = Services.Motion.PollDiagnostics.MaxUpdateMs;
+                        payload["pollTotalMs"] = Services.Motion.PollDiagnostics.TotalUpdateMs;
                     }
                     catch { /* 编辑器状态不是关键路径，取不到就跳过 */ }
                 }

@@ -830,7 +830,13 @@ namespace IOStudio.ViewModels
                         .Subscribe(_ =>
                         {
                             // C++ 设备轮询在后台线程执行
+                            var swPoll = System.Diagnostics.Stopwatch.StartNew();
                             IODeviceController.Update();
+                            long pollMs = swPoll.ElapsedMilliseconds;
+                            Services.Motion.PollDiagnostics.UpdateCount++;
+                            Services.Motion.PollDiagnostics.TotalUpdateMs += pollMs;
+                            if (pollMs > Services.Motion.PollDiagnostics.MaxUpdateMs)
+                                Services.Motion.PollDiagnostics.MaxUpdateMs = pollMs;
 
                             if (IsStared == false)
                                 return;

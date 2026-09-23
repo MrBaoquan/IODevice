@@ -241,6 +241,22 @@ int IOToolkit::ExternalIO::GetDeviceAD(std::vector<int32_t>& OutADStatus)
 
 int IOToolkit::ExternalIO::GetDO(std::vector<float>& OutDOStatus)
 {
+    // V2 (优先): float 读回, 无截断
+    if (externalDll.HasGetDeviceDOF())
+    {
+        static float exDoStatusF[MaxIOCount];
+        int retCodeV2 = externalDll.GetDeviceDOF(deviceIndex, exDoStatusF);
+        if (retCodeV2 == 1)
+        {
+            for (size_t index = 0; index < OutDOStatus.size(); ++index)
+            {
+                OutDOStatus[index] = exDoStatusF[index];
+            }
+        }
+        return retCodeV2;
+    }
+
+    // V1 (回落)
     static short exDoStatus[MaxIOCount];
 	std::copy(OutDOStatus.begin(), OutDOStatus.end(), exDoStatus);
 
@@ -350,10 +366,26 @@ int IOToolkit::ExternalIO::SetDO(const FKey& InKey, float val)
 int IOToolkit::ExternalIO::SetDO(std::vector<float>& InDOStatus)
 {
 	if (!bValid) return 0;
-    static short tmpDOStatus[MaxIOCount];
-    for (size_t index = 0;index < InDOStatus.size();index++)
+
+    // V2 (优先): 插件导出 float 版入口 → 工程量直达, 不经 short, 无截断/无溢出。
+    // 由 HasSetDeviceDOF() 运行时探测; 老插件不导出即自动回落到下面的 V1 路径。
+    if (externalDll.HasSetDeviceDOF())
     {
-        tmpDOStatus[index] = static_cast<short>(DOStatus[index]);
+        static float tmpDOStatusF[MaxIOCount];
+        const size_t count = (std::min)(InDOStatus.size(), static_cast<size_t>(MaxIOCount));
+        for (size_t index = 0; index < count; index++)
+        {
+            tmpDOStatusF[index] = InDOStatus[index];
+        }
+        return externalDll.SetDeviceDOF(deviceIndex, tmpDOStatusF);
+    }
+
+    // V1 (回落): 老插件只有 short 入口 (行为与引入 V2 前完全一致)。
+    static short tmpDOStatus[MaxIOCount];
+    const size_t count = (std::min)(InDOStatus.size(), static_cast<size_t>(MaxIOCount));
+    for (size_t index = 0; index < count; index++)
+    {
+        tmpDOStatus[index] = static_cast<short>(InDOStatus[index]);
     }
     return externalDll.SetDeviceDO(deviceIndex, tmpDOStatus);
 }

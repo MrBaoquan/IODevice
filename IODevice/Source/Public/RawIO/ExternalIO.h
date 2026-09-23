@@ -35,8 +35,10 @@ class IOUIDLL :public PDLL
     DECLARE_FUNCTION1(int, SetPluginRuntimeRoot, const char*)
     DECLARE_FUNCTION1(int, OpenDevice, uint8)
     DECLARE_FUNCTION1(int, CloseDevice, uint8)
-    DECLARE_FUNCTION2(int, SetDeviceDO, uint8, short*)
-    DECLARE_FUNCTION2(int, GetDeviceDO, uint8, short*)
+    DECLARE_FUNCTION2(int, SetDeviceDO, uint8, short*)          // V1: Legacy interface (short)
+    DECLARE_FUNCTION2(int, SetDeviceDOF, uint8, float*)         // V2: New interface (float, 工程量直达, 无精度损失)
+    DECLARE_FUNCTION2(int, GetDeviceDO, uint8, short*)          // V1: Legacy interface (short)
+    DECLARE_FUNCTION2(int, GetDeviceDOF, uint8, float*)         // V2: New interface (float)
     DECLARE_FUNCTION2(int, GetDeviceDI, uint8, BYTE*)
     DECLARE_FUNCTION2(int, GetDeviceAD, uint8, short*)          // V1: Legacy interface (short)
     DECLARE_FUNCTION2(int, GetDeviceAD_INT, uint8, int32_t*)    // V2: New interface (int32_t)
@@ -59,6 +61,30 @@ public:
             m_isGetDeviceAD_INT = (m_GetDeviceAD_INT != NULL) ? FUNC_LOADED : -1;
         }
         return m_isGetDeviceAD_INT == FUNC_LOADED && m_GetDeviceAD_INT != NULL;
+    }
+
+    // V2 精度探测: 插件是否导出 float 版 DO 写入 (工程量直达, 不再经 short 截断)。
+    // 与 HasGetDeviceAD_INT 同一范式: 惰性 PDLLGetSymbol + 三态缓存 (0=未查, FUNC_LOADED=有, -1=无)。
+    // 老插件不导出 → 返回 false → 调用方回落到 V1 short 路径, 行为与今天完全一致。
+    bool HasSetDeviceDOF()
+    {
+        if (0 == m_isSetDeviceDOF && m_dllHandle)
+        {
+            m_SetDeviceDOF = (TYPE_SetDeviceDOF)PDLLGetSymbol(m_dllHandle, "SetDeviceDOF");
+            m_isSetDeviceDOF = (m_SetDeviceDOF != NULL) ? FUNC_LOADED : -1;
+        }
+        return m_isSetDeviceDOF == FUNC_LOADED && m_SetDeviceDOF != NULL;
+    }
+
+    // V2 精度探测: 插件是否导出 float 版 DO 读回。
+    bool HasGetDeviceDOF()
+    {
+        if (0 == m_isGetDeviceDOF && m_dllHandle)
+        {
+            m_GetDeviceDOF = (TYPE_GetDeviceDOF)PDLLGetSymbol(m_dllHandle, "GetDeviceDOF");
+            m_isGetDeviceDOF = (m_GetDeviceDOF != NULL) ? FUNC_LOADED : -1;
+        }
+        return m_isGetDeviceDOF == FUNC_LOADED && m_GetDeviceDOF != NULL;
     }
 };
 

@@ -1,8 +1,10 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Text.Json;
 using System.Xml.Linq;
 
 namespace IOStudio.Services.Motion
@@ -13,45 +15,168 @@ namespace IOStudio.Services.Motion
     /// <para>为什么量程属于设备: 量程是硬件属性, 不是创作意图。动作文件保持设备无关,
     /// 换平台只改平台自己的配置, 永不改 .motion。</para>
     ///
-    /// <para><b>来源</b> (全部由设备自己持有, IOStudio 不硬编码任何设备语义):
+    /// <para><b>来源与优先级</b>:
     /// <list type="number">
-    /// <item>&lt;root&gt;/Config/IODevice.xml — 设备名 → DllName</item>
-    /// <item>&lt;root&gt;/Config/&lt;DllName&gt;/config.ini 的 <c>[channel_range]</c> 段:
-    ///   <c>OAxis_01 = -30, 30, deg</c> (归一化 0→min, 1→max)。</item>
+    /// <item><b>设备自述 capabilities</b> (首选, 单一同源): 设备通过 RPC topic
+    ///   <c>plugin.capabilities</c> 返回的 <c>motion.channel_range[]</c>,
+    ///   由插件从其 travel 配置派生, 与三维视图软限位同源。</item>
+    /// <item><b>设备配置文件兜底</b>: &lt;root&gt;/Config/&lt;DllName&gt;/config.ini 的
+    ///   <c>[channel_range]</c> 段 (capabilities 不可用时使用)。</item>
     /// </list></para>
     ///
-    /// <para><b>目标终态 (尚未打通)</b>: 由插件把量程作为 capabilities 发布
-    /// (<c>motion.channel_range</c>), 宿主进程内读取, 从而让量程与 <c>motion_travel_*</c>
-    /// 单一同源、无需在设备配置里再写一份。该链路目前受阻于宿主/插件通道缺陷:
-    /// 经 <c>_rpc.req</c> 的 <c>plugin.capabilities</c> 调用在宿主内抛原生异常 (SEHException),
-    /// 经 <c>_capabilities</c> 的 QueryChannelCapabilities 返回空 —— 两者都指向
-    /// "插件→宿主" 回调未生效。详见提交说明。在此之前由本 ini 段承载。</para>
+    /// <para><b>时序约束 (重要)</b>: 读 capabilities 要走 native RPC, 而设备派发本身跑在
+    /// native tick 内 —— 在派发路径里发 RPC 不安全。因此本类拆成两半:
+    /// <list type="bullet">
+    /// <item><see cref="Resolve"/> 只查缓存 + 惰性读设备配置文件, 永不触碰 native
+    ///   (可在派发路径安全调用);</item>
+    /// <item><see cref="Prime"/> 在安全时机 (时间轴加载 / 开始播放) 由引擎调用, 发一次 RPC 并缓存。</item>
+    /// </list></para>
     ///
     /// <para>失败一律非致命: 无量程 → 直通 (保持既有行为)。</para>
     /// </summary>
     public static class DeviceRangeCatalog
     {
-        private static readonly Dictionary<string, (float Min, float Max)?> Cache =
+        private static readonly Dictionary<string, (float Min, float Max)> Cache =
             new(StringComparer.OrdinalIgnoreCase);
-        private static readonly object Gate = new();
-        private static bool _loaded;
 
-        /// <summary>Install as NativeMotionPlaybackEngine.DeviceRangeProvider.</summary>
+        /// <summary>已从 capabilities 拿到明确答复的设备 — 不再重复查询。</summary>
+        private static readonly HashSet<string> Queried = new(StringComparer.OrdinalIgnoreCase);
+
+        /// <summary>尝试次数 — 设备迟迟不可查询时给出上限, 避免每次播放都等一次超时。</summary>
+        private static readonly Dictionary<string, int> Attempts = new(
+            StringComparer.OrdinalIgnoreCase
+        );
+
+        private const int MaxAttempts = 5;
+        private const int QueryTimeoutMs = 500;
+
+        private static readonly object Gate = new();
+        private static bool _iniLoaded;
+
+        /// <summary>Install as NativeMotionPlaybackEngine.DeviceRangeProvider. 只查缓存, 不碰 native。</summary>
         public static (float Min, float Max)? Resolve(string deviceName, string channelKey)
+        {
+            if (string.IsNullOrEmpty(deviceName) || string.IsNullOrEmpty(channelKey))
+                return null;
+
+            lock (Gate)
+            {
+                EnsureIniLoaded();
+                return Cache.TryGetValue(deviceName + "|" + channelKey, out var range)
+                    ? range
+                    : null;
+            }
+        }
+
+        /// <summary>
+        /// Install as NativeMotionPlaybackEngine.DeviceRangePrimer.
+        /// 只允许在<b>安全时机</b>调用 (时间轴加载 / Play), 不能在设备派发路径里调用。
+        /// 从设备自述 capabilities 取量程 (覆盖配置兜底值)。
+        /// </summary>
+        public static void Prime(IEnumerable<string> deviceNames)
+        {
+            if (deviceNames == null)
+                return;
+
+            foreach (string name in deviceNames.Distinct(StringComparer.OrdinalIgnoreCase))
+            {
+                if (string.IsNullOrEmpty(name))
+                    continue;
+                try
+                {
+                    PrimeOne(name);
+                }
+                catch (Exception ex)
+                {
+                    // capabilities 是增强项: 失败回落到配置兜底。
+                    Debug.WriteLine($"[DeviceRangeCatalog] {name}: {ex.GetType().Name}: {ex.Message}");
+                }
+            }
+        }
+
+        private static void PrimeOne(string deviceName)
         {
             lock (Gate)
             {
-                if (!_loaded)
+                EnsureIniLoaded();
+                if (Queried.Contains(deviceName))
+                    return;
+                int attempt = Attempts.TryGetValue(deviceName, out var a) ? a : 0;
+                if (attempt >= MaxAttempts)
                 {
-                    Load();
-                    _loaded = true;
+                    Queried.Add(deviceName);
+                    return;
                 }
+                Attempts[deviceName] = attempt + 1;
             }
-            return Cache.TryGetValue(deviceName + "|" + channelKey, out var range) ? range : null;
+
+            var device = IOToolkit.IODeviceController.GetIODevice(deviceName);
+            if (device == null)
+                return; // 设备尚未加载 → 下次安全时机再试
+
+            // 通用 _rpc.req/_rpc.res 通道 (插件在 RPC topic plugin.capabilities 上返回 capabilities)。
+            string json = device.SendPluginRequest("plugin.capabilities", "{}", QueryTimeoutMs);
+            if (string.IsNullOrEmpty(json))
+                json = device.SendPluginRequest("simulator.capabilities", "{}", QueryTimeoutMs);
+            if (string.IsNullOrEmpty(json))
+                return; // 无响应 → 下次安全时机再试
+
+            var map = ParseChannelRanges(json);
+
+            lock (Gate)
+            {
+                Queried.Add(deviceName);
+                // capabilities 是权威: 覆盖配置兜底值
+                foreach (var kv in map)
+                    Cache[deviceName + "|" + kv.Key] = kv.Value;
+            }
         }
 
-        private static void Load()
+        /// <summary>从 capabilities JSON 抽取 motion.channel_range[]。</summary>
+        private static Dictionary<string, (float Min, float Max)> ParseChannelRanges(string json)
         {
+            var map = new Dictionary<string, (float Min, float Max)>(
+                StringComparer.OrdinalIgnoreCase
+            );
+            try
+            {
+                using var doc = JsonDocument.Parse(json);
+                if (!doc.RootElement.TryGetProperty("motion", out var motion))
+                    return map;
+                if (
+                    !motion.TryGetProperty("channel_range", out var ranges)
+                    || ranges.ValueKind != JsonValueKind.Array
+                )
+                    return map;
+
+                foreach (var r in ranges.EnumerateArray())
+                {
+                    string? ch = r.TryGetProperty("channel", out var c) ? c.GetString() : null;
+                    if (string.IsNullOrEmpty(ch))
+                        continue;
+                    if (!r.TryGetProperty("min", out var mn) || !r.TryGetProperty("max", out var mx))
+                        continue;
+                    if (mn.ValueKind != JsonValueKind.Number || mx.ValueKind != JsonValueKind.Number)
+                        continue;
+
+                    float min = (float)mn.GetDouble();
+                    float max = (float)mx.GetDouble();
+                    if (max <= min)
+                        continue;
+
+                    map[ch] = (min, max);
+                }
+            }
+            catch (JsonException) { }
+            return map;
+        }
+
+        /// <summary>兜底来源: 设备配置 Config/&lt;DllName&gt;/config.ini 的 [channel_range] 段 (只读一次)。</summary>
+        private static void EnsureIniLoaded()
+        {
+            if (_iniLoaded)
+                return;
+            _iniLoaded = true;
             try
             {
                 string root = AppContext.BaseDirectory;
@@ -60,8 +185,7 @@ namespace IOStudio.Services.Motion
                     return;
 
                 var doc = XDocument.Load(xmlPath);
-                var devices = doc.Root?.Elements("Device") ?? Enumerable.Empty<XElement>();
-                foreach (var dev in devices)
+                foreach (var dev in doc.Root?.Elements("Device") ?? Enumerable.Empty<XElement>())
                 {
                     string? name = dev.Attribute("Name")?.Value;
                     string? dll = dev.Attribute("DllName")?.Value;
@@ -80,7 +204,6 @@ namespace IOStudio.Services.Motion
             }
         }
 
-        /// <summary>解析设备配置里的 [channel_range] 段。</summary>
         private static void ParseIni(string path, string deviceName)
         {
             bool inSection = false;
@@ -126,7 +249,10 @@ namespace IOStudio.Services.Motion
                 if (max <= min)
                     continue;
 
-                Cache[deviceName + "|" + key] = (min, max);
+                // 不覆盖已由 capabilities 提供的值
+                string cacheKey = deviceName + "|" + key;
+                if (!Cache.ContainsKey(cacheKey))
+                    Cache[cacheKey] = (min, max);
             }
         }
     }

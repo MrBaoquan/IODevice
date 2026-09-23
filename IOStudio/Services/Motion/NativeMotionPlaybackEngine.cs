@@ -137,12 +137,18 @@ namespace IOStudio.Services.Motion
         {
             if (_currentTimeline == null && timeline != null)
                 _currentTimeline = timeline;
+
+            // 安全时机 (不在派发路径上): 读设备自述量程
+            PrimeDeviceRanges(_currentTimeline);
         }
 
         public void Play()
         {
             if (_currentTimeline == null)
                 return;
+
+            // 安全时机 (不在派发路径上): 读设备自述量程
+            PrimeDeviceRanges(_currentTimeline);
 
             // 不调用 _slot.Play() — 完全由 C# 端驱动时间, 控制设备输出
             _playStartMs = _lastPositionMs;
@@ -496,6 +502,33 @@ namespace IOStudio.Services.Motion
         /// device+channel, or null when not declared.
         /// </summary>
         public static Func<string, string, (float Min, float Max)?>? DeviceRangeProvider { get; set; }
+
+        /// <summary>
+        /// Device-range warm-up hook. Invoked at safe points (timeline load / play), NEVER from the
+        /// dispatch path: reading capabilities goes through a native RPC, and device dispatch itself
+        /// runs inside the native tick.
+        /// </summary>
+        public static Action<IEnumerable<string>>? DeviceRangePrimer { get; set; }
+
+        /// <summary>Warm up device ranges for every device the timeline touches (safe-point only).</summary>
+        private static void PrimeDeviceRanges(MotionTimeline? timeline)
+        {
+            if (timeline == null || DeviceRangePrimer == null)
+                return;
+            try
+            {
+                var names = new List<string>();
+                foreach (var track in timeline.Tracks)
+                    if (!string.IsNullOrEmpty(track.DeviceName))
+                        names.Add(track.DeviceName);
+                if (names.Count > 0)
+                    DeviceRangePrimer(names);
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[NativeEngine] PrimeDeviceRanges failed: {ex.Message}");
+            }
+        }
 
         /// <summary>Channel identity of a track (OAxis channel or OAction name).</summary>
         private static string ChannelKeyOf(MotionTrack track) =>

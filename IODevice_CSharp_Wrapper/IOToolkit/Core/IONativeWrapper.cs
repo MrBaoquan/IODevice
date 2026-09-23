@@ -32,15 +32,15 @@ namespace IOToolkit.Core
 
     internal class IONativeWrapper
     {
-    #if UNITY_ANDROID && !UNITY_EDITOR
+#if UNITY_ANDROID && !UNITY_EDITOR
         private const string DllName = "iodevice";
         private const CallingConvention NativeCallingConvention = CallingConvention.Cdecl;
         private const UnmanagedType NativeStringType = UnmanagedType.LPStr;
-    #else
+#else
         private const string DllName = "IODevice_C_Wrapper";
         private const CallingConvention NativeCallingConvention = CallingConvention.StdCall;
         private const UnmanagedType NativeStringType = UnmanagedType.BStr;
-    #endif
+#endif
 
         //[DllImport(DllName, CallingConvention = NativeCallingConvention)]
         //[return: MarshalAs(NativeStringType)]
@@ -67,9 +67,7 @@ namespace IOToolkit.Core
 
         [DllImport(DllName, CallingConvention = NativeCallingConvention)]
         [return: MarshalAs(NativeStringType)]
-        public static extern string DeviceIOType(
-            [MarshalAs(NativeStringType)] string InDeviceName
-        );
+        public static extern string DeviceIOType([MarshalAs(NativeStringType)] string InDeviceName);
 
         [DllImport(DllName, CallingConvention = NativeCallingConvention)]
         public static extern int DeviceIndex([MarshalAs(NativeStringType)] string InDeviceName);
@@ -81,7 +79,9 @@ namespace IOToolkit.Core
         public static extern int SetIOLogDir([MarshalAs(NativeStringType)] string InFilePath);
 
         [DllImport(DllName, CallingConvention = NativeCallingConvention)]
-        public static extern int SetIORuntimeRoot([MarshalAs(NativeStringType)] string InRuntimeRoot);
+        public static extern int SetIORuntimeRoot(
+            [MarshalAs(NativeStringType)] string InRuntimeRoot
+        );
 
         /// <summary>
         /// 设置插件配置根目录（项目模式下把项目根注入 native 层，使插件 config.ini 重定向）。
@@ -335,9 +335,7 @@ namespace IOToolkit.Core
         public static extern void Query();
 
         [DllImport(DllName, CallingConvention = NativeCallingConvention)]
-        public static extern void ClearBindings(
-            [MarshalAs(NativeStringType)] string InDeviceName
-        );
+        public static extern void ClearBindings([MarshalAs(NativeStringType)] string InDeviceName);
 
         [DllImport(DllName, CallingConvention = NativeCallingConvention)]
         public static extern void ClearAllBindings();
@@ -516,9 +514,7 @@ namespace IOToolkit.Core
         );
 
         [DllImport(DllName, CallingConvention = NativeCallingConvention)]
-        public static extern int MotionGetSlotState(
-            [MarshalAs(NativeStringType)] string InSlotId
-        );
+        public static extern int MotionGetSlotState([MarshalAs(NativeStringType)] string InSlotId);
 
         [DllImport(DllName, CallingConvention = NativeCallingConvention)]
         public static extern float MotionGetSlotCurrentTime(
@@ -581,5 +577,34 @@ namespace IOToolkit.Core
 
         [DllImport(DllName, CallingConvention = NativeCallingConvention)]
         public static extern void MotionSetSafetyConfig(float InMaxRatePerSecond);
+
+        // ── 通道工程量程: 归一化 0..1 → 工程量 ──────────────
+        // 三级优先级的解析由宿主完成并推成绝对区间; 换算本身在 native, 与放映端共用同一段代码。
+
+        [DllImport(DllName, CallingConvention = NativeCallingConvention)]
+        public static extern void MotionSetChannelRange(
+            [MarshalAs(NativeStringType)] string InDeviceName,
+            [MarshalAs(NativeStringType)] string InChannel,
+            float InMinValue,
+            float InMaxValue
+        );
+
+        [DllImport(DllName, CallingConvention = NativeCallingConvention)]
+        public static extern void MotionClearChannelRanges();
+
+        [DllImport(DllName, CallingConvention = NativeCallingConvention)]
+        public static extern float MotionToEngineering(
+            [MarshalAs(NativeStringType)] string InDeviceName,
+            [MarshalAs(NativeStringType)] string InChannel,
+            float InNormalized
+        );
+
+        [DllImport(DllName, CallingConvention = NativeCallingConvention)]
+        public static extern int MotionEvaluateSlotAtEngineering(
+            [MarshalAs(NativeStringType)] string InSlotId,
+            float InTimeMs,
+            [Out] float[] OutValues,
+            int InMaxChannels
+        );
     }
 }

@@ -606,6 +606,39 @@ IOCAPI int __stdcall MotionEvaluateSlotAt(BSTR InSlotId, float InTimeMs, float* 
 		InMaxChannels);
 }
 
+// ── 通道工程量程 (归一化 → 工程量) ──────────────────
+
+IOCAPI void __stdcall MotionSetChannelRange(BSTR InDeviceName, BSTR InChannel, float InMinValue, float InMaxValue)
+{
+	dh::MotionPlayer::Instance().SetChannelRange(
+		BSTR2String(InDeviceName).c_str(),
+		BSTR2String(InChannel).c_str(),
+		InMinValue,
+		InMaxValue);
+}
+
+IOCAPI void __stdcall MotionClearChannelRanges()
+{
+	dh::MotionPlayer::Instance().ClearChannelRanges();
+}
+
+IOCAPI float __stdcall MotionToEngineering(BSTR InDeviceName, BSTR InChannel, float InNormalized)
+{
+	return dh::MotionPlayer::Instance().ToEngineering(
+		BSTR2String(InDeviceName).c_str(),
+		BSTR2String(InChannel).c_str(),
+		InNormalized);
+}
+
+IOCAPI int __stdcall MotionEvaluateSlotAtEngineering(BSTR InSlotId, float InTimeMs, float* OutValues, int InMaxChannels)
+{
+	return dh::MotionPlayer::Instance().EvaluateSlotAtEngineering(
+		BSTR2String(InSlotId).c_str(),
+		InTimeMs,
+		OutValues,
+		InMaxChannels);
+}
+
 // Global managed callback holder
 static MotionEventCallbackManaged g_managedEventCallback = nullptr;
 static MotionEventDataCallbackManaged g_managedEventDataCallback = nullptr;

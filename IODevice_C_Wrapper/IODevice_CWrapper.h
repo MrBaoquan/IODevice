@@ -173,6 +173,13 @@ extern "C"
 	IOCAPI int   __stdcall MotionLoadSlotFromJson(BSTR InSlotId, BSTR InJsonContent, int InPriority, int InMixPolicy);
 	IOCAPI int   __stdcall MotionEvaluateSlotAt(BSTR InSlotId, float InTimeMs, float* OutValues, int InMaxChannels);
 	IOCAPI void  __stdcall MotionSetSafetyConfig(float InMaxRatePerSecond);
+
+	// ── 通道工程量程: 归一化 0..1 → 工程量 ──────────────
+	// 三级优先级的解析由宿主完成, 推成绝对区间; 换算本身在 native (与放映端共用同一段代码)。
+	IOCAPI void  __stdcall MotionSetChannelRange(BSTR InDeviceName, BSTR InChannel, float InMinValue, float InMaxValue);
+	IOCAPI void  __stdcall MotionClearChannelRanges();
+	IOCAPI float __stdcall MotionToEngineering(BSTR InDeviceName, BSTR InChannel, float InNormalized);
+	IOCAPI int   __stdcall MotionEvaluateSlotAtEngineering(BSTR InSlotId, float InTimeMs, float* OutValues, int InMaxChannels);
 }
 
 // typedef outside extern "C" for C++ usage

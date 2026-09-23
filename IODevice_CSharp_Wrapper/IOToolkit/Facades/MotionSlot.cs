@@ -64,6 +64,31 @@ namespace IOToolkit
             return values;
         }
 
+        /// <summary>
+        /// 纯求值指定时间的所有通道值, 但输出<b>工程量</b> —— 换算在 native 完成
+        /// (与放映端共用同一段代码), 使编排端预览"看到的"与放映端"下发的"完全一致。
+        /// 未登记量程的通道原样返回归一化值。
+        /// </summary>
+        public float[] EvaluateAtEngineering(float timeMs, int maxChannels = 32)
+        {
+            float[] values = new float[maxChannels];
+            int count = IONativeWrapper.MotionEvaluateSlotAtEngineering(
+                SlotId,
+                timeMs,
+                values,
+                maxChannels
+            );
+            if (count < 0)
+                return new float[0];
+            if (count < maxChannels)
+            {
+                float[] trimmed = new float[count];
+                Array.Copy(values, trimmed, count);
+                return trimmed;
+            }
+            return values;
+        }
+
         // ── 属性 ─────────────────────────────────────
 
         public float Speed

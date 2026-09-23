@@ -666,6 +666,32 @@ public:
     MotionEventCallback globalEventCallback = nullptr;
     MotionEventDataCallback globalEventDataCallback = nullptr;
 
+    // ── 通道工程量程表: "device\x1Fchannel" → (min, max) ──
+    // 三级优先级 (轨道 engineering_range → 设备声明量程 → 直通) 的**解析**由宿主完成
+    // (它才知道轨道与设备声明), 但三级都能表达为绝对区间, 所以这里只做一次仿射映射, 无分支。
+    std::map<std::string, std::pair<float, float>> channelRanges;
+
+    static std::string RangeKey(const std::string& deviceName, const std::string& channel) {
+        return deviceName + "\x1F" + channel;
+    }
+
+    /// 归一化 → 工程量。未登记或退化区间 → 直通 (保持既有行为)。
+    float ConvertToEngineering(const std::string& deviceName, const std::string& channel,
+                               float normalized) const {
+        auto it = channelRanges.find(RangeKey(deviceName, channel));
+        if (it == channelRanges.end()) return normalized;
+        const float mn = it->second.first;
+        const float mx = it->second.second;
+        if (!(mx > mn)) return normalized;
+        const float v = (std::max)(0.0f, (std::min)(1.0f, normalized));
+        return mn + v * (mx - mn);
+    }
+
+    /// EvaluateSlotAt / EvaluateSlotAtEngineering 的共用实现 (engineering=true 时输出工程量)
+    int EvaluateSlotAtImpl(const char* slotId, float timeMs, bool engineering,
+                           float* outValues, int maxChannels,
+                           char* outKeys, int keyBufSize);
+
     MotionSlotImpl* GetSlot(const char* slotId) {
         auto it = slots.find(slotId);
         return (it != slots.end()) ? &it->second : nullptr;
@@ -674,12 +700,11 @@ public:
     // 设备派发: channelKey → IODevice SetDO
     // Device dispatch: channelKey -> IODevice SetDO
     //
-    // NOTE (IMPORTANT): this path is currently UNUSED by IOStudio's editor playback.
-    // NativeMotionPlaybackEngine deliberately does not call MotionPlayer::PlaySlot();
-    // the editor drives time on the C# side and dispatches via WriteToDevice, which is
-    // also where normalized -> engineering conversion lives (ToEngineering).
-    // If this native path is ever re-enabled, ToEngineering MUST be mirrored here,
-    // otherwise editor preview and runtime playback will produce different values.
+    // 归一化 → 工程量 的换算就在这里 (派发收口点), 使用 Impl::channelRanges 里由宿主推送的
+    // (min, max) 表。求值本身仍返回归一化值, 所以跨语言契约测试比对的仍是归一化语义。
+    //
+    // NOTE: 编排端(编辑器)目前不驱动本路径 (它由 C# 侧驱动时间并派发); 本路径服务放映端
+    // (UNIPlayer)。两端的换算必须一致 —— 这正是把换算放进 native 并让编排端也复用它的原因。
     void DispatchChannel(const std::string& channelKey, float value) {
         auto dotIndex = channelKey.find('.');
         if (dotIndex == std::string::npos) return;
@@ -694,10 +719,12 @@ public:
         if (remainder.rfind("oaxis.", 0) == 0 && remainder.length() > 6) {
             // OAxis 模式
             std::string oaxisChannel = remainder.substr(6);
-            device.SetDO(FKey(oaxisChannel.c_str()), value);
+            device.SetDO(FKey(oaxisChannel.c_str()),
+                         ConvertToEngineering(deviceName, oaxisChannel, value));
         } else {
             // OAction 模式
-            device.SetDO(remainder.c_str(), value);
+            device.SetDO(remainder.c_str(),
+                         ConvertToEngineering(deviceName, remainder, value));
         }
     }
 
@@ -1076,14 +1103,14 @@ void MotionPlayer::SetEventDataCallback(MotionEventDataCallback callback)
 
 // ── 纯求值(不派发) ──────────────────────────────────
 
-int MotionPlayer::EvaluateSlotAt(const char* slotId, float timeMs,
-                                 float* outValues, int maxChannels,
-                                 char* outKeys, int keyBufSize) const
+int MotionPlayer::Impl::EvaluateSlotAtImpl(const char* slotId, float timeMs, bool engineering,
+                                           float* outValues, int maxChannels,
+                                           char* outKeys, int keyBufSize)
 {
-    auto* slot = _impl->GetSlot(slotId);
+    auto* slot = GetSlot(slotId);
     if (!slot) return -1;
 
-    // 求值指定时间的所有通道
+    // 求值指定时间的所有通道 (始终返回归一化值; 需要时再换算成工程量)
     std::map<std::string, float> snapshot;
     for (const auto& track : slot->timeline.tracks) {
         if (track.muted) continue;
@@ -1096,7 +1123,20 @@ int MotionPlayer::EvaluateSlotAt(const char* slotId, float timeMs,
     for (const auto& [key, val] : snapshot) {
         if (count >= maxChannels) break;
         if (outValues) {
-            outValues[count] = val;
+            float out = val;
+            if (engineering) {
+                auto dotIndex = key.find('.');
+                if (dotIndex != std::string::npos) {
+                    std::string deviceName = key.substr(0, dotIndex);
+                    std::string remainder = key.substr(dotIndex + 1);
+                    std::string channel =
+                        (remainder.rfind("oaxis.", 0) == 0 && remainder.length() > 6)
+                            ? remainder.substr(6)
+                            : remainder;
+                    out = ConvertToEngineering(deviceName, channel, val);
+                }
+            }
+            outValues[count] = out;
         }
         // 写入通道键名 (以 \0 分隔)
         if (outKeys && keyBufSize > 0) {
@@ -1109,6 +1149,46 @@ int MotionPlayer::EvaluateSlotAt(const char* slotId, float timeMs,
         ++count;
     }
     return count;
+}
+
+int MotionPlayer::EvaluateSlotAt(const char* slotId, float timeMs,
+                                 float* outValues, int maxChannels,
+                                 char* outKeys, int keyBufSize) const
+{
+    return _impl->EvaluateSlotAtImpl(slotId, timeMs, false, outValues, maxChannels, outKeys, keyBufSize);
+}
+
+int MotionPlayer::EvaluateSlotAtEngineering(const char* slotId, float timeMs,
+                                            float* outValues, int maxChannels,
+                                            char* outKeys, int keyBufSize) const
+{
+    return _impl->EvaluateSlotAtImpl(slotId, timeMs, true, outValues, maxChannels, outKeys, keyBufSize);
+}
+
+// ── 通道工程量程 ─────────────────────────────────────
+
+void MotionPlayer::SetChannelRange(const char* deviceName, const char* channel,
+                                   float minValue, float maxValue)
+{
+    if (!deviceName || !channel) return;
+    std::lock_guard<std::recursive_mutex> lock(_impl->mutex);
+    if (!(maxValue > minValue)) {
+        _impl->channelRanges.erase(Impl::RangeKey(deviceName, channel));
+        return;
+    }
+    _impl->channelRanges[Impl::RangeKey(deviceName, channel)] = std::make_pair(minValue, maxValue);
+}
+
+void MotionPlayer::ClearChannelRanges()
+{
+    std::lock_guard<std::recursive_mutex> lock(_impl->mutex);
+    _impl->channelRanges.clear();
+}
+
+float MotionPlayer::ToEngineering(const char* deviceName, const char* channel, float normalized) const
+{
+    if (!deviceName || !channel) return normalized;
+    return _impl->ConvertToEngineering(deviceName, channel, normalized);
 }
 
 // ── 安全参数配置 ─────────────────────────────────────

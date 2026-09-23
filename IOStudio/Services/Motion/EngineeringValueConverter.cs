@@ -17,6 +17,38 @@ namespace IOStudio.Services.Motion
     public static class EngineeringValueConverter
     {
         /// <summary>
+        /// 把三级优先级**解析为绝对区间** (min, max)。
+        ///
+        /// <para>这是"配置解析"而不是"换算" —— 职责划分: 宿主决定<b>用哪个量程</b> (只有它知道
+        /// 轨道与设备声明), native 执行<b>换算</b> (与放映端共用同一段代码)。</para>
+        ///
+        /// <para>三级都能表达为绝对区间, 因此 native 侧只需一次仿射映射 <c>min + v*(max-min)</c>:</para>
+        /// <list type="number">
+        /// <item>轨道 engineering_range: <c>(v-neutral)*r</c> → <c>min=(0-neutral)*r, max=(1-neutral)*r</c></item>
+        /// <item>设备声明量程: 原样</item>
+        /// <item>未声明: null (直通)</item>
+        /// </list>
+        /// </summary>
+        public static (float Min, float Max)? ResolveRange(
+            string? valueType,
+            float? neutralValue,
+            float? trackRange,
+            (float Min, float Max)? declaredRange
+        )
+        {
+            if (trackRange is { } tr && tr > 0f)
+            {
+                float neutral = TrackValueEvaluator.ResolveNeutral(valueType, neutralValue);
+                return ((0f - neutral) * tr, (1f - neutral) * tr);
+            }
+
+            if (declaredRange is { } d && d.Max > d.Min)
+                return d;
+
+            return null;
+        }
+
+        /// <summary>
         /// 三级解析。参数均为值域声明，不含任何设备/IO 访问，便于测试与复用。
         /// </summary>
         /// <param name="normalized">归一化值 (0..1)</param>

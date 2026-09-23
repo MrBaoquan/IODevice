@@ -65,6 +65,25 @@ namespace IOToolkit {
                             float* outValues, int maxChannels,
                             char* outKeys = nullptr, int keyBufSize = 0) const;
 
+        // ── 通道工程量程 (归一化 0..1 → 工程量) ───────
+        // 三级优先级的"解析"由宿主完成 (它才知道轨道 engineering_range 与设备声明量程),
+        // 但三级**都可以表达为一个绝对区间**, 所以这里只存一张
+        // (device, channel) → (min, max) 表, 换算就是一次仿射映射, 没有任何分支。
+        // 未登记的通道 → 直通 (保持既有行为)。
+        //
+        // 换算只在**派发收口点**执行 (DispatchChannel / EvaluateSlotAtEngineering);
+        // 求值本身仍返回归一化值, 因此跨语言契约测试仍可比对归一化语义。
+        void  SetChannelRange(const char* deviceName, const char* channel,
+                              float minValue, float maxValue);
+        void  ClearChannelRanges();
+        float ToEngineering(const char* deviceName, const char* channel, float normalized) const;
+
+        /// 与 EvaluateSlotAt 相同, 但输出**工程量** —— 换算在 native 侧完成(供编排端预览使用,
+        /// 使"编辑器看到的"与"放映端下发的"共用同一段换算代码)。
+        int  EvaluateSlotAtEngineering(const char* slotId, float timeMs,
+                                       float* outValues, int maxChannels,
+                                       char* outKeys = nullptr, int keyBufSize = 0) const;
+
         // ── 事件回调 ─────────────────────────────────
         void BindSlotEvent(const char* slotId, MotionEvent evt,
                            std::function<void()> callback);

@@ -136,13 +136,42 @@ namespace IOToolkit
         }
 
         // ── 安全参数 ─────────────────────────────────
-
         /// <summary>
         /// 设置全局安全保护最大变化速率 (每秒)。默认 5.0。
         /// </summary>
         public static void SetSafetyConfig(float maxRatePerSecond)
         {
             IONativeWrapper.MotionSetSafetyConfig(maxRatePerSecond);
+        }
+
+        // ── 通道工程量程 (归一化 0..1 → 工程量) ───────
+        // 三级优先级 (轨道 engineering_range → 设备声明量程 → 直通) 的**解析**在宿主侧完成
+        // (只有宿主知道轨道与设备声明), 但三级都能表达为绝对区间, 所以推给 native 的是一张
+        // (device, channel) → (min, max) 表; 换算则由 native 执行, 与放映端共用同一段代码。
+        //
+        // 未登记或退化区间 → 直通 (保持既有行为)。
+
+        /// <summary>登记一个通道的工程量程。max &lt;= min 视为清除该通道。</summary>
+        public static void SetChannelRange(
+            string deviceName,
+            string channel,
+            float minValue,
+            float maxValue
+        )
+        {
+            IONativeWrapper.MotionSetChannelRange(deviceName, channel, minValue, maxValue);
+        }
+
+        /// <summary>清空全部通道量程 (卸载时间轴/切换设备时调用)。</summary>
+        public static void ClearChannelRanges()
+        {
+            IONativeWrapper.MotionClearChannelRanges();
+        }
+
+        /// <summary>归一化 → 工程量 (未登记量程时原样返回)。</summary>
+        public static float ToEngineering(string deviceName, string channel, float normalized)
+        {
+            return IONativeWrapper.MotionToEngineering(deviceName, channel, normalized);
         }
 
         // ── 内部方法 ─────────────────────────────────

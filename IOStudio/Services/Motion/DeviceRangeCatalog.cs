@@ -39,6 +39,10 @@ namespace IOStudio.Services.Motion
         private static readonly Dictionary<string, (float Min, float Max)> Cache =
             new(StringComparer.OrdinalIgnoreCase);
 
+        /// <summary>通道单位 ("deg"/"mm"/"bool") — 仅用于编辑器显示工程量, 不参与换算。</summary>
+        private static readonly Dictionary<string, string> Units =
+            new(StringComparer.OrdinalIgnoreCase);
+
         /// <summary>已从 capabilities 拿到明确答复的设备 — 不再重复查询。</summary>
         private static readonly HashSet<string> Queried = new(StringComparer.OrdinalIgnoreCase);
 
@@ -65,6 +69,23 @@ namespace IOStudio.Services.Motion
                 return Cache.TryGetValue(deviceName + "|" + channelKey, out var range)
                     ? range
                     : null;
+            }
+        }
+
+        /// <summary>
+        /// 通道单位 (设备声明; 未知返回空串)。仅供显示层使用 —— 换算本身不需要单位。
+        /// </summary>
+        public static string ResolveUnit(string deviceName, string channelKey)
+        {
+            if (string.IsNullOrEmpty(deviceName) || string.IsNullOrEmpty(channelKey))
+                return "";
+
+            lock (Gate)
+            {
+                EnsureIniLoaded();
+                return Units.TryGetValue(deviceName + "|" + channelKey, out var unit)
+                    ? unit
+                    : "";
             }
         }
 
@@ -121,19 +142,28 @@ namespace IOStudio.Services.Motion
             if (string.IsNullOrEmpty(json))
                 return; // 无响应 → 下次安全时机再试
 
-            var map = ParseChannelRanges(json);
+            // 单位与量程一并收取 (capabilities 是权威, 覆盖配置兜底)
+            var units = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            var map = ParseChannelRanges(json, units);
 
             lock (Gate)
             {
                 Queried.Add(deviceName);
-                // capabilities 是权威: 覆盖配置兜底值
                 foreach (var kv in map)
                     Cache[deviceName + "|" + kv.Key] = kv.Value;
+                foreach (var kv in units)
+                    Units[deviceName + "|" + kv.Key] = kv.Value;
             }
         }
 
-        /// <summary>从 capabilities JSON 抽取 motion.channel_range[]。</summary>
-        private static Dictionary<string, (float Min, float Max)> ParseChannelRanges(string json)
+        /// <summary>
+        /// 从 capabilities JSON 抽取 motion.channel_range[]。
+        /// <paramref name="units"/> 非 null 时同时收集通道单位 (仅用于显示)。
+        /// </summary>
+        private static Dictionary<string, (float Min, float Max)> ParseChannelRanges(
+            string json,
+            Dictionary<string, string>? units = null
+        )
         {
             var map = new Dictionary<string, (float Min, float Max)>(
                 StringComparer.OrdinalIgnoreCase
@@ -165,6 +195,16 @@ namespace IOStudio.Services.Motion
                         continue;
 
                     map[ch] = (min, max);
+                    if (
+                        units != null
+                        && r.TryGetProperty("unit", out var u)
+                        && u.ValueKind == JsonValueKind.String
+                    )
+                    {
+                        string? unit = u.GetString();
+                        if (!string.IsNullOrEmpty(unit))
+                            units[ch] = unit;
+                    }
                 }
             }
             catch (JsonException) { }
@@ -252,7 +292,16 @@ namespace IOStudio.Services.Motion
                 // 不覆盖已由 capabilities 提供的值
                 string cacheKey = deviceName + "|" + key;
                 if (!Cache.ContainsKey(cacheKey))
+                {
                     Cache[cacheKey] = (min, max);
+                    // 单位随量程一起记下 (ini 第 3 字段), 供编辑器把归一化值显示成工程量
+                    if (parts.Length >= 3)
+                    {
+                        string unit = parts[2].Trim();
+                        if (!string.IsNullOrEmpty(unit))
+                            Units[cacheKey] = unit;
+                    }
+                }
             }
         }
     }

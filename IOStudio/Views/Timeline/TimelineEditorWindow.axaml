@@ -993,6 +993,15 @@
                                                                            VerticalAlignment="Center" Opacity="0.7"
                                                                            TextTrimming="CharacterEllipsis"
                                                                            IsVisible="{Binding ShowSubtitle}"/>
+                                                                <!-- 有效量程: 让归一化值域可见 (悬停看来源: 轨道覆盖 / 设备声明 / 直通) -->
+                                                                <Border Background="{DynamicResource TlRoleBadgeBg}"
+                                                                        CornerRadius="2" Padding="3,1"
+                                                                        VerticalAlignment="Center"
+                                                                        ToolTip.Tip="{Binding EffectiveRangeTip}">
+                                                                    <TextBlock Text="{Binding EffectiveRangeText}"
+                                                                               FontSize="8" FontWeight="Bold"
+                                                                               Foreground="{DynamicResource TlRoleBadgeText}"/>
+                                                                </Border>
                                                                 <!-- 轨道 Role 徽章 (主流化: 实底徽章, 与预设库/时间标尺一致) -->
                                                                 <Border Background="{DynamicResource TlRoleBadgeBg}"
                                                                         CornerRadius="2" Padding="3,1"

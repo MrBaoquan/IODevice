@@ -339,12 +339,58 @@ namespace IOStudio.ViewModels.Timeline
             {
                 this.RaiseAndSetIfChanged(ref _liveValue, value);
                 this.RaisePropertyChanged(nameof(LiveValueDisplay));
+                // 量程可能在播放预热后才可用, 随实时值一并刷新显示
+                this.RaisePropertyChanged(nameof(EffectiveRangeText));
+                this.RaisePropertyChanged(nameof(EffectiveRangeTip));
             }
         }
 
-        /// <summary>实时值显示文本 (如 "0.75" 或 "ON"/"OFF")</summary>
+        /// <summary>通道键 (OAxis 通道或 OAction 名) — 与派发/换算使用同一套标识。</summary>
+        private string ChannelKey =>
+            Track.OutputType == "oaxis" && !string.IsNullOrEmpty(Track.OAxisChannel)
+                ? Track.OAxisChannel
+                : Track.OActionName;
+
+        private bool HasChannelKey =>
+            !string.IsNullOrEmpty(Track.DeviceName) && !string.IsNullOrEmpty(ChannelKey);
+
+        /// <summary>设备声明的量程 (纯缓存查表, 不碰 native)。</summary>
+        private (float Min, float Max)? DeclaredRange =>
+            HasChannelKey
+                ? IOStudio.Services.Motion.DeviceRangeCatalog.Resolve(Track.DeviceName, ChannelKey)
+                : null;
+
+        private string DeclaredUnit =>
+            HasChannelKey
+                ? IOStudio.Services.Motion.DeviceRangeCatalog.ResolveUnit(Track.DeviceName, ChannelKey)
+                : "";
+
+        /// <summary>该轨道实际生效的量程 (如 "±30°") — 让归一化值域可见。</summary>
+        public string EffectiveRangeText =>
+            IOStudio.Services.Motion.EngineeringDisplay
+                .DescribeRange(Track.EngineeringRange, DeclaredRange, DeclaredUnit, ValueType)
+                .Text;
+
+        /// <summary>量程来源 (悬停说明): 轨道覆盖 / 设备声明 / 直通。</summary>
+        public string EffectiveRangeTip =>
+            "有效量程: "
+            + IOStudio.Services.Motion.EngineeringDisplay
+                .DescribeRange(Track.EngineeringRange, DeclaredRange, DeclaredUnit, ValueType)
+                .Source;
+
+        /// <summary>
+        /// 实时值显示文本 — 有量程时显示工程量 (如 "18°"), 否则显示归一化值。
+        /// 走与实播同一个换算函数, 保证"看到的就是下发的"。
+        /// </summary>
         public string LiveValueDisplay =>
-            ValueType == "bool" ? (LiveValue >= 0.5f ? "ON" : "OFF") : LiveValue.ToString("F2");
+            IOStudio.Services.Motion.EngineeringDisplay.FormatLive(
+                LiveValue,
+                ValueType,
+                Track.NeutralValue,
+                Track.EngineeringRange,
+                DeclaredRange,
+                DeclaredUnit
+            );
 
         public ObservableCollection<ClipViewModel> Clips { get; } = new();
 

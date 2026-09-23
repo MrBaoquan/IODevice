@@ -12,10 +12,10 @@ namespace IOStudio.Services.Motion
         /// <summary>
         /// 给定时间 (相对于 Clip 的 StartMs), 在关键帧列表中计算插值后的值
         /// </summary>
-        /// <param name="keyframes">关键帧列表 (按 TimeMs 升序)</param>
+        /// <param name="keyframes">关键帧列表 (约定按 TimeMs 升序; 乱序时退化为线性扫描)</param>
         /// <param name="timeMs">当前时间 (毫秒, 相对于 Clip.StartMs)</param>
         /// <returns>插值后的归一化值 (0.0 ~ 1.0)</returns>
-        public static float Evaluate(List<MotionKeyframe> keyframes, double timeMs)
+        public static float Evaluate(IReadOnlyList<MotionKeyframe> keyframes, double timeMs)
         {
             if (keyframes == null || keyframes.Count == 0)
                 return 0.5f; // 默认中位
@@ -30,19 +30,33 @@ namespace IOStudio.Services.Motion
             if (timeMs >= keyframes[^1].TimeMs)
                 return keyframes[^1].Value;
 
-            // 防御: 若关键帧非严格升序, 二分查找会返回错误区间导致锯齿毛刺。
-            // 就地做一次检测, 仅当乱序时才重排 (正常有序路径零开销)。
-            bool needSort = false;
+            // 约定输入升序 (乱序会被预检报为 keyframe.unsorted)。
+            // 注意: 这里**不修改调用方的列表** —— 求值跑在播放/曲线渲染热路径上,
+            // 就地排序等于在播放期间静默改写用户文档 (破坏选择与撤销快照, 还会与渲染竞争)。
+            // 乱序时退化为线性扫描: 结果确定且不改数据, 真正的问题由预检暴露。
+            bool unsorted = false;
             for (int i = 1; i < keyframes.Count; i++)
             {
                 if (keyframes[i].TimeMs < keyframes[i - 1].TimeMs)
                 {
-                    needSort = true;
+                    unsorted = true;
                     break;
                 }
             }
-            if (needSort)
-                keyframes.Sort((a, b) => a.TimeMs.CompareTo(b.TimeMs));
+
+            if (unsorted)
+            {
+                int idx = 0;
+                for (int i = 0; i < keyframes.Count; i++)
+                {
+                    if (keyframes[i].TimeMs <= timeMs)
+                        idx = i;
+                    else
+                        break;
+                }
+                int next = Math.Min(idx + 1, keyframes.Count - 1);
+                return Evaluate(keyframes[idx], keyframes[next], timeMs);
+            }
 
             // 二分查找当前时间所处的两个关键帧
             int left = 0;

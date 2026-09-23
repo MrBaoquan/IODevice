@@ -263,9 +263,19 @@ namespace IOStudio.Services.Motion
         {
             bool isBool = string.Equals(track.ValueType, "bool", StringComparison.OrdinalIgnoreCase);
             double clipSpan = clip.EndMs - clip.StartMs;
+            double lastKfMs = double.NegativeInfinity;
 
             foreach (var kf in clip.Keyframes ?? new List<MotionKeyframe>())
             {
+                // 乱序关键帧会被求值器退化为线性扫描 (结果不确定), 且曾触发就地排序改写文档
+                if (kf.TimeMs < lastKfMs - SpanToleranceMs)
+                {
+                    issues.Add(New(issues, MotionIssueSeverity.Warning, "keyframe.unsorted",
+                        $"关键帧时间未升序 ({lastKfMs:F0}ms 之后出现 {kf.TimeMs:F0}ms), 求值结果不可靠",
+                        track, label, clip.StartMs + kf.TimeMs));
+                }
+                lastKfMs = Math.Max(lastKfMs, kf.TimeMs);
+
                 // 关键帧落在 clip 区间外 → 不参与该 clip 的求值
                 if (kf.TimeMs < -SpanToleranceMs || kf.TimeMs > clipSpan + SpanToleranceMs)
                 {

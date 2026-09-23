@@ -70,6 +70,9 @@ namespace IOStudio.ViewModels.Timeline
 
         private void Play()
         {
+            // 播放前预检: 把静默失效问题摆到状态栏 (不阻断播放)
+            ReportValidationSummary();
+
             if (_engine.State == PlaybackState.Paused)
             {
                 _engine.Resume();

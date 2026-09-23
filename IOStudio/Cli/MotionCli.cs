@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
+using System.Linq;
 using System.Text;
 using System.Text.Json;
 using Avalonia;
@@ -40,10 +41,12 @@ namespace IOStudio.Cli
         public bool Headless { get; private set; }
         public bool ShowHelp { get; private set; }
         public bool DumpTracks { get; private set; }
+        /// <summary>仅做编排预检并输出问题清单, 然后退出。发现 Error 级问题时退出码为 2 (自动化门禁)。</summary>
+        public bool Validate { get; private set; }
         public string? StatusFile { get; private set; }
 
         /// <summary>是否请求了任何 CLI 行为（否则按原来的纯 GUI 方式启动）。</summary>
-        public bool HasWork => MotionPath is not null || DumpTracks || ShowHelp;
+        public bool HasWork => MotionPath is not null || DumpTracks || Validate || ShowHelp;
 
         public const string Usage =
             "IOStudio CLI\n" +
@@ -54,6 +57,7 @@ namespace IOStudio.Cli
             "  --exit-after <ms>      运行指定毫秒后自动退出（脚本化必用）\n" +
             "  --headless             窗口最小化且不占任务栏（便于自动化时不抢焦点）\n" +
             "  --dump-tracks          仅解析并输出轨道映射，然后退出（不打开窗口）\n" +
+            "  --validate             仅做编排预检并输出问题清单，然后退出；有 Error 时退出码 2\n" +
             "  --status-file <path>   指定 JSON 状态文件路径\n" +
             "  --help                 显示本帮助\n" +
             "  （也支持直接给一个 .motion 路径作为位置参数）\n";
@@ -73,6 +77,7 @@ namespace IOStudio.Cli
                     case "--loop": o.Loop = true; break;
                     case "--headless": o.Headless = true; break;
                     case "--dump-tracks": o.DumpTracks = true; break;
+                    case "--validate": o.Validate = true; break;
                     case "--help":
                     case "-h":
                     case "/?": o.ShowHelp = true; break;
@@ -163,7 +168,12 @@ namespace IOStudio.Cli
         }
 
         /// <summary>写状态文件（失败不抛，CLI 不应因为写文件而崩）。</summary>
-        public static void WriteStatus(CliOptions options, string phase, TimelineEditorViewModel? vm = null)
+        public static void WriteStatus(
+            CliOptions options,
+            string phase,
+            TimelineEditorViewModel? vm = null,
+            IReadOnlyDictionary<string, object?>? validation = null
+        )
         {
             string? target = options.ResolveStatusFile();
             if (string.IsNullOrWhiteSpace(target)) return;
@@ -194,6 +204,10 @@ namespace IOStudio.Cli
                     }
                     catch { /* 编辑器状态不是关键路径，取不到就跳过 */ }
                 }
+                if (validation is not null)
+                {
+                    payload["validation"] = validation;
+                }
                 File.WriteAllText(target, JsonSerializer.Serialize(payload, WriteOptions), Encoding.UTF8);
             }
             catch { /* ignore */ }
@@ -211,7 +225,30 @@ namespace IOStudio.Cli
                 SafePrint(File.Exists(options.ResolveStatusFile() ?? string.Empty)
                     ? $"status written: {options.ResolveStatusFile()}"
                     : "status not written");
-                desktop.Shutdown(0);
+                // 同 validate: 直接 Shutdown 会把退出码变成 CLR 异常码
+                RequestShutdown(desktop, 0);
+                return;
+            }
+
+            // ── 仅预检：不开窗口，按结果决定退出码（自动化门禁）──
+            if (options.Validate)
+            {
+                var report = ValidateMotion(options.MotionPath);
+                WriteStatus(options, "validated", validation: report);
+
+                bool hasErrors =
+                    report is not null
+                    && report.TryGetValue("hasErrors", out var he)
+                    && he is bool b
+                    && b;
+                SafePrint(
+                    hasErrors
+                        ? "validation: ERRORS found (exit 2)"
+                        : "validation: ok (exit 0)"
+                );
+                // 必须走 RequestShutdown: 在 OnFrameworkInitializationCompleted 里直接
+                // desktop.Shutdown() 会抛 CLR 异常, 退出码变成 0xE0434352, 脚本无法判断结果。
+                RequestShutdown(desktop, hasErrors ? 2 : 0);
                 return;
             }
 
@@ -255,6 +292,74 @@ namespace IOStudio.Cli
                     timer.Start();
                 }
             }, DispatcherPriority.Background);
+        }
+
+        /// <summary>
+        /// 编排预检 — 把"会静默失效"的编排问题变成明确清单, 供脚本化门禁使用。
+        ///
+        /// 注: 此处<b>不</b>注入设备存在性判定 —— 预检可能早于设备加载, 会误报
+        /// "设备未加载"; 该检查留给已知设备状态的编辑器侧。
+        /// 量程判定走纯缓存查表, 未预热时返回 null (跳过), 不会误报。
+        /// </summary>
+        private static Dictionary<string, object?>? ValidateMotion(string? path)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(path))
+                {
+                    return new Dictionary<string, object?>
+                    {
+                        ["error"] = "未指定 .motion 文件",
+                        ["hasErrors"] = true,
+                    };
+                }
+
+                var timeline = IOStudio.Services.Motion.MotionFileReader.Read(path);
+                if (timeline is null)
+                {
+                    return new Dictionary<string, object?>
+                    {
+                        ["error"] = "无法解析 .motion",
+                        ["hasErrors"] = true,
+                    };
+                }
+
+                var issues = IOStudio.Services.Motion.MotionTimelineValidator.Validate(
+                    timeline,
+                    new IOStudio.Services.Motion.MotionValidationOptions
+                    {
+                        DeviceRange = IOStudio.Services.Motion.DeviceRangeCatalog.Resolve,
+                    }
+                );
+
+                return new Dictionary<string, object?>
+                {
+                    ["hasErrors"] = IOStudio.Services.Motion.MotionTimelineValidator.HasErrors(issues),
+                    ["errorCount"] = issues.Count(i =>
+                        i.Severity == IOStudio.Services.Motion.MotionIssueSeverity.Error
+                    ),
+                    ["warningCount"] = issues.Count(i =>
+                        i.Severity == IOStudio.Services.Motion.MotionIssueSeverity.Warning
+                    ),
+                    ["infoCount"] = issues.Count(i =>
+                        i.Severity == IOStudio.Services.Motion.MotionIssueSeverity.Info
+                    ),
+                    ["issues"] = issues
+                        .Select(i => new Dictionary<string, object?>
+                        {
+                            ["severity"] = i.Severity.ToString(),
+                            ["code"] = i.Code,
+                            ["message"] = i.Message,
+                            ["track"] = i.TrackLabel,
+                            ["timeMs"] = i.TimeMs,
+                        })
+                        .ToList(),
+                };
+            }
+            catch (Exception ex)
+            {
+                return new Dictionary<string, object?> { ["error"] = ex.Message, ["hasErrors"] = true };
+            }
         }
 
         private static void TryExecute(System.Windows.Input.ICommand? command)

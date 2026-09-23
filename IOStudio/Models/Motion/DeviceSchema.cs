@@ -39,6 +39,17 @@ namespace IOStudio.Models.Motion
         public string DeviceName { get; set; } = "";
         public string ChannelName { get; set; } = "";
         public string DisplayName { get; set; } = "";
+
+        /// <summary>
+        /// Engineering range declared BY THE DEVICE (normalized 0..1 maps to [Min, Max]).
+        /// null = not declared -> pass-through. This is the single source of truth;
+        /// the per-track engineering_range in a .motion is only an explicit override.
+        /// </summary>
+        public float? EngineeringMin { get; set; }
+        public float? EngineeringMax { get; set; }
+
+        /// <summary>Engineering unit ("deg" / "mm"), used for editor curve axis labels.</summary>
+        public string Unit { get; set; } = "";
     }
 
     /// <summary>

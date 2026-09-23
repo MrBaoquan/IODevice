@@ -1,0 +1,172 @@
+{
+  "version": "3.0",
+  "name": "\u52A8\u611F\u5E73\u53F0\u52A8\u4F5C\u7F16\u6392\u793A\u4F8B - Simulator \u8054\u8C03",
+  "duration_ms": 24000,
+  "fps": 60,
+  "tracks": [
+    {
+      "id": "trk_pitch", "device": "Simulator-1", "oaction": "", "output_type": "oaxis", "oaxis_channel": "OAxis_01",
+      "label": "\u4FEF\u4EF0", "color": "#A78BFA", "value_type": "float", "muted": false, "enabled": true, "locked": false,
+      "group": "\u4E3B\u8FD0\u52A8", "role": "pitch", "show_in_curve": true, "engineering_range": 60,
+      "clips": [ { "id": "clip_pitch", "start_ms": 0, "end_ms": 24000, "keyframes": [
+        { "time_ms": 0, "value": 0.5, "interpolation": "ease_in_out" },
+        { "time_ms": 1500, "value": 0.5, "interpolation": "bezier" },
+        { "time_ms": 4000, "value": 0.8, "interpolation": "bezier" },
+        { "time_ms": 5500, "value": 0.8, "interpolation": "bezier" },
+        { "time_ms": 9000, "value": 0.3, "interpolation": "bezier" },
+        { "time_ms": 10500, "value": 0.3, "interpolation": "bezier" },
+        { "time_ms": 13000, "value": 0.5, "interpolation": "ease_in_out" },
+        { "time_ms": 16000, "value": 0.6, "interpolation": "bezier" },
+        { "time_ms": 18000, "value": 0.5, "interpolation": "ease_in_out" },
+        { "time_ms": 24000, "value": 0.5, "interpolation": "ease_in_out" }
+      ] } ]
+    },
+    {
+      "id": "trk_yaw", "device": "Simulator-1", "oaction": "", "output_type": "oaxis", "oaxis_channel": "OAxis_02",
+      "label": "\u504F\u822A", "color": "#60A5FA", "value_type": "float", "muted": false, "enabled": true, "locked": false,
+      "group": "\u4E3B\u8FD0\u52A8", "role": "yaw", "show_in_curve": true, "engineering_range": 60,
+      "clips": [ { "id": "clip_yaw", "start_ms": 0, "end_ms": 24000, "keyframes": [
+        { "time_ms": 0, "value": 0.5, "interpolation": "ease_in_out" },
+        { "time_ms": 2000, "value": 0.5, "interpolation": "bezier" },
+        { "time_ms": 6000, "value": 0.9167, "interpolation": "bezier" },
+        { "time_ms": 11000, "value": 0.0833, "interpolation": "bezier" },
+        { "time_ms": 16000, "value": 0.5, "interpolation": "ease_in_out" },
+        { "time_ms": 24000, "value": 0.5, "interpolation": "ease_in_out" }
+      ] } ]
+    },
+    {
+      "id": "trk_roll", "device": "Simulator-1", "oaction": "", "output_type": "oaxis", "oaxis_channel": "OAxis_03",
+      "label": "\u6A2A\u6EDA", "color": "#34D399", "value_type": "float", "muted": false, "enabled": true, "locked": false,
+      "group": "\u4E3B\u8FD0\u52A8", "role": "roll", "show_in_curve": true, "engineering_range": 60,
+      "clips": [ { "id": "clip_roll", "start_ms": 0, "end_ms": 24000, "keyframes": [
+        { "time_ms": 0, "value": 0.5, "interpolation": "ease_in_out" },
+        { "time_ms": 1500, "value": 0.5, "interpolation": "bezier" },
+        { "time_ms": 4000, "value": 0.2667, "interpolation": "bezier" },
+        { "time_ms": 9000, "value": 0.6333, "interpolation": "bezier" },
+        { "time_ms": 14000, "value": 0.4, "interpolation": "bezier" },
+        { "time_ms": 18000, "value": 0.5, "interpolation": "ease_in_out" },
+        { "time_ms": 24000, "value": 0.5, "interpolation": "ease_in_out" }
+      ] } ]
+    },
+    {
+      "id": "trk_x", "device": "Simulator-1", "oaction": "", "output_type": "oaxis", "oaxis_channel": "OAxis_04",
+      "label": "X \u5411\u4F4D\u79FB", "color": "#FBBF24", "value_type": "float", "muted": false, "enabled": true, "locked": false,
+      "group": "\u4E3B\u8FD0\u52A8", "role": "surge", "show_in_curve": true, "engineering_range": 600,
+      "clips": [ { "id": "clip_x", "start_ms": 0, "end_ms": 24000, "keyframes": [
+        { "time_ms": 0, "value": 0.5, "interpolation": "ease_in_out" },
+        { "time_ms": 6000, "value": 0.5, "interpolation": "bezier" },
+        { "time_ms": 9000, "value": 0.7, "interpolation": "bezier" },
+        { "time_ms": 13000, "value": 0.3, "interpolation": "bezier" },
+        { "time_ms": 17000, "value": 0.5, "interpolation": "ease_in_out" },
+        { "time_ms": 24000, "value": 0.5, "interpolation": "ease_in_out" }
+      ] } ]
+    },
+    {
+      "id": "trk_z", "device": "Simulator-1", "oaction": "", "output_type": "oaxis", "oaxis_channel": "OAxis_06",
+      "label": "\u5347\u964D", "color": "#4FC3F7", "value_type": "float", "muted": false, "enabled": true, "locked": false,
+      "group": "\u4E3B\u8FD0\u52A8", "role": "heave", "show_in_curve": true, "engineering_range": 600,
+      "clips": [ { "id": "clip_z", "start_ms": 0, "end_ms": 24000, "keyframes": [
+        { "time_ms": 0, "value": 0.5, "interpolation": "ease_in_out" },
+        { "time_ms": 1500, "value": 0.5, "interpolation": "bezier" },
+        { "time_ms": 4000, "value": 0.8, "interpolation": "bezier" },
+        { "time_ms": 5500, "value": 0.6, "interpolation": "bezier" },
+        { "time_ms": 9000, "value": 0.3, "interpolation": "bezier" },
+        { "time_ms": 13000, "value": 0.5, "interpolation": "ease_in_out" },
+        { "time_ms": 16000, "value": 0.7333, "interpolation": "bezier" },
+        { "time_ms": 19000, "value": 0.5, "interpolation": "ease_in_out" },
+        { "time_ms": 24000, "value": 0.5, "interpolation": "ease_in_out" }
+      ] } ]
+    },
+    {
+      "id": "trk_angle", "device": "Simulator-1", "oaction": "", "output_type": "oaxis", "oaxis_channel": "OAxis_07",
+      "label": "\u8F6C\u53F0\u89D2\u5EA6", "color": "#F472B6", "value_type": "float", "muted": false, "enabled": true, "locked": false,
+      "group": "\u4E3B\u8FD0\u52A8", "role": "angle", "show_in_curve": true, "engineering_range": 720,
+      "clips": [ { "id": "clip_angle", "start_ms": 0, "end_ms": 24000, "keyframes": [
+        { "time_ms": 0, "value": 0.5, "interpolation": "ease_in_out" },
+        { "time_ms": 6000, "value": 0.5, "interpolation": "bezier" },
+        { "time_ms": 10000, "value": 0.625, "interpolation": "ease_in_out" },
+        { "time_ms": 12000, "value": 0.625, "interpolation": "bezier" },
+        { "time_ms": 16000, "value": 0.75, "interpolation": "ease_in_out" },
+        { "time_ms": 24000, "value": 0.75, "interpolation": "ease_in_out" }
+      ] } ]
+    },
+    {
+      "id": "trk_wind", "device": "Simulator-1", "oaction": "", "output_type": "oaxis", "oaxis_channel": "OAxis_18",
+      "label": "\u98CE\u6548", "color": "#7DD3FC", "value_type": "float", "muted": false, "enabled": true, "locked": false,
+      "group": "\u73AF\u5883\u7279\u6548", "role": "wind", "show_in_curve": true,
+      "clips": [ { "id": "clip_wind", "start_ms": 0, "end_ms": 24000, "keyframes": [
+        { "time_ms": 0, "value": 0, "interpolation": "step" },
+        { "time_ms": 6500, "value": 0, "interpolation": "step" },
+        { "time_ms": 6600, "value": 1, "interpolation": "step" },
+        { "time_ms": 12500, "value": 1, "interpolation": "step" },
+        { "time_ms": 12600, "value": 0, "interpolation": "step" },
+        { "time_ms": 24000, "value": 0, "interpolation": "step" }
+      ] } ]
+    },
+    {
+      "id": "trk_fog", "device": "Simulator-1", "oaction": "", "output_type": "oaxis", "oaxis_channel": "OAxis_19",
+      "label": "\u70DF\u96FE", "color": "#94A3B8", "value_type": "float", "muted": false, "enabled": true, "locked": false,
+      "group": "\u73AF\u5883\u7279\u6548", "role": "fog", "show_in_curve": true,
+      "clips": [ { "id": "clip_fog", "start_ms": 0, "end_ms": 24000, "keyframes": [
+        { "time_ms": 0, "value": 0, "interpolation": "step" },
+        { "time_ms": 8000, "value": 0, "interpolation": "step" },
+        { "time_ms": 8100, "value": 1, "interpolation": "step" },
+        { "time_ms": 16000, "value": 1, "interpolation": "step" },
+        { "time_ms": 16100, "value": 0, "interpolation": "step" },
+        { "time_ms": 24000, "value": 0, "interpolation": "step" }
+      ] } ]
+    },
+    {
+      "id": "trk_light", "device": "Simulator-1", "oaction": "", "output_type": "oaxis", "oaxis_channel": "OAxis_21",
+      "label": "\u95EA\u7535/\u7206\u95EA", "color": "#FDE047", "value_type": "float", "muted": false, "enabled": true, "locked": false,
+      "group": "\u73AF\u5883\u7279\u6548", "role": "light", "show_in_curve": true,
+      "clips": [ { "id": "clip_light", "start_ms": 0, "end_ms": 24000, "keyframes": [
+        { "time_ms": 0, "value": 0, "interpolation": "step" },
+        { "time_ms": 10000, "value": 0, "interpolation": "step" },
+        { "time_ms": 10100, "value": 1, "interpolation": "step" },
+        { "time_ms": 10500, "value": 1, "interpolation": "step" },
+        { "time_ms": 10600, "value": 0, "interpolation": "step" },
+        { "time_ms": 11000, "value": 0, "interpolation": "step" },
+        { "time_ms": 11100, "value": 1, "interpolation": "step" },
+        { "time_ms": 11600, "value": 1, "interpolation": "step" },
+        { "time_ms": 11700, "value": 0, "interpolation": "step" },
+        { "time_ms": 24000, "value": 0, "interpolation": "step" }
+      ] } ]
+    },
+    {
+      "id": "trk_vibrate", "device": "Simulator-1", "oaction": "", "output_type": "oaxis", "oaxis_channel": "OAxis_22",
+      "label": "\u9707\u52A8\u8F85\u52A9", "color": "#FB7185", "value_type": "float", "muted": false, "enabled": true, "locked": false,
+      "group": "\u73AF\u5883\u7279\u6548", "role": "vibrate", "show_in_curve": true,
+      "clips": [ { "id": "clip_vibrate", "start_ms": 0, "end_ms": 24000, "keyframes": [
+        { "time_ms": 0, "value": 0, "interpolation": "step" },
+        { "time_ms": 16000, "value": 0, "interpolation": "step" },
+        { "time_ms": 16100, "value": 1, "interpolation": "step" },
+        { "time_ms": 19000, "value": 1, "interpolation": "step" },
+        { "time_ms": 19100, "value": 0, "interpolation": "step" },
+        { "time_ms": 24000, "value": 0, "interpolation": "step" }
+      ] } ]
+    }
+  ],
+  "action_instances": [],
+  "role_track_bindings": {
+    "pitch": "trk_pitch", "yaw": "trk_yaw", "roll": "trk_roll", "surge": "trk_x",
+    "heave": "trk_z", "angle": "trk_angle", "wind": "trk_wind", "fog": "trk_fog",
+    "light": "trk_light", "vibrate": "trk_vibrate"
+  },
+  "embedded_presets": [],
+  "groups": [ { "name": "\u4E3B\u8FD0\u52A8", "color": "#64748B", "collapsed": false }, { "name": "\u73AF\u5883\u7279\u6548", "color": "#F97316", "collapsed": false } ],
+  "events": [
+    { "time_ms": 4000, "event_name": "motion.lift", "event_data": "{\"phase\":\"lift\"}", "color": "#38BDF8", "data_type": "json", "lane": "scene" },
+    { "time_ms": 9000, "event_name": "motion.dive", "event_data": "{\"phase\":\"dive\"}", "color": "#FB7185", "data_type": "json", "lane": "scene" },
+    { "time_ms": 16000, "event_name": "motion.climax", "event_data": "{\"phase\":\"climax\"}", "color": "#C084FC", "data_type": "json", "lane": "scene" }
+  ],
+  "markers": [
+    { "time_ms": 0, "name": "\u8D77\u59CB", "color": "#94A3B8", "note": "\u5F85\u673A\u4F4D\u5C45\u4E2D", "lane": "chapters" },
+    { "time_ms": 4000, "name": "\u62AC\u5347", "color": "#38BDF8", "note": "heave +180 / pitch +18", "lane": "chapters" },
+    { "time_ms": 9000, "name": "\u4FEF\u51B2", "color": "#FB7185", "note": "heave -120 / pitch -12", "lane": "chapters" },
+    { "time_ms": 16000, "name": "\u9AD8\u6F6E", "color": "#C084FC", "note": "\u8F6C\u53F0 180 / \u9707\u52A8", "lane": "chapters" },
+    { "time_ms": 24000, "name": "\u7ED3\u675F", "color": "#94A3B8", "note": "\u56DE\u4E2D", "lane": "chapters" }
+  ],
+  "event_lanes": [ { "id": "scene", "name": "\u573A\u666F\u8282\u70B9", "color": "#38BDF8" } ],
+  "marker_lanes": [ { "id": "chapters", "name": "\u7AE0\u8282", "color": "#94A3B8" } ]
+}

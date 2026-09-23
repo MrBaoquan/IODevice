@@ -460,6 +460,14 @@ public:
     }
 
     // 设备派发: channelKey → IODevice SetDO
+    // Device dispatch: channelKey -> IODevice SetDO
+    //
+    // NOTE (IMPORTANT): this path is currently UNUSED by IOStudio's editor playback.
+    // NativeMotionPlaybackEngine deliberately does not call MotionPlayer::PlaySlot();
+    // the editor drives time on the C# side and dispatches via WriteToDevice, which is
+    // also where normalized -> engineering conversion lives (ToEngineering).
+    // If this native path is ever re-enabled, ToEngineering MUST be mirrored here,
+    // otherwise editor preview and runtime playback will produce different values.
     void DispatchChannel(const std::string& channelKey, float value) {
         auto dotIndex = channelKey.find('.');
         if (dotIndex == std::string::npos) return;

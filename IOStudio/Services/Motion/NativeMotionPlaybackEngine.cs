@@ -458,16 +458,24 @@ namespace IOStudio.Services.Motion
             {
                 var device = IOToolkit.IODeviceController.GetIODevice(track.DeviceName);
                 if (device == null)
+                {
+                    // 设备名写错会导致整条轨道静默失效，这里明确告警一次
+                    Debug.WriteLine($"[NativeEngine] 设备不存在，轨道未输出: device='{track.DeviceName}' track='{track.Label}'");
                     return;
+                }
+
+                // 值域换算：内容层是归一化 0..1（中位 = neutral），通道 ABI 要工程量。
+                // 放在这里（设备写入的唯一收口点），内容文件保持设备无关。
+                float engineering = ToEngineering(track, value);
 
                 if (track.OutputType == "oaxis" && !string.IsNullOrEmpty(track.OAxisChannel))
                 {
                     IOToolkit.Key key = track.OAxisChannel;
-                    device.SetDO(key, value);
+                    device.SetDO(key, engineering);
                 }
                 else
                 {
-                    device.SetDO(track.OActionName, value);
+                    device.SetDO(track.OActionName, engineering);
                 }
             }
             catch (Exception ex)
@@ -476,6 +484,49 @@ namespace IOStudio.Services.Motion
                     $"[NativeEngine] WriteToDevice failed [{track.DeviceName}]: {ex.Message}"
                 );
             }
+        }
+
+        /// <summary>
+        /// 归一化值 → 工程量。未声明量程时直通，保证既有动作文件行为不变。
+        /// <para>优先级：轨道 engineering_range（显式覆盖）→ （后续）设备 schema 声明量程 → 直通。</para>
+        /// </summary>
+        /// <summary>
+        /// Device-declared engineering range provider. Injected by the host; the source
+        /// should be the plugin capabilities / device schema. Returns (min,max) for the
+        /// device+channel, or null when not declared.
+        /// </summary>
+        public static Func<string, string, (float Min, float Max)?>? DeviceRangeProvider { get; set; }
+
+        /// <summary>Channel identity of a track (OAxis channel or OAction name).</summary>
+        private static string ChannelKeyOf(MotionTrack track) =>
+            track.OutputType == "oaxis" && !string.IsNullOrEmpty(track.OAxisChannel)
+                ? track.OAxisChannel
+                : track.OActionName;
+
+        /// <summary>
+        /// Normalized value -> engineering value. Pass-through when nothing is declared,
+        /// so existing motion files keep their behaviour.
+        /// Resolution order:
+        ///   1) track engineering_range (explicit override; a reviewable deviation)
+        ///   2) device-declared range via DeviceRangeProvider (single source of truth)
+        ///   3) pass-through
+        /// </summary>
+        private static float ToEngineering(MotionTrack track, float normalized)
+        {
+            float neutral = track.NeutralValue ?? (track.ValueType == "bool" ? 0f : 0.5f);
+
+            // 1) per-track override: symmetric span about neutral
+            float trackRange = track.EngineeringRange ?? 0f;
+            if (trackRange > 0f)
+                return (normalized - neutral) * trackRange;
+
+            // 2) device-declared range: general (possibly asymmetric) min..max mapping
+            var declared = DeviceRangeProvider?.Invoke(track.DeviceName, ChannelKeyOf(track));
+            if (declared is { } r && r.Max > r.Min)
+                return r.Min + normalized * (r.Max - r.Min);
+
+            // 3) pass-through
+            return normalized;
         }
 
         // ---- 状态管理 ----

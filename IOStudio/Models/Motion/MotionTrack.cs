@@ -133,6 +133,18 @@ namespace IOStudio.Models.Motion
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public List<MotionKeyframe>? OverrideKeyframes { get; set; }
 
+        /// <summary>
+        /// 工程量程（**覆盖**设备声明的量程）。内容层值域是归一化 0..1、中位为
+        /// <see cref="NeutralValue"/>（float 默认 0.5），通道 ABI 要的是工程量，换算：
+        /// <code>engineering = (normalized - neutral) * engineering_range</code>
+        /// <para>null / ≤0 = 不换算、直通（默认，保持既有动作文件行为不变）。
+        /// 正常应由设备声明量程，这里只用于设备未声明时的兜底，或对某条通道做显式覆盖；
+        /// 一旦填写就代表"该轨道的工程含义与设备声明不同"，属于需要复核的显式偏离。</para>
+        /// </summary>
+        [JsonPropertyName("engineering_range")]
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public float? EngineeringRange { get; set; }
+
         /// <summary>片段列表</summary>
         [JsonPropertyName("clips")]
         public List<MotionClip> Clips { get; set; } = new();

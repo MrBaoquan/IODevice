@@ -1,0 +1,113 @@
+{
+  "version": "3.0",
+  "name": "\u503C\u57DF\u6362\u7B97\u63A2\u9488 - \u5F52\u4E00\u5316 \u2192 \u5DE5\u7A0B\u91CF",
+  "duration_ms": 9000,
+  "fps": 60,
+  "tracks": [
+    {
+      "id": "trk_pitch",
+      "device": "Simulator-1",
+      "oaction": "",
+      "output_type": "oaxis",
+      "oaxis_channel": "OAxis_01",
+      "label": "\u4FEF\u4EF0",
+      "color": "#A78BFA",
+      "value_type": "float",
+      "muted": false,
+      "enabled": true,
+      "locked": false,
+      "group": "\u63A2\u9488",
+      "role": "pitch",
+      "show_in_curve": true,
+      "engineering_range": 60,
+      "clips": [
+        {
+          "id": "clip_pitch",
+          "start_ms": 0,
+          "end_ms": 9000,
+          "keyframes": [
+            { "time_ms": 0, "value": 0.5, "interpolation": "ease_in_out" },
+            { "time_ms": 1000, "value": 0.5, "interpolation": "bezier" },
+            { "time_ms": 3000, "value": 0.8, "interpolation": "ease_in_out" },
+            { "time_ms": 4000, "value": 0.8, "interpolation": "ease_in_out" },
+            { "time_ms": 6000, "value": 0.3, "interpolation": "ease_in_out" },
+            { "time_ms": 7000, "value": 0.3, "interpolation": "ease_in_out" },
+            { "time_ms": 9000, "value": 0.5, "interpolation": "ease_in_out" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "trk_z",
+      "device": "Simulator-1",
+      "oaction": "",
+      "output_type": "oaxis",
+      "oaxis_channel": "OAxis_06",
+      "label": "\u5347\u964D",
+      "color": "#4FC3F7",
+      "value_type": "float",
+      "muted": false,
+      "enabled": true,
+      "locked": false,
+      "group": "\u63A2\u9488",
+      "role": "heave",
+      "show_in_curve": true,
+      "engineering_range": 600,
+      "clips": [
+        {
+          "id": "clip_z",
+          "start_ms": 0,
+          "end_ms": 9000,
+          "keyframes": [
+            { "time_ms": 0, "value": 0.5, "interpolation": "ease_in_out" },
+            { "time_ms": 1000, "value": 0.5, "interpolation": "bezier" },
+            { "time_ms": 3000, "value": 0.8, "interpolation": "ease_in_out" },
+            { "time_ms": 4000, "value": 0.8, "interpolation": "ease_in_out" },
+            { "time_ms": 6000, "value": 0.3, "interpolation": "ease_in_out" },
+            { "time_ms": 7000, "value": 0.3, "interpolation": "ease_in_out" },
+            { "time_ms": 9000, "value": 0.5, "interpolation": "ease_in_out" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "trk_effect_wind",
+      "device": "Simulator-1",
+      "oaction": "",
+      "output_type": "oaxis",
+      "oaxis_channel": "OAxis_18",
+      "label": "\u98CE\u6548",
+      "color": "#7DD3FC",
+      "value_type": "float",
+      "muted": false,
+      "enabled": true,
+      "locked": false,
+      "group": "\u63A2\u9488",
+      "role": "wind",
+      "show_in_curve": true,
+      "clips": [
+        {
+          "id": "clip_wind",
+          "start_ms": 0,
+          "end_ms": 9000,
+          "keyframes": [
+            { "time_ms": 0, "value": 0, "interpolation": "step" },
+            { "time_ms": 4000, "value": 0, "interpolation": "step" },
+            { "time_ms": 4100, "value": 1, "interpolation": "step" },
+            { "time_ms": 7000, "value": 1, "interpolation": "step" },
+            { "time_ms": 7100, "value": 0, "interpolation": "step" },
+            { "time_ms": 9000, "value": 0, "interpolation": "step" }
+          ]
+        }
+      ]
+    }
+  ],
+  "action_instances": [],
+  "role_track_bindings": { "pitch": "trk_pitch", "heave": "trk_z", "wind": "trk_effect_wind" },
+  "embedded_presets": [],
+  "groups": [ { "name": "\u63A2\u9488", "color": "#64748B", "collapsed": false } ],
+  "events": [],
+  "markers": [],
+  "event_lanes": [],
+  "marker_lanes": []
+}

@@ -24,9 +24,37 @@ namespace IOStudio
             var provider = services.BuildServiceProvider();
             ServiceLocator.Configure(provider);
 
+            // 归一化 → 工程量的设备量程来源：设备自己在 IODevice.xml + config.ini 里声明，
+            // IOStudio 不硬编码任何设备语义。读不到就直通（不影响既有动作文件）。
+            Services.Motion.NativeMotionPlaybackEngine.DeviceRangeProvider =
+                Services.Motion.DeviceRangeCatalog.Resolve;
+
             if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
             {
-                desktop.MainWindow = new MainWindow { DataContext = new MainWindowViewModel(), };
+                // ── CLI 支持：让「加载 .motion → 播放 → 观察 Simulator」可被脚本驱动 ──
+                var cli = Cli.CliOptions.Parse(desktop.Args);
+                if (cli.ShowHelp)
+                {
+                    Cli.CliRunner.WriteStatus(cli, "help");
+                    Cli.CliRunner.RequestShutdown(desktop, 0);
+                    return;
+                }
+                if (cli.DumpTracks)
+                {
+                    Cli.CliRunner.WriteStatus(cli, "dumped");
+                    Cli.CliRunner.RequestShutdown(desktop, 0);
+                    return;
+                }
+
+                var mainViewModel = new MainWindowViewModel();
+                var mainWindow = new MainWindow { DataContext = mainViewModel, };
+                desktop.MainWindow = mainWindow;
+
+                if (cli.MotionPath is not null || cli.ExitAfterMs is not null)
+                {
+                    Cli.CliRunner.ApplyWindowMode(mainWindow, cli);
+                    Cli.CliRunner.Run(desktop, mainViewModel, cli);
+                }
             }
 
             base.OnFrameworkInitializationCompleted();

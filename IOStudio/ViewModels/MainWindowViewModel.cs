@@ -270,6 +270,27 @@ namespace IOStudio.ViewModels
                 });
         }
 
+        /// <summary>
+        /// CLI 入口：打开动作编排编辑器（可指定初始加载文件），并返回该编辑器的 ViewModel。
+        /// 与菜单「动作编排」共用同一套窗口创建逻辑（IWindowManager + ViewLocator），
+        /// 避免 CLI 与 GUI 两条路径各写一份窗口创建而分叉。
+        /// </summary>
+        public Timeline.TimelineEditorViewModel? OpenTimelineEditorForCli(string? filePath)
+        {
+            var windowManager = ServiceLocator.Resolve<IWindowManager>();
+            Timeline.TimelineEditorViewModel? captured = null;
+            windowManager.ShowOrActivate<TimelineEditorWindow>(() =>
+            {
+                var vm = ViewLocator.CreateViewModel<Timeline.TimelineEditorViewModel>();
+                captured = vm;
+                var win = new TimelineEditorWindow { DataContext = vm };
+                if (!string.IsNullOrEmpty(filePath) && System.IO.File.Exists(filePath))
+                    vm.LoadFromFile(filePath);
+                return win;
+            });
+            return captured;
+        }
+
         public async void Load()
         {
             // 加载应用配置

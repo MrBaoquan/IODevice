@@ -149,19 +149,6 @@ namespace IOStudio.Views.Timeline
                 if (ViewModel != null && !ViewModel.IsPlaying)
                     RefreshAllTrackLiveValues();
             }
-            else if (args.PropertyName == nameof(TimelineEditorViewModel.MediaLoadRequestedPath))
-            {
-                // VM 请求加载 .motion 里记录的影片 (媒体绑定恢复)
-                var mediaPreview = this.FindControl<VideoPreviewControl>("VideoPreview");
-                string mediaPath = ViewModel?.MediaLoadRequestedPath ?? "";
-                if (mediaPreview != null && !string.IsNullOrEmpty(mediaPath))
-                {
-                    mediaPreview.LoadVideoFile(mediaPath);
-                    // 处理完置回空串: 允许后续重复加载同一文件时仍能触发通知
-                    if (ViewModel != null)
-                        ViewModel.MediaLoadRequestedPath = "";
-                }
-            }
             else if (args.PropertyName == nameof(TimelineEditorViewModel.SelectedTrack))
             {
                 // 选中轨道时立即刷新检查器 (不等待播放头移动)

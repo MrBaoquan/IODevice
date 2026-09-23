@@ -69,7 +69,6 @@ namespace IOStudio.ViewModels.Timeline
         private void SyncDerivedStateToTimeline()
         {
             _markerService.SyncToTimeline();
-            SyncMediaToTimeline();
         }
 
         /// <summary>启动自动保存定时器</summary>
@@ -152,8 +151,6 @@ namespace IOStudio.ViewModels.Timeline
 
             LoadTimeline(timeline);
             CurrentFilePath = filePath;
-            // 恢复影片绑定 (缺失只提示, 不阻断动作编辑)
-            RestoreMediaBinding(timeline, filePath);
             IsDirty = false;
             _undoRedo.Clear();
             UpdateWindowTitle();
@@ -174,7 +171,7 @@ namespace IOStudio.ViewModels.Timeline
             if (Timeline is null)
                 return false;
 
-            // 同步派生状态 (标记 + 影片媒体绑定) 到模型
+            // 同步派生状态 (标记) 到模型
             SyncDerivedStateToTimeline();
 
             if (!string.IsNullOrEmpty(CurrentFilePath))
@@ -229,7 +226,7 @@ namespace IOStudio.ViewModels.Timeline
             if (Timeline == null)
                 return false;
 
-            // 同步派生状态 (标记 + 影片媒体绑定) 到模型
+            // 同步派生状态 (标记) 到模型
             SyncDerivedStateToTimeline();
 
             if (MotionFileReader.Write(Timeline, filePath))

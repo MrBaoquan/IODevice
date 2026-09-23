@@ -68,12 +68,13 @@ namespace IOStudio.Models.Motion
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public List<MarkerLane>? MarkerLanes { get; set; }
 
-        /// <summary>
-        /// 影片媒体绑定 (视频路径 + 时长)。null = 未绑定影片 (纯动作项目)。
-        /// 让"影片 + 动作"成为一个整体, 重开项目不必重新选片。
-        /// </summary>
-        [JsonPropertyName("media")]
-        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-        public MotionMedia? Media { get; set; }
+        // ── 设计约定: .motion 不记录影片/媒体路径 ──
+        //
+        // 理由 (与"内容保持设备无关"同一条原则): 编排内容是**媒体无关**的 —— 同一个 .motion
+        // 既可能用于影片, 也可能用于固定循环演出、测试序列或纯动作编排。把影片路径写进来会
+        // 把内容与某一次具体放映耦合死, 也让"换一部影片复用同一套动作"变得别扭。
+        //
+        // 影片与动作的对应关系属于**演出/生产层** (播放列表 / 演出清单 / manifest),
+        // 由那一层去绑定, 而不是下沉到编排内容里。
     }
 }

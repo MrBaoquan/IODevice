@@ -210,6 +210,9 @@ namespace IOStudio.Cli
                         payload["tickError"] = vm.TickError;
                         payload["tickCount"] = vm.TickCount;
                         payload["tickMaxEngineMs"] = vm.TickMaxEngineMs;
+                        payload["tickMaxMediaMs"] = vm.TickMaxMediaMs;
+                        payload["tickStartCount"] = vm.TickStartCount;
+                        payload["tickStopCount"] = vm.TickStopCount;
                     }
                     catch { /* 编辑器状态不是关键路径，取不到就跳过 */ }
                 }

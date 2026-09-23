@@ -124,6 +124,7 @@ namespace IOStudio.ViewModels.Timeline
 
         private void StartTick()
         {
+            TickStartCount++;
             StopTick();
             // 60fps Tick 驱动。每次 Tick 先把媒体时钟推给引擎 ——
             // 影片编排由媒体当主时钟, 否则动作与画面会各自自由跑并逐渐漂移。
@@ -137,7 +138,12 @@ namespace IOStudio.ViewModels.Timeline
                     try
                     {
                         TickCount++;
+
+                        var swMedia = System.Diagnostics.Stopwatch.StartNew();
                         PushMediaClock();
+                        long mediaMs = swMedia.ElapsedMilliseconds;
+                        if (mediaMs > TickMaxMediaMs)
+                            TickMaxMediaMs = mediaMs;
 
                         var sw = System.Diagnostics.Stopwatch.StartNew();
                         _engine.Tick();
@@ -161,6 +167,15 @@ namespace IOStudio.ViewModels.Timeline
         /// <summary>引擎 Tick 的最长耗时 (毫秒)。用于定位"tick 被拖慢"这类静默问题。</summary>
         public long TickMaxEngineMs { get; private set; }
 
+        /// <summary>媒体时钟推送 (PushMediaClock) 的最长耗时 (毫秒)。</summary>
+        public long TickMaxMediaMs { get; private set; }
+
+        /// <summary>StartTick 被调用次数。用于定位"interval 被反复重启"这类调度问题。</summary>
+        public long TickStartCount { get; private set; }
+
+        /// <summary>StopTick 被调用次数。</summary>
+        public long TickStopCount { get; private set; }
+
         /// <summary>播放 tick 内最近一次异常 (null = 无)。tick 异常会终止整条播放驱动, 必须可见。</summary>
         public string? TickError
         {
@@ -170,6 +185,7 @@ namespace IOStudio.ViewModels.Timeline
 
         private void StopTick()
         {
+            TickStopCount++;
             _tickSubscription?.Dispose();
             _tickSubscription = null;
         }

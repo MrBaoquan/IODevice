@@ -244,13 +244,41 @@ namespace IOStudio.Services.Motion
             }
         }
 
+        /// <summary>
+        /// 外部时钟 (影片/音频) 供时。非 null 时播放位置<b>完全由它决定</b>, 忽略 Stopwatch 与 speed。
+        ///
+        /// <para>为什么必须由媒体当主时钟: 否则动作(Stopwatch)与画面(LibVLC)各自自由跑,
+        /// LibVLC 速率不是精确 1x, 5 分钟以上必然漂移且无人察觉。</para>
+        ///
+        /// <para>传 null 恢复 Stopwatch 驱动 (无媒体时的纯动作预览)。</para>
+        /// </summary>
+        public void SetExternalClockMs(double? mediaTimeMs)
+        {
+            _externalClockMs = mediaTimeMs;
+        }
+
+        private double? _externalClockMs;
+
         private void TickPlaying()
         {
             if (_currentTimeline == null)
                 return;
 
-            double elapsed = _playStopwatch.Elapsed.TotalMilliseconds * _speed;
-            double currentMs = _playStartMs + elapsed;
+            double currentMs;
+            if (_externalClockMs is { } mediaMs && mediaMs >= 0)
+            {
+                // 媒体时钟为主: 位置由媒体决定, 不叠加 speed (媒体按 1x 播放)。
+                // 同时把 Stopwatch 对齐到当前位置, 媒体时钟掉线时可无缝回退。
+                currentMs = mediaMs;
+                _playStartMs = currentMs;
+                _playStopwatch.Restart();
+            }
+            else
+            {
+                double elapsed = _playStopwatch.Elapsed.TotalMilliseconds * _speed;
+                currentMs = _playStartMs + elapsed;
+            }
+
             double duration = _currentTimeline.DurationMs;
 
             if (duration <= 0)

@@ -67,5 +67,13 @@ namespace IOStudio.Models.Motion
         [JsonPropertyName("marker_lanes")]
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public List<MarkerLane>? MarkerLanes { get; set; }
+
+        /// <summary>
+        /// 影片媒体绑定 (视频路径 + 时长)。null = 未绑定影片 (纯动作项目)。
+        /// 让"影片 + 动作"成为一个整体, 重开项目不必重新选片。
+        /// </summary>
+        [JsonPropertyName("media")]
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public MotionMedia? Media { get; set; }
     }
 }

@@ -71,6 +71,15 @@ namespace IOStudio.Services.Motion
         // ---- 操作 ----
 
         /// <summary>
+        /// 外部时钟供时 — 本引擎为废弃回退实现, 不支持外部时钟 (影片同步由
+        /// <see cref="NativeMotionPlaybackEngine"/> 负责), 故为 no-op。
+        /// </summary>
+        public void SetExternalClockMs(double? mediaTimeMs)
+        {
+            // no-op: 见方法注释
+        }
+
+        /// <summary>
         /// 加载 .motion 文件
         /// </summary>
         public bool Load(string motionFilePath)

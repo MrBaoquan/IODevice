@@ -77,5 +77,12 @@ namespace IOStudio.Services.Motion
 
         /// <summary>Tick 驱动 (外部定时器调用)</summary>
         void Tick();
+
+        /// <summary>
+        /// 外部时钟 (影片/音频) 供时。非 null 时播放位置完全由它决定, 忽略内部计时与 speed。
+        /// 影片编排必须由媒体当主时钟, 否则动作与画面会各自自由跑并逐渐漂移。
+        /// 传 null 恢复内部计时驱动 (无媒体时的纯动作预览)。
+        /// </summary>
+        void SetExternalClockMs(double? mediaTimeMs);
     }
 }

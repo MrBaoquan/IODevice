@@ -54,7 +54,7 @@ namespace IOStudio.Controls.Timeline
         private IVideoPlayerService? _player;
 
         private bool _isInitializing;
-        private bool _needsResync;
+        /// <summary>待应用的同步时间: 视频就绪前记录, 就绪时 seek 过去 (而非固定回到 0)。</summary>
         private double _pendingSyncTimeMs;
 
         /// <summary>已加载的视频文件路径列表</summary>
@@ -220,10 +220,22 @@ namespace IOStudio.Controls.Timeline
             if (_player is null || !_player.IsLoaded || _player.IsPlaying)
                 return;
 
-            if (_needsResync)
-                return;
-
             _player.SyncTime(timeMs);
+        }
+
+        /// <summary>
+        /// 媒体当前时间 (ms); null = 无可用媒体时钟 (未加载或未播放)。
+        /// 供 ViewModel 推给播放引擎当主时钟 —— 影片编排必须由媒体当主时钟,
+        /// 否则动作(内部计时)与画面(LibVLC)会各自自由跑并逐渐漂移。
+        /// </summary>
+        public double? CurrentMediaTimeMs
+        {
+            get
+            {
+                if (_player is null || !_player.IsLoaded || !_player.IsPlaying)
+                    return null;
+                return _player.CurrentTimeMs;
+            }
         }
 
         /// <summary>
@@ -429,7 +441,9 @@ namespace IOStudio.Controls.Timeline
             if (_isInitializing)
             {
                 _isInitializing = false;
-                _player?.SyncTime(0);
+                // 就绪后 seek 到"待应用时间"而不是固定 0 ——
+                // 否则在播放头位于 3:20 时加载影片, 画面会跳到片头。
+                _player?.SyncTime(_pendingSyncTimeMs);
                 _player?.SetMute(false);
                 VideoOverlay.IsVisible = true;
                 VideoStatusText.Text = $"已加载: {Path.GetFileName(VideoFilePath)}";

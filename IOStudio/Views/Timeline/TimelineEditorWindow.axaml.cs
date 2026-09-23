@@ -149,6 +149,19 @@ namespace IOStudio.Views.Timeline
                 if (ViewModel != null && !ViewModel.IsPlaying)
                     RefreshAllTrackLiveValues();
             }
+            else if (args.PropertyName == nameof(TimelineEditorViewModel.MediaLoadRequestedPath))
+            {
+                // VM 请求加载 .motion 里记录的影片 (媒体绑定恢复)
+                var mediaPreview = this.FindControl<VideoPreviewControl>("VideoPreview");
+                string mediaPath = ViewModel?.MediaLoadRequestedPath ?? "";
+                if (mediaPreview != null && !string.IsNullOrEmpty(mediaPath))
+                {
+                    mediaPreview.LoadVideoFile(mediaPath);
+                    // 处理完置回空串: 允许后续重复加载同一文件时仍能触发通知
+                    if (ViewModel != null)
+                        ViewModel.MediaLoadRequestedPath = "";
+                }
+            }
             else if (args.PropertyName == nameof(TimelineEditorViewModel.SelectedTrack))
             {
                 // 选中轨道时立即刷新检查器 (不等待播放头移动)
@@ -630,14 +643,19 @@ namespace IOStudio.Views.Timeline
                     if (ViewModel != null)
                     {
                         ViewModel.VideoFilePath = path;
-                        // 加载视频后将播放头移动到起始位置, 视频 seek 到首帧
-                        ViewModel.CurrentTimeMs = 0;
-                        videoPreview.SetCurrentTimeMs(0);
+                        // 不重置播放头: 保持用户当前编辑位置, 视频就绪后会 seek 到该位置。
+                        // (原实现固定回 0, 使"在 3:20 处加载影片"直接跳回片头)
+                        videoPreview.SetCurrentTimeMs(ViewModel.CurrentTimeMs);
 
                         // 自动提取音频波形
                         ExtractWaveformAsync(path);
                     }
                 };
+
+                // 媒体时钟: 播放期间由 View 提供媒体当前时间, 引擎据此驱动动作。
+                // 影片编排必须由媒体当主时钟, 否则动作与画面各自自由跑并逐渐漂移。
+                if (ViewModel != null)
+                    ViewModel.MediaClockProvider = () => videoPreview.CurrentMediaTimeMs;
 
                 videoPreview.VideoDurationDetected += durationMs =>
                 {

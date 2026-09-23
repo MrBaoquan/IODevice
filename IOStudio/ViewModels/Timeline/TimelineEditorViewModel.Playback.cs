@@ -88,12 +88,15 @@ namespace IOStudio.ViewModels.Timeline
         private void Pause()
         {
             _engine.Pause();
+            // 清掉外部时钟, 避免过期的媒体时间泄漏到后续 Play/Seek
+            _engine.SetExternalClockMs(null);
             StopTick();
         }
 
         private void Stop()
         {
             _engine.Stop();
+            _engine.SetExternalClockMs(null);
             // Tick 在回中完成后自动停止
         }
 
@@ -119,10 +122,15 @@ namespace IOStudio.ViewModels.Timeline
         private void StartTick()
         {
             StopTick();
-            // 60fps Tick 驱动
+            // 60fps Tick 驱动。每次 Tick 先把媒体时钟推给引擎 ——
+            // 影片编排由媒体当主时钟, 否则动作与画面会各自自由跑并逐渐漂移。
             _tickSubscription = Observable
                 .Interval(TimeSpan.FromMilliseconds(16.67))
-                .Subscribe(_ => _engine.Tick());
+                .Subscribe(_ =>
+                {
+                    PushMediaClock();
+                    _engine.Tick();
+                });
         }
 
         private void StopTick()

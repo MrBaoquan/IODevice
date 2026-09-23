@@ -74,6 +74,7 @@ namespace IOStudio.ViewModels.Timeline
                     {
                         if (IsDirty && Timeline != null && !string.IsNullOrEmpty(CurrentFilePath))
                         {
+                            SyncMediaToTimeline();
                             if (MotionFileReader.Write(Timeline, CurrentFilePath))
                             {
                                 IsDirty = false;
@@ -139,6 +140,8 @@ namespace IOStudio.ViewModels.Timeline
 
             LoadTimeline(timeline);
             CurrentFilePath = filePath;
+            // 恢复影片绑定 (缺失只提示, 不阻断动作编辑)
+            RestoreMediaBinding(timeline, filePath);
             IsDirty = false;
             _undoRedo.Clear();
             UpdateWindowTitle();
@@ -161,6 +164,8 @@ namespace IOStudio.ViewModels.Timeline
 
             // 同步标记到 Timeline 模型
             _markerService.SyncToTimeline();
+            // 同步影片媒体绑定 (视频路径 + 时长) 到模型
+            SyncMediaToTimeline();
 
             if (!string.IsNullOrEmpty(CurrentFilePath))
             {
@@ -216,6 +221,8 @@ namespace IOStudio.ViewModels.Timeline
 
             // 同步标记到 Timeline 模型
             _markerService.SyncToTimeline();
+            // 同步影片媒体绑定 (视频路径 + 时长) 到模型
+            SyncMediaToTimeline();
 
             if (MotionFileReader.Write(Timeline, filePath))
             {

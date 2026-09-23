@@ -127,13 +127,45 @@ namespace IOStudio.ViewModels.Timeline
             StopTick();
             // 60fps Tick 驱动。每次 Tick 先把媒体时钟推给引擎 ——
             // 影片编排由媒体当主时钟, 否则动作与画面会各自自由跑并逐渐漂移。
+            //
+            // 关键: tick 里抛异常会让 Rx 订阅**终止**, 表现为"播放不动了"却毫无提示。
+            // 因此这里兜住并记录, 让它可见而不是静默失效。
             _tickSubscription = Observable
                 .Interval(TimeSpan.FromMilliseconds(16.67))
                 .Subscribe(_ =>
                 {
-                    PushMediaClock();
-                    _engine.Tick();
+                    try
+                    {
+                        TickCount++;
+                        PushMediaClock();
+
+                        var sw = System.Diagnostics.Stopwatch.StartNew();
+                        _engine.Tick();
+                        long elapsed = sw.ElapsedMilliseconds;
+                        if (elapsed > TickMaxEngineMs)
+                            TickMaxEngineMs = elapsed;
+                    }
+                    catch (Exception ex)
+                    {
+                        TickError = ex.GetType().Name + ": " + ex.Message;
+                        PushStatus("播放 tick 出错: " + TickError);
+                    }
                 });
+        }
+
+        private string? _tickError;
+
+        /// <summary>播放 tick 已执行次数 (诊断: 区分"tick 终止"与"tick 在跑但别处没生效")。</summary>
+        public long TickCount { get; private set; }
+
+        /// <summary>引擎 Tick 的最长耗时 (毫秒)。用于定位"tick 被拖慢"这类静默问题。</summary>
+        public long TickMaxEngineMs { get; private set; }
+
+        /// <summary>播放 tick 内最近一次异常 (null = 无)。tick 异常会终止整条播放驱动, 必须可见。</summary>
+        public string? TickError
+        {
+            get => _tickError;
+            private set => this.RaiseAndSetIfChanged(ref _tickError, value);
         }
 
         private void StopTick()

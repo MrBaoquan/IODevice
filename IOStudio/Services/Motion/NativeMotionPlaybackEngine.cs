@@ -166,7 +166,8 @@ namespace IOStudio.Services.Motion
                 }
                 catch (Exception ex)
                 {
-                    Debug.WriteLine($"[NativeEngine] native 派发启动失败: {ex.Message}");
+                    LastError = "native 派发启动失败: " + ex.Message;
+                    Debug.WriteLine($"[NativeEngine] {LastError}");
                 }
             }
 
@@ -210,7 +211,8 @@ namespace IOStudio.Services.Motion
                 }
                 catch (Exception ex)
                 {
-                    Debug.WriteLine($"[NativeEngine] native 停止失败: {ex.Message}");
+                    LastError = "native 停止失败: " + ex.Message;
+                    Debug.WriteLine($"[NativeEngine] {LastError}");
                 }
                 _lastPositionMs = 0;
                 SetState(PlaybackState.Idle);
@@ -354,7 +356,8 @@ namespace IOStudio.Services.Motion
                 }
                 catch (Exception ex)
                 {
-                    Debug.WriteLine($"[NativeEngine] native 派发失败: {ex.Message}");
+                    LastError = "native 派发失败: " + ex.Message;
+                    Debug.WriteLine($"[NativeEngine] {LastError}");
                 }
             }
 
@@ -626,6 +629,9 @@ namespace IOStudio.Services.Motion
         /// <para>限速强度与驱动频率无关 —— native SafetyGuard 用内部时钟测实际间隔。</para>
         /// </summary>
         public bool UseNativeDispatch { get; set; }
+
+        /// <summary>最近一次内部错误 (native 派发/启动失败等); null = 无。</summary>
+        public string? LastError { get; private set; }
 
         /// <summary>
         /// Device-range warm-up hook. Invoked at safe points (timeline load / play), NEVER from the

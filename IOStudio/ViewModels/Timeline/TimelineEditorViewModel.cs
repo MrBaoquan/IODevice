@@ -277,6 +277,9 @@ namespace IOStudio.ViewModels.Timeline
             }
         }
 
+        /// <summary>引擎最近一次内部错误 (供 CLI/UI 暴露, 避免 tick 异常被静默吞掉)。</summary>
+        public string? LastError => _engine.LastError;
+
         private double _playbackSpeed = 1.0;
         public double PlaybackSpeed
         {

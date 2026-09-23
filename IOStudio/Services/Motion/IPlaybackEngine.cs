@@ -29,6 +29,15 @@ namespace IOStudio.Services.Motion
         bool UseNativeDispatch { get; set; }
 
         /// <summary>
+        /// 最近一次内部错误 (如 native 派发失败); null = 无。
+        ///
+        /// <para>为什么需要: 播放 tick 里抛出的异常会被 Rx 订阅吞掉并**终止 tick**
+        /// (表现为"播放不动了"却毫无提示)。把错误留在引擎上、由 CLI/UI 暴露出来,
+        /// 才不会又变成一次静默失效。</para>
+        /// </summary>
+        string? LastError { get; }
+
+        /// <summary>
         /// 统一通知事件 — 所有引擎通知通过此单一事件发出。
         /// 使用 pattern matching 处理不同类型:
         /// <code>

@@ -205,6 +205,11 @@ namespace IOStudio.Cli
                     {
                         payload["isPlaying"] = vm.IsPlaying;
                         payload["currentTimeMs"] = vm.CurrentTimeMs;
+                        // 引擎内部错误 (如 native 派发失败) —— 不暴露就会变成静默失效
+                        payload["lastEngineError"] = vm.LastError;
+                        payload["tickError"] = vm.TickError;
+                        payload["tickCount"] = vm.TickCount;
+                        payload["tickMaxEngineMs"] = vm.TickMaxEngineMs;
                     }
                     catch { /* 编辑器状态不是关键路径，取不到就跳过 */ }
                 }

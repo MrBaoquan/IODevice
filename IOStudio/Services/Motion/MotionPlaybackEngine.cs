@@ -85,6 +85,9 @@ namespace IOStudio.Services.Motion
         /// </summary>
         public bool UseNativeDispatch { get; set; }
 
+        /// <summary>废弃回退实现无内部错误面。</summary>
+        public string? LastError => null;
+
         /// <summary>
         /// 加载 .motion 文件
         /// </summary>

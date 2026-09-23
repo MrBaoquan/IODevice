@@ -546,20 +546,16 @@ namespace IOStudio.Services.Motion
         /// </summary>
         private static float ToEngineering(MotionTrack track, float normalized)
         {
-            float neutral = track.NeutralValue ?? (track.ValueType == "bool" ? 0f : 0.5f);
-
-            // 1) per-track override: symmetric span about neutral
-            float trackRange = track.EngineeringRange ?? 0f;
-            if (trackRange > 0f)
-                return (normalized - neutral) * trackRange;
-
-            // 2) device-declared range: general (possibly asymmetric) min..max mapping
+            // 设备声明量程: 纯缓存查表, 不触碰 native, 故可安全地在派发路径调用。
             var declared = DeviceRangeProvider?.Invoke(track.DeviceName, ChannelKeyOf(track));
-            if (declared is { } r && r.Max > r.Min)
-                return r.Min + normalized * (r.Max - r.Min);
 
-            // 3) pass-through
-            return normalized;
+            return EngineeringValueConverter.ToEngineering(
+                normalized,
+                track.ValueType,
+                track.NeutralValue,
+                track.EngineeringRange,
+                declared
+            );
         }
 
         // ---- 状态管理 ----

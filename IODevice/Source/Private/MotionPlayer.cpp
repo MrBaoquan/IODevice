@@ -44,12 +44,30 @@ namespace {
         std::vector<MotionKeyframe> keyframes;
     };
 
+    // ── Idle 循环 (gap 填充) ────────────────────────
+    // 轨道"无 clip 覆盖"时的待机循环动作, 永不覆盖真实 clip (最低优先级填充)。
+    // 语义: 求值取 phase ∈ [0, periodMs), 沿 keyframes 环形插值;
+    //       keyframes 时间相对循环起始 (0 ~ periodMs)。
+    struct MotionIdleLoop {
+        bool enabled = false;
+        double periodMs = 1000.0;   // 一个循环周期时长
+        double blendMs = 0.0;       // 与相邻 clip 的交叉淡化窗口 (0=硬切换)
+        std::string phaseMode = "continuous"; // "continuous" | "restart"
+        double phaseOffsetMs = 0.0; // 相位偏移 (同组多轨错相编排, 毫秒)
+        std::string groupId;        // 节奏组标识 (同组多轨在 continuous 下共享全局时钟同步; 空=独立)
+        std::vector<MotionKeyframe> keyframes;
+    };
+
     struct MotionTrack {
         std::string deviceName;
         std::string oactionName;
         std::string outputType;  // "oaxis" or "oaction"
         std::string oaxisChannel;
+        std::string valueType;   // "float" or "bool" (用于中性值默认推断)
         bool muted = false;
+        float neutralValue = 0.5f; // 无 Clip 覆盖时的输出值 (解析自 neutral_value, 缺省按 value_type)
+        MotionIdleLoop idle;      // 可选待机循环 (缺省 disabled → 回退 neutralValue)
+        std::vector<MotionKeyframe> overrideKeyframes; // 空窗覆盖关键帧 (绝对时间, 两点插值, 之外回 idle)
         std::vector<MotionClip> clips;
     };
 
@@ -93,8 +111,8 @@ namespace {
             float bezierVal = EvaluateBezier(t, k0.value, p1, p2, k1.value);
             return bezierVal;
         }
-        if (k0.interpolation == "ease") {
-            // smoothstep ease-in-out
+        if (k0.interpolation == "ease" || k0.interpolation == "ease_in_out") {
+            // smoothstep ease-in-out (兼容 C# 编辑器写出的 ease_in_out)
             float eased = t * t * (3.0f - 2.0f * t);
             return Lerp(k0.value, k1.value, eased);
         }
@@ -102,9 +120,9 @@ namespace {
         return Lerp(k0.value, k1.value, t);
     }
 
-    float EvaluateClip(const MotionClip& clip, double absoluteTimeMs) {
+    float EvaluateClip(const MotionClip& clip, double absoluteTimeMs, float neutralValue) {
         if (clip.keyframes.empty())
-            return 0.5f;
+            return neutralValue;
 
         if (clip.keyframes.size() == 1)
             return clip.keyframes[0].value;
@@ -124,16 +142,132 @@ namespace {
                 return InterpolateKeyframes(clip.keyframes[i], clip.keyframes[i + 1], absoluteTimeMs);
             }
         }
-        return 0.5f;
+        return neutralValue;
+    }
+
+    // ── Idle 循环求值 ──────────────────────────────
+    // 采样 idle 循环在 phaseMs 处的值 (phase ∈ [0, periodMs))。
+    // keyframes 视为环形序列: [0..last] 常规插值, [last..period] 用 last→first 闭合 (无缝循环)。
+    float EvaluateIdleLoop(const MotionIdleLoop& idle, double phaseMs) {
+        const auto& kfs = idle.keyframes;
+        if (kfs.empty())
+            return 0.5f;
+        if (kfs.size() == 1)
+            return kfs[0].value;
+
+        double period = idle.periodMs > 1.0 ? idle.periodMs : 1.0;
+        double p = std::fmod(phaseMs, period);
+        if (p < 0.0)
+            p += period;
+
+        // 常规分段
+        for (size_t i = 0; i + 1 < kfs.size(); ++i) {
+            if (p >= kfs[i].timeMs && p <= kfs[i + 1].timeMs)
+                return InterpolateKeyframes(kfs[i], kfs[i + 1], p);
+        }
+        // 跨环闭合: last → first (first 的虚拟时间 = period)
+        if (p >= kfs.back().timeMs) {
+            double span = period - kfs.back().timeMs;
+            if (span <= 0.001)
+                return kfs.back().value;
+            MotionKeyframe k1v = kfs.front();
+            k1v.timeMs = period; // 虚拟下一帧
+            return InterpolateKeyframes(kfs.back(), k1v, p);
+        }
+        return kfs.back().value;
+    }
+
+    // 计算当前 gap 内的 idle 相位:
+    //   "continuous" → 用全局绝对时间 (跨片段空窗保持连贯), 同组多轨共享全局时钟 → 天然同步
+    //   "restart"    → 从最近一个已结束 clip 的 endMs 起算 (每个 gap 从头播)
+    //   均叠加 phaseOffsetMs (同组多轨错相编排)
+    double ComputeIdlePhase(const MotionTrack& track, double absoluteTimeMs) {
+        double baseMs;
+        if (track.idle.phaseMode == "restart") {
+            double gapStartMs = 0.0;
+            for (const auto& c : track.clips)
+                if (c.endMs < absoluteTimeMs && c.endMs > gapStartMs)
+                    gapStartMs = c.endMs;
+            baseMs = absoluteTimeMs - gapStartMs;
+        } else {
+            baseMs = absoluteTimeMs; // continuous
+        }
+        return baseMs + track.idle.phaseOffsetMs;
+    }
+
+    // 空窗值: 启用 idle → 循环求值; 否则回退中性值
+    float EvaluateIdleAt(const MotionTrack& track, double absoluteTimeMs) {
+        if (track.idle.enabled && !track.idle.keyframes.empty())
+            return EvaluateIdleLoop(track.idle, ComputeIdlePhase(track, absoluteTimeMs));
+        return track.neutralValue;
+    }
+
+    // bool 轨输出量化: 所有 blend/插值结果回到 0/1 (与 C# 编辑器镜像一致, 避免 SetDO 输出 0.5 中间值)
+    float QuantizeTrackValue(const MotionTrack& track, float v) {
+        if (track.valueType == "bool")
+            return v >= 0.5f ? 1.0f : 0.0f;
+        return v;
     }
 
     float EvaluateTrack(const MotionTrack& track, double absoluteTimeMs) {
+        // 1) 真实 clip 覆盖 (最高优先级, 永不被打断)
         for (const auto& clip : track.clips) {
-            if (absoluteTimeMs >= clip.startMs && absoluteTimeMs <= clip.endMs) {
-                return EvaluateClip(clip, absoluteTimeMs);
+            if (absoluteTimeMs >= clip.startMs && absoluteTimeMs <= clip.endMs)
+                return QuantizeTrackValue(track, EvaluateClip(clip, absoluteTimeMs, track.neutralValue));
+        }
+
+        // 2) Overlay 覆盖关键帧 (空窗自由数值点, 优先级高于 idle)
+        //    语义: 两点间插值; 首点之前/末点之后回落到 idle (与底层融合);
+        //          单点 = 仅该瞬间生效 (脉冲), 其余时刻回 idle。
+        if (!track.overrideKeyframes.empty()) {
+            const auto& ov = track.overrideKeyframes;
+            if (ov.size() == 1) {
+                if (std::abs(absoluteTimeMs - ov.front().timeMs) < 0.5)
+                    return QuantizeTrackValue(track, ov.front().value);
+                return QuantizeTrackValue(track, EvaluateIdleAt(track, absoluteTimeMs));
+            }
+            if (absoluteTimeMs < ov.front().timeMs)
+                return QuantizeTrackValue(track, EvaluateIdleAt(track, absoluteTimeMs));
+            if (absoluteTimeMs > ov.back().timeMs)
+                return QuantizeTrackValue(track, EvaluateIdleAt(track, absoluteTimeMs));
+            for (size_t i = 0; i + 1 < ov.size(); ++i) {
+                if (absoluteTimeMs >= ov[i].timeMs && absoluteTimeMs <= ov[i + 1].timeMs) {
+                    return QuantizeTrackValue(
+                        track,
+                        InterpolateKeyframes(ov[i], ov[i + 1], absoluteTimeMs)
+                    );
+                }
             }
         }
-        return 0.5f; // 无 Clip 覆盖时返回中位值
+
+        // 3) 与临近 clip 的交叉淡化过渡带 (仅当配置了 blend_ms)
+        float idleVal = EvaluateIdleAt(track, absoluteTimeMs);
+        if (track.idle.blendMs > 0.0) {
+            for (const auto& clip : track.clips) {
+                double blend = track.idle.blendMs;
+                // clip 开始前: idle → clip 首帧值 淡入
+                if (absoluteTimeMs >= clip.startMs - blend && absoluteTimeMs < clip.startMs) {
+                    double t = (absoluteTimeMs - (clip.startMs - blend)) / blend;
+                    float clipFirstVal = clip.keyframes.empty()
+                        ? track.neutralValue
+                        : clip.keyframes.front().value;
+                    float blended = Lerp(idleVal, clipFirstVal, Clamp01(static_cast<float>(t)));
+                    return QuantizeTrackValue(track, blended);
+                }
+                // clip 结束后: clip 末帧值 → idle 淡出
+                if (absoluteTimeMs > clip.endMs && absoluteTimeMs <= clip.endMs + blend) {
+                    double t = (absoluteTimeMs - clip.endMs) / blend;
+                    float clipLastVal = clip.keyframes.empty()
+                        ? track.neutralValue
+                        : clip.keyframes.back().value;
+                    float blended = Lerp(clipLastVal, idleVal, Clamp01(static_cast<float>(t)));
+                    return QuantizeTrackValue(track, blended);
+                }
+            }
+        }
+
+        // 4) 纯 idle 循环 / 中性值 (gap 填充)
+        return QuantizeTrackValue(track, idleVal);
     }
 
     // ── 通道键构造 ──────────────────────────────────
@@ -198,6 +332,60 @@ namespace {
                     track.outputType   = jTrack.value("output_type", "oaction");
                     track.oaxisChannel = jTrack.value("oaxis_channel", "");
                     track.muted        = jTrack.value("muted", false);
+                    // 中性/空闲值: 显式 neutral_value 优先, 缺省按 value_type (bool=0, float=0.5)
+                    track.valueType    = jTrack.value("value_type", "float");
+                    if (jTrack.contains("neutral_value") && jTrack["neutral_value"].is_number()) {
+                        float nv = jTrack["neutral_value"].get<float>();
+                        track.neutralValue = nv < 0.0f ? 0.0f : (nv > 1.0f ? 1.0f : nv);
+                    } else {
+                        track.neutralValue = (track.valueType == "bool") ? 0.0f : 0.5f;
+                    }
+
+                    // Idle 循环 (可选): 无 clip 覆盖时的待机循环动作
+                    if (jTrack.contains("idle") && jTrack["idle"].is_object()) {
+                        const auto& jIdle = jTrack["idle"];
+                        track.idle.enabled       = jIdle.value("enabled", true);
+                        track.idle.periodMs      = jIdle.value("period_ms", 1000.0);
+                        track.idle.blendMs       = jIdle.value("blend_ms", 0.0);
+                        track.idle.phaseMode     = jIdle.value("phase_mode", "continuous");
+                        track.idle.phaseOffsetMs = jIdle.value("phase_offset_ms", 0.0);
+                        track.idle.groupId       = jIdle.value("group_id", "");
+                        if (jIdle.contains("keyframes") && jIdle["keyframes"].is_array()) {
+                            for (const auto& jKf : jIdle["keyframes"]) {
+                                MotionKeyframe kf;
+                                kf.timeMs          = jKf.value("time_ms", 0.0);
+                                kf.value           = jKf.value("value", 0.5f);
+                                kf.interpolation   = jKf.value("interpolation", "linear");
+                                kf.cp1x            = jKf.value("cp1x", 0.0f);
+                                kf.cp1y            = jKf.value("cp1y", 0.0f);
+                                kf.cp2x            = jKf.value("cp2x", 1.0f);
+                                kf.cp2y            = jKf.value("cp2y", 1.0f);
+                                track.idle.keyframes.push_back(std::move(kf));
+                            }
+                        }
+                    }
+
+                    // Overlay 覆盖关键帧 (可选): 空窗自由数值点 (绝对时间), 优先级高于 idle
+                    if (jTrack.contains("override_keyframes") && jTrack["override_keyframes"].is_array()) {
+                        for (const auto& jKf : jTrack["override_keyframes"]) {
+                            MotionKeyframe kf;
+                            kf.timeMs          = jKf.value("time_ms", 0.0);
+                            kf.value           = jKf.value("value", 0.5f);
+                            kf.interpolation   = jKf.value("interpolation", "linear");
+                            kf.cp1x            = jKf.value("cp1x", 0.0f);
+                            kf.cp1y            = jKf.value("cp1y", 0.0f);
+                            kf.cp2x            = jKf.value("cp2x", 1.0f);
+                            kf.cp2y            = jKf.value("cp2y", 1.0f);
+                            track.overrideKeyframes.push_back(std::move(kf));
+                        }
+                        std::sort(
+                            track.overrideKeyframes.begin(),
+                            track.overrideKeyframes.end(),
+                            [](const MotionKeyframe& a, const MotionKeyframe& b) {
+                                return a.timeMs < b.timeMs;
+                            }
+                        );
+                    }
 
                     if (jTrack.contains("clips") && jTrack["clips"].is_array()) {
                         for (const auto& jClip : jTrack["clips"]) {

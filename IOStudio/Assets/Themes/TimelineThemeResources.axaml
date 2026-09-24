@@ -118,6 +118,11 @@
             <SolidColorBrush x:Key="TlWorkOut" Color="#ef4444"/>
             <SolidColorBrush x:Key="TlSnapGuide" Color="#0ea5e9"/>
             <SolidColorBrush x:Key="TlMutedOverlay" Color="#80ffffff"/>
+            <!-- 编辑画布 (关键帧/曲线区): 恒定深色, 让关键帧/曲线/片段有足够对比 (pro 工具惯例) -->
+            <SolidColorBrush x:Key="TlCanvasBg" Color="#23272e"/>
+            <SolidColorBrush x:Key="TlCanvasRowAlt" Color="#282d34"/>
+            <SolidColorBrush x:Key="TlCanvasGrid" Color="#3a4048"/>
+            <SolidColorBrush x:Key="TlCanvasText" Color="#c9cfd6"/>
         </ResourceDictionary>
 
         <!-- ═══ Dark Theme ═══ -->
@@ -232,6 +237,10 @@
             <SolidColorBrush x:Key="TlWorkOut" Color="#f87171"/>
             <SolidColorBrush x:Key="TlSnapGuide" Color="#22d3ee"/>
             <SolidColorBrush x:Key="TlMutedOverlay" Color="#40000000"/>
+            <SolidColorBrush x:Key="TlCanvasBg" Color="#15181c"/>
+            <SolidColorBrush x:Key="TlCanvasRowAlt" Color="#191d22"/>
+            <SolidColorBrush x:Key="TlCanvasGrid" Color="#2b3138"/>
+            <SolidColorBrush x:Key="TlCanvasText" Color="#c9cfd6"/>
         </ResourceDictionary>
 
     </ResourceDictionary.ThemeDictionaries>

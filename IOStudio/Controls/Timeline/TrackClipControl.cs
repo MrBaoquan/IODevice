@@ -312,10 +312,10 @@ namespace IOStudio.Controls.Timeline
 
         // ═══════ 视觉常量 (统一取自 TimelineTheme 令牌, 不再各自写死 hex) ═══════
 
-        private static IBrush EmptyLightBrush => TimelineTheme.ContentBg;
-        private static IBrush EmptyDarkBrush => TimelineTheme.CurveBg;
-        private static IPen GridLightPen => new Pen(TimelineTheme.GridLine, 0.5);
-        private static IPen GridDarkPen => new Pen(TimelineTheme.GridLine, 0.5);
+        private static IBrush EmptyLightBrush => TimelineTheme.CanvasBg;
+        private static IBrush EmptyDarkBrush => TimelineTheme.CanvasBg;
+        private static IPen GridLightPen => new Pen(TimelineTheme.CanvasGrid, 0.5);
+        private static IPen GridDarkPen => new Pen(TimelineTheme.CanvasGrid, 0.5);
         private static IBrush PlayheadBrush => TimelineTheme.Playhead;
         private static IPen PlayheadPen => new Pen(TimelineTheme.Playhead, 1.5);
         private static IBrush MutedOverlayBrush => TimelineTheme.MutedOverlay;

@@ -255,14 +255,14 @@ namespace IOStudio.Controls.Timeline
 
         // ═══════ 视觉常量 (统一取自 TimelineTheme 令牌) ═══════
 
-        private static IBrush BgBrush => TimelineTheme.CurveBg;
-        private static IBrush GridMajorBrush => TimelineTheme.WithAlpha(TimelineTheme.TextMuted, 40);
-        private static IBrush GridMinorBrush => TimelineTheme.WithAlpha(TimelineTheme.TextMuted, 18);
+        private static IBrush BgBrush => TimelineTheme.CanvasBg;
+        private static IBrush GridMajorBrush => TimelineTheme.WithAlpha(TimelineTheme.CanvasGrid, 200);
+        private static IBrush GridMinorBrush => TimelineTheme.WithAlpha(TimelineTheme.CanvasGrid, 110);
         private static IPen GridMajorPen => new Pen(GridMajorBrush, 0.5);
         private static IPen GridMinorPen => new Pen(GridMinorBrush, 0.5);
         private static IBrush PlayheadBrush => TimelineTheme.Playhead;
         private static IPen PlayheadPen => new Pen(TimelineTheme.Playhead, 1.5);
-        private static IBrush LabelBrush => TimelineTheme.WithAlpha(TimelineTheme.TextSecondary, 160);
+        private static IBrush LabelBrush => TimelineTheme.WithAlpha(TimelineTheme.CanvasText, 170);
         private static IBrush SelectedKfBrush => TimelineTheme.Accent;
         private static IPen SelectedKfPen => new Pen(Brushes.Black, 2);
         private static IBrush HandleBrush => TimelineTheme.SnapGuide;

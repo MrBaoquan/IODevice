@@ -75,6 +75,11 @@ namespace IOStudio.Controls.Timeline
         public static IBrush WorkOut => Resolve("TlWorkOut", "#ef4444");
         public static IBrush SnapGuide => Resolve("TlSnapGuide", "#0ea5e9");
         public static IBrush MutedOverlay => Resolve("TlMutedOverlay", "#80ffffff");
+        // 编辑画布 (恒定深色)
+        public static IBrush CanvasBg => Resolve("TlCanvasBg", "#23272e");
+        public static IBrush CanvasRowAlt => Resolve("TlCanvasRowAlt", "#282d34");
+        public static IBrush CanvasGrid => Resolve("TlCanvasGrid", "#3a4048");
+        public static IBrush CanvasText => Resolve("TlCanvasText", "#c9cfd6");
         public static IBrush Success => Resolve("TlSuccess", "#238b62");
         public static IBrush Danger => Resolve("TlDanger", "#c84f4f");
         public static IBrush Warning => Resolve("TlWarning", "#b87916");

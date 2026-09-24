@@ -20,21 +20,21 @@
         </Style>
         <Style Selector="TextBox.prop-input">
             <Setter Property="FontSize" Value="12"/>
-            <Setter Property="Padding" Value="6,4"/>
-            <Setter Property="MinHeight" Value="28"/>
-            <Setter Property="CornerRadius" Value="2"/>
+            <Setter Property="Padding" Value="7,5"/>
+            <Setter Property="MinHeight" Value="30"/>
+            <Setter Property="CornerRadius" Value="6"/>
             <Setter Property="Background" Value="{DynamicResource TlInputBg}"/>
         </Style>
         <Style Selector="ComboBox.prop-combo">
             <Setter Property="FontSize" Value="12"/>
-            <Setter Property="Padding" Value="6,4"/>
-            <Setter Property="MinHeight" Value="28"/>
+            <Setter Property="Padding" Value="7,5"/>
+            <Setter Property="MinHeight" Value="30"/>
             <Setter Property="HorizontalAlignment" Value="Stretch"/>
-            <Setter Property="CornerRadius" Value="2"/>
+            <Setter Property="CornerRadius" Value="6"/>
         </Style>
         <!-- 属性区段 -->
         <Style Selector="Border.prop-section">
-            <Setter Property="Padding" Value="0,8,0,8"/>
+            <Setter Property="Padding" Value="0,10,0,10"/>
             <Setter Property="BorderBrush" Value="{DynamicResource TlBorderBrush}"/>
             <Setter Property="BorderThickness" Value="0,0,0,1"/>
             <Setter Property="Margin" Value="0"/>
@@ -46,7 +46,7 @@
             <Setter Property="MinWidth" Value="28"/>
             <Setter Property="MinHeight" Value="28"/>
             <Setter Property="Background" Value="Transparent"/>
-            <Setter Property="CornerRadius" Value="2"/>
+            <Setter Property="CornerRadius" Value="6"/>
             <Setter Property="HorizontalContentAlignment" Value="Center"/>
             <Setter Property="VerticalContentAlignment" Value="Center"/>
         </Style>
@@ -64,7 +64,7 @@
             <Setter Property="MinHeight" Value="24"/>
             <Setter Property="Background" Value="Transparent"/>
             <Setter Property="Foreground" Value="{DynamicResource TlTextMuted}"/>
-            <Setter Property="CornerRadius" Value="2"/>
+            <Setter Property="CornerRadius" Value="6"/>
             <Setter Property="HorizontalContentAlignment" Value="Center"/>
             <Setter Property="VerticalContentAlignment" Value="Center"/>
         </Style>

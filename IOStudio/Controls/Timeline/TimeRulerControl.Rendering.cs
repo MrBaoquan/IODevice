@@ -392,16 +392,16 @@ namespace IOStudio.Controls.Timeline
             if (events == null || events.Count == 0)
                 return;
 
-            var selectedHighlightBrush = new SolidColorBrush(Color.Parse("#ef4444"));
+            var selectedHighlightBrush = TimelineTheme.Playhead;
             var selectedBorderPen = new Pen(Brushes.White, 1.5);
-            var normalBorderPen = new Pen(new SolidColorBrush(Color.Parse("#d97706")), 0.8);
+            var normalBorderPen = new Pen(TimelineTheme.WithAlpha(TimelineTheme.Event, 0xB0), 0.8);
             var stalkPen = new Pen(
-                new SolidColorBrush(Color.Parse("#70f59e0b")),
+                TimelineTheme.WithAlpha(TimelineTheme.Event, 0x70),
                 1,
                 DashStyle.Dash
             );
             var stalkPenSelected = new Pen(
-                new SolidColorBrush(Color.Parse("#a0ef4444")),
+                TimelineTheme.WithAlpha(TimelineTheme.Playhead, 0xA0),
                 1.2,
                 DashStyle.Dash
             );
@@ -469,7 +469,7 @@ namespace IOStudio.Controls.Timeline
 
                 IBrush labelBrush = isSelected
                     ? Brushes.White
-                    : new SolidColorBrush(Color.Parse("#fbbf24"));
+                    : TimelineTheme.Event;
                 var nameText = new FormattedText(
                     label,
                     CultureInfo.InvariantCulture,
@@ -485,8 +485,8 @@ namespace IOStudio.Controls.Timeline
                 double boxY = flagY;
 
                 var flagBrush = isSelected
-                    ? new SolidColorBrush(Color.Parse("#D0ef4444"))
-                    : new SolidColorBrush(Color.Parse("#D0b45309"));
+                    ? TimelineTheme.WithAlpha(TimelineTheme.Playhead, 0xD0)
+                    : TimelineTheme.WithAlpha(TimelineTheme.Event, 0xD0);
                 var flagRect = new Rect(boxX, boxY, boxW, flagH);
                 context.DrawRectangle(
                     flagBrush,

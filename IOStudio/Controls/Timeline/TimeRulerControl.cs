@@ -110,14 +110,12 @@ namespace IOStudio.Controls.Timeline
             set => SetValue(WorkAreaOutMsProperty, value);
         }
 
-        // ═══════ 视觉常量 (主题感知) ═══════
+        // ═══════ 视觉常量 (统一取自 TimelineTheme 令牌) ═══════
 
-        private static readonly IBrush PlayheadBrush = new SolidColorBrush(Color.Parse("#ef4444"));
-        private static readonly IBrush VideoRefBrush = new SolidColorBrush(Color.Parse("#8b5cf6"));
-        private static readonly IPen VideoRefPen = new Pen(VideoRefBrush, 1.5, DashStyle.Dash);
-        private static readonly IBrush EventMarkerBrush = new SolidColorBrush(
-            Color.Parse("#f59e0b")
-        );
+        private static IBrush PlayheadBrush => TimelineTheme.Playhead;
+        private static IBrush VideoRefBrush => TimelineTheme.VideoRef;
+        private static IPen VideoRefPen => new Pen(TimelineTheme.VideoRef, 1.5, DashStyle.Dash);
+        private static IBrush EventMarkerBrush => TimelineTheme.Event;
 
         /// <summary>时间轴标记列表, 在标尺上显示书签标记</summary>
         public List<TimelineMarker>? Markers
@@ -145,37 +143,13 @@ namespace IOStudio.Controls.Timeline
         private bool _isDraggingMarker;
         private TimelineMarker? _draggingMarker;
 
-        // 主题动态画笔
-        private IBrush BgBrush =>
-            IsDarkTheme
-                ? new SolidColorBrush(Color.Parse("#1f2937"))
-                : new SolidColorBrush(Color.Parse("#f3f4f6"));
-        private IPen MajorPen =>
-            new Pen(
-                IsDarkTheme
-                    ? new SolidColorBrush(Color.Parse("#9ca3af"))
-                    : new SolidColorBrush(Color.Parse("#6b7280")),
-                1
-            );
-        private IPen MinorPen =>
-            new Pen(
-                IsDarkTheme
-                    ? new SolidColorBrush(Color.Parse("#4b5563"))
-                    : new SolidColorBrush(Color.Parse("#d1d5db")),
-                0.5
-            );
-        private IBrush LabelBrush =>
-            IsDarkTheme
-                ? new SolidColorBrush(Color.Parse("#e5e7eb"))
-                : new SolidColorBrush(Color.Parse("#374151"));
-        private IPen PlayheadLinePen => new Pen(PlayheadBrush, 2);
-        private IPen BottomPen =>
-            new Pen(
-                IsDarkTheme
-                    ? new SolidColorBrush(Color.Parse("#374151"))
-                    : new SolidColorBrush(Color.Parse("#e5e7eb")),
-                1
-            );
+        // 主题动态画笔 (统一令牌)
+        private IBrush BgBrush => TimelineTheme.RulerBg;
+        private IPen MajorPen => new Pen(TimelineTheme.RulerMajor, 1);
+        private IPen MinorPen => new Pen(TimelineTheme.RulerMinor, 0.5);
+        private IBrush LabelBrush => TimelineTheme.RulerLabel;
+        private IPen PlayheadLinePen => new Pen(TimelineTheme.Playhead, 2);
+        private IPen BottomPen => new Pen(TimelineTheme.RulerBottom, 1);
 
         private readonly Typeface _typeface = new Typeface("Inter, Segoe UI, sans-serif");
 

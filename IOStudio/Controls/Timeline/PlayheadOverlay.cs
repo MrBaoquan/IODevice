@@ -59,13 +59,10 @@ namespace IOStudio.Controls.Timeline
             set => SetValue(WorkAreaOutMsProperty, value);
         }
 
-        private static readonly IPen PlayheadPen = new Pen(
-            new SolidColorBrush(Color.Parse("#ef4444")),
-            1.5
-        );
+        private static readonly IPen PlayheadPen = new Pen(TimelineTheme.Playhead, 1.5);
 
         private static readonly IPen PlayheadOutOfRangePen = new Pen(
-            new SolidColorBrush(Color.FromArgb(70, 239, 68, 68)),
+            TimelineTheme.WithAlpha(TimelineTheme.Playhead, 70),
             1.5
         );
 

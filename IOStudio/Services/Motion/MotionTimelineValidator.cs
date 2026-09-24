@@ -42,6 +42,32 @@ namespace IOStudio.Services.Motion
 
         /// <summary>设备声明量程 (null = 跳过量程相关检查)。</summary>
         public Func<string, string, (float Min, float Max)?>? DeviceRange { get; init; }
+
+        /// <summary>
+        /// 安全联锁配置 (null = 跳过安全语义检查)。<b>默认关闭</b>：role 是自由字符串，
+        /// 校验器默认不对其赋予语义；只有显式注入本配置时才按角色名做安全联锁检查。
+        /// </summary>
+        public MotionSafetyProfile? Safety { get; init; }
+    }
+
+    /// <summary>
+    /// 安全联锁语义配置 — 把"哪些 role 是运动、哪条是使能/急停"告诉校验器。
+    /// <para>之所以做成可注入: 编排层的 role 是业务自由字符串, 校验器默认零语义假设。</para>
+    /// </summary>
+    public sealed class MotionSafetyProfile
+    {
+        /// <summary>运动使能轨的 role (默认 "motion_enable")。</summary>
+        public string MotionEnableRole { get; init; } = "motion_enable";
+
+        /// <summary>急停轨的 role (默认 "emergency_stop")。</summary>
+        public string EmergencyStopRole { get; init; } = "emergency_stop";
+
+        /// <summary>视为"运动输出"的 role 集合 (默认六自由度 + 转台)。</summary>
+        public IReadOnlyCollection<string> MotionRoles { get; init; } =
+            new[] { "pitch", "roll", "yaw", "heave", "surge", "sway", "angle" };
+
+        /// <summary>判定"有实际运动输出"的中性偏差阈值。</summary>
+        public float NeutralEpsilon { get; init; } = 0.02f;
     }
 
     /// <summary>
@@ -85,6 +111,8 @@ namespace IOStudio.Services.Motion
             foreach (var track in tracks)
                 ValidateTrack(timeline, track, options, issues);
             ValidateInstances(timeline, tracks, issues);
+            if (options.Safety is { } safety)
+                ValidateSafety(tracks, safety, issues);
 
             return issues;
         }
@@ -431,6 +459,158 @@ namespace IOStudio.Services.Motion
                             track, label, clip.StartMs));
                     }
                 }
+            }
+        }
+
+        // ── 安全联锁 (可选, 需注入 MotionSafetyProfile) ────────
+
+        /// <summary>
+        /// 安全联锁检查: 把"未使能就动 / 急停期间仍在动"这类**不报错但危险/无效**的编排暴露出来。
+        /// 采用 clip 内采样 (而非全时域网格), 只对显式运动 clip 判定, 避免 idle 呼吸造成误报。
+        /// </summary>
+        private static void ValidateSafety(
+            List<MotionTrack> tracks,
+            MotionSafetyProfile safety,
+            List<MotionValidationIssue> issues
+        )
+        {
+            static bool RoleIs(MotionTrack t, string role) =>
+                string.Equals(t.Role, role, StringComparison.OrdinalIgnoreCase);
+
+            var motionRoles = new HashSet<string>(safety.MotionRoles, StringComparer.OrdinalIgnoreCase);
+
+            var motionTracks = tracks
+                .Where(t =>
+                    t.Enabled
+                    && !t.Muted
+                    && motionRoles.Contains(t.Role ?? "")
+                    && (t.Clips?.Count ?? 0) > 0
+                )
+                .ToList();
+            if (motionTracks.Count == 0)
+                return;
+
+            var enableTrack = tracks.FirstOrDefault(t => RoleIs(t, safety.MotionEnableRole));
+            var estopTrack = tracks.FirstOrDefault(t => RoleIs(t, safety.EmergencyStopRole));
+
+            float Eval(MotionTrack t, double timeMs) =>
+                TrackValueEvaluator.Evaluate(
+                    t.Clips,
+                    t.ValueType,
+                    t.NeutralValue,
+                    t.IdleLoop,
+                    t.OverrideKeyframes,
+                    timeMs
+                );
+
+            if (enableTrack is null)
+            {
+                issues.Add(
+                    new MotionValidationIssue
+                    {
+                        Severity = MotionIssueSeverity.Warning,
+                        Code = "safety.missing_motion_enable",
+                        Message =
+                            $"存在 {motionTracks.Count} 条运动轨道, 但未定义运动使能轨 "
+                            + $"(role='{safety.MotionEnableRole}'); 实机可能拒绝运动或安全策略不一致",
+                        TimeMs = 0,
+                    }
+                );
+            }
+            else if ((enableTrack.Clips?.Count ?? 0) > 0)
+            {
+                double maxEnable = 0;
+                foreach (var clip in enableTrack.Clips!)
+                foreach (double t in SamplePoints(clip))
+                    maxEnable = Math.Max(maxEnable, Eval(enableTrack, t));
+
+                if (maxEnable < 0.5)
+                {
+                    issues.Add(
+                        new MotionValidationIssue
+                        {
+                            Severity = MotionIssueSeverity.Error,
+                            Code = "safety.motion_never_enabled",
+                            Message = "运动使能轨从未置高 (>=0.5), 但存在运动编排 —— 实机上运动不会生效",
+                            TrackId = enableTrack.Id,
+                            TrackLabel = enableTrack.Label,
+                        }
+                    );
+                }
+            }
+
+            foreach (var mt in motionTracks)
+            {
+                float neutral = TrackValueEvaluator.ResolveNeutral(mt.ValueType, mt.NeutralValue);
+                bool reportedEnable = false;
+                bool reportedEstop = false;
+
+                foreach (var clip in mt.Clips!)
+                {
+                    foreach (double t in SamplePoints(clip))
+                    {
+                        float v = Eval(mt, t);
+                        if (Math.Abs(v - neutral) <= safety.NeutralEpsilon)
+                            continue;
+
+                        if (enableTrack is not null && !reportedEnable)
+                        {
+                            if (Eval(enableTrack, t) < 0.5f)
+                            {
+                                issues.Add(
+                                    new MotionValidationIssue
+                                    {
+                                        Severity = MotionIssueSeverity.Warning,
+                                        Code = "safety.motion_without_enable",
+                                        Message =
+                                            $"运动通道在未使能时仍有输出 (t={t:F0}ms 值 {v:F3}); "
+                                            + "应先将运动使能轨置高",
+                                        TrackId = mt.Id,
+                                        TrackLabel = mt.Label,
+                                        TimeMs = t,
+                                    }
+                                );
+                                reportedEnable = true;
+                            }
+                        }
+
+                        // 急停: 只在急停已持续 >=800ms 时判定, 避免把"急停触发的减速/急停 clip"本身算作违规
+                        if (estopTrack is not null && !reportedEstop && t >= 800)
+                        {
+                            if (Eval(estopTrack, t) >= 0.5f && Eval(estopTrack, t - 800) >= 0.5f)
+                            {
+                                issues.Add(
+                                    new MotionValidationIssue
+                                    {
+                                        Severity = MotionIssueSeverity.Warning,
+                                        Code = "safety.motion_during_estop",
+                                        Message =
+                                            $"急停持续期间仍有运动输出 (t={t:F0}ms 值 {v:F3}); "
+                                            + "检查急停序列与运动编排是否冲突",
+                                        TrackId = mt.Id,
+                                        TrackLabel = mt.Label,
+                                        TimeMs = t,
+                                    }
+                                );
+                                reportedEstop = true;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        /// <summary>clip 内采样点 (起/1-4/中/3-4/末前), 避免末点落在相邻 clip 边界。</summary>
+        private static IEnumerable<double> SamplePoints(MotionClip clip)
+        {
+            yield return clip.StartMs;
+            double span = clip.EndMs - clip.StartMs;
+            if (span > 1)
+            {
+                yield return clip.StartMs + span * 0.25;
+                yield return clip.StartMs + span * 0.5;
+                yield return clip.StartMs + span * 0.75;
+                yield return clip.EndMs - 0.001;
             }
         }
 

@@ -1,0 +1,80 @@
+{
+  "name": "官方生成入口示例 - 60s",
+  "duration_ms": 60000,
+  "fps": 60,
+  "device": "Simulator-1",
+  "tracks": [
+    { "role": "pitch", "channel": "OAxis_01", "label": "俯仰", "color": "#A78BFA", "group": "主运动", "neutral": 0.5, "engineering_range": 60,
+      "idle": { "period_ms": 3200, "blend_ms": 400, "phase_mode": "continuous",
+        "keyframes": [ { "time_ms": 0, "value": 0.5, "interpolation": "bezier" }, { "time_ms": 800, "value": 0.515, "interpolation": "bezier" }, { "time_ms": 1600, "value": 0.5, "interpolation": "bezier" }, { "time_ms": 2400, "value": 0.485, "interpolation": "bezier" }, { "time_ms": 3200, "value": 0.5, "interpolation": "bezier" } ] } },
+    { "role": "roll", "channel": "OAxis_03", "label": "横滚", "color": "#34D399", "group": "主运动", "neutral": 0.5, "engineering_range": 60,
+      "idle": { "period_ms": 4000, "blend_ms": 400, "phase_mode": "continuous", "phase_offset_ms": 800,
+        "keyframes": [ { "time_ms": 0, "value": 0.5, "interpolation": "bezier" }, { "time_ms": 1000, "value": 0.52, "interpolation": "bezier" }, { "time_ms": 2000, "value": 0.5, "interpolation": "bezier" }, { "time_ms": 3000, "value": 0.48, "interpolation": "bezier" }, { "time_ms": 4000, "value": 0.5, "interpolation": "bezier" } ] } },
+    { "role": "heave", "channel": "OAxis_06", "label": "升降", "color": "#4FC3F7", "group": "主运动", "neutral": 0.5, "engineering_range": 600,
+      "idle": { "period_ms": 5200, "blend_ms": 400, "phase_mode": "continuous",
+        "keyframes": [ { "time_ms": 0, "value": 0.5, "interpolation": "bezier" }, { "time_ms": 1300, "value": 0.54, "interpolation": "bezier" }, { "time_ms": 2600, "value": 0.5, "interpolation": "bezier" }, { "time_ms": 3900, "value": 0.46, "interpolation": "bezier" }, { "time_ms": 5200, "value": 0.5, "interpolation": "bezier" } ] } },
+    { "role": "yaw", "channel": "OAxis_02", "label": "偏航", "color": "#60A5FA", "group": "主运动", "neutral": 0.5, "engineering_range": 90,
+      "idle": { "period_ms": 8000, "blend_ms": 400, "phase_mode": "continuous",
+        "keyframes": [ { "time_ms": 0, "value": 0.5, "interpolation": "bezier" }, { "time_ms": 2000, "value": 0.53, "interpolation": "bezier" }, { "time_ms": 4000, "value": 0.5, "interpolation": "bezier" }, { "time_ms": 6000, "value": 0.47, "interpolation": "bezier" }, { "time_ms": 8000, "value": 0.5, "interpolation": "bezier" } ] } },
+
+    { "role": "wind", "channel": "OAxis_18", "label": "风效", "color": "#7DD3FC", "group": "环境特效", "neutral": 0 },
+    { "role": "light", "channel": "OAxis_21", "label": "频闪", "color": "#FDE047", "group": "环境特效", "neutral": 0 },
+    { "role": "vibrate", "channel": "OAxis_22", "label": "振动", "color": "#FB7185", "group": "环境特效", "neutral": 0 },
+    { "role": "motion_enable", "channel": "OAxis_11", "label": "运动使能", "color": "#4ADE80", "group": "安全与状态", "neutral": 0 }
+  ],
+  "presets": [
+    { "id": "fx_rise", "name": "失重上升", "category": "失重效果", "description": "上冲失重 + 俯仰后仰 + 横滚微摆", "duration_ms": 3000,
+      "channels": [
+        { "role": "heave", "keyframes": [ { "time_ms": 0, "value": 0.5, "interpolation": "bezier" }, { "time_ms": 600, "value": 0.88, "interpolation": "bezier" }, { "time_ms": 1800, "value": 0.58, "interpolation": "bezier" }, { "time_ms": 3000, "value": 0.5, "interpolation": "ease_in_out" } ] },
+        { "role": "pitch", "keyframes": [ { "time_ms": 0, "value": 0.5, "interpolation": "bezier" }, { "time_ms": 600, "value": 0.62, "interpolation": "bezier" }, { "time_ms": 2400, "value": 0.55, "interpolation": "bezier" }, { "time_ms": 3000, "value": 0.5, "interpolation": "ease_in_out" } ] },
+        { "role": "roll", "keyframes": [ { "time_ms": 0, "value": 0.5, "interpolation": "bezier" }, { "time_ms": 600, "value": 0.58, "interpolation": "bezier" }, { "time_ms": 2400, "value": 0.45, "interpolation": "bezier" }, { "time_ms": 3000, "value": 0.5, "interpolation": "ease_in_out" } ] }
+      ] },
+    { "id": "fx_cruise", "name": "平稳巡航", "category": "巡航", "description": "长周期低幅错相摆动", "duration_ms": 6000,
+      "channels": [
+        { "role": "heave", "keyframes": [ { "time_ms": 0, "value": 0.5, "interpolation": "ease_in_out" }, { "time_ms": 1500, "value": 0.56, "interpolation": "ease_in_out" }, { "time_ms": 3000, "value": 0.5, "interpolation": "ease_in_out" }, { "time_ms": 4500, "value": 0.44, "interpolation": "ease_in_out" }, { "time_ms": 6000, "value": 0.5, "interpolation": "ease_in_out" } ] },
+        { "role": "roll", "keyframes": [ { "time_ms": 0, "value": 0.5, "interpolation": "ease_in_out" }, { "time_ms": 1500, "value": 0.54, "interpolation": "ease_in_out" }, { "time_ms": 3000, "value": 0.5, "interpolation": "ease_in_out" }, { "time_ms": 4500, "value": 0.46, "interpolation": "ease_in_out" }, { "time_ms": 6000, "value": 0.5, "interpolation": "ease_in_out" } ] },
+        { "role": "yaw", "keyframes": [ { "time_ms": 0, "value": 0.5, "interpolation": "ease_in_out" }, { "time_ms": 2000, "value": 0.52, "interpolation": "ease_in_out" }, { "time_ms": 4000, "value": 0.48, "interpolation": "ease_in_out" }, { "time_ms": 6000, "value": 0.5, "interpolation": "ease_in_out" } ] }
+      ] },
+    { "id": "fx_dive", "name": "俯冲", "category": "过山车", "description": "前冲俯冲", "duration_ms": 2000,
+      "channels": [
+        { "role": "heave", "keyframes": [ { "time_ms": 0, "value": 0.5, "interpolation": "bezier" }, { "time_ms": 800, "value": 0.1, "interpolation": "bezier" }, { "time_ms": 1600, "value": 0.9, "interpolation": "ease_in_out" }, { "time_ms": 2000, "value": 0.5, "interpolation": "bezier" } ] },
+        { "role": "pitch", "keyframes": [ { "time_ms": 0, "value": 0.5, "interpolation": "bezier" }, { "time_ms": 800, "value": 0.15, "interpolation": "bezier" }, { "time_ms": 1600, "value": 0.85, "interpolation": "ease_in_out" }, { "time_ms": 2000, "value": 0.5, "interpolation": "bezier" } ] }
+      ] },
+    { "id": "fx_turbulence", "name": "气流颠簸", "category": "过山车", "description": "高频抖动 + 冲击振动", "duration_ms": 5000,
+      "channels": [
+        { "role": "roll", "keyframes": [ { "time_ms": 0, "value": 0.5, "interpolation": "bezier" }, { "time_ms": 400, "value": 0.62, "interpolation": "bezier" }, { "time_ms": 900, "value": 0.4, "interpolation": "bezier" }, { "time_ms": 1500, "value": 0.6, "interpolation": "bezier" }, { "time_ms": 2100, "value": 0.42, "interpolation": "bezier" }, { "time_ms": 2800, "value": 0.58, "interpolation": "bezier" }, { "time_ms": 3500, "value": 0.45, "interpolation": "bezier" }, { "time_ms": 4300, "value": 0.55, "interpolation": "bezier" }, { "time_ms": 5000, "value": 0.5, "interpolation": "ease_in_out" } ] },
+        { "role": "pitch", "keyframes": [ { "time_ms": 0, "value": 0.5, "interpolation": "bezier" }, { "time_ms": 500, "value": 0.58, "interpolation": "bezier" }, { "time_ms": 1100, "value": 0.44, "interpolation": "bezier" }, { "time_ms": 1800, "value": 0.56, "interpolation": "bezier" }, { "time_ms": 2600, "value": 0.46, "interpolation": "bezier" }, { "time_ms": 3400, "value": 0.55, "interpolation": "bezier" }, { "time_ms": 4200, "value": 0.47, "interpolation": "bezier" }, { "time_ms": 5000, "value": 0.5, "interpolation": "ease_in_out" } ] },
+        { "role": "vibrate", "keyframes": [ { "time_ms": 0, "value": 0, "interpolation": "step" }, { "time_ms": 100, "value": 0.6, "interpolation": "bezier" }, { "time_ms": 500, "value": 0.2, "interpolation": "bezier" }, { "time_ms": 1200, "value": 0.5, "interpolation": "bezier" }, { "time_ms": 2200, "value": 0.15, "interpolation": "bezier" }, { "time_ms": 3200, "value": 0.4, "interpolation": "bezier" }, { "time_ms": 4200, "value": 0.1, "interpolation": "bezier" }, { "time_ms": 5000, "value": 0, "interpolation": "ease_in_out" } ] }
+      ] },
+    { "id": "fx_strobe", "name": "频闪", "category": "特效", "description": "座舱顶灯短促频闪", "duration_ms": 1500,
+      "channels": [
+        { "role": "light", "keyframes": [ { "time_ms": 0, "value": 0, "interpolation": "step" }, { "time_ms": 60, "value": 1, "interpolation": "step" }, { "time_ms": 180, "value": 0, "interpolation": "step" }, { "time_ms": 320, "value": 1, "interpolation": "step" }, { "time_ms": 460, "value": 0, "interpolation": "step" }, { "time_ms": 640, "value": 1, "interpolation": "step" }, { "time_ms": 820, "value": 0, "interpolation": "step" }, { "time_ms": 1100, "value": 1, "interpolation": "step" }, { "time_ms": 1280, "value": 0, "interpolation": "step" }, { "time_ms": 1500, "value": 0, "interpolation": "step" } ] }
+      ] }
+  ],
+  "cues": [
+    { "time_ms": 3000, "preset": "fx_rise", "intensity": 0.9 },
+    { "time_ms": 9000, "preset": "fx_cruise", "intensity": 0.8 },
+    { "time_ms": 18000, "preset": "fx_dive", "intensity": 1.0 },
+    { "time_ms": 24000, "preset": "fx_turbulence", "intensity": 0.85 },
+    { "time_ms": 32000, "preset": "fx_rise", "intensity": 1.0 },
+    { "time_ms": 40000, "preset": "fx_cruise", "intensity": 0.7 },
+    { "time_ms": 48000, "preset": "fx_dive", "intensity": 0.9 },
+    { "time_ms": 54000, "preset": "fx_strobe", "intensity": 1.0 }
+  ],
+  "gates": [
+    { "role": "motion_enable", "start_ms": 0, "end_ms": 60000, "fade_ms": 100, "level": 1 },
+    { "role": "wind", "start_ms": 5000, "end_ms": 30000, "fade_ms": 300 },
+    { "role": "wind", "start_ms": 34000, "end_ms": 52000, "fade_ms": 300 }
+  ],
+  "chapters": [
+    { "time_ms": 0, "name": "开场·待机迎宾", "note": "仅 idle" },
+    { "time_ms": 3000, "name": "第一幕·升空" },
+    { "time_ms": 18000, "name": "第二幕·俯冲" },
+    { "time_ms": 24000, "name": "第三幕·气流颠簸" },
+    { "time_ms": 54000, "name": "尾声·频闪收束" }
+  ],
+  "events": [
+    { "time_ms": 3000, "name": "scene.start", "data": "{\"scene\":\"lift-off\"}", "lane": "scene" },
+    { "time_ms": 24000, "name": "impact.hit", "data": "{\"intensity\":0.85}", "lane": "effects" }
+  ]
+}

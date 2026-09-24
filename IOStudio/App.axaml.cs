@@ -49,6 +49,12 @@ namespace IOStudio
                     Cli.CliRunner.RequestShutdown(desktop, 0);
                     return;
                 }
+                // 由演出规格生成 .motion：纯构建, 不需要窗口
+                if (!string.IsNullOrWhiteSpace(cli.MotionBuildSpec))
+                {
+                    Cli.CliRunner.RunBuild(cli, desktop);
+                    return;
+                }
 
                 var mainViewModel = new MainWindowViewModel();
                 var mainWindow = new MainWindow { DataContext = mainViewModel, };

@@ -10,6 +10,7 @@ using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Threading;
 using IOStudio.Services;
+using IOStudio.Services.Motion;
 using IOStudio.ViewModels;
 using IOStudio.ViewModels.Timeline;
 
@@ -49,8 +50,19 @@ namespace IOStudio.Cli
         /// <summary>把预检结果写成人类可读的 Markdown 报告 (可选)。</summary>
         public string? ValidateReport { get; private set; }
 
+        /// <summary>从演出规格 (show spec) 生成 .motion。</summary>
+        public string? MotionBuildSpec { get; private set; }
+
+        /// <summary>--motion-build 的输出路径 (缺省 = spec 同名的 .motion)。</summary>
+        public string? OutFile { get; private set; }
+
         /// <summary>是否请求了任何 CLI 行为（否则按原来的纯 GUI 方式启动）。</summary>
-        public bool HasWork => MotionPath is not null || DumpTracks || Validate || ShowHelp;
+        public bool HasWork =>
+            MotionPath is not null
+            || DumpTracks
+            || Validate
+            || ShowHelp
+            || !string.IsNullOrWhiteSpace(MotionBuildSpec);
 
         public const string Usage =
             "IOStudio CLI\n" +
@@ -65,6 +77,8 @@ namespace IOStudio.Cli
             "  --validate             仅做编排预检并输出问题清单，然后退出；有 Error 时退出码 2\n" +
             "  --status-file <path>   指定 JSON 状态文件路径\n" +
             "  --validate-report <path>  预检时额外写一份人类可读的 Markdown 报告\n" +
+            "  --motion-build <spec.json>  由演出规格生成 .motion (官方程序化生成入口)\n" +
+            "  --out <path>            --motion-build 的输出路径 (缺省 = spec 同名 .motion)\n" +
             "  --help                 显示本帮助\n" +
             "  （也支持直接给一个 .motion 路径作为位置参数）\n";
 
@@ -103,6 +117,12 @@ namespace IOStudio.Cli
                         break;
                     case "--validate-report":
                         if (i + 1 < args.Length) { o.ValidateReport = args[++i]; }
+                        break;
+                    case "--motion-build":
+                        if (i + 1 < args.Length) { o.MotionBuildSpec = args[++i]; }
+                        break;
+                    case "--out":
+                        if (i + 1 < args.Length) { o.OutFile = args[++i]; }
                         break;
                     default:
                         // 位置参数：把 .motion 路径当 --motion 用
@@ -245,6 +265,13 @@ namespace IOStudio.Cli
         /// </summary>
         public static void Run(IClassicDesktopStyleApplicationLifetime desktop, MainWindowViewModel mainVm, CliOptions options)
         {
+            // ── 由演出规格生成 .motion：纯构建, 不开窗口 ──
+            if (!string.IsNullOrWhiteSpace(options.MotionBuildSpec))
+            {
+                RunBuild(options, desktop);
+                return;
+            }
+
             // ── 仅解析轨道：不开窗口、立即退出（最快的自动化断言路径）──
             if (options.DumpTracks)
             {
@@ -339,6 +366,95 @@ namespace IOStudio.Cli
                 }
             }, DispatcherPriority.Background);
         }
+
+        private static readonly JsonSerializerOptions SpecReadOptions = new()
+        {
+            PropertyNameCaseInsensitive = true,
+            ReadCommentHandling = JsonCommentHandling.Skip,
+            AllowTrailingCommas = true,
+        };
+
+        /// <summary>由演出规格 (show spec) 生成 .motion, 不开窗口。</summary>
+        public static void RunBuild(CliOptions options, IClassicDesktopStyleApplicationLifetime desktop)
+        {
+            string specPath = options.MotionBuildSpec!;
+            if (!File.Exists(specPath))
+            {
+                SafePrint($"motion-build: spec not found: {specPath}");
+                WriteStatus(options, "build-failed");
+                RequestShutdown(desktop, 2);
+                return;
+            }
+
+            ShowSpec? spec;
+            try
+            {
+                spec = JsonSerializer.Deserialize<ShowSpec>(
+                    File.ReadAllText(specPath, Encoding.UTF8),
+                    SpecReadOptions
+                );
+            }
+            catch (Exception ex)
+            {
+                SafePrint("motion-build: 解析 spec 失败: " + ex.Message);
+                WriteStatus(options, "build-failed");
+                RequestShutdown(desktop, 2);
+                return;
+            }
+
+            var result = MotionShowBuilder.Build(spec!);
+            if (result.HasErrors || result.Timeline is null)
+            {
+                SafePrint("motion-build: 规格有错误, 未生成:");
+                foreach (var issue in result.Issues)
+                    SafePrint("  " + issue);
+                WriteStatus(options, "build-failed", validation: BuildIssuesPayload(result.Issues));
+                RequestShutdown(desktop, 2);
+                return;
+            }
+
+            string outPath =
+                !string.IsNullOrWhiteSpace(options.OutFile)
+                    ? options.OutFile!
+                    : Path.ChangeExtension(specPath, ".motion");
+
+            if (!MotionFileReader.Write(result.Timeline, outPath))
+            {
+                SafePrint("motion-build: 写出失败: " + outPath);
+                WriteStatus(options, "build-failed");
+                RequestShutdown(desktop, 2);
+                return;
+            }
+
+            var t = result.Timeline;
+            int clipCount = t.Tracks.Sum(tr => tr.Clips.Count);
+            SafePrint($"motion-build: ok -> {outPath}");
+            SafePrint(
+                $"  tracks={t.Tracks.Count} clips={clipCount} instances={t.ActionInstances.Count} "
+                    + $"presets={t.EmbeddedPresets.Count} events={t.Events.Count} markers={(t.Markers?.Count ?? 0)}"
+            );
+            WriteStatus(options, "built");
+            RequestShutdown(desktop, 0);
+        }
+
+        private static IReadOnlyDictionary<string, object?> BuildIssuesPayload(
+            IReadOnlyList<ShowBuildIssue> issues
+        ) =>
+            new Dictionary<string, object?>
+            {
+                ["hasErrors"] = issues.Any(i => i.Severity == MotionIssueSeverity.Error),
+                ["errorCount"] = issues.Count(i => i.Severity == MotionIssueSeverity.Error),
+                ["warningCount"] = issues.Count(i => i.Severity == MotionIssueSeverity.Warning),
+                ["infoCount"] = issues.Count(i => i.Severity == MotionIssueSeverity.Info),
+                ["issues"] = issues
+                    .Select(i => new Dictionary<string, object?>
+                    {
+                        ["severity"] = i.Severity.ToString(),
+                        ["code"] = i.Code,
+                        ["message"] = i.Message,
+                    })
+                    .ToList(),
+            };
 
         /// <summary>
         /// 把预检结果渲染成人类可读的 Markdown 报告 (便于贴到评审/缺陷单)。

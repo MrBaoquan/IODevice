@@ -46,6 +46,8 @@ namespace IOStudio.Cli
         /// <summary>仅做编排预检并输出问题清单, 然后退出。发现 Error 级问题时退出码为 2 (自动化门禁)。</summary>
         public bool Validate { get; private set; }
         public string? StatusFile { get; private set; }
+        /// <summary>把预检结果写成人类可读的 Markdown 报告 (可选)。</summary>
+        public string? ValidateReport { get; private set; }
 
         /// <summary>是否请求了任何 CLI 行为（否则按原来的纯 GUI 方式启动）。</summary>
         public bool HasWork => MotionPath is not null || DumpTracks || Validate || ShowHelp;
@@ -62,6 +64,7 @@ namespace IOStudio.Cli
             "  --dump-tracks          仅解析并输出轨道映射，然后退出（不打开窗口）\n" +
             "  --validate             仅做编排预检并输出问题清单，然后退出；有 Error 时退出码 2\n" +
             "  --status-file <path>   指定 JSON 状态文件路径\n" +
+            "  --validate-report <path>  预检时额外写一份人类可读的 Markdown 报告\n" +
             "  --help                 显示本帮助\n" +
             "  （也支持直接给一个 .motion 路径作为位置参数）\n";
 
@@ -97,6 +100,9 @@ namespace IOStudio.Cli
                         break;
                     case "--status-file":
                         if (i + 1 < args.Length) { o.StatusFile = args[++i]; }
+                        break;
+                    case "--validate-report":
+                        if (i + 1 < args.Length) { o.ValidateReport = args[++i]; }
                         break;
                     default:
                         // 位置参数：把 .motion 路径当 --motion 用
@@ -257,6 +263,23 @@ namespace IOStudio.Cli
                 var report = ValidateMotion(options.MotionPath);
                 WriteStatus(options, "validated", validation: report);
 
+                if (!string.IsNullOrWhiteSpace(options.ValidateReport))
+                {
+                    try
+                    {
+                        File.WriteAllText(
+                            options.ValidateReport!,
+                            BuildValidationReportMarkdown(options.MotionPath, report),
+                            Encoding.UTF8
+                        );
+                        SafePrint($"validation report written: {options.ValidateReport}");
+                    }
+                    catch (Exception ex)
+                    {
+                        SafePrint("validation report failed: " + ex.Message);
+                    }
+                }
+
                 bool hasErrors =
                     report is not null
                     && report.TryGetValue("hasErrors", out var he)
@@ -316,6 +339,82 @@ namespace IOStudio.Cli
                 }
             }, DispatcherPriority.Background);
         }
+
+        /// <summary>
+        /// 把预检结果渲染成人类可读的 Markdown 报告 (便于贴到评审/缺陷单)。
+        /// 纯函数 (无 IO), 因此可单测。
+        /// </summary>
+        public static string BuildValidationReportMarkdown(
+            string? motionPath,
+            IReadOnlyDictionary<string, object?> report
+        )
+        {
+            var sb = new StringBuilder();
+            sb.AppendLine("# 动作编排预检报告");
+            sb.AppendLine();
+            sb.AppendLine($"- 文件: `{motionPath ?? "(未指定)"}`");
+            sb.AppendLine($"- 时间: {DateTime.Now:yyyy-MM-dd HH:mm:ss}");
+
+            bool hasErrors =
+                report.TryGetValue("hasErrors", out var he) && he is bool b && b;
+            sb.AppendLine(
+                $"- 结论: {(hasErrors ? "**存在 Error**" : "通过")} "
+                    + $"(Error {AsInt(report, "errorCount")} / Warning {AsInt(report, "warningCount")} / Info {AsInt(report, "infoCount")})"
+            );
+            sb.AppendLine();
+
+            var issues =
+                report.TryGetValue("issues", out var iv)
+                && iv is IEnumerable<Dictionary<string, object?>> list
+                    ? list.ToList()
+                    : new List<Dictionary<string, object?>>();
+
+            if (issues.Count == 0)
+            {
+                sb.AppendLine("无问题。");
+                return sb.ToString();
+            }
+
+            foreach (string sev in new[] { "Error", "Warning", "Info" })
+            {
+                var group = issues
+                    .Where(i =>
+                        string.Equals(
+                            i.GetValueOrDefault("severity")?.ToString(),
+                            sev,
+                            StringComparison.OrdinalIgnoreCase
+                        )
+                    )
+                    .ToList();
+                if (group.Count == 0)
+                    continue;
+
+                sb.AppendLine($"## {sev} ({group.Count})");
+                sb.AppendLine();
+                sb.AppendLine("| 代码 | 说明 | 轨道 | 时间(ms) |");
+                sb.AppendLine("| --- | --- | --- | --- |");
+                foreach (var issue in group)
+                {
+                    string code = issue.GetValueOrDefault("code")?.ToString() ?? "";
+                    string msg = (issue.GetValueOrDefault("message")?.ToString() ?? "")
+                        .Replace("|", "\\|")
+                        .Replace("\r", " ")
+                        .Replace("\n", " ");
+                    string track = issue.GetValueOrDefault("track")?.ToString() ?? "";
+                    string time = issue.GetValueOrDefault("timeMs")?.ToString() ?? "";
+                    sb.AppendLine($"| `{code}` | {msg} | {track} | {time} |");
+                }
+                sb.AppendLine();
+            }
+            return sb.ToString();
+        }
+
+        private static int AsInt(IReadOnlyDictionary<string, object?> dict, string key) =>
+            dict.TryGetValue(key, out var v)
+            && v is not null
+            && int.TryParse(v.ToString(), out var n)
+                ? n
+                : 0;
 
         /// <summary>
         /// 编排预检 — 把"会静默失效"的编排问题变成明确清单, 供脚本化门禁使用。

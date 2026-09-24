@@ -420,7 +420,7 @@ namespace IOStudio.Controls.Timeline
             candidates.Sort((a, b) => a.x.CompareTo(b.x));
 
             // ── 避让: 层级排布, 每层高度 flagH + 2, 位于事件带内 ──
-            const double flagH = 14;
+            const double flagH = 16;
             const int maxLevels = 3;
             double bandBottom = totalH; // 事件带底部 = 控件底部
             // 至多可容纳几层 (受事件带高度限制)
@@ -436,6 +436,10 @@ namespace IOStudio.Controls.Timeline
             foreach (var (evt, x) in candidates)
             {
                 bool isSelected = (evt == _selectedEvent);
+                // 事件自带颜色 (按 lane/类型着色), 缺省用事件语义色
+                Color evtColor = Color.TryParse(evt.Color, out var ec)
+                    ? ec
+                    : (TimelineTheme.Event as ISolidColorBrush)?.Color ?? Colors.Orange;
 
                 // 确定层级 (找第一个不冲突的层, 否则用最后一层)
                 int level = levels - 1;
@@ -459,7 +463,9 @@ namespace IOStudio.Controls.Timeline
                 );
 
                 // ── 小圆点标记精确时间位置 (位于事件带底部) ──
-                var dotBrush = isSelected ? selectedHighlightBrush : EventMarkerBrush;
+                var dotBrush = isSelected
+                    ? selectedHighlightBrush
+                    : new SolidColorBrush(evtColor);
                 context.DrawEllipse(dotBrush, null, new Point(x, totalH - 2), 2.5, 2.5);
 
                 // ── 旗帜标签 ──
@@ -469,7 +475,7 @@ namespace IOStudio.Controls.Timeline
 
                 IBrush labelBrush = isSelected
                     ? Brushes.White
-                    : TimelineTheme.ContrastText(TimelineTheme.Event);
+                    : TimelineTheme.ContrastText(evtColor);
                 var nameText = new FormattedText(
                     label,
                     CultureInfo.InvariantCulture,
@@ -486,7 +492,7 @@ namespace IOStudio.Controls.Timeline
 
                 var flagBrush = isSelected
                     ? TimelineTheme.WithAlpha(TimelineTheme.Playhead, 0xD0)
-                    : TimelineTheme.WithAlpha(TimelineTheme.Event, 0xD0);
+                    : TimelineTheme.WithAlpha(new SolidColorBrush(evtColor), 0xD0);
                 var flagRect = new Rect(boxX, boxY, boxW, flagH);
                 context.DrawRectangle(
                     flagBrush,
@@ -561,7 +567,7 @@ namespace IOStudio.Controls.Timeline
                 );
 
                 double padH = 6;
-                double padV = 2;
+                double padV = 3;
                 double labelW = Math.Max(18, nameText.Width + padH * 2);
                 double labelH = Math.Min(nameText.Height + padV * 2, bandBottom - bandTop - 2);
                 double labelX = x - 2;

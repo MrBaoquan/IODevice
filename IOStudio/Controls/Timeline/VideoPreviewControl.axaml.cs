@@ -47,6 +47,14 @@ namespace IOStudio.Controls.Timeline
         /// <summary>当前视频文件路径</summary>
         public string? VideoFilePath { get; private set; }
 
+        /// <summary>紧凑模式: 隐藏预览主体, 只留标题栏 (未加载视频时用, 避免占高度/残条)。</summary>
+        public void SetCompact(bool compact)
+        {
+            var body = this.FindControl<Grid>("BodyArea");
+            if (body != null)
+                body.IsVisible = !compact;
+        }
+
         /// <summary>是否处于全屏模式</summary>
         public bool IsFullscreen { get; private set; }
 

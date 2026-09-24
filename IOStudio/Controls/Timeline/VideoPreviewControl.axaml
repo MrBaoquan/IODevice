@@ -72,7 +72,7 @@
             </Border>
 
             <!-- 中央: 左侧视频列表 + 右侧预览区 -->
-            <Grid>
+            <Grid Name="BodyArea">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="120" MinWidth="80" MaxWidth="240"/>
                     <ColumnDefinition Width="Auto"/>

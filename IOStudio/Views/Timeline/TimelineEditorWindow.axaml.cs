@@ -890,16 +890,19 @@ namespace IOStudio.Views.Timeline
                 return;
 
             var row = grid.RowDefinitions[0];
+            var videoPreview = this.FindControl<VideoPreviewControl>("VideoPreview");
             if (collapsed)
             {
                 _videoRowMinHeight = row.MinHeight;
                 row.MinHeight = 0;
-                row.Height = new GridLength(40);
+                row.Height = GridLength.Auto; // 只留标题栏, 不残留深色底
+                videoPreview?.SetCompact(true);
             }
             else
             {
                 row.MinHeight = _videoRowMinHeight;
                 row.Height = new GridLength(1, GridUnitType.Star);
+                videoPreview?.SetCompact(false);
             }
         }
 

@@ -331,7 +331,8 @@ namespace IOStudio.Cli
                     {
                         // 关键：编辑器默认「设备输出」是关闭的，动作只做预览、不下发设备。
                         // 脚本化播放必须先打开它，否则 Simulator 收到的 DO 永远是 0。
-                        if (options.LiveOutput) { editor.IsLiveOutputEnabled = true; }
+                        // 用 session 级设置: 不覆盖用户保存的偏好。
+                        if (options.LiveOutput) { editor.SetLiveOutputForSession(true); }
 
                         if (options.Play)
                         {

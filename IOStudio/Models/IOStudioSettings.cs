@@ -28,6 +28,19 @@ namespace IOStudio.Models
         public int AnalogProcessorIntervalMs { get; set; } = 100;
 
         /// <summary>
+        /// 时间轴编辑器「设备输出」开关的上次状态。
+        /// 默认 false（编排默认仅预览，避免误驱动设备）。
+        /// </summary>
+        [XmlAttribute("TimelineLiveOutput")]
+        public bool TimelineLiveOutput { get; set; } = false;
+
+        /// <summary>
+        /// 是否已展示过「设备输出」首次使用提示。
+        /// </summary>
+        [XmlAttribute("TimelineLiveOutputHintShown")]
+        public bool TimelineLiveOutputHintShown { get; set; } = false;
+
+        /// <summary>
         /// 验证并修正配置值
         /// </summary>
         public void Validate()

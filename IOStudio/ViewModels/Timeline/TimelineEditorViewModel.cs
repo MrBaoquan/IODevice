@@ -98,6 +98,13 @@ namespace IOStudio.ViewModels.Timeline
             UndoCommand = ReactiveCommand.Create(Undo);
             RedoCommand = ReactiveCommand.Create(Redo);
             ToggleThemeCommand = ReactiveCommand.Create(ToggleTheme);
+            DismissLiveOutputHintCommand = ReactiveCommand.Create(DismissLiveOutputHint);
+
+            // 恢复上次的「设备输出」开关状态 (默认关闭: 编排默认仅预览, 避免误驱动设备)。
+            // 这里只同步字段与引擎标志, 不做 Seek —— 构造时还没有时间轴。
+            _isLiveOutputEnabled = IOStudio.Models.IOStudioSettings.Instance.TimelineLiveOutput;
+            _engine.LiveOutputToDevice = _isLiveOutputEnabled;
+            _showLiveOutputHint = !IOStudio.Models.IOStudioSettings.Instance.TimelineLiveOutputHintShown;
 
             _undoRedo.StateChanged += () =>
             {
@@ -248,14 +255,67 @@ namespace IOStudio.ViewModels.Timeline
         public bool IsLiveOutputEnabled
         {
             get => _isLiveOutputEnabled;
-            set
-            {
-                this.RaiseAndSetIfChanged(ref _isLiveOutputEnabled, value);
-                _engine.LiveOutputToDevice = value;
+            set => ApplyLiveOutput(value, persist: true);
+        }
 
-                // 启用时立即输出当前时刻的轨道值到设备
-                if (value)
-                    _engine.Seek(CurrentTimeMs);
+        /// <summary>传输栏「设备输出」文字说明 (让"是否真的在驱动设备"一眼可见)。</summary>
+        public string LiveOutputText => _isLiveOutputEnabled ? "输出到设备" : "仅预览";
+
+        /// <summary>
+        /// 会话级设置「设备输出」, 不写回用户设置 (供 CLI 脚本化播放使用)。
+        /// </summary>
+        public void SetLiveOutputForSession(bool enabled) => ApplyLiveOutput(enabled, persist: false);
+
+        private void ApplyLiveOutput(bool value, bool persist)
+        {
+            this.RaiseAndSetIfChanged(ref _isLiveOutputEnabled, value, nameof(IsLiveOutputEnabled));
+            _engine.LiveOutputToDevice = value;
+
+            // 启用时立即输出当前时刻的轨道值到设备
+            if (value)
+                _engine.Seek(CurrentTimeMs);
+
+            this.RaisePropertyChanged(nameof(LiveOutputText));
+
+            if (persist)
+            {
+                try
+                {
+                    IOStudio.Models.IOStudioSettings.Instance.TimelineLiveOutput = value;
+                    IOStudio.Models.IOStudioSettings.Instance.Save();
+                }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Debug.WriteLine(
+                        $"[Timeline] 保存「设备输出」状态失败: {ex.Message}"
+                    );
+                }
+            }
+        }
+
+        private bool _showLiveOutputHint;
+
+        /// <summary>是否展示「设备输出」一次性使用提示。</summary>
+        public bool ShowLiveOutputHint
+        {
+            get => _showLiveOutputHint;
+            private set => this.RaiseAndSetIfChanged(ref _showLiveOutputHint, value);
+        }
+
+        /// <summary>关闭「设备输出」提示 (仅提示一次)。</summary>
+        public ReactiveCommand<Unit, Unit> DismissLiveOutputHintCommand { get; }
+
+        private void DismissLiveOutputHint()
+        {
+            ShowLiveOutputHint = false;
+            try
+            {
+                IOStudio.Models.IOStudioSettings.Instance.TimelineLiveOutputHintShown = true;
+                IOStudio.Models.IOStudioSettings.Instance.Save();
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[Timeline] 保存提示状态失败: {ex.Message}");
             }
         }
 

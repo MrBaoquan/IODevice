@@ -290,6 +290,23 @@
             </MenuItem>
         </Menu>
 
+        <!-- ═══════ 一次性提示: 「设备输出」默认仅预览 ═══════ -->
+        <Border DockPanel.Dock="Top" IsVisible="{Binding ShowLiveOutputHint}"
+                Background="{DynamicResource TlAccentSoftBg}"
+                BorderBrush="{DynamicResource TlBorderBrush}" BorderThickness="0,0,0,1"
+                Padding="10,6">
+            <Grid ColumnDefinitions="Auto,*,Auto">
+                <Ellipse Grid.Column="0" Width="7" Height="7" Margin="0,0,8,0"
+                         Fill="{DynamicResource TlAccent}" VerticalAlignment="Center"/>
+                <TextBlock Grid.Column="1" VerticalAlignment="Center" FontSize="11"
+                           Foreground="{DynamicResource TlAccentSoftFg}" TextWrapping="Wrap"
+                           Text="编排默认「仅预览」, 不会驱动设备。需要让 Simulator / 实机跟随动作时, 点传输栏的「设备输出」开关 (文字变为「输出到设备」、状态灯变绿)。"/>
+                <Button Grid.Column="2" Classes="tl-btn" Content="知道了" FontSize="11"
+                        VerticalAlignment="Center" Command="{Binding DismissLiveOutputHintCommand}"
+                        ToolTip.Tip="不再提示"/>
+            </Grid>
+        </Border>
+
         <!-- ═══════ 底部状态栏 (操作反馈 / 撤销重做提示 / 轨道统计) ═══════ -->
         <Border DockPanel.Dock="Bottom" Background="{DynamicResource TlToolbarBg}"
                 BorderBrush="{DynamicResource TlBorderBrush}" BorderThickness="0,1,0,0" Padding="10,4">
@@ -475,6 +492,11 @@
                                 <Ellipse Width="8" Height="8" IsVisible="{Binding IsLiveOutputEnabled}"
                                          Fill="{DynamicResource TlTransportAccent}"/>
                             </Grid>
+                            <!-- 文字说明: 明确"是否真的在驱动设备" (不仅靠图标/颜色) -->
+                            <TextBlock Text="{Binding LiveOutputText}" FontSize="10" Margin="4,0,6,0"
+                                       VerticalAlignment="Center"
+                                       Foreground="{DynamicResource TlTransportBtn}"
+                                       ToolTip.Tip="设备实时输出 (预览时将值发送到物理设备)"/>
                             <!-- 下一关键帧 -->
                             <Button Classes="transport-btn" Click="OnNextKeyframe"
                                     ToolTip.Tip="下一关键帧 (L)" Foreground="{DynamicResource TlTransportBtn}">

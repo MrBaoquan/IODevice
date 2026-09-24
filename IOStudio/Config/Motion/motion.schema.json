@@ -123,6 +123,22 @@
         "group": { "type": "string" },
         "role": { "type": "string" },
         "show_in_curve": { "type": "boolean" },
+        "neutral_value": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "中性/空闲值 — 无动作覆盖时的输出 (null = float 0.5 / bool 0)"
+        },
+        "engineering_range": {
+          "type": "number",
+          "description": "工程量程覆盖 (归一化→工程: (v-neutral)*range); 缺省由设备声明量程决定"
+        },
+        "idle": { "$ref": "#/definitions/idle" },
+        "override_keyframes": {
+          "type": "array",
+          "description": "空窗覆盖关键帧 (绝对时间, 优先级高于 idle)",
+          "items": { "$ref": "#/definitions/keyframe" }
+        },
         "clips": {
           "type": "array",
           "description": "片段列表",
@@ -186,6 +202,11 @@
         "category": { "type": "string" },
         "description": { "type": "string" },
         "duration_ms": { "type": "number", "exclusiveMinimum": 0 },
+        "keyframes": {
+          "type": "array",
+          "description": "与设备通道无关的单曲线关键帧 (存在时优先于 channels)",
+          "items": { "$ref": "#/definitions/keyframe" }
+        },
         "default_intensity": { "type": "number", "minimum": 0 },
         "min_intensity": { "type": "number", "minimum": 0 },
         "max_intensity": { "type": "number", "minimum": 0 },
@@ -204,13 +225,28 @@
         "keyframes": { "type": "array", "items": { "$ref": "#/definitions/keyframe" } }
       }
     },
+    "idle": {
+      "type": "object",
+      "description": "待机循环 (gap 填充) — 无 clip 覆盖时按相位采样环形关键帧",
+      "properties": {
+        "enabled": { "type": "boolean", "default": true },
+        "period_ms": { "type": "number", "exclusiveMinimum": 0, "default": 1000 },
+        "blend_ms": { "type": "number", "minimum": 0, "default": 0 },
+        "phase_mode": { "type": "string", "enum": ["continuous", "restart"], "default": "continuous" },
+        "phase_offset_ms": { "type": "number" },
+        "group_id": { "type": "string" },
+        "keyframes": { "type": "array", "items": { "$ref": "#/definitions/keyframe" } }
+      }
+    },
     "group": {
       "type": "object",
       "required": ["name", "color"],
       "properties": {
         "name": { "type": "string" },
         "color": { "type": "string", "pattern": "^#[0-9A-Fa-f]{6}$" },
-        "collapsed": { "type": "boolean" }
+        "collapsed": { "type": "boolean" },
+        "muted": { "type": "boolean", "description": "分组静音 (组内轨道视为 muted)" },
+        "soloed": { "type": "boolean", "description": "分组独奏 (仅组内轨道输出)" }
       }
     },
     "event": {

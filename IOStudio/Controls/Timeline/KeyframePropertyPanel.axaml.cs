@@ -173,6 +173,13 @@ namespace IOStudio.Controls.Timeline
             Vm?.CommitValue((Vm?.Value ?? 0.5f) + 0.001f);
         }
 
+        private void OnEnableAutoClick(object? sender, RoutedEventArgs e)
+        {
+            // 一键启用 AutoKey: 之后移动播放头并编辑数值会自动创建关键帧
+            if (Vm is { } vm)
+                vm.IsAutoKeyMode = true;
+        }
+
         private void OnResetValueClick(object? sender, RoutedEventArgs e)
         {
             Vm?.CommitValue(0.5f);

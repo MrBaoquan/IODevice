@@ -3,6 +3,7 @@ using System.Collections.ObjectModel;
 using System.Globalization;
 using System.Reactive;
 using IOStudio.Models.Motion;
+using IOStudio.Services.Motion;
 using IOStudio.ViewModels;
 using ReactiveUI;
 
@@ -150,6 +151,55 @@ namespace IOStudio.ViewModels.Timeline
         public bool ShowEditHint =>
             _mode == DisplayMode.TrackInspector && !(_hasKeyframeAtPlayhead || _isAutoKeyMode);
 
+        /// <summary>不可编辑的**具体原因** (替代通用提示)。</summary>
+        public string EditHintText
+        {
+            get
+            {
+                if (_mode == DisplayMode.MultiSelect)
+                    return "多选：可统一修改插值类型";
+                if (_mode != DisplayMode.TrackInspector)
+                    return "";
+                if (TrackVm?.IsLocked == true)
+                    return "轨道已锁定，解锁后可编辑";
+                if (!_hasKeyframeAtPlayhead && !_isAutoKeyMode)
+                    return "将播放头移到关键帧上，或启用 Auto 后编辑";
+                return "";
+            }
+        }
+
+        /// <summary>是否可一键启用 Auto (轨道检查器 + 轨道未锁定 + 未在关键帧上)。</summary>
+        public bool CanEnableAuto =>
+            _mode == DisplayMode.TrackInspector
+            && !_isAutoKeyMode
+            && TrackVm is { IsLocked: false }
+            && !_hasKeyframeAtPlayhead;
+
+        /// <summary>并列显示的工程值 (依三级量程解析, 含单位)。</summary>
+        public string EngineeringText
+        {
+            get
+            {
+                if (_mode != DisplayMode.TrackInspector || TrackVm is null)
+                    return "";
+                var track = TrackVm.Track;
+                float eng = EngineeringValueConverter.ToEngineering(
+                    _value,
+                    track.ValueType,
+                    track.NeutralValue,
+                    track.EngineeringRange,
+                    TrackVm.DeclaredRangeValue
+                );
+                string unit = TrackVm.DeclaredUnitValue;
+                return string.IsNullOrWhiteSpace(unit)
+                    ? $"工程 {eng:0.###}"
+                    : $"工程 {eng:0.###} {unit}";
+            }
+        }
+
+        /// <summary>是否显示工程值。</summary>
+        public bool ShowEngineering => _mode == DisplayMode.TrackInspector && TrackVm is not null;
+
         /// <summary>播放头位置有事件时显示</summary>
         public bool ShowPlayheadEvent =>
             _mode == DisplayMode.TrackInspector && _playheadEvent != null;
@@ -163,6 +213,8 @@ namespace IOStudio.ViewModels.Timeline
                 this.RaiseAndSetIfChanged(ref _isAutoKeyMode, value);
                 this.RaisePropertyChanged(nameof(IsValueEditable));
                 this.RaisePropertyChanged(nameof(ShowEditHint));
+                this.RaisePropertyChanged(nameof(EditHintText));
+                this.RaisePropertyChanged(nameof(CanEnableAuto));
             }
         }
 
@@ -196,7 +248,11 @@ namespace IOStudio.ViewModels.Timeline
         public float Value
         {
             get => _value;
-            set => this.RaiseAndSetIfChanged(ref _value, value);
+            set
+            {
+                this.RaiseAndSetIfChanged(ref _value, value);
+                this.RaisePropertyChanged(nameof(EngineeringText));
+            }
         }
 
         public string ValueDisplayText
@@ -644,6 +700,10 @@ namespace IOStudio.ViewModels.Timeline
                 this.RaiseAndSetIfChanged(ref _trackVm, value);
                 this.RaisePropertyChanged(nameof(HasIdleLoop));
                 this.RaisePropertyChanged(nameof(IdleStatusText));
+                this.RaisePropertyChanged(nameof(EditHintText));
+                this.RaisePropertyChanged(nameof(CanEnableAuto));
+                this.RaisePropertyChanged(nameof(EngineeringText));
+                this.RaisePropertyChanged(nameof(ShowEngineering));
             }
         }
 
@@ -894,6 +954,10 @@ namespace IOStudio.ViewModels.Timeline
             this.RaisePropertyChanged(nameof(HasKeyframeAtPlayhead));
             this.RaisePropertyChanged(nameof(IsValueEditable));
             this.RaisePropertyChanged(nameof(ShowEditHint));
+            this.RaisePropertyChanged(nameof(EditHintText));
+            this.RaisePropertyChanged(nameof(CanEnableAuto));
+            this.RaisePropertyChanged(nameof(EngineeringText));
+            this.RaisePropertyChanged(nameof(ShowEngineering));
             this.RaisePropertyChanged(nameof(ShowPlayheadEvent));
             this.RaisePropertyChanged(nameof(IsEventTimeEditable));
         }

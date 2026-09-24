@@ -292,33 +292,44 @@
                                          KeyDown="OnValueKeyDown"
                                          HorizontalContentAlignment="Center"/>
                             </Grid>
+                            <!-- 工程量: 与归一化值并列, 直接看到设备实际值 -->
+                            <TextBlock Text="{Binding EngineeringText}"
+                                       IsVisible="{Binding ShowEngineering}"
+                                       FontSize="10" Foreground="{DynamicResource TlTextMuted}"
+                                       HorizontalAlignment="Right"/>
                             <!-- 微调按钮行: 精细/粗调步进 -->
                             <Grid ColumnDefinitions="*,Auto" IsEnabled="{Binding IsValueEditable}">
                                 <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="2">
                                     <Button Classes="nav-btn" ToolTip.Tip="精细减小 0.001"
                                             Click="OnValueDecFineClick">
-                                        <TextBlock Text="- .001" FontSize="10"/>
+                                        <TextBlock Text="−0.001" FontSize="10"/>
                                     </Button>
                                     <Button Classes="nav-btn" ToolTip.Tip="减小 0.01"
                                             Click="OnValueDecClick">
-                                        <TextBlock Text="- .01" FontSize="10"/>
+                                        <TextBlock Text="−0.01" FontSize="10"/>
                                     </Button>
                                     <Button Classes="nav-btn" ToolTip.Tip="增加 0.01"
                                             Click="OnValueIncClick">
-                                        <TextBlock Text="+ .01" FontSize="10"/>
+                                        <TextBlock Text="+0.01" FontSize="10"/>
                                     </Button>
                                     <Button Classes="nav-btn" ToolTip.Tip="精细增加 0.001"
                                             Click="OnValueIncFineClick">
-                                        <TextBlock Text="+ .001" FontSize="10"/>
+                                        <TextBlock Text="+0.001" FontSize="10"/>
                                     </Button>
                                 </StackPanel>
                             </Grid>
-                            <!-- 编辑提示 (不可编辑时) -->
-                            <TextBlock Text="启用 Auto 或选择关键帧后编辑"
-                                       IsVisible="{Binding ShowEditHint}"
-                                       FontSize="10" Foreground="{DynamicResource TlTextMuted}"
-                                       TextAlignment="Center" Margin="0,4,0,0"
-                                       Opacity="0.7"/>
+                            <!-- 编辑提示 (原因化) + 一键启用 Auto -->
+                            <StackPanel Orientation="Horizontal" Spacing="6"
+                                        HorizontalAlignment="Center"
+                                        IsVisible="{Binding ShowEditHint}" Margin="0,4,0,0">
+                                <TextBlock Text="{Binding EditHintText}"
+                                           FontSize="10" Foreground="{DynamicResource TlTextMuted}"
+                                           VerticalAlignment="Center" TextWrapping="Wrap" MaxWidth="190"
+                                           Opacity="0.85"/>
+                                <Button Classes="reset-btn" Content="启用 Auto" FontSize="10"
+                                        IsVisible="{Binding CanEnableAuto}"
+                                        Click="OnEnableAutoClick"/>
+                            </StackPanel>
                         </StackPanel>
                     </Border>
 
@@ -342,12 +353,18 @@
                                            Foreground="{DynamicResource TlTextMuted}" VerticalAlignment="Center"
                                            Margin="6,0,0,0"/>
                             </Grid>
-                            <!-- 编辑提示 (不可编辑时) -->
-                            <TextBlock Text="启用 Auto 或选择关键帧后编辑"
-                                       IsVisible="{Binding ShowEditHint}"
-                                       FontSize="10" Foreground="{DynamicResource TlTextMuted}"
-                                       TextAlignment="Center" Margin="0,4,0,0"
-                                       Opacity="0.7"/>
+                            <!-- 编辑提示 (原因化) + 一键启用 Auto -->
+                            <StackPanel Orientation="Horizontal" Spacing="6"
+                                        HorizontalAlignment="Center"
+                                        IsVisible="{Binding ShowEditHint}" Margin="0,4,0,0">
+                                <TextBlock Text="{Binding EditHintText}"
+                                           FontSize="10" Foreground="{DynamicResource TlTextMuted}"
+                                           VerticalAlignment="Center" TextWrapping="Wrap" MaxWidth="190"
+                                           Opacity="0.85"/>
+                                <Button Classes="reset-btn" Content="启用 Auto" FontSize="10"
+                                        IsVisible="{Binding CanEnableAuto}"
+                                        Click="OnEnableAutoClick"/>
+                            </StackPanel>
                         </StackPanel>
                     </Border>
 

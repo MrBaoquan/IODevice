@@ -365,6 +365,12 @@ namespace IOStudio.ViewModels.Timeline
                 ? IOStudio.Services.Motion.DeviceRangeCatalog.ResolveUnit(Track.DeviceName, ChannelKey)
                 : "";
 
+        /// <summary>公开访问 (供检查器显示工程值): 设备声明量程。</summary>
+        public (float Min, float Max)? DeclaredRangeValue => DeclaredRange;
+
+        /// <summary>公开访问 (供检查器显示工程值单位)。</summary>
+        public string DeclaredUnitValue => DeclaredUnit;
+
         /// <summary>该轨道实际生效的量程 (如 "±30°") — 让归一化值域可见。</summary>
         public string EffectiveRangeText =>
             IOStudio.Services.Motion.EngineeringDisplay

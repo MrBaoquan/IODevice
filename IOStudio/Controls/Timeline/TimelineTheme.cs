@@ -95,5 +95,19 @@ namespace IOStudio.Controls.Timeline
                 return new SolidColorBrush(Color.FromArgb(alpha, s.Color.R, s.Color.G, s.Color.B));
             return brush;
         }
+
+        /// <summary>
+        /// 依据底色亮度选择高对比文字色 (亮底用黑、暗底用白), 避免"前景文字与背景太近"。
+        /// 阈值用感知亮度 (ITU-R BT.601)。
+        /// </summary>
+        public static IBrush ContrastText(Color background)
+        {
+            double luminance = (0.299 * background.R + 0.587 * background.G + 0.114 * background.B)
+                / 255.0;
+            return luminance > 0.6 ? Brushes.Black : Brushes.White;
+        }
+
+        public static IBrush ContrastText(IBrush background) =>
+            background is ISolidColorBrush s ? ContrastText(s.Color) : Brushes.White;
     }
 }

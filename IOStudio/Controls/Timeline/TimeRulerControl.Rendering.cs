@@ -469,7 +469,7 @@ namespace IOStudio.Controls.Timeline
 
                 IBrush labelBrush = isSelected
                     ? Brushes.White
-                    : TimelineTheme.Event;
+                    : TimelineTheme.ContrastText(TimelineTheme.Event);
                 var nameText = new FormattedText(
                     label,
                     CultureInfo.InvariantCulture,
@@ -549,7 +549,8 @@ namespace IOStudio.Controls.Timeline
                 var markerBrush = new SolidColorBrush(markerColor);
 
                 string labelText = string.IsNullOrEmpty(marker.Name) ? "◆" : marker.Name;
-                var textBrush = new SolidColorBrush(Colors.White);
+                // 按底色亮度选黑/白字 (浅色标记块上白字对比不足)
+                var textBrush = TimelineTheme.ContrastText(markerColor);
                 var nameText = new FormattedText(
                     labelText,
                     CultureInfo.InvariantCulture,

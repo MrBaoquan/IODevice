@@ -784,8 +784,9 @@ namespace IOStudio.Controls.Timeline
                 label += $" · {clip.SourceRole}";
 
             var typeface = new Typeface("Segoe UI", FontStyle.Normal, FontWeight.SemiBold);
+            // 深色画布上动作身份标签用亮色 —— 原 #475569 深灰在深底上对比不足 (看不清)
             var textBrush = new SolidColorBrush(
-                isSelected ? Color.Parse("#172033") : Color.Parse("#475569")
+                isSelected ? Colors.White : Color.FromArgb(238, 255, 255, 255)
             );
             var text = CreateFittedText(label, available, typeface, textBrush);
             context.DrawText(text, new Point(left + 8, 3));

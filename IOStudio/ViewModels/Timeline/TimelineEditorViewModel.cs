@@ -1015,6 +1015,16 @@ namespace IOStudio.ViewModels.Timeline
                 return;
             StatusMessage = message;
             var line = $"[{DateTime.Now:HH:mm:ss}] {message}";
+
+            // 连续重复的消息不再刷屏 (例如预检摘要在同一次编辑里会被反复推送)。
+            // 只刷新最新一条的时间戳, 不新增历史条目。
+            if (RecentOperations.Count > 0
+                && RecentOperations[0].EndsWith(message, StringComparison.Ordinal))
+            {
+                RecentOperations[0] = line;
+                return;
+            }
+
             RecentOperations.Insert(0, line);
             while (RecentOperations.Count > 6)
                 RecentOperations.RemoveAt(RecentOperations.Count - 1);

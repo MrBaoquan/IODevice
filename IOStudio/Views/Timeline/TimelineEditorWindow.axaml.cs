@@ -870,19 +870,67 @@ namespace IOStudio.Views.Timeline
             }
         }
 
+        /// <summary>滚动同步的重入保护 (双向同步时避免相互触发)。</summary>
+        private bool _syncingScroll;
+
         /// <summary>
-        /// 同步左侧轨道头和右侧轨道片段的垂直滚动
+        /// 同步左侧轨道头和右侧轨道片段的垂直滚动 (双向), 并让左侧轨道头区域也支持
+        /// Shift+滚轮调整轨道高度。
         /// </summary>
         private void SetupScrollSync()
         {
             var clipScroller = this.FindControl<ScrollViewer>("TrackClipScroller");
             var headerScroller = this.FindControl<ScrollViewer>("TrackHeaderScroller");
+
             if (clipScroller != null && headerScroller != null)
             {
+                // 右侧 → 左侧
                 clipScroller.ScrollChanged += (s, e) =>
                 {
-                    headerScroller.Offset = new Vector(0, clipScroller.Offset.Y);
+                    if (_syncingScroll)
+                        return;
+                    _syncingScroll = true;
+                    try
+                    {
+                        headerScroller.Offset = new Vector(headerScroller.Offset.X, clipScroller.Offset.Y);
+                    }
+                    finally
+                    {
+                        _syncingScroll = false;
+                    }
                 };
+
+                // 左侧 → 右侧 (轨道头自身也能滚动: 滚轮/触控板; 原来只单向同步, 会错位)
+                headerScroller.ScrollChanged += (s, e) =>
+                {
+                    if (_syncingScroll)
+                        return;
+                    _syncingScroll = true;
+                    try
+                    {
+                        clipScroller.Offset = new Vector(clipScroller.Offset.X, headerScroller.Offset.Y);
+                    }
+                    finally
+                    {
+                        _syncingScroll = false;
+                    }
+                };
+
+                // Shift+滚轮: 左侧轨道头区域也可调整轨道高度 (原来只有右侧片段/曲线区可用)。
+                // 用 Tunnel 阶段先拦下, 避免被 ScrollViewer 当作滚动。
+                headerScroller.AddHandler(
+                    PointerWheelChangedEvent,
+                    (object? _, PointerWheelEventArgs e) =>
+                    {
+                        if (e.KeyModifiers.HasFlag(KeyModifiers.Shift) && ViewModel is { } vm)
+                        {
+                            vm.AdjustAllTrackHeights(e.Delta.Y > 0 ? 8 : -8);
+                            RefreshTrackHeights();
+                            e.Handled = true;
+                        }
+                    },
+                    RoutingStrategies.Tunnel
+                );
             }
         }
 

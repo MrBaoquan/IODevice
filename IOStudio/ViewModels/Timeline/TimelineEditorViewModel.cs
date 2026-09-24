@@ -569,6 +569,21 @@ namespace IOStudio.ViewModels.Timeline
             return track.HasIndividualHeight ? track.IndividualTrackHeight : TrackHeight;
         }
 
+        /// <summary>
+        /// 统一按 delta 调整所有轨道高度 (Shift+滚轮)。集中一处, 供轨道片段 / 曲线面板 /
+        /// 左侧轨道头三处共用, 避免各处重复实现导致行为不一致。
+        /// </summary>
+        public void AdjustAllTrackHeights(double delta)
+        {
+            foreach (var t in Tracks)
+            {
+                double currentHeight = t.HasIndividualHeight ? t.IndividualTrackHeight : TrackHeight;
+                t.SetIndividualHeight(Math.Clamp(currentHeight + delta, 36, 200));
+                t.UpdateCompactDisplay(TrackHeight);
+            }
+            this.RaisePropertyChanged(nameof(TrackHeight));
+        }
+
         /// <summary>设置指定轨道的独立高度</summary>
         public void SetTrackIndividualHeight(TrackViewModel track, double height)
         {

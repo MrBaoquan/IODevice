@@ -214,8 +214,27 @@ namespace IOStudio.Services.Motion
 
         public void Seek(double timeMs)
         {
-            _slot?.Seek((float)timeMs);
             _lastPositionMs = timeMs;
+
+            if (_slot != null)
+            {
+                try
+                {
+                    _slot.Seek((float)timeMs);
+                    // 设备输出开启时, 拖拽播放头也要把"该时刻的值"下发一次 —— 否则只有
+                    // 播放(逐帧 Tick)才会输出设备, 拖动时间头时仿真侧静止不动。
+                    if (LiveOutputToDevice)
+                    {
+                        _slot.SetExternalTime((float)timeMs);
+                        IOToolkit.MotionPlayer.Tick(1f / 60f);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    LastError = "native seek 失败: " + ex.Message;
+                    Debug.WriteLine($"[NativeEngine] {LastError}");
+                }
+            }
 
             PositionChanged?.Invoke(timeMs);
             Notified?.Invoke(new PlaybackNotification.Position(timeMs));

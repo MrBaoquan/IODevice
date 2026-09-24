@@ -1321,17 +1321,7 @@ namespace IOStudio.Views.Timeline
                 // Shift+滚轮: 曲线编辑器面板上也支持调整轨道高度
                 curveEditor.TrackHeightChangeRequested += (delta) =>
                 {
-                    if (ViewModel == null)
-                        return;
-                    foreach (var t in ViewModel.Tracks)
-                    {
-                        double currentHeight = t.HasIndividualHeight
-                            ? t.IndividualTrackHeight
-                            : ViewModel.TrackHeight;
-                        double newHeight = Math.Clamp(currentHeight + delta, 36, 200);
-                        t.SetIndividualHeight(newHeight);
-                        t.UpdateCompactDisplay(ViewModel.TrackHeight);
-                    }
+                    ViewModel?.AdjustAllTrackHeights(delta);
                     RefreshTrackHeights();
                 };
 

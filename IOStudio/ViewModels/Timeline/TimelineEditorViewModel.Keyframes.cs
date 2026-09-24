@@ -1438,5 +1438,82 @@ namespace IOStudio.ViewModels.Timeline
             );
             MarkDirty();
         }
+
+        /// <summary>
+        /// 批量编辑一条 clip 内选中的关键帧 (带撤销)。
+        /// kind: set / offset / scale (值, param) ; interp (插值, interp)。
+        /// indices 为空 = 整条 clip。
+        /// </summary>
+        public void BatchEditClipKeyframes(
+            TrackViewModel track,
+            int clipIdx,
+            IReadOnlyList<int>? indices,
+            string kind,
+            float param = 0f,
+            string? interp = null
+        )
+        {
+            if (track == null || clipIdx < 0 || clipIdx >= track.Clips.Count)
+                return;
+            var clipVm = track.Clips[clipIdx];
+            if (clipVm.Keyframes.Count == 0)
+                return;
+
+            var target = indices is { Count: > 0 }
+                ? indices.Where(i => i >= 0 && i < clipVm.Keyframes.Count).Distinct().ToList()
+                : Enumerable.Range(0, clipVm.Keyframes.Count).ToList();
+            if (target.Count == 0)
+                return;
+
+            if (!TryBeginTrackEdit(track, "批量编辑关键帧"))
+                return;
+
+            var snapshots = target
+                .Select(i => clipVm.Keyframes[i])
+                .Select(kf => (Kf: kf, OldVal: kf.Value, OldInterp: kf.Interpolation))
+                .ToList();
+
+            _undoRedo.Execute(
+                new LambdaCommand(
+                    "批量编辑关键帧",
+                    () =>
+                    {
+                        foreach (var (kf, _, _) in snapshots)
+                            ApplyBatch(kf, kind, param, interp);
+                        NotifyTrackDataChanged(track);
+                    },
+                    () =>
+                    {
+                        foreach (var (kf, oldVal, oldInterp) in snapshots)
+                        {
+                            kf.Value = oldVal;
+                            kf.Interpolation = oldInterp;
+                        }
+                        NotifyTrackDataChanged(track);
+                    }
+                )
+            );
+            MarkDirty();
+        }
+
+        private static void ApplyBatch(KeyframeViewModel kf, string kind, float param, string? interp)
+        {
+            switch (kind)
+            {
+                case "set":
+                    kf.Value = Math.Clamp(param, 0f, 1f);
+                    break;
+                case "offset":
+                    kf.Value = Math.Clamp(kf.Value + param, 0f, 1f);
+                    break;
+                case "scale":
+                    kf.Value = Math.Clamp(kf.Value * param, 0f, 1f);
+                    break;
+                case "interp":
+                    if (!string.IsNullOrEmpty(interp))
+                        kf.Interpolation = interp;
+                    break;
+            }
+        }
     }
 }

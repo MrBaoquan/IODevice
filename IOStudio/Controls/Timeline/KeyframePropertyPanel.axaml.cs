@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Globalization;
 using Avalonia;
 using Avalonia.Controls;
@@ -187,11 +188,51 @@ namespace IOStudio.Controls.Timeline
                 vm.ActivateKeyframeListItem(item);
         }
 
-        /// <summary>整条 clip 统一插值 (按钮 Tag = 插值类型)。</summary>
+        /// <summary>整条 clip 统一插值 (有选中则只改选中)。</summary>
         private void OnApplyClipInterpolationClick(object? sender, RoutedEventArgs e)
         {
-            if (Vm is { } vm && sender is Control { Tag: string interp } && !string.IsNullOrEmpty(interp))
+            if (Vm is not { } vm || sender is not Control { Tag: string interp } || string.IsNullOrEmpty(interp))
+                return;
+            var indices = SelectedKeyframeIndices();
+            if (indices.Count > 0)
+                vm.RequestBatchKeyframeInterp(indices, interp);
+            else
                 vm.RequestApplyClipInterpolation(interp);
+        }
+
+        /// <summary>批量改选中关键帧的值 (Tag = "op:param")。</summary>
+        private void OnBatchValueClick(object? sender, RoutedEventArgs e)
+        {
+            if (Vm is not { } vm || sender is not Control { Tag: string tag })
+                return;
+            var indices = SelectedKeyframeIndices();
+            if (indices.Count == 0)
+                return;
+            var parts = tag.Split(':');
+            if (parts.Length != 2)
+                return;
+            float param = float.TryParse(
+                parts[1],
+                NumberStyles.Float,
+                CultureInfo.InvariantCulture,
+                out var p
+            )
+                ? p
+                : 0f;
+            vm.RequestBatchKeyframeValue(indices, parts[0], param);
+        }
+
+        private IReadOnlyList<int> SelectedKeyframeIndices()
+        {
+            var list = this.FindControl<ListBox>("KeyframeListBox");
+            if (list?.SelectedItems is null)
+                return Array.Empty<int>();
+            var result = new List<int>();
+            foreach (var o in list.SelectedItems)
+                if (o is KeyframeListItem item)
+                    result.Add(item.Index);
+            result.Sort();
+            return result;
         }
 
         private void OnTangentLostFocus(object? sender, RoutedEventArgs e) => CommitTangents();

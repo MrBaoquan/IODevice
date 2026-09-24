@@ -635,6 +635,24 @@ namespace IOStudio.Views.Timeline
                 RefreshAllTrackControls();
                 RefreshPropertyPanel();
             };
+            // 批量: 选中关键帧的值 (offset/scale/set)
+            kfVm.BatchKeyframeValueRequested += (indices, op, param) =>
+            {
+                if (ViewModel != null && kfVm.TrackVm is { } track && kfVm.ClipIndex >= 0)
+                    ViewModel.BatchEditClipKeyframes(track, kfVm.ClipIndex, indices, op, param);
+                SyncCurveEditorData();
+                RefreshAllTrackControls();
+                RefreshPropertyPanel();
+            };
+            // 批量: 选中关键帧的插值
+            kfVm.BatchKeyframeInterpRequested += (indices, interp) =>
+            {
+                if (ViewModel != null && kfVm.TrackVm is { } track && kfVm.ClipIndex >= 0)
+                    ViewModel.BatchEditClipKeyframes(track, kfVm.ClipIndex, indices, "interp", 0f, interp);
+                SyncCurveEditorData();
+                RefreshAllTrackControls();
+                RefreshPropertyPanel();
+            };
             // 播放头处事件编辑
             kfVm.PlayheadEventEdited += (evt, name, data, dataType) =>
             {

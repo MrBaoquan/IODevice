@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Globalization;
 using System.Reactive;
@@ -238,6 +239,18 @@ namespace IOStudio.ViewModels.Timeline
 
         public void RequestApplyClipInterpolation(string interp) =>
             ApplyClipInterpolationRequested?.Invoke(interp);
+
+        /// <summary>批量编辑选中关键帧的值: (indices, op, param)。</summary>
+        public event Action<IReadOnlyList<int>, string, float>? BatchKeyframeValueRequested;
+
+        public void RequestBatchKeyframeValue(IReadOnlyList<int> indices, string op, float param) =>
+            BatchKeyframeValueRequested?.Invoke(indices, op, param);
+
+        /// <summary>批量设置选中关键帧的插值: (indices, interp)。indices 为空 = 整条 clip。</summary>
+        public event Action<IReadOnlyList<int>, string>? BatchKeyframeInterpRequested;
+
+        public void RequestBatchKeyframeInterp(IReadOnlyList<int> indices, string interp) =>
+            BatchKeyframeInterpRequested?.Invoke(indices, interp);
 
         /// <summary>提交贝塞尔切线数值编辑。</summary>
         public void CommitTangent(float? tangentIn, float? tangentOut) =>

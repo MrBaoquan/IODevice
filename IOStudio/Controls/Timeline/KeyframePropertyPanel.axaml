@@ -274,7 +274,7 @@
                             <ListBox Name="KeyframeListBox"
                                      ItemsSource="{Binding KeyframeItems}"
                                      IsVisible="{Binding HasKeyframeList}"
-                                     MaxHeight="170" SelectionMode="Single"
+                                     MaxHeight="170" SelectionMode="Multiple"
                                      SelectionChanged="OnKeyframeListItemChanged"
                                      Background="{DynamicResource TlInputBg}"
                                      CornerRadius="6" Padding="2">
@@ -290,21 +290,30 @@
                                             <TextBlock Grid.Column="2" Text="{Binding ValueText}" FontSize="10"
                                                        Foreground="{DynamicResource TlTextPrimary}"
                                                        VerticalAlignment="Center" FontFamily="Consolas, monospace"/>
-                                            <TextBlock Grid.Column="3" Text="{Binding Interpolation}" FontSize="9"
+                                            <TextBlock Grid.Column="3" Text="{Binding Interpolation}" FontSize="10"
                                                        Foreground="{DynamicResource TlTextMuted}"
                                                        VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
                                         </Grid>
                                     </DataTemplate>
                                 </ListBox.ItemTemplate>
                             </ListBox>
-                            <!-- 批量: 整条 clip 统一插值 -->
+                            <!-- 批量: 整条或选中 clip 统一插值 -->
                             <StackPanel Orientation="Horizontal" Spacing="4">
-                                <TextBlock Text="整条插值:" FontSize="10" Foreground="{DynamicResource TlTextMuted}"
+                                <TextBlock Text="插值:" FontSize="10" Foreground="{DynamicResource TlTextMuted}"
                                            VerticalAlignment="Center"/>
                                 <Button Classes="reset-btn" Content="Linear" FontSize="10" Click="OnApplyClipInterpolationClick" Tag="linear"/>
                                 <Button Classes="reset-btn" Content="Bezier" FontSize="10" Click="OnApplyClipInterpolationClick" Tag="bezier"/>
                                 <Button Classes="reset-btn" Content="Step" FontSize="10" Click="OnApplyClipInterpolationClick" Tag="step"/>
                                 <Button Classes="reset-btn" Content="Ease" FontSize="10" Click="OnApplyClipInterpolationClick" Tag="ease_in_out"/>
+                            </StackPanel>
+                            <!-- 批量: 选中关键帧的值 -->
+                            <StackPanel Orientation="Horizontal" Spacing="4">
+                                <TextBlock Text="选中值:" FontSize="10" Foreground="{DynamicResource TlTextMuted}"
+                                           VerticalAlignment="Center"/>
+                                <Button Classes="reset-btn" Content="−0.01" FontSize="10" Click="OnBatchValueClick" Tag="offset:-0.01"/>
+                                <Button Classes="reset-btn" Content="+0.01" FontSize="10" Click="OnBatchValueClick" Tag="offset:0.01"/>
+                                <Button Classes="reset-btn" Content="×0.9" FontSize="10" Click="OnBatchValueClick" Tag="scale:0.9"/>
+                                <Button Classes="reset-btn" Content="×1.1" FontSize="10" Click="OnBatchValueClick" Tag="scale:1.1"/>
                             </StackPanel>
                         </StackPanel>
                     </Border>

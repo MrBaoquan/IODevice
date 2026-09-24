@@ -176,6 +176,45 @@ namespace IOStudio.Tests.Services
         }
 
         [Fact]
+        public void Build_RawClip_IsAddedWithoutScaling()
+        {
+            var spec = MinimalSpec();
+            spec.Tracks.Add(new ShowTrackSpec { Role = "speed", Channel = "OAxis_08", Group = "安全与状态", Neutral = 0, EngineeringRange = 100 });
+            spec.Clips.Add(new ShowClipSpec
+            {
+                Role = "speed",
+                StartMs = 0,
+                EndMs = 10000,
+                Keyframes = new List<MotionKeyframe> { Kf(0, 0.2f, "ease_in_out"), Kf(10000, 0.9f, "ease_in_out") },
+            });
+            var result = MotionShowBuilder.Build(spec);
+            Assert.False(result.HasErrors, string.Join("; ", result.Issues.Select(i => i.ToString())));
+            var speed = result.Timeline!.Tracks.Single(t => t.Role == "speed");
+            Assert.Single(speed.Clips);
+            Assert.Equal(0.2f, speed.Clips[0].Keyframes[0].Value, precision: 4); // 原始值不被强度缩放
+            Assert.Equal(0.9f, speed.Clips[0].Keyframes[1].Value, precision: 4);
+        }
+
+        [Fact]
+        public void Build_EmitsMarkersAndEvents_ForChaptersCuesGates()
+        {
+            var spec = MinimalSpec();
+            spec.Tracks.Add(new ShowTrackSpec { Role = "wind", Channel = "OAxis_18", Group = "环境特效" });
+            spec.Chapters.Add(new ShowChapterSpec { TimeMs = 0, Name = "开场" });
+            spec.Gates.Add(new ShowGateSpec { Role = "wind", StartMs = 2000, EndMs = 6000 });
+            var result = MotionShowBuilder.Build(spec);
+            var tl = result.Timeline!;
+
+            Assert.Contains(tl.Markers!, m => m.LaneId == "chapters" && m.Name == "开场");
+            Assert.Contains(tl.Markers!, m => m.LaneId == "cues" && m.Name == "测试");
+            Assert.Contains(tl.Markers!, m => m.LaneId == "cues" && m.Name == "环境 · wind");
+            Assert.Contains(tl.Events, e => e.EventName == "scene.chapter");
+            Assert.Contains(tl.Events, e => e.EventName == "fx.test");
+            Assert.Contains(tl.Events, e => e.EventName == "env.wind.on");
+            Assert.Contains(tl.MarkerLanes!, l => l.Id == "cues" && l.Name == "预设点");
+        }
+
+        [Fact]
         public void Build_RoundTrips_And_PassesValidation()
         {
             var spec = MinimalSpec();

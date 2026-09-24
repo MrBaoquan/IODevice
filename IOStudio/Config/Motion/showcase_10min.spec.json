@@ -1,0 +1,2024 @@
+{
+  "name": "10 \u5206\u949F\u52A8\u611F\u5F71\u9662\u5B8C\u6574\u6F14\u793A - Simulator \u8054\u8C03",
+  "duration_ms": 600000,
+  "fps": 60,
+  "device": "Simulator-1",
+  "tracks": [
+    {
+      "role": "pitch",
+      "channel": "OAxis_01",
+      "output_type": "oaxis",
+      "oaction": "",
+      "label": "\u4FEF\u4EF0",
+      "color": "#A78BFA",
+      "group": "\u4E3B\u8FD0\u52A8",
+      "value_type": "float",
+      "neutral": 0.5,
+      "engineering_range": 60,
+      "idle": {
+        "period_ms": 3200,
+        "blend_ms": 400,
+        "phase_mode": "continuous",
+        "phase_offset_ms": 0,
+        "group_id": "idle_main",
+        "keyframes": [
+          {
+            "time_ms": 0,
+            "value": 0.5,
+            "interpolation": "bezier"
+          },
+          {
+            "time_ms": 800,
+            "value": 0.515,
+            "interpolation": "bezier"
+          },
+          {
+            "time_ms": 1600,
+            "value": 0.5,
+            "interpolation": "bezier"
+          },
+          {
+            "time_ms": 2400,
+            "value": 0.485,
+            "interpolation": "bezier"
+          },
+          {
+            "time_ms": 3200,
+            "value": 0.5,
+            "interpolation": "bezier"
+          }
+        ]
+      }
+    },
+    {
+      "role": "roll",
+      "channel": "OAxis_03",
+      "output_type": "oaxis",
+      "oaction": "",
+      "label": "\u6A2A\u6EDA",
+      "color": "#34D399",
+      "group": "\u4E3B\u8FD0\u52A8",
+      "value_type": "float",
+      "neutral": 0.5,
+      "engineering_range": 60,
+      "idle": {
+        "period_ms": 4000,
+        "blend_ms": 400,
+        "phase_mode": "continuous",
+        "phase_offset_ms": 800,
+        "group_id": "idle_main",
+        "keyframes": [
+          {
+            "time_ms": 0,
+            "value": 0.5,
+            "interpolation": "bezier"
+          },
+          {
+            "time_ms": 1000,
+            "value": 0.52,
+            "interpolation": "bezier"
+          },
+          {
+            "time_ms": 2000,
+            "value": 0.5,
+            "interpolation": "bezier"
+          },
+          {
+            "time_ms": 3000,
+            "value": 0.48,
+            "interpolation": "bezier"
+          },
+          {
+            "time_ms": 4000,
+            "value": 0.5,
+            "interpolation": "bezier"
+          }
+        ]
+      }
+    },
+    {
+      "role": "yaw",
+      "channel": "OAxis_02",
+      "output_type": "oaxis",
+      "oaction": "",
+      "label": "\u504F\u822A",
+      "color": "#60A5FA",
+      "group": "\u4E3B\u8FD0\u52A8",
+      "value_type": "float",
+      "neutral": 0.5,
+      "engineering_range": 90,
+      "idle": {
+        "period_ms": 8000,
+        "blend_ms": 400,
+        "phase_mode": "continuous",
+        "phase_offset_ms": 1500,
+        "group_id": "idle_main",
+        "keyframes": [
+          {
+            "time_ms": 0,
+            "value": 0.5,
+            "interpolation": "bezier"
+          },
+          {
+            "time_ms": 2000,
+            "value": 0.53,
+            "interpolation": "bezier"
+          },
+          {
+            "time_ms": 4000,
+            "value": 0.5,
+            "interpolation": "bezier"
+          },
+          {
+            "time_ms": 6000,
+            "value": 0.47,
+            "interpolation": "bezier"
+          },
+          {
+            "time_ms": 8000,
+            "value": 0.5,
+            "interpolation": "bezier"
+          }
+        ]
+      }
+    },
+    {
+      "role": "heave",
+      "channel": "OAxis_06",
+      "output_type": "oaxis",
+      "oaction": "",
+      "label": "\u5347\u964D",
+      "color": "#4FC3F7",
+      "group": "\u4E3B\u8FD0\u52A8",
+      "value_type": "float",
+      "neutral": 0.5,
+      "engineering_range": 600,
+      "idle": {
+        "period_ms": 5200,
+        "blend_ms": 400,
+        "phase_mode": "continuous",
+        "phase_offset_ms": 0,
+        "group_id": "idle_main",
+        "keyframes": [
+          {
+            "time_ms": 0,
+            "value": 0.5,
+            "interpolation": "bezier"
+          },
+          {
+            "time_ms": 1300,
+            "value": 0.54,
+            "interpolation": "bezier"
+          },
+          {
+            "time_ms": 2600,
+            "value": 0.5,
+            "interpolation": "bezier"
+          },
+          {
+            "time_ms": 3900,
+            "value": 0.46,
+            "interpolation": "bezier"
+          },
+          {
+            "time_ms": 5200,
+            "value": 0.5,
+            "interpolation": "bezier"
+          }
+        ]
+      }
+    },
+    {
+      "role": "surge",
+      "channel": "OAxis_04",
+      "output_type": "oaxis",
+      "oaction": "",
+      "label": "\u524D\u540E",
+      "color": "#FBBF24",
+      "group": "\u4E3B\u8FD0\u52A8",
+      "value_type": "float",
+      "neutral": 0.5,
+      "engineering_range": 600,
+      "idle": {
+        "period_ms": 6400,
+        "blend_ms": 400,
+        "phase_mode": "continuous",
+        "phase_offset_ms": 1200,
+        "group_id": "idle_main",
+        "keyframes": [
+          {
+            "time_ms": 0,
+            "value": 0.5,
+            "interpolation": "bezier"
+          },
+          {
+            "time_ms": 1600,
+            "value": 0.52,
+            "interpolation": "bezier"
+          },
+          {
+            "time_ms": 3200,
+            "value": 0.5,
+            "interpolation": "bezier"
+          },
+          {
+            "time_ms": 4800,
+            "value": 0.48,
+            "interpolation": "bezier"
+          },
+          {
+            "time_ms": 6400,
+            "value": 0.5,
+            "interpolation": "bezier"
+          }
+        ]
+      }
+    },
+    {
+      "role": "sway",
+      "channel": "OAxis_05",
+      "output_type": "oaxis",
+      "oaction": "",
+      "label": "\u5DE6\u53F3",
+      "color": "#F472B6",
+      "group": "\u4E3B\u8FD0\u52A8",
+      "value_type": "float",
+      "neutral": 0.5,
+      "engineering_range": 400,
+      "idle": {
+        "period_ms": 7200,
+        "blend_ms": 400,
+        "phase_mode": "continuous",
+        "phase_offset_ms": 2400,
+        "group_id": "idle_main",
+        "keyframes": [
+          {
+            "time_ms": 0,
+            "value": 0.5,
+            "interpolation": "bezier"
+          },
+          {
+            "time_ms": 1800,
+            "value": 0.48,
+            "interpolation": "bezier"
+          },
+          {
+            "time_ms": 3600,
+            "value": 0.5,
+            "interpolation": "bezier"
+          },
+          {
+            "time_ms": 5400,
+            "value": 0.52,
+            "interpolation": "bezier"
+          },
+          {
+            "time_ms": 7200,
+            "value": 0.5,
+            "interpolation": "bezier"
+          }
+        ]
+      }
+    },
+    {
+      "role": "angle",
+      "channel": "OAxis_07",
+      "output_type": "oaxis",
+      "oaction": "",
+      "label": "\u8F6C\u53F0",
+      "color": "#C084FC",
+      "group": "\u4E3B\u8FD0\u52A8",
+      "value_type": "float",
+      "neutral": 0.5,
+      "engineering_range": 720,
+      "idle": {
+        "period_ms": 10000,
+        "blend_ms": 400,
+        "phase_mode": "continuous",
+        "phase_offset_ms": 0,
+        "group_id": "idle_main",
+        "keyframes": [
+          {
+            "time_ms": 0,
+            "value": 0.5,
+            "interpolation": "bezier"
+          },
+          {
+            "time_ms": 2500,
+            "value": 0.52,
+            "interpolation": "bezier"
+          },
+          {
+            "time_ms": 5000,
+            "value": 0.5,
+            "interpolation": "bezier"
+          },
+          {
+            "time_ms": 7500,
+            "value": 0.48,
+            "interpolation": "bezier"
+          },
+          {
+            "time_ms": 10000,
+            "value": 0.5,
+            "interpolation": "bezier"
+          }
+        ]
+      }
+    },
+    {
+      "role": "wind",
+      "channel": "OAxis_18",
+      "output_type": "oaxis",
+      "oaction": "",
+      "label": "\u98CE\u6548",
+      "color": "#7DD3FC",
+      "group": "\u73AF\u5883\u7279\u6548",
+      "value_type": "float",
+      "neutral": 0
+    },
+    {
+      "role": "fog",
+      "channel": "OAxis_19",
+      "output_type": "oaxis",
+      "oaction": "",
+      "label": "\u70DF\u96FE",
+      "color": "#94A3B8",
+      "group": "\u73AF\u5883\u7279\u6548",
+      "value_type": "float",
+      "neutral": 0
+    },
+    {
+      "role": "water",
+      "channel": "OAxis_16",
+      "output_type": "oaxis",
+      "oaction": "",
+      "label": "\u6C34\u6548",
+      "color": "#38BDF8",
+      "group": "\u73AF\u5883\u7279\u6548",
+      "value_type": "float",
+      "neutral": 0
+    },
+    {
+      "role": "snow",
+      "channel": "OAxis_17",
+      "output_type": "oaxis",
+      "oaction": "",
+      "label": "\u98D8\u96EA",
+      "color": "#E2E8F0",
+      "group": "\u73AF\u5883\u7279\u6548",
+      "value_type": "float",
+      "neutral": 0
+    },
+    {
+      "role": "hot",
+      "channel": "OAxis_20",
+      "output_type": "oaxis",
+      "oaction": "",
+      "label": "\u70ED\u6D6A",
+      "color": "#FB923C",
+      "group": "\u73AF\u5883\u7279\u6548",
+      "value_type": "float",
+      "neutral": 0
+    },
+    {
+      "role": "light",
+      "channel": "OAxis_21",
+      "output_type": "oaxis",
+      "oaction": "",
+      "label": "\u9891\u95EA",
+      "color": "#FDE047",
+      "group": "\u73AF\u5883\u7279\u6548",
+      "value_type": "float",
+      "neutral": 0
+    },
+    {
+      "role": "vibrate",
+      "channel": "OAxis_22",
+      "output_type": "oaxis",
+      "oaction": "",
+      "label": "\u632F\u52A8",
+      "color": "#FB7185",
+      "group": "\u73AF\u5883\u7279\u6548",
+      "value_type": "float",
+      "neutral": 0
+    },
+    {
+      "role": "speed",
+      "channel": "OAxis_08",
+      "output_type": "oaxis",
+      "oaction": "",
+      "label": "\u901F\u5EA6\u7EA7\u522B",
+      "color": "#22D3EE",
+      "group": "\u5B89\u5168\u4E0E\u72B6\u6001",
+      "value_type": "float",
+      "neutral": 0,
+      "engineering_range": 100
+    },
+    {
+      "role": "motion_enable",
+      "channel": "OAxis_11",
+      "output_type": "oaxis",
+      "oaction": "",
+      "label": "\u8FD0\u52A8\u4F7F\u80FD",
+      "color": "#4ADE80",
+      "group": "\u5B89\u5168\u4E0E\u72B6\u6001",
+      "value_type": "float",
+      "neutral": 0
+    },
+    {
+      "role": "reset",
+      "channel": "OAxis_09",
+      "output_type": "oaxis",
+      "oaction": "",
+      "label": "\u590D\u4F4D",
+      "color": "#FACC15",
+      "group": "\u5B89\u5168\u4E0E\u72B6\u6001",
+      "value_type": "float",
+      "neutral": 0
+    },
+    {
+      "role": "emergency_stop",
+      "channel": "OAxis_10",
+      "output_type": "oaxis",
+      "oaction": "",
+      "label": "\u6025\u505C",
+      "color": "#EF4444",
+      "group": "\u5B89\u5168\u4E0E\u72B6\u6001",
+      "value_type": "float",
+      "neutral": 0
+    }
+  ],
+  "presets": [
+    {
+      "id": "fx_weightless_rise",
+      "name": "\u5931\u91CD\u4E0A\u5347",
+      "category": "\u5931\u91CD\u6548\u679C",
+      "description": "\u8FC5\u901F\u4E0A\u51B2\u5931\u91CD\u611F: \u5347\u964D\u5FEB\u901F\u4E0A\u51B2\u2192\u77ED\u6682\u60AC\u6D6E\u56DE\u843D\u2192\u7A33\u5B9A\u56DE\u4E2D; \u4FEF\u4EF0\u540E\u4EF0 \u002B \u6A2A\u6EDA\u5FAE\u6446\u8054\u52A8",
+      "duration_ms": 3000,
+      "default_intensity": 0.8,
+      "min_intensity": 0.2,
+      "max_intensity": 1.2,
+      "channels": [
+        {
+          "role": "heave",
+          "scale": 1,
+          "phase_offset_ms": 0,
+          "keyframes": [
+            {
+              "time_ms": 0,
+              "value": 0.5,
+              "interpolation": "bezier"
+            },
+            {
+              "time_ms": 600,
+              "value": 0.88,
+              "interpolation": "bezier"
+            },
+            {
+              "time_ms": 1800,
+              "value": 0.58,
+              "interpolation": "bezier"
+            },
+            {
+              "time_ms": 3000,
+              "value": 0.5,
+              "interpolation": "ease_in_out"
+            }
+          ]
+        },
+        {
+          "role": "pitch",
+          "scale": 1,
+          "phase_offset_ms": 0,
+          "keyframes": [
+            {
+              "time_ms": 0,
+              "value": 0.5,
+              "interpolation": "bezier"
+            },
+            {
+              "time_ms": 600,
+              "value": 0.62,
+              "interpolation": "bezier"
+            },
+            {
+              "time_ms": 2400,
+              "value": 0.55,
+              "interpolation": "bezier"
+            },
+            {
+              "time_ms": 3000,
+              "value": 0.5,
+              "interpolation": "ease_in_out"
+            }
+          ]
+        },
+        {
+          "role": "roll",
+          "scale": 1,
+          "phase_offset_ms": 0,
+          "keyframes": [
+            {
+              "time_ms": 0,
+              "value": 0.5,
+              "interpolation": "bezier"
+            },
+            {
+              "time_ms": 600,
+              "value": 0.58,
+              "interpolation": "bezier"
+            },
+            {
+              "time_ms": 2400,
+              "value": 0.45,
+              "interpolation": "bezier"
+            },
+            {
+              "time_ms": 3000,
+              "value": 0.5,
+              "interpolation": "ease_in_out"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "fx_weightless_fall",
+      "name": "\u5931\u91CD\u4E0B\u964D",
+      "category": "\u5931\u91CD\u6548\u679C",
+      "description": "\u5FEB\u901F\u4E0B\u5760\u5931\u91CD\u611F: \u5347\u964D\u6025\u901F\u4E0B\u51B2\u2192\u56DE\u5F39\u2192\u7A33\u5B9A\u56DE\u4E2D; \u4FEF\u4EF0/\u6A2A\u6EDA\u8054\u52A8\u9519\u5CF0",
+      "duration_ms": 2000,
+      "default_intensity": 0.8,
+      "min_intensity": 0.2,
+      "max_intensity": 1.2,
+      "channels": [
+        {
+          "role": "heave",
+          "scale": 1,
+          "phase_offset_ms": 0,
+          "keyframes": [
+            {
+              "time_ms": 0,
+              "value": 0.5,
+              "interpolation": "bezier"
+            },
+            {
+              "time_ms": 500,
+              "value": 0.12,
+              "interpolation": "bezier"
+            },
+            {
+              "time_ms": 1800,
+              "value": 0.42,
+              "interpolation": "bezier"
+            },
+            {
+              "time_ms": 2000,
+              "value": 0.5,
+              "interpolation": "ease_in_out"
+            }
+          ]
+        },
+        {
+          "role": "pitch",
+          "scale": 1,
+          "phase_offset_ms": 0,
+          "keyframes": [
+            {
+              "time_ms": 0,
+              "value": 0.5,
+              "interpolation": "bezier"
+            },
+            {
+              "time_ms": 500,
+              "value": 0.38,
+              "interpolation": "bezier"
+            },
+            {
+              "time_ms": 1800,
+              "value": 0.6,
+              "interpolation": "bezier"
+            },
+            {
+              "time_ms": 2000,
+              "value": 0.5,
+              "interpolation": "ease_in_out"
+            }
+          ]
+        },
+        {
+          "role": "roll",
+          "scale": 1,
+          "phase_offset_ms": 0,
+          "keyframes": [
+            {
+              "time_ms": 0,
+              "value": 0.5,
+              "interpolation": "bezier"
+            },
+            {
+              "time_ms": 500,
+              "value": 0.42,
+              "interpolation": "bezier"
+            },
+            {
+              "time_ms": 1800,
+              "value": 0.58,
+              "interpolation": "bezier"
+            },
+            {
+              "time_ms": 2000,
+              "value": 0.5,
+              "interpolation": "ease_in_out"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "fx_dive",
+      "name": "\u4FEF\u51B2",
+      "category": "\u8FC7\u5C71\u8F66",
+      "description": "\u524D\u51B2\u4FEF\u51B2: \u5347\u964D\u524D\u51B2\u4E0B\u964D\u2192\u4FEF\u4EF0\u524D\u503E\u2192\u7A33\u5B9A\u56DE\u4E2D",
+      "duration_ms": 2000,
+      "default_intensity": 0.8,
+      "min_intensity": 0.2,
+      "max_intensity": 1.2,
+      "channels": [
+        {
+          "role": "heave",
+          "scale": 1,
+          "phase_offset_ms": 0,
+          "keyframes": [
+            {
+              "time_ms": 0,
+              "value": 0.5,
+              "interpolation": "bezier"
+            },
+            {
+              "time_ms": 800,
+              "value": 0.1,
+              "interpolation": "bezier"
+            },
+            {
+              "time_ms": 1600,
+              "value": 0.9,
+              "interpolation": "ease_in_out"
+            },
+            {
+              "time_ms": 2000,
+              "value": 0.5,
+              "interpolation": "bezier"
+            }
+          ]
+        },
+        {
+          "role": "pitch",
+          "scale": 1,
+          "phase_offset_ms": 0,
+          "keyframes": [
+            {
+              "time_ms": 0,
+              "value": 0.5,
+              "interpolation": "bezier"
+            },
+            {
+              "time_ms": 800,
+              "value": 0.15,
+              "interpolation": "bezier"
+            },
+            {
+              "time_ms": 1600,
+              "value": 0.85,
+              "interpolation": "ease_in_out"
+            },
+            {
+              "time_ms": 2000,
+              "value": 0.5,
+              "interpolation": "bezier"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "fx_impact_vibration",
+      "name": "\u649E\u51FB\u9707\u52A8",
+      "category": "\u51B2\u51FB\u9707\u52A8",
+      "description": "\u649E\u51FB\u51B2\u51FB\u6CE2: \u77AC\u95F4\u51B2\u51FB\u2192\u9AD8\u9891\u8870\u51CF\u9707\u8361\u2192\u7A33\u5B9A\u56DE\u4E2D",
+      "duration_ms": 1000,
+      "default_intensity": 0.8,
+      "min_intensity": 0.2,
+      "max_intensity": 1.2,
+      "channels": [
+        {
+          "role": "vibrate",
+          "scale": 1,
+          "phase_offset_ms": 0,
+          "keyframes": [
+            {
+              "time_ms": 0,
+              "value": 0,
+              "interpolation": "step"
+            },
+            {
+              "time_ms": 50,
+              "value": 0.8,
+              "interpolation": "bezier"
+            },
+            {
+              "time_ms": 300,
+              "value": 0.3,
+              "interpolation": "bezier"
+            },
+            {
+              "time_ms": 600,
+              "value": 0.6,
+              "interpolation": "bezier"
+            },
+            {
+              "time_ms": 900,
+              "value": 0.4,
+              "interpolation": "bezier"
+            },
+            {
+              "time_ms": 1000,
+              "value": 0,
+              "interpolation": "ease_in_out"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "fx_emergency_stop",
+      "name": "\u6025\u505C",
+      "category": "\u51B2\u51FB\u9707\u52A8",
+      "description": "\u5FEB\u901F\u6025\u505C: \u77AC\u95F4\u51CF\u901F\u2192\u8FC7\u51B2\u4FEE\u6B63\u2192\u7A33\u5B9A\u56DE\u4E2D",
+      "duration_ms": 500,
+      "default_intensity": 0.8,
+      "min_intensity": 0.2,
+      "max_intensity": 1.2,
+      "channels": [
+        {
+          "role": "surge",
+          "scale": 1,
+          "phase_offset_ms": 0,
+          "keyframes": [
+            {
+              "time_ms": 0,
+              "value": 0,
+              "interpolation": "step"
+            },
+            {
+              "time_ms": 50,
+              "value": 0.3,
+              "interpolation": "bezier"
+            },
+            {
+              "time_ms": 150,
+              "value": 0.6,
+              "interpolation": "bezier"
+            },
+            {
+              "time_ms": 300,
+              "value": 0.45,
+              "interpolation": "bezier"
+            },
+            {
+              "time_ms": 500,
+              "value": 0,
+              "interpolation": "ease_in_out"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "fx_gentle_cruise",
+      "name": "\u5E73\u7A33\u5DE1\u822A",
+      "category": "\u5DE1\u822A",
+      "description": "\u957F\u5468\u671F\u5E73\u7F13\u6446\u52A8: \u5347\u964D/\u6A2A\u6EDA/\u504F\u822A\u4F4E\u5E45\u9519\u76F8, \u8425\u9020\u5DE1\u822A\u6F02\u6D6E\u611F",
+      "duration_ms": 6000,
+      "default_intensity": 0.8,
+      "min_intensity": 0.2,
+      "max_intensity": 1.2,
+      "channels": [
+        {
+          "role": "heave",
+          "scale": 1,
+          "phase_offset_ms": 0,
+          "keyframes": [
+            {
+              "time_ms": 0,
+              "value": 0.5,
+              "interpolation": "ease_in_out"
+            },
+            {
+              "time_ms": 1500,
+              "value": 0.56,
+              "interpolation": "ease_in_out"
+            },
+            {
+              "time_ms": 3000,
+              "value": 0.5,
+              "interpolation": "ease_in_out"
+            },
+            {
+              "time_ms": 4500,
+              "value": 0.44,
+              "interpolation": "ease_in_out"
+            },
+            {
+              "time_ms": 6000,
+              "value": 0.5,
+              "interpolation": "ease_in_out"
+            }
+          ]
+        },
+        {
+          "role": "roll",
+          "scale": 1,
+          "phase_offset_ms": 0,
+          "keyframes": [
+            {
+              "time_ms": 0,
+              "value": 0.5,
+              "interpolation": "ease_in_out"
+            },
+            {
+              "time_ms": 1500,
+              "value": 0.54,
+              "interpolation": "ease_in_out"
+            },
+            {
+              "time_ms": 3000,
+              "value": 0.5,
+              "interpolation": "ease_in_out"
+            },
+            {
+              "time_ms": 4500,
+              "value": 0.46,
+              "interpolation": "ease_in_out"
+            },
+            {
+              "time_ms": 6000,
+              "value": 0.5,
+              "interpolation": "ease_in_out"
+            }
+          ]
+        },
+        {
+          "role": "yaw",
+          "scale": 1,
+          "phase_offset_ms": 0,
+          "keyframes": [
+            {
+              "time_ms": 0,
+              "value": 0.5,
+              "interpolation": "ease_in_out"
+            },
+            {
+              "time_ms": 2000,
+              "value": 0.52,
+              "interpolation": "ease_in_out"
+            },
+            {
+              "time_ms": 4000,
+              "value": 0.48,
+              "interpolation": "ease_in_out"
+            },
+            {
+              "time_ms": 6000,
+              "value": 0.5,
+              "interpolation": "ease_in_out"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "fx_turbulence",
+      "name": "\u6C14\u6D41\u98A0\u7C38",
+      "category": "\u8FC7\u5C71\u8F66",
+      "description": "\u9AD8\u9891\u98A0\u7C38: \u6A2A\u6EDA/\u4FEF\u4EF0\u5FEB\u901F\u6296\u52A8 \u002B \u5347\u964D\u8D77\u4F0F \u002B \u51B2\u51FB\u632F\u52A8",
+      "duration_ms": 5000,
+      "default_intensity": 0.8,
+      "min_intensity": 0.2,
+      "max_intensity": 1.2,
+      "channels": [
+        {
+          "role": "roll",
+          "scale": 1,
+          "phase_offset_ms": 0,
+          "keyframes": [
+            {
+              "time_ms": 0,
+              "value": 0.5,
+              "interpolation": "bezier"
+            },
+            {
+              "time_ms": 400,
+              "value": 0.62,
+              "interpolation": "bezier"
+            },
+            {
+              "time_ms": 900,
+              "value": 0.4,
+              "interpolation": "bezier"
+            },
+            {
+              "time_ms": 1500,
+              "value": 0.6,
+              "interpolation": "bezier"
+            },
+            {
+              "time_ms": 2100,
+              "value": 0.42,
+              "interpolation": "bezier"
+            },
+            {
+              "time_ms": 2800,
+              "value": 0.58,
+              "interpolation": "bezier"
+            },
+            {
+              "time_ms": 3500,
+              "value": 0.45,
+              "interpolation": "bezier"
+            },
+            {
+              "time_ms": 4300,
+              "value": 0.55,
+              "interpolation": "bezier"
+            },
+            {
+              "time_ms": 5000,
+              "value": 0.5,
+              "interpolation": "ease_in_out"
+            }
+          ]
+        },
+        {
+          "role": "pitch",
+          "scale": 1,
+          "phase_offset_ms": 0,
+          "keyframes": [
+            {
+              "time_ms": 0,
+              "value": 0.5,
+              "interpolation": "bezier"
+            },
+            {
+              "time_ms": 500,
+              "value": 0.58,
+              "interpolation": "bezier"
+            },
+            {
+              "time_ms": 1100,
+              "value": 0.44,
+              "interpolation": "bezier"
+            },
+            {
+              "time_ms": 1800,
+              "value": 0.56,
+              "interpolation": "bezier"
+            },
+            {
+              "time_ms": 2600,
+              "value": 0.46,
+              "interpolation": "bezier"
+            },
+            {
+              "time_ms": 3400,
+              "value": 0.55,
+              "interpolation": "bezier"
+            },
+            {
+              "time_ms": 4200,
+              "value": 0.47,
+              "interpolation": "bezier"
+            },
+            {
+              "time_ms": 5000,
+              "value": 0.5,
+              "interpolation": "ease_in_out"
+            }
+          ]
+        },
+        {
+          "role": "heave",
+          "scale": 1,
+          "phase_offset_ms": 0,
+          "keyframes": [
+            {
+              "time_ms": 0,
+              "value": 0.5,
+              "interpolation": "ease_in_out"
+            },
+            {
+              "time_ms": 1200,
+              "value": 0.6,
+              "interpolation": "bezier"
+            },
+            {
+              "time_ms": 2500,
+              "value": 0.4,
+              "interpolation": "bezier"
+            },
+            {
+              "time_ms": 3800,
+              "value": 0.58,
+              "interpolation": "bezier"
+            },
+            {
+              "time_ms": 5000,
+              "value": 0.5,
+              "interpolation": "ease_in_out"
+            }
+          ]
+        },
+        {
+          "role": "vibrate",
+          "scale": 1,
+          "phase_offset_ms": 0,
+          "keyframes": [
+            {
+              "time_ms": 0,
+              "value": 0,
+              "interpolation": "step"
+            },
+            {
+              "time_ms": 100,
+              "value": 0.6,
+              "interpolation": "bezier"
+            },
+            {
+              "time_ms": 500,
+              "value": 0.2,
+              "interpolation": "bezier"
+            },
+            {
+              "time_ms": 1200,
+              "value": 0.5,
+              "interpolation": "bezier"
+            },
+            {
+              "time_ms": 2200,
+              "value": 0.15,
+              "interpolation": "bezier"
+            },
+            {
+              "time_ms": 3200,
+              "value": 0.4,
+              "interpolation": "bezier"
+            },
+            {
+              "time_ms": 4200,
+              "value": 0.1,
+              "interpolation": "bezier"
+            },
+            {
+              "time_ms": 5000,
+              "value": 0,
+              "interpolation": "ease_in_out"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "fx_canyon_sweep",
+      "name": "\u5CE1\u8C37\u7A7F\u8D8A",
+      "category": "\u8FC7\u5C71\u8F66",
+      "description": "\u5927\u5E45\u504F\u822A\u626B\u63A0 \u002B \u6A2A\u6EDA\u538B\u5F2F \u002B \u5DE6\u53F3\u5E73\u79FB, \u8425\u9020\u8D34\u5730\u7A7F\u8D8A\u611F",
+      "duration_ms": 6000,
+      "default_intensity": 0.8,
+      "min_intensity": 0.2,
+      "max_intensity": 1.2,
+      "channels": [
+        {
+          "role": "yaw",
+          "scale": 1,
+          "phase_offset_ms": 0,
+          "keyframes": [
+            {
+              "time_ms": 0,
+              "value": 0.5,
+              "interpolation": "ease_in_out"
+            },
+            {
+              "time_ms": 1500,
+              "value": 0.85,
+              "interpolation": "bezier"
+            },
+            {
+              "time_ms": 3000,
+              "value": 0.5,
+              "interpolation": "ease_in_out"
+            },
+            {
+              "time_ms": 4500,
+              "value": 0.15,
+              "interpolation": "bezier"
+            },
+            {
+              "time_ms": 6000,
+              "value": 0.5,
+              "interpolation": "ease_in_out"
+            }
+          ]
+        },
+        {
+          "role": "roll",
+          "scale": 1,
+          "phase_offset_ms": 0,
+          "keyframes": [
+            {
+              "time_ms": 0,
+              "value": 0.5,
+              "interpolation": "ease_in_out"
+            },
+            {
+              "time_ms": 1500,
+              "value": 0.66,
+              "interpolation": "bezier"
+            },
+            {
+              "time_ms": 3000,
+              "value": 0.5,
+              "interpolation": "ease_in_out"
+            },
+            {
+              "time_ms": 4500,
+              "value": 0.34,
+              "interpolation": "bezier"
+            },
+            {
+              "time_ms": 6000,
+              "value": 0.5,
+              "interpolation": "ease_in_out"
+            }
+          ]
+        },
+        {
+          "role": "sway",
+          "scale": 1,
+          "phase_offset_ms": 0,
+          "keyframes": [
+            {
+              "time_ms": 0,
+              "value": 0.5,
+              "interpolation": "ease_in_out"
+            },
+            {
+              "time_ms": 1500,
+              "value": 0.68,
+              "interpolation": "bezier"
+            },
+            {
+              "time_ms": 3000,
+              "value": 0.5,
+              "interpolation": "ease_in_out"
+            },
+            {
+              "time_ms": 4500,
+              "value": 0.32,
+              "interpolation": "bezier"
+            },
+            {
+              "time_ms": 6000,
+              "value": 0.5,
+              "interpolation": "ease_in_out"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "fx_strobe",
+      "name": "\u9891\u95EA",
+      "category": "\u7279\u6548",
+      "description": "\u5EA7\u8231\u9876\u706F\u77ED\u4FC3\u9891\u95EA",
+      "duration_ms": 1500,
+      "default_intensity": 0.8,
+      "min_intensity": 0.2,
+      "max_intensity": 1.2,
+      "channels": [
+        {
+          "role": "light",
+          "scale": 1,
+          "phase_offset_ms": 0,
+          "keyframes": [
+            {
+              "time_ms": 0,
+              "value": 0,
+              "interpolation": "step"
+            },
+            {
+              "time_ms": 60,
+              "value": 1,
+              "interpolation": "step"
+            },
+            {
+              "time_ms": 180,
+              "value": 0,
+              "interpolation": "step"
+            },
+            {
+              "time_ms": 320,
+              "value": 1,
+              "interpolation": "step"
+            },
+            {
+              "time_ms": 460,
+              "value": 0,
+              "interpolation": "step"
+            },
+            {
+              "time_ms": 640,
+              "value": 1,
+              "interpolation": "step"
+            },
+            {
+              "time_ms": 820,
+              "value": 0,
+              "interpolation": "step"
+            },
+            {
+              "time_ms": 1100,
+              "value": 1,
+              "interpolation": "step"
+            },
+            {
+              "time_ms": 1280,
+              "value": 0,
+              "interpolation": "step"
+            },
+            {
+              "time_ms": 1500,
+              "value": 0,
+              "interpolation": "step"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "fx_fog_push",
+      "name": "\u8FF7\u96FE\u63A8\u8FDB",
+      "category": "\u7279\u6548",
+      "description": "\u70DF\u96FE\u5F25\u6F2B \u002B \u5347\u964D\u7F13\u6162\u8D77\u4F0F",
+      "duration_ms": 6000,
+      "default_intensity": 0.8,
+      "min_intensity": 0.2,
+      "max_intensity": 1.2,
+      "channels": [
+        {
+          "role": "fog",
+          "scale": 1,
+          "phase_offset_ms": 0,
+          "keyframes": [
+            {
+              "time_ms": 0,
+              "value": 0,
+              "interpolation": "step"
+            },
+            {
+              "time_ms": 300,
+              "value": 0.85,
+              "interpolation": "ease_in_out"
+            },
+            {
+              "time_ms": 4800,
+              "value": 0.85,
+              "interpolation": "ease_in_out"
+            },
+            {
+              "time_ms": 6000,
+              "value": 0,
+              "interpolation": "ease_in_out"
+            }
+          ]
+        },
+        {
+          "role": "heave",
+          "scale": 1,
+          "phase_offset_ms": 0,
+          "keyframes": [
+            {
+              "time_ms": 0,
+              "value": 0.5,
+              "interpolation": "ease_in_out"
+            },
+            {
+              "time_ms": 2000,
+              "value": 0.58,
+              "interpolation": "ease_in_out"
+            },
+            {
+              "time_ms": 4000,
+              "value": 0.46,
+              "interpolation": "ease_in_out"
+            },
+            {
+              "time_ms": 6000,
+              "value": 0.5,
+              "interpolation": "ease_in_out"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "fx_water_blast",
+      "name": "\u6C34\u82B1\u51B2\u51FB",
+      "category": "\u7279\u6548",
+      "description": "\u6C34\u6548\u7206\u53D1 \u002B \u51B2\u51FB\u632F\u52A8",
+      "duration_ms": 2000,
+      "default_intensity": 0.8,
+      "min_intensity": 0.2,
+      "max_intensity": 1.2,
+      "channels": [
+        {
+          "role": "water",
+          "scale": 1,
+          "phase_offset_ms": 0,
+          "keyframes": [
+            {
+              "time_ms": 0,
+              "value": 0,
+              "interpolation": "step"
+            },
+            {
+              "time_ms": 200,
+              "value": 1,
+              "interpolation": "step"
+            },
+            {
+              "time_ms": 1200,
+              "value": 1,
+              "interpolation": "step"
+            },
+            {
+              "time_ms": 2000,
+              "value": 0,
+              "interpolation": "ease_in_out"
+            }
+          ]
+        },
+        {
+          "role": "vibrate",
+          "scale": 1,
+          "phase_offset_ms": 0,
+          "keyframes": [
+            {
+              "time_ms": 0,
+              "value": 0,
+              "interpolation": "step"
+            },
+            {
+              "time_ms": 80,
+              "value": 0.7,
+              "interpolation": "bezier"
+            },
+            {
+              "time_ms": 500,
+              "value": 0.25,
+              "interpolation": "bezier"
+            },
+            {
+              "time_ms": 1200,
+              "value": 0.5,
+              "interpolation": "bezier"
+            },
+            {
+              "time_ms": 2000,
+              "value": 0,
+              "interpolation": "ease_in_out"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "fx_snow_drift",
+      "name": "\u98D8\u96EA\u6F02\u79FB",
+      "category": "\u7279\u6548",
+      "description": "\u98D8\u96EA \u002B \u6A2A\u6EDA\u7F13\u6F02",
+      "duration_ms": 8000,
+      "default_intensity": 0.8,
+      "min_intensity": 0.2,
+      "max_intensity": 1.2,
+      "channels": [
+        {
+          "role": "snow",
+          "scale": 1,
+          "phase_offset_ms": 0,
+          "keyframes": [
+            {
+              "time_ms": 0,
+              "value": 0,
+              "interpolation": "step"
+            },
+            {
+              "time_ms": 500,
+              "value": 0.9,
+              "interpolation": "ease_in_out"
+            },
+            {
+              "time_ms": 6500,
+              "value": 0.9,
+              "interpolation": "ease_in_out"
+            },
+            {
+              "time_ms": 8000,
+              "value": 0,
+              "interpolation": "ease_in_out"
+            }
+          ]
+        },
+        {
+          "role": "roll",
+          "scale": 1,
+          "phase_offset_ms": 0,
+          "keyframes": [
+            {
+              "time_ms": 0,
+              "value": 0.5,
+              "interpolation": "ease_in_out"
+            },
+            {
+              "time_ms": 2500,
+              "value": 0.56,
+              "interpolation": "ease_in_out"
+            },
+            {
+              "time_ms": 5000,
+              "value": 0.44,
+              "interpolation": "ease_in_out"
+            },
+            {
+              "time_ms": 8000,
+              "value": 0.5,
+              "interpolation": "ease_in_out"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "fx_heat_wave",
+      "name": "\u70ED\u6D6A\u6D8C\u8D77",
+      "category": "\u7279\u6548",
+      "description": "\u70ED\u6D6A \u002B \u6A2A\u6EDA\u8F7B\u6446",
+      "duration_ms": 4000,
+      "default_intensity": 0.8,
+      "min_intensity": 0.2,
+      "max_intensity": 1.2,
+      "channels": [
+        {
+          "role": "hot",
+          "scale": 1,
+          "phase_offset_ms": 0,
+          "keyframes": [
+            {
+              "time_ms": 0,
+              "value": 0,
+              "interpolation": "step"
+            },
+            {
+              "time_ms": 400,
+              "value": 0.9,
+              "interpolation": "ease_in_out"
+            },
+            {
+              "time_ms": 3200,
+              "value": 0.9,
+              "interpolation": "ease_in_out"
+            },
+            {
+              "time_ms": 4000,
+              "value": 0,
+              "interpolation": "ease_in_out"
+            }
+          ]
+        },
+        {
+          "role": "roll",
+          "scale": 1,
+          "phase_offset_ms": 0,
+          "keyframes": [
+            {
+              "time_ms": 0,
+              "value": 0.5,
+              "interpolation": "ease_in_out"
+            },
+            {
+              "time_ms": 1500,
+              "value": 0.55,
+              "interpolation": "ease_in_out"
+            },
+            {
+              "time_ms": 3000,
+              "value": 0.45,
+              "interpolation": "ease_in_out"
+            },
+            {
+              "time_ms": 4000,
+              "value": 0.5,
+              "interpolation": "ease_in_out"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "cues": [
+    {
+      "time_ms": 32000,
+      "preset": "fx_weightless_rise",
+      "intensity": 0.9
+    },
+    {
+      "time_ms": 44000,
+      "preset": "fx_gentle_cruise",
+      "intensity": 0.8
+    },
+    {
+      "time_ms": 62000,
+      "preset": "fx_weightless_rise",
+      "intensity": 0.8
+    },
+    {
+      "time_ms": 74000,
+      "preset": "fx_dive",
+      "intensity": 0.9
+    },
+    {
+      "time_ms": 96000,
+      "preset": "fx_gentle_cruise",
+      "intensity": 0.7
+    },
+    {
+      "time_ms": 106000,
+      "preset": "fx_fog_push",
+      "intensity": 0.7
+    },
+    {
+      "time_ms": 114000,
+      "preset": "fx_gentle_cruise",
+      "intensity": 0.75
+    },
+    {
+      "time_ms": 132000,
+      "preset": "fx_canyon_sweep",
+      "intensity": 0.8
+    },
+    {
+      "time_ms": 156000,
+      "preset": "fx_turbulence",
+      "intensity": 0.8
+    },
+    {
+      "time_ms": 170000,
+      "preset": "fx_impact_vibration",
+      "intensity": 1
+    },
+    {
+      "time_ms": 182000,
+      "preset": "fx_turbulence",
+      "intensity": 0.7
+    },
+    {
+      "time_ms": 196000,
+      "preset": "fx_weightless_fall",
+      "intensity": 0.8
+    },
+    {
+      "time_ms": 216000,
+      "preset": "fx_dive",
+      "intensity": 1
+    },
+    {
+      "time_ms": 224000,
+      "preset": "fx_heat_wave",
+      "intensity": 0.7
+    },
+    {
+      "time_ms": 232000,
+      "preset": "fx_weightless_fall",
+      "intensity": 0.9
+    },
+    {
+      "time_ms": 246000,
+      "preset": "fx_water_blast",
+      "intensity": 0.9
+    },
+    {
+      "time_ms": 258000,
+      "preset": "fx_dive",
+      "intensity": 0.8
+    },
+    {
+      "time_ms": 276000,
+      "preset": "fx_canyon_sweep",
+      "intensity": 0.9
+    },
+    {
+      "time_ms": 286000,
+      "preset": "fx_fog_push",
+      "intensity": 0.6
+    },
+    {
+      "time_ms": 294000,
+      "preset": "fx_gentle_cruise",
+      "intensity": 0.7
+    },
+    {
+      "time_ms": 312000,
+      "preset": "fx_canyon_sweep",
+      "intensity": 0.8
+    },
+    {
+      "time_ms": 322000,
+      "preset": "fx_snow_drift",
+      "intensity": 0.7
+    },
+    {
+      "time_ms": 336000,
+      "preset": "fx_weightless_rise",
+      "intensity": 1
+    },
+    {
+      "time_ms": 350000,
+      "preset": "fx_weightless_rise",
+      "intensity": 0.8
+    },
+    {
+      "time_ms": 366000,
+      "preset": "fx_gentle_cruise",
+      "intensity": 0.75
+    },
+    {
+      "time_ms": 380000,
+      "preset": "fx_weightless_fall",
+      "intensity": 0.9
+    },
+    {
+      "time_ms": 396000,
+      "preset": "fx_dive",
+      "intensity": 1
+    },
+    {
+      "time_ms": 400000,
+      "preset": "fx_heat_wave",
+      "intensity": 0.6
+    },
+    {
+      "time_ms": 406000,
+      "preset": "fx_strobe",
+      "intensity": 1
+    },
+    {
+      "time_ms": 408000,
+      "preset": "fx_weightless_rise",
+      "intensity": 0.9
+    },
+    {
+      "time_ms": 418000,
+      "preset": "fx_strobe",
+      "intensity": 0.9
+    },
+    {
+      "time_ms": 420000,
+      "preset": "fx_turbulence",
+      "intensity": 0.9
+    },
+    {
+      "time_ms": 430000,
+      "preset": "fx_strobe",
+      "intensity": 1
+    },
+    {
+      "time_ms": 432000,
+      "preset": "fx_impact_vibration",
+      "intensity": 1
+    },
+    {
+      "time_ms": 440000,
+      "preset": "fx_canyon_sweep",
+      "intensity": 0.8
+    },
+    {
+      "time_ms": 444000,
+      "preset": "fx_strobe",
+      "intensity": 0.8
+    },
+    {
+      "time_ms": 456000,
+      "preset": "fx_emergency_stop",
+      "intensity": 1
+    },
+    {
+      "time_ms": 466000,
+      "preset": "fx_turbulence",
+      "intensity": 0.7
+    },
+    {
+      "time_ms": 480000,
+      "preset": "fx_gentle_cruise",
+      "intensity": 0.7
+    },
+    {
+      "time_ms": 496000,
+      "preset": "fx_weightless_fall",
+      "intensity": 0.8
+    },
+    {
+      "time_ms": 516000,
+      "preset": "fx_gentle_cruise",
+      "intensity": 0.7
+    },
+    {
+      "time_ms": 534000,
+      "preset": "fx_canyon_sweep",
+      "intensity": 0.8
+    },
+    {
+      "time_ms": 542000,
+      "preset": "fx_snow_drift",
+      "intensity": 0.6
+    },
+    {
+      "time_ms": 552000,
+      "preset": "fx_gentle_cruise",
+      "intensity": 0.7
+    }
+  ],
+  "gates": [
+    {
+      "role": "wind",
+      "start_ms": 30000,
+      "end_ms": 90000,
+      "fade_ms": 300,
+      "level": 1
+    },
+    {
+      "role": "wind",
+      "start_ms": 210000,
+      "end_ms": 270000,
+      "fade_ms": 300,
+      "level": 1
+    },
+    {
+      "role": "wind",
+      "start_ms": 330000,
+      "end_ms": 450000,
+      "fade_ms": 300,
+      "level": 1
+    },
+    {
+      "role": "fog",
+      "start_ms": 118000,
+      "end_ms": 150000,
+      "fade_ms": 300,
+      "level": 1
+    },
+    {
+      "role": "fog",
+      "start_ms": 270000,
+      "end_ms": 284000,
+      "fade_ms": 300,
+      "level": 1
+    },
+    {
+      "role": "fog",
+      "start_ms": 420000,
+      "end_ms": 450000,
+      "fade_ms": 300,
+      "level": 1
+    }
+  ],
+  "clips": [
+    {
+      "role": "speed",
+      "id": "clip_speed_profile",
+      "start_ms": 0,
+      "end_ms": 600000,
+      "keyframes": [
+        {
+          "time_ms": 0,
+          "value": 0.2,
+          "interpolation": "ease_in_out"
+        },
+        {
+          "time_ms": 30000,
+          "value": 0.5,
+          "interpolation": "ease_in_out"
+        },
+        {
+          "time_ms": 90000,
+          "value": 0.6,
+          "interpolation": "ease_in_out"
+        },
+        {
+          "time_ms": 210000,
+          "value": 0.75,
+          "interpolation": "ease_in_out"
+        },
+        {
+          "time_ms": 330000,
+          "value": 0.9,
+          "interpolation": "ease_in_out"
+        },
+        {
+          "time_ms": 450000,
+          "value": 0.35,
+          "interpolation": "ease_in_out"
+        },
+        {
+          "time_ms": 510000,
+          "value": 0.3,
+          "interpolation": "ease_in_out"
+        },
+        {
+          "time_ms": 570000,
+          "value": 0.15,
+          "interpolation": "ease_in_out"
+        },
+        {
+          "time_ms": 600000,
+          "value": 0,
+          "interpolation": "ease_in_out"
+        }
+      ]
+    },
+    {
+      "role": "motion_enable",
+      "id": "clip_enable_on",
+      "start_ms": 0,
+      "end_ms": 600000,
+      "keyframes": [
+        {
+          "time_ms": 0,
+          "value": 0,
+          "interpolation": "step"
+        },
+        {
+          "time_ms": 100,
+          "value": 1,
+          "interpolation": "step"
+        },
+        {
+          "time_ms": 600000,
+          "value": 1,
+          "interpolation": "step"
+        }
+      ]
+    },
+    {
+      "role": "reset",
+      "id": "clip_reset_boot",
+      "start_ms": 0,
+      "end_ms": 600,
+      "keyframes": [
+        {
+          "time_ms": 0,
+          "value": 0,
+          "interpolation": "step"
+        },
+        {
+          "time_ms": 100,
+          "value": 1,
+          "interpolation": "step"
+        },
+        {
+          "time_ms": 400,
+          "value": 1,
+          "interpolation": "step"
+        },
+        {
+          "time_ms": 600,
+          "value": 0,
+          "interpolation": "step"
+        }
+      ]
+    },
+    {
+      "role": "reset",
+      "id": "clip_reset_recover",
+      "start_ms": 458000,
+      "end_ms": 458600,
+      "keyframes": [
+        {
+          "time_ms": 0,
+          "value": 0,
+          "interpolation": "step"
+        },
+        {
+          "time_ms": 100,
+          "value": 1,
+          "interpolation": "step"
+        },
+        {
+          "time_ms": 400,
+          "value": 1,
+          "interpolation": "step"
+        },
+        {
+          "time_ms": 600,
+          "value": 0,
+          "interpolation": "step"
+        }
+      ]
+    },
+    {
+      "role": "emergency_stop",
+      "id": "clip_estop",
+      "start_ms": 456000,
+      "end_ms": 458000,
+      "keyframes": [
+        {
+          "time_ms": 0,
+          "value": 0,
+          "interpolation": "step"
+        },
+        {
+          "time_ms": 200,
+          "value": 1,
+          "interpolation": "step"
+        },
+        {
+          "time_ms": 1800,
+          "value": 1,
+          "interpolation": "step"
+        },
+        {
+          "time_ms": 2000,
+          "value": 0,
+          "interpolation": "step"
+        }
+      ]
+    }
+  ],
+  "chapters": [
+    {
+      "time_ms": 0,
+      "name": "\u5F00\u573A\u00B7\u5F85\u673A\u8FCE\u5BBE",
+      "note": "\u7AE0\u8282"
+    },
+    {
+      "time_ms": 30000,
+      "name": "\u7B2C\u4E00\u5E55\u00B7\u542F\u52A8\u5347\u7A7A",
+      "note": "\u7AE0\u8282"
+    },
+    {
+      "time_ms": 90000,
+      "name": "\u7B2C\u4E8C\u5E55\u00B7\u5E73\u7A33\u5DE1\u822A",
+      "note": "\u7AE0\u8282"
+    },
+    {
+      "time_ms": 150000,
+      "name": "\u7B2C\u4E09\u5E55\u00B7\u6C14\u6D41\u98A0\u7C38",
+      "note": "\u7AE0\u8282"
+    },
+    {
+      "time_ms": 210000,
+      "name": "\u7B2C\u56DB\u5E55\u00B7\u4FEF\u51B2",
+      "note": "\u7AE0\u8282"
+    },
+    {
+      "time_ms": 270000,
+      "name": "\u7B2C\u4E94\u5E55\u00B7\u5CE1\u8C37\u7A7F\u8D8A",
+      "note": "\u7AE0\u8282"
+    },
+    {
+      "time_ms": 330000,
+      "name": "\u7B2C\u516D\u5E55\u00B7\u5931\u91CD\u6500\u5347",
+      "note": "\u7AE0\u8282"
+    },
+    {
+      "time_ms": 390000,
+      "name": "\u7B2C\u4E03\u5E55\u00B7\u9AD8\u6F6E\u8FC7\u5C71\u8F66",
+      "note": "\u7AE0\u8282"
+    },
+    {
+      "time_ms": 450000,
+      "name": "\u7B2C\u516B\u5E55\u00B7\u7D27\u6025\u5236\u52A8",
+      "note": "\u7AE0\u8282"
+    },
+    {
+      "time_ms": 510000,
+      "name": "\u7B2C\u4E5D\u5E55\u00B7\u8FD4\u573A\u5DE1\u822A",
+      "note": "\u7AE0\u8282"
+    },
+    {
+      "time_ms": 570000,
+      "name": "\u5C3E\u58F0\u00B7\u56DE\u4E2D\u6536\u675F",
+      "note": "\u7AE0\u8282"
+    }
+  ],
+  "events": []
+}

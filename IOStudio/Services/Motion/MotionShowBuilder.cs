@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
+using System.Text.Json;
 using IOStudio.Models.Motion;
 
 namespace IOStudio.Services.Motion
@@ -152,6 +154,10 @@ namespace IOStudio.Services.Motion
                 clipBuckets[t.Id] = new List<(double, double, MotionClip)>();
 
             var instances = new List<ActionInstance>();
+            var cueMarkers = new List<TimelineMarker>();
+            var cueEvents = new List<TimelineEvent>();
+            var gateMarkers = new List<TimelineMarker>();
+            var gateEvents = new List<TimelineEvent>();
             int cueIndex = 0;
             foreach (var cue in spec.Cues.OrderBy(c => c.TimeMs))
             {
@@ -215,6 +221,30 @@ namespace IOStudio.Services.Motion
                     Enabled = true,
                     RoleTrackIds = roleTrackIds,
                 });
+
+                cueMarkers.Add(
+                    new TimelineMarker
+                    {
+                        TimeMs = start,
+                        Name = preset.Name,
+                        Color = "#C084FC",
+                        Note = $"预设 · 强度 {cue.Intensity.ToString("0.00", CultureInfo.InvariantCulture)}",
+                        LaneId = "cues",
+                    }
+                );
+                cueEvents.Add(
+                    new TimelineEvent
+                    {
+                        TimeMs = start,
+                        EventName = "fx." + (preset.Id.StartsWith("fx_") ? preset.Id.Substring(3) : preset.Id),
+                        EventData = JsonSerializer.Serialize(
+                            new Dictionary<string, float> { ["intensity"] = cue.Intensity }
+                        ),
+                        Color = "#FB7185",
+                        DataType = "json",
+                        LaneId = "effects",
+                    }
+                );
             }
 
             // ── 环境门控 ──
@@ -258,6 +288,55 @@ namespace IOStudio.Services.Motion
                     Keyframes = kfs,
                 };
                 clipBuckets[track.Id].Add((gate.StartMs, gate.EndMs, clip));
+
+                gateMarkers.Add(
+                    new TimelineMarker
+                    {
+                        TimeMs = gate.StartMs,
+                        Name = "环境 · " + gate.Role,
+                        Color = "#7DD3FC",
+                        Note = "门控开启",
+                        LaneId = "cues",
+                    }
+                );
+                gateEvents.Add(
+                    new TimelineEvent
+                    {
+                        TimeMs = gate.StartMs,
+                        EventName = $"env.{gate.Role}.on",
+                        EventData = JsonSerializer.Serialize(
+                            new Dictionary<string, double> { ["until_ms"] = gate.EndMs }
+                        ),
+                        Color = "#38BDF8",
+                        DataType = "json",
+                        LaneId = "effects",
+                    }
+                );
+            }
+
+            // ── 原始 clip (预设/门控之外) ──
+            int rawIndex = 0;
+            foreach (var rc in spec.Clips)
+            {
+                rawIndex++;
+                if (!roleToTrack.TryGetValue(rc.Role, out var track))
+                {
+                    issues.Add(Err("clip.role_unmapped", $"原始 clip role '{rc.Role}' 没有对应轨道"));
+                    continue;
+                }
+                if (rc.EndMs <= rc.StartMs)
+                {
+                    issues.Add(Err("clip.invalid_range", $"原始 clip '{rc.Role}' 区间非法 ({rc.StartMs:F0}→{rc.EndMs:F0})"));
+                    continue;
+                }
+                var clip = new MotionClip
+                {
+                    Id = string.IsNullOrWhiteSpace(rc.Id) ? $"clip_raw_{rawIndex:D2}_{rc.Role}" : rc.Id!,
+                    StartMs = rc.StartMs,
+                    EndMs = rc.EndMs,
+                    Keyframes = rc.Keyframes,
+                };
+                clipBuckets[track.Id].Add((rc.StartMs, rc.EndMs, clip));
             }
 
             // ── 同轨重叠 (会被求值器静默遮蔽) ──
@@ -292,28 +371,58 @@ namespace IOStudio.Services.Motion
                 return new ShowBuildResult { Timeline = null, Issues = issues };
 
             // ── 章节 / 事件 / 分组 / 绑定 ──
-            var markers = spec.Chapters
-                .Select(c => new TimelineMarker
-                {
-                    TimeMs = c.TimeMs,
-                    Name = c.Name,
-                    Note = c.Note,
-                    Color = "#94A3B8",
-                    LaneId = "chapters",
-                })
-                .ToList();
+            var markers = new List<TimelineMarker>();
+            var events = new List<TimelineEvent>();
 
-            var events = spec.Events
-                .Select(e => new TimelineEvent
-                {
-                    TimeMs = e.TimeMs,
-                    EventName = e.Name,
-                    EventData = e.Data,
-                    Color = e.Color,
-                    DataType = e.DataType,
-                    LaneId = string.IsNullOrWhiteSpace(e.Lane) ? "default" : e.Lane,
-                })
-                .ToList();
+            // 章节 → 标记 + 场景事件
+            foreach (var c in spec.Chapters)
+            {
+                markers.Add(
+                    new TimelineMarker
+                    {
+                        TimeMs = c.TimeMs,
+                        Name = c.Name,
+                        Note = c.Note,
+                        Color = "#94A3B8",
+                        LaneId = "chapters",
+                    }
+                );
+                events.Add(
+                    new TimelineEvent
+                    {
+                        TimeMs = c.TimeMs,
+                        EventName = "scene.chapter",
+                        EventData = JsonSerializer.Serialize(
+                            new Dictionary<string, string> { ["chapter"] = c.Name }
+                        ),
+                        Color = "#38BDF8",
+                        DataType = "json",
+                        LaneId = "scene",
+                    }
+                );
+            }
+
+            // 节拍 / 门控 → 标记 + 事件 (与旧脚本产物一致, 便于对照)
+            markers.AddRange(cueMarkers);
+            markers.AddRange(gateMarkers);
+            events.AddRange(cueEvents);
+            events.AddRange(gateEvents);
+
+            // spec 显式事件
+            foreach (var e in spec.Events)
+            {
+                events.Add(
+                    new TimelineEvent
+                    {
+                        TimeMs = e.TimeMs,
+                        EventName = e.Name,
+                        EventData = e.Data,
+                        Color = e.Color,
+                        DataType = e.DataType,
+                        LaneId = string.IsNullOrWhiteSpace(e.Lane) ? "default" : e.Lane,
+                    }
+                );
+            }
 
             var groups = new List<TrackGroup>();
             int gi = 0;
@@ -336,7 +445,12 @@ namespace IOStudio.Services.Motion
             var markerLanes = markers
                 .Select(m => m.LaneId)
                 .Distinct()
-                .Select(id => new MarkerLane { Id = id, Name = "章节", Color = "#94A3B8" })
+                .Select(id => new MarkerLane
+                {
+                    Id = id,
+                    Name = id == "chapters" ? "章节" : (id == "cues" ? "预设点" : id),
+                    Color = "#94A3B8",
+                })
                 .ToList();
 
             var timeline = new MotionTimeline

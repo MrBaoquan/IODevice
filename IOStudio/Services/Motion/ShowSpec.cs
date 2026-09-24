@@ -43,6 +43,10 @@ namespace IOStudio.Services.Motion
         [JsonPropertyName("gates")]
         public List<ShowGateSpec> Gates { get; set; } = new();
 
+        /// <summary>原始 clip — 预设/门控之外的逐通道曲线 (如速度级别、复位/急停脉冲)。值不按强度缩放。</summary>
+        [JsonPropertyName("clips")]
+        public List<ShowClipSpec> Clips { get; set; } = new();
+
         [JsonPropertyName("chapters")]
         public List<ShowChapterSpec> Chapters { get; set; } = new();
 
@@ -192,9 +196,27 @@ namespace IOStudio.Services.Motion
         public float Level { get; set; } = 1.0f;
     }
 
-    public sealed class ShowChapterSpec
+    /// <summary>逐通道原始 clip (预设/门控之外的手工曲线)。</summary>
+    public sealed class ShowClipSpec
     {
-        [JsonPropertyName("time_ms")]
+        [JsonPropertyName("role")]
+        public string Role { get; set; } = "";
+
+        [JsonPropertyName("id")]
+        public string? Id { get; set; }
+
+        [JsonPropertyName("start_ms")]
+        public double StartMs { get; set; }
+
+        [JsonPropertyName("end_ms")]
+        public double EndMs { get; set; }
+
+        [JsonPropertyName("keyframes")]
+        public List<MotionKeyframe> Keyframes { get; set; } = new();
+    }
+
+    public sealed class ShowChapterSpec
+    {        [JsonPropertyName("time_ms")]
         public double TimeMs { get; set; }
 
         [JsonPropertyName("name")]

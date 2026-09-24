@@ -37,7 +37,7 @@ namespace IOToolkit
         {
             IONativeWrapper.MotionLoadSlot(slotId, filePath, priority, (int)policy);
             var slot = new MotionSlot(slotId, priority, policy);
-            _slots[slotId] = slot;
+            lock (_slotsLock) { _slots[slotId] = slot; }
             return slot;
         }
 
@@ -54,7 +54,7 @@ namespace IOToolkit
         {
             IONativeWrapper.MotionLoadSlotFromJson(slotId, jsonContent, priority, (int)policy);
             var slot = new MotionSlot(slotId, priority, policy);
-            _slots[slotId] = slot;
+            lock (_slotsLock) { _slots[slotId] = slot; }
             return slot;
         }
 
@@ -63,9 +63,7 @@ namespace IOToolkit
         /// </summary>
         public static MotionSlot GetSlot(string slotId)
         {
-            MotionSlot slot;
-            _slots.TryGetValue(slotId, out slot);
-            return slot;
+            lock (_slotsLock) { _slots.TryGetValue(slotId, out var slot); return slot; }
         }
 
         /// <summary>
@@ -74,7 +72,7 @@ namespace IOToolkit
         public static void UnloadAll()
         {
             IONativeWrapper.MotionUnloadAll();
-            _slots.Clear();
+            lock (_slotsLock) { _slots.Clear(); }
         }
 
         // ── 批量播控 ─────────────────────────────────
@@ -190,10 +188,16 @@ namespace IOToolkit
 
         // ── 内部方法 ─────────────────────────────────
 
-        internal static void RemoveSlot(string slotId) => _slots.Remove(slotId);
+        internal static void RemoveSlot(string slotId) { lock (_slotsLock) { _slots.Remove(slotId); } }
 
+        /// <summary>
+        /// Slot 缓存字典。会同时被 UI 线程与播放 tick 线程访问 (加载/查询/卸载),
+        /// Dictionary 非线程安全, 无锁并发会破坏内部结构 (曾表现为 IndexOutOfRangeException),
+        /// 因此所有访问点统一用 _slotsLock 串行化。
+        /// </summary>
         private static readonly Dictionary<string, MotionSlot> _slots =
             new Dictionary<string, MotionSlot>();
+        private static readonly object _slotsLock = new object();
 
         // 事件委托的强引用由 NativeCallbackBridge 的 static 字段持有（防 GC 回收）。
     }

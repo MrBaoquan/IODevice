@@ -251,6 +251,15 @@ int IOToolkit::IODeviceDetails::DOImmediate()
 	return rawIO?rawIO->DOImmediate():-1;
 }
 
+int IOToolkit::IODeviceDetails::FlushDO()
+{
+    if (!ValidDevcie(std::string(" [FlushDO] ")))
+    {
+        return -1;
+    }
+    return rawIO ? rawIO->FlushDO() : -1;
+}
+
 int IOToolkit::IODeviceDetails::SetDO(const char* InOAction, float InValue, bool bIngoreMassage/*bIngoreMassage=false*/)
 {
     if (!ValidDevcie(std::string(" [SetDO] ") + InOAction))

@@ -38,6 +38,13 @@ public:
 	virtual int DOImmediate();
 
 	/**
+	 * 强制把当前输出缓冲下发给插件 (不检查脏标记)。
+	 * 默认回落到 DOImmediate; ExternalIO 覆写为真·强制下发, 供逐帧派发路径使用
+	 * (避免被设备轮询 Tick 清掉脏标记后漏发)。
+	 */
+	virtual int FlushDO() { return DOImmediate(); }
+
+	/**
 	 * 设置 OAction Key 的属性 (Scale, InvertEvent)
 	 * @param oactionName: OAction 名称
 	 * @param keyName: Key 名称

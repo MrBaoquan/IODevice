@@ -155,6 +155,21 @@ bool IOToolkit::IODevices::HasDevice(const std::string deviceName)
     return false;
 }
 
+int IOToolkit::IODevices::FlushOutputs()
+{
+    std::lock_guard<std::recursive_mutex> lock(RegistryMutex());
+
+    int flushed = 0;
+    for (auto& deviceIt : devices)
+    {
+        if (deviceIt.second.FlushDO() >= 0)
+        {
+            ++flushed;
+        }
+    }
+    return flushed;
+}
+
 std::map<std::string, IOToolkit::IODeviceDetails>& IOToolkit::IODevices::GetDevcies()
 {
     return devices;

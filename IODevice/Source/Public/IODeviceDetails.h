@@ -58,6 +58,7 @@ public:
 	int SetDOOn(const char* InOAction);
 	int SetDOOff(const char* InOAction);
 	int DOImmediate();
+	int FlushDO();
 
 	int SetAKProps(const char* axisName, const char* keyName, float scale);
 	int SetOKProps(const char* oactionName, const char* keyName, float scale, bool invertEvent);

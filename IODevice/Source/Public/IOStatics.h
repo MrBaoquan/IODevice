@@ -46,6 +46,16 @@ public:
     static bool HasDevice(const std::string deviceName);
     static std::map<std::string, IODeviceDetails>& GetDevcies();
 
+    /**
+     * 立即把各设备"已置脏"的输出推给插件 (ExternalIO::DOImmediate)。
+     *
+     * 为什么需要: SetDO 只写缓冲 + 置脏, 真正下发发生在设备 Tick 里。设备 Tick 由宿主按
+     * UIRefreshIntervalMs (默认 100ms) 轮询驱动 —— 若只依赖它, 60fps 的 native 派发会被
+     * 降采样成 ~10fps, 表现为动作"一顿一顿"。MotionPlayer::Tick 在派发后调用本函数,
+     * 使下发频率跟随派发频率。无脏数据时是空操作, 与轮询 tick 的 flush 幂等。
+     */
+    static int FlushOutputs();
+
 private:
     static std::map<std::string,IODeviceDetails> devices;
     static IODeviceDetails Invalid;

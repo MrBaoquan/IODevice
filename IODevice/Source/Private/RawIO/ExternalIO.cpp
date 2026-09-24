@@ -308,6 +308,14 @@ int IOToolkit::ExternalIO::DOImmediate()
 	return -1;
 }
 
+int IOToolkit::ExternalIO::FlushDO()
+{
+	if (!bValid) { return 0; }
+	// 强制下发当前输出缓冲, 不依赖 bDOChanged。逐帧派发 (MotionPlayer::Tick @60fps) 用它,
+	// 这样即使设备轮询 Tick(~10Hz) 恰好在派发与 flush 之间清掉脏标记, 也不会漏发。
+	return this->SetDO(DOStatus);
+}
+
 // Set do by o action
 int IOToolkit::ExternalIO::SetDO(const char* InOAction, float val, bool bIgnoreMassage/*=false*/)
 {

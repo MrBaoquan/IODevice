@@ -1301,4 +1301,9 @@ void MotionPlayer::Tick(float deltaSeconds) {
     // Phase 4: SafetyGuard 检查 + 设备派发
     // (deltaSeconds 已不再传给 SafetyGuard —— 它用内部时钟测实际间隔, 使限速与 tick 频率无关)
     _impl->DispatchMixedChannels(mixedChannels);
+
+    // 派发后立即下发: SetDO 只置脏, 真正推给插件在 DOImmediate (设备 Tick, ~10Hz 轮询)。
+    // 不等轮询 flush, 使下发频率跟随本 Tick 的调用频率 (编辑器 60fps / 放映端各自频率),
+    // 避免把逐帧派发降采样成 10fps (动作一顿一顿)。无脏数据时空操作。
+    IODevices::FlushOutputs();
 }

@@ -107,6 +107,7 @@ public:
 	virtual int SetDOOn(const char* InOAction) override;
 	virtual int SetDOOff(const char* InOAction) override;
 	virtual int DOImmediate() override;
+	virtual int FlushDO() override;
 
 	/**
 	 * 设置 OAction Key 的属性 (Scale, InvertEvent)

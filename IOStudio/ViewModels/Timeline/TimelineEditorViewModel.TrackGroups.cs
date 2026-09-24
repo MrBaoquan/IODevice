@@ -532,8 +532,9 @@ namespace IOStudio.ViewModels.Timeline
                     Events.Add(evt);
             }
 
-            // 根据实际关键帧数据重新计算时长
-            RecalculateDuration();
+            // 加载时以文件里的 duration_ms 为准, 不做"关键帧驱动重算"——
+            // 那会改写 clip 端点并让打开文件本身变成一次内容修改 (见 RecalculateDuration 注释)。
+            // 编辑操作仍会在需要时调用 RecalculateDuration 扩展时长。
 
             // 加载标记
             _markerService.LoadFromTimeline(timeline);
@@ -878,7 +879,11 @@ namespace IOStudio.ViewModels.Timeline
 
             double maxContentMs = 1000; // 最小 1 秒
 
-            // 计算每个 clip 的实际内容结束时间，并精确收缩 clip.EndMs
+            // 只计算内容范围, **不改写 clip.EndMs**。
+            // 曾经这里把每个 clip 的 EndMs 重写为 ceil((start+末关键帧+500)/500)*500，
+            // 结果是"打开文件即给每个 clip 加 500ms 尾巴、总时长 +1000~2000"，再被自动保存写回，
+            // 造成编排内容静默漂移 (并破坏 action instance 与 clip 的跨度一致性)。
+            // clip 端点应由编辑操作显式维护 (关键帧编辑处已按需扩展)，此处仅用于算总时长。
             foreach (var track in Timeline.Tracks)
             {
                 foreach (var clip in track.Clips)
@@ -890,37 +895,34 @@ namespace IOStudio.ViewModels.Timeline
                             clipMaxKfTime = kf.TimeMs;
                     }
 
-                    // Clip 结束时间 = 最后关键帧时间 + 500ms 余量，向上取整到 500ms
-                    double clipEnd =
-                        Math.Ceiling((clip.StartMs + clipMaxKfTime + 500) / 500.0) * 500;
-                    clip.EndMs = clipEnd;
-
-                    if (clipEnd > maxContentMs)
-                        maxContentMs = clipEnd;
+                    double contentEnd = Math.Max(clip.EndMs, clip.StartMs + clipMaxKfTime);
+                    if (contentEnd > maxContentMs)
+                        maxContentMs = contentEnd;
                 }
             }
 
             // 考虑视频时长
             if (VideoDurationMs > maxContentMs)
                 maxContentMs = VideoDurationMs;
+            if (CurrentTimeMs > maxContentMs)
+                maxContentMs = CurrentTimeMs;
 
-            // 时间轴总时长 = 最大内容时间 + 1 秒余量，向上取整到 1000ms
-            double newDuration = Math.Ceiling((maxContentMs + 1000) / 1000.0) * 1000;
-
-            // 不允许缩减到比当前播放头位置还小
-            if (CurrentTimeMs > newDuration)
-                newDuration = Math.Ceiling((CurrentTimeMs + 1000) / 1000.0) * 1000;
+            // 只有内容**确实超出**当前时长时才扩展; 否则保持不动。
+            // (旧实现无条件 ceil((content+1000)/1000)*1000 再"只增不减", 会把内容刚好填满的
+            //  600000 反复抬成 601000/602000 —— 与 clip 端点改写一起构成内容漂移。)
+            double newDuration = DurationMs;
+            if (maxContentMs > DurationMs)
+                newDuration = Math.Ceiling((maxContentMs + 1000) / 1000.0) * 1000;
 
             // 如果用户手动设置了时长, 以手动值为准 (但不能小于内容时长)
             if (ManualDurationMs > 0)
             {
                 newDuration = Math.Max(newDuration, ManualDurationMs);
             }
-            else
+            else if (newDuration < DurationMs)
             {
                 // 自动模式: 只增不减, 防止编辑操作导致时间轴意外缩短
-                if (newDuration < DurationMs)
-                    newDuration = DurationMs;
+                newDuration = DurationMs;
             }
 
             DurationMs = newDuration;

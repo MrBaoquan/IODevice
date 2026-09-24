@@ -617,6 +617,24 @@ namespace IOStudio.Views.Timeline
                 NavigateToNextKeyframe();
                 RefreshPropertyPanel();
             };
+            // 关键帧列表点击 → 选中该关键帧并跳到其时间
+            kfVm.KeyframeListItemActivated += (kfIdx, absMs) =>
+            {
+                if (ViewModel != null && kfVm.TrackVm is { } track && kfVm.ClipIndex >= 0)
+                    ViewModel.SelectKeyframe(track, kfVm.ClipIndex, kfIdx);
+                ViewModel?.SeekTo(absMs);
+                SyncCurveEditorData();
+                RefreshAllTrackControls();
+                RefreshPropertyPanel();
+            };
+            // 整条 clip 统一插值
+            kfVm.ApplyClipInterpolationRequested += interp =>
+            {
+                ViewModel?.ApplyInterpolationToClip(interp);
+                SyncCurveEditorData();
+                RefreshAllTrackControls();
+                RefreshPropertyPanel();
+            };
             // 播放头处事件编辑
             kfVm.PlayheadEventEdited += (evt, name, data, dataType) =>
             {

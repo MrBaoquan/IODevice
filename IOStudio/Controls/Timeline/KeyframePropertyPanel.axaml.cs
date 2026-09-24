@@ -180,6 +180,54 @@ namespace IOStudio.Controls.Timeline
                 vm.IsAutoKeyMode = true;
         }
 
+        /// <summary>关键帧列表选择 → 请求跳转到该关键帧。</summary>
+        private void OnKeyframeListItemChanged(object? sender, SelectionChangedEventArgs e)
+        {
+            if (Vm is { } vm && e.AddedItems.Count > 0 && e.AddedItems[0] is KeyframeListItem item)
+                vm.ActivateKeyframeListItem(item);
+        }
+
+        /// <summary>整条 clip 统一插值 (按钮 Tag = 插值类型)。</summary>
+        private void OnApplyClipInterpolationClick(object? sender, RoutedEventArgs e)
+        {
+            if (Vm is { } vm && sender is Control { Tag: string interp } && !string.IsNullOrEmpty(interp))
+                vm.RequestApplyClipInterpolation(interp);
+        }
+
+        private void OnTangentLostFocus(object? sender, RoutedEventArgs e) => CommitTangents();
+
+        private void OnTangentKeyDown(object? sender, KeyEventArgs e)
+        {
+            if (e.Key == Key.Enter)
+            {
+                CommitTangents();
+                e.Handled = true;
+            }
+        }
+
+        private void CommitTangents()
+        {
+            if (Vm is not { } vm)
+                return;
+
+            float? Parse(string name)
+            {
+                var tb = this.FindControl<TextBox>(name);
+                if (tb is null || string.IsNullOrWhiteSpace(tb.Text))
+                    return null;
+                return float.TryParse(
+                    tb.Text,
+                    NumberStyles.Float,
+                    CultureInfo.InvariantCulture,
+                    out var v
+                )
+                    ? v
+                    : null;
+            }
+
+            vm.CommitTangent(Parse("TangentInInput"), Parse("TangentOutInput"));
+        }
+
         private void OnResetValueClick(object? sender, RoutedEventArgs e)
         {
             Vm?.CommitValue(0.5f);

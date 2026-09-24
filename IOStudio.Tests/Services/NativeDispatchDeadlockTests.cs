@@ -99,9 +99,26 @@ namespace IOStudio.Tests.Services
                         continue;
                     }
 
-                    string json = File.ReadAllText(run.StatusFile);
-                    using (var probe = JsonDocument.Parse(json))
+                    string json;
+                    try
                     {
+                        json = File.ReadAllText(run.StatusFile);
+                    }
+                    catch
+                    {
+                        json = "";
+                    }
+
+                    using (var probe = TryParseDocument(json))
+                    {
+                        if (probe is null)
+                        {
+                            // 状态文件为空/半写 (宿主抖动) —— 与死锁无关, 重试。
+                            _out.WriteLine($"[attempt {attempt}/{Attempts}] 状态文件不可解析，重试");
+                            TryDelete(run.StatusFile);
+                            continue;
+                        }
+
                         string ph = probe.RootElement.TryGetProperty("phase", out var pp) ? pp.GetString() ?? "" : "";
                         if (ph != "exited")
                         {
@@ -121,7 +138,6 @@ namespace IOStudio.Tests.Services
                             continue;
                         }
                     }
-
                     completedJson = json;
                     break;
                 }
@@ -256,6 +272,19 @@ namespace IOStudio.Tests.Services
                 TryDelete(status); // 被强杀的进程状态不完整，丢弃避免误读
 
             return new ChildRun(exited, status, so, se);
+        }
+
+        /// <summary>容错解析: 空/半写状态文件返回 null 而不是抛异常 (宿主抖动)。</summary>
+        private static JsonDocument? TryParseDocument(string json)
+        {
+            try
+            {
+                return JsonDocument.Parse(json);
+            }
+            catch (JsonException)
+            {
+                return null;
+            }
         }
 
         private static void TryDelete(string path)

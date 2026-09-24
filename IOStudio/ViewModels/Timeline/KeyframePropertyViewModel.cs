@@ -12,6 +12,18 @@ using SysAction = System.Action;
 
 namespace IOStudio.ViewModels.Timeline
 {
+    /// <summary>检查器内的关键帧列表项 (只读展示 + 点击跳转)。</summary>
+    public sealed class KeyframeListItem
+    {
+        public int Index { get; init; }
+        public double AbsoluteTimeMs { get; init; }
+        public string IndexText => $"#{Index + 1}";
+        public string TimeText { get; init; } = "";
+        public string ValueText { get; init; } = "";
+        public string Interpolation { get; init; } = "";
+        public bool IsCurrent { get; init; }
+    }
+
     /// <summary>
     /// 检查器面板 ViewModel — 始终跟随播放头时间 + 选中轨道显示属性。
     /// DaVinci Resolve Inspector 风格: 面板内容只与播放头位置有关, 不与关键帧选中状态绑定。
@@ -200,6 +212,67 @@ namespace IOStudio.ViewModels.Timeline
         /// <summary>是否显示工程值。</summary>
         public bool ShowEngineering => _mode == DisplayMode.TrackInspector && TrackVm is not null;
 
+        /// <summary>是否显示贝塞尔切线数值输入 (在关键帧上且插值为 bezier)。</summary>
+        public bool ShowTangent =>
+            _mode == DisplayMode.TrackInspector
+            && _hasKeyframeAtPlayhead
+            && _interpolation == "bezier";
+
+        /// <summary>事件 data 是否有校验错误。</summary>
+        public bool HasEventDataError => !string.IsNullOrEmpty(_eventDataError);
+
+        // ── 关键帧列表 (检查器内, 只读 + 跳转) ──
+
+        public ObservableCollection<KeyframeListItem> KeyframeItems { get; } = new();
+
+        public bool HasKeyframeList => KeyframeItems.Count > 0;
+
+        /// <summary>点击列表项: (kfIdx, 绝对时间 ms)。</summary>
+        public event Action<int, double>? KeyframeListItemActivated;
+
+        public void ActivateKeyframeListItem(KeyframeListItem item) =>
+            KeyframeListItemActivated?.Invoke(item.Index, item.AbsoluteTimeMs);
+
+        /// <summary>请求把某插值应用到整条 clip。</summary>
+        public event Action<string>? ApplyClipInterpolationRequested;
+
+        public void RequestApplyClipInterpolation(string interp) =>
+            ApplyClipInterpolationRequested?.Invoke(interp);
+
+        /// <summary>提交贝塞尔切线数值编辑。</summary>
+        public void CommitTangent(float? tangentIn, float? tangentOut) =>
+            RaiseKeyframeEdited(null, null, null, tangentIn, tangentOut);
+
+        private void RebuildKeyframeItems()
+        {
+            KeyframeItems.Clear();
+            if (_mode == DisplayMode.TrackInspector && TrackVm is not null)
+            {
+                var track = TrackVm.Track;
+                if (ClipIndex >= 0 && ClipIndex < track.Clips.Count)
+                {
+                    var clip = track.Clips[ClipIndex];
+                    for (int i = 0; i < clip.Keyframes.Count; i++)
+                    {
+                        var kf = clip.Keyframes[i];
+                        double absMs = clip.StartMs + kf.TimeMs;
+                        KeyframeItems.Add(
+                            new KeyframeListItem
+                            {
+                                Index = i,
+                                AbsoluteTimeMs = absMs,
+                                TimeText = FormatTimeMs(absMs),
+                                ValueText = kf.Value.ToString("F3", CultureInfo.InvariantCulture),
+                                Interpolation = kf.Interpolation ?? "linear",
+                                IsCurrent = _hasKeyframeAtPlayhead && i == KeyframeIndex,
+                            }
+                        );
+                    }
+                }
+            }
+            this.RaisePropertyChanged(nameof(HasKeyframeList));
+        }
+
         /// <summary>播放头位置有事件时显示</summary>
         public bool ShowPlayheadEvent =>
             _mode == DisplayMode.TrackInspector && _playheadEvent != null;
@@ -281,7 +354,11 @@ namespace IOStudio.ViewModels.Timeline
         public string Interpolation
         {
             get => _interpolation;
-            set => this.RaiseAndSetIfChanged(ref _interpolation, value);
+            set
+            {
+                this.RaiseAndSetIfChanged(ref _interpolation, value);
+                this.RaisePropertyChanged(nameof(ShowTangent));
+            }
         }
 
         // 保留切线属性供事件传递 (编辑通过 CurveEditor 进行, 不在 Inspector 显示)
@@ -341,7 +418,11 @@ namespace IOStudio.ViewModels.Timeline
         public string? EventData
         {
             get => _eventData;
-            set => this.RaiseAndSetIfChanged(ref _eventData, value);
+            set
+            {
+                this.RaiseAndSetIfChanged(ref _eventData, value);
+                ValidateEventData();
+            }
         }
 
         public string PanelTitle
@@ -444,7 +525,11 @@ namespace IOStudio.ViewModels.Timeline
         public string EventDataError
         {
             get => _eventDataError;
-            set => this.RaiseAndSetIfChanged(ref _eventDataError, value);
+            set
+            {
+                this.RaiseAndSetIfChanged(ref _eventDataError, value);
+                this.RaisePropertyChanged(nameof(HasEventDataError));
+            }
         }
 
         /// <summary>是否显示参数输入框 (none 类型时隐藏)</summary>
@@ -686,6 +771,7 @@ namespace IOStudio.ViewModels.Timeline
             EventBadge = "";
             EventNameDuplicate = false;
             TrackVm = trackVm;
+            RebuildKeyframeItems();
             RaiseModeProperties();
         }
 
@@ -801,6 +887,8 @@ namespace IOStudio.ViewModels.Timeline
             IntervalInterpolation = "";
             ActionEditLocked = false;
             EventNameDuplicate = false;
+            KeyframeItems.Clear();
+            this.RaisePropertyChanged(nameof(HasKeyframeList));
             RaiseModeProperties();
         }
 
@@ -958,6 +1046,8 @@ namespace IOStudio.ViewModels.Timeline
             this.RaisePropertyChanged(nameof(CanEnableAuto));
             this.RaisePropertyChanged(nameof(EngineeringText));
             this.RaisePropertyChanged(nameof(ShowEngineering));
+            this.RaisePropertyChanged(nameof(ShowTangent));
+            this.RaisePropertyChanged(nameof(HasEventDataError));
             this.RaisePropertyChanged(nameof(ShowPlayheadEvent));
             this.RaisePropertyChanged(nameof(IsEventTimeEditable));
         }

@@ -79,12 +79,6 @@ namespace IOStudio.Services.Motion
             // no-op: 见方法注释
         }
 
-        /// <summary>
-        /// native 派发 — 本引擎为废弃回退实现, 不支持 (派发在 native 的能力由
-        /// <see cref="NativeMotionPlaybackEngine"/> 提供), 故为 no-op。
-        /// </summary>
-        public bool UseNativeDispatch { get; set; }
-
         /// <summary>废弃回退实现无内部错误面。</summary>
         public string? LastError => null;
 

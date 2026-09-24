@@ -259,24 +259,6 @@ namespace IOStudio.ViewModels.Timeline
             }
         }
 
-        private bool _isNativeDispatchEnabled;
-
-        /// <summary>
-        /// 是否由 native 承担派发 —— 量程换算 + SafetyGuard 限速 + 写设备都在 native,
-        /// 与放映端(UNIPlayer)共用同一段代码。
-        ///
-        /// <para>默认关闭: 关闭时由 C# 侧驱动时间并直接写设备 (既有行为)。</para>
-        /// </summary>
-        public bool IsNativeDispatchEnabled
-        {
-            get => _isNativeDispatchEnabled;
-            set
-            {
-                this.RaiseAndSetIfChanged(ref _isNativeDispatchEnabled, value);
-                _engine.UseNativeDispatch = value;
-            }
-        }
-
         /// <summary>引擎最近一次内部错误 (供 CLI/UI 暴露, 避免 tick 异常被静默吞掉)。</summary>
         public string? LastError => _engine.LastError;
 

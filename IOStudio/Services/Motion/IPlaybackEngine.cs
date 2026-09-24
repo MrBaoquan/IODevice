@@ -23,12 +23,6 @@ namespace IOStudio.Services.Motion
         bool LiveOutputToDevice { get; set; }
 
         /// <summary>
-        /// 是否由 native 承担派发 (量程换算 + 限速 + 写设备都在 native, 与放映端同源)。
-        /// 默认 false = 由 C# 侧驱动并直接写设备。
-        /// </summary>
-        bool UseNativeDispatch { get; set; }
-
-        /// <summary>
         /// 最近一次内部错误 (如 native 派发失败); null = 无。
         ///
         /// <para>为什么需要: 播放 tick 里抛出的异常会被 Rx 订阅吞掉并**终止 tick**

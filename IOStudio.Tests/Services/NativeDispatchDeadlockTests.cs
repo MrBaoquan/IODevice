@@ -110,6 +110,16 @@ namespace IOStudio.Tests.Services
                             TryDelete(run.StatusFile);
                             continue;
                         }
+
+                        long probeTicks =
+                            probe.RootElement.TryGetProperty("tickCount", out var pt) ? pt.GetInt64() : -1;
+                        if (probeTicks < MinTicks && attempt < Attempts)
+                        {
+                            // 宿主负载抖动会让 tick 偏低 (真死锁则每次都很低, 重试也救不了), 给一次机会。
+                            _out.WriteLine($"[attempt {attempt}/{Attempts}] 完成但 tick={probeTicks} 偏低，重试");
+                            TryDelete(run.StatusFile);
+                            continue;
+                        }
                     }
 
                     completedJson = json;

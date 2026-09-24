@@ -7,13 +7,14 @@ using IOToolkit;
 namespace IOStudio.Services.Motion
 {
     /// <summary>
-    /// 编辑器播放引擎 — C# 端驱动时间 + C# 插值, 完全控制设备输出。
+    /// 编辑器播放引擎 — C# 端驱动时间, 设备派发交给 native (唯一权威)。
     /// <para>
-    /// 设计要点:
-    /// - 时间驱动 → C# Stopwatch (不依赖 C++ MotionPlayer.Update)
-    /// - 插值求值 → C# InterpolationEngine (与曲线渲染完全一致)
-    /// - 设备派发 → C# WriteToDevice (仅 LiveOutputToDevice=true 时输出)
-    /// - C++ Slot 仅用于 JSON 加载 / Seek 同步, 不再 Play/Update
+    /// 设计要点 (收敛后):
+    /// - 时间驱动 → C# Stopwatch / 外部媒体时钟
+    /// - UI 预览求值 → C# TrackValueEvaluator (仅用于显示, 不写设备)
+    /// - 设备派发 → native MotionPlayer: 量程换算 + SafetyGuard 限速 + 写设备, 与放映端同源;
+    ///   仅在 <see cref="LiveOutputToDevice"/> = true 时驱动 native
+    /// - native Slot 走外部时钟: Tick 时 SetExternalTime + MotionPlayer.Tick
     /// </para>
     /// </summary>
     public class NativeMotionPlaybackEngine : IPlaybackEngine
@@ -32,11 +33,6 @@ namespace IOStudio.Services.Motion
         private double _playStartMs; // 播放/恢复时的起始位置
         private bool _loop;
         private double _speed = 1.0;
-
-        // ---- 回中 (return-to-center) ----
-        private Dictionary<int, float>? _returnStartValues;
-        private readonly Stopwatch _returnStopwatch = new();
-        private const double ReturnDurationMs = 1000;
 
         // ---- 批量 LiveValue 缓冲 ----
         private readonly List<(string deviceName, string channelName, float value)> _batchBuffer =
@@ -150,13 +146,9 @@ namespace IOStudio.Services.Motion
             // 安全时机 (不在派发路径上): 读设备自述量程
             PrimeDeviceRanges(_currentTimeline);
 
-            // 新一次播放: 清空限速基线, 避免上次的值影响本次起步
-            _rateLimiter.Reset();
-            _lastDispatchMs = double.NaN;
-
-            // native 派发模式: 让 native Slot 走外部时钟并开始播放, 由它执行换算+限速+写设备。
-            // (非该模式下不调用 _slot.Play() —— 时间与输出完全由 C# 端驱动)
-            if (UseNativeDispatch && _slot != null)
+            // 设备输出开启时, 由 native Slot 走外部时钟并开始播放, 由它执行换算+限速+写设备。
+            // 关闭时纯预览: 不驱动 native、不写设备, 仅 C# 求值供 UI 显示。
+            if (LiveOutputToDevice && _slot != null)
             {
                 try
                 {
@@ -202,8 +194,8 @@ namespace IOStudio.Services.Motion
 
             _playStopwatch.Stop();
 
-            // native 派发模式: 回中也交给 native (它自带平滑回中), C# 不再重复做一遍
-            if (UseNativeDispatch && _slot != null)
+            // 回中交给 native (它自带平滑回中), C# 不再重复做一遍
+            if (LiveOutputToDevice && _slot != null)
             {
                 try
                 {
@@ -214,24 +206,10 @@ namespace IOStudio.Services.Motion
                     LastError = "native 停止失败: " + ex.Message;
                     Debug.WriteLine($"[NativeEngine] {LastError}");
                 }
-                _lastPositionMs = 0;
-                SetState(PlaybackState.Idle);
-                return;
             }
 
-            if (LiveOutputToDevice && _currentTimeline != null)
-            {
-                // 捕获当前各轨道值, 启动回中动画 → 平滑回到 0.5
-                _returnStartValues = CaptureCurrentValues();
-                _returnStopwatch.Restart();
-                SetState(PlaybackState.Stopping);
-            }
-            else
-            {
-                // 无设备输出, 直接回到 Idle
-                _lastPositionMs = 0;
-                SetState(PlaybackState.Idle);
-            }
+            _lastPositionMs = 0;
+            SetState(PlaybackState.Idle);
         }
 
         public void Seek(double timeMs)
@@ -247,8 +225,6 @@ namespace IOStudio.Services.Motion
         public void ForceStop()
         {
             _playStopwatch.Stop();
-            _returnStopwatch.Stop();
-            _returnStartValues = null;
 
             if (_slot != null)
             {
@@ -273,10 +249,6 @@ namespace IOStudio.Services.Motion
             {
                 case PlaybackState.Playing:
                     TickPlaying();
-                    break;
-
-                case PlaybackState.Stopping:
-                    TickStopping();
                     break;
             }
         }
@@ -344,10 +316,10 @@ namespace IOStudio.Services.Motion
 
             _lastPositionMs = currentMs;
 
-            // native 派发模式: 把当前时间推给 native Slot, 并驱动它 Tick。
+            // 设备输出开启时: 把当前时间推给 native Slot, 并驱动它 Tick。
             // 外部时钟模式下 Tick 的 delta 不参与计时 (时间由外部给定), 而 SafetyGuard
             // 用内部时钟测间隔 —— 因此这里的 delta 取值不影响行为。
-            if (UseNativeDispatch && _slot != null)
+            if (LiveOutputToDevice && _slot != null)
             {
                 try
                 {
@@ -366,108 +338,12 @@ namespace IOStudio.Services.Motion
             SyncLiveValues((float)currentMs);
         }
 
-        private void TickStopping()
-        {
-            if (_returnStartValues == null || _currentTimeline == null)
-            {
-                _lastPositionMs = 0;
-                SetState(PlaybackState.Idle);
-                return;
-            }
-
-            double t = _returnStopwatch.Elapsed.TotalMilliseconds / ReturnDurationMs;
-
-            if (t >= 1.0)
-            {
-                // 回中完成 → 写入中位值 (Float=0.5, Bool=0), 切换到 Idle
-                if (LiveOutputToDevice)
-                {
-                    var tracks = _currentTimeline.Tracks;
-                    for (int i = 0; i < tracks.Count; i++)
-                    {
-                        if (!IsTrackSilenced(tracks[i]))
-                        {
-                            float neutral = TrackValueEvaluator.ResolveNeutral(
-                                tracks[i].ValueType,
-                                tracks[i].NeutralValue
-                            );
-                            WriteToDevice(tracks[i], neutral);
-                        }
-                    }
-                }
-
-                _returnStartValues = null;
-                _returnStopwatch.Stop();
-                _lastPositionMs = 0;
-                SetState(PlaybackState.Idle);
-                return;
-            }
-
-            // Smoothstep 回中: 从当前值平滑过渡到中位值 (Float=0.5, Bool=0)
-            float smooth = (float)(t * t * (3.0 - 2.0 * t));
-            var allTracks = _currentTimeline.Tracks;
-            _batchBuffer.Clear();
-
-            for (int i = 0; i < allTracks.Count; i++)
-            {
-                if (IsTrackSilenced(allTracks[i]))
-                    continue;
-
-                _returnStartValues.TryGetValue(i, out float startVal);
-                float targetVal = TrackValueEvaluator.ResolveNeutral(
-                    allTracks[i].ValueType,
-                    allTracks[i].NeutralValue
-                );
-                float value = startVal + (targetVal - startVal) * smooth;
-
-                string channelName =
-                    allTracks[i].OutputType == "oaxis"
-                    && !string.IsNullOrEmpty(allTracks[i].OAxisChannel)
-                        ? allTracks[i].OAxisChannel
-                        : allTracks[i].OActionName;
-
-                _batchBuffer.Add((allTracks[i].DeviceName, channelName, value));
-
-                if (LiveOutputToDevice)
-                    WriteToDevice(allTracks[i], value);
-            }
-
-            if (_batchBuffer.Count > 0)
-            {
-                LiveValuesBatchUpdated?.Invoke(_batchBuffer);
-                Notified?.Invoke(new PlaybackNotification.LiveValues(_batchBuffer));
-            }
-
-            PositionChanged?.Invoke(0);
-            Notified?.Invoke(new PlaybackNotification.Position(0));
-        }
-
-        /// <summary>捕获当前各轨道插值值 (用于回中起点)</summary>
-        private Dictionary<int, float> CaptureCurrentValues()
-        {
-            var result = new Dictionary<int, float>();
-            if (_currentTimeline == null)
-                return result;
-
-            var tracks = _currentTimeline.Tracks;
-            for (int i = 0; i < tracks.Count; i++)
-            {
-                if (!IsTrackSilenced(tracks[i]))
-                    result[i] = EvaluateTrackAtTime(tracks[i], (float)_lastPositionMs);
-            }
-            return result;
-        }
-
-        // ---- LiveValue 同步 ----
+        // ---- LiveValue 同步 (纯 UI 预览) ----
 
         /// <summary>
-        /// C# InterpolationEngine 求值 → 批量 UI 更新 → 可选设备输出。
+        /// 用 C# 求值器算出各轨道当前值, 仅用于 UI 显示 (曲线/实时值)。
+        /// 设备写入已完全交给 native (见 TickPlaying); 这里不再写设备、也不做限速。
         /// </summary>
-        private readonly SafetyRateLimiter _rateLimiter = new();
-
-        /// <summary>上次派发的时间 (ms)。NaN = 尚未派发过。</summary>
-        private double _lastDispatchMs = double.NaN;
-
         private void SyncLiveValues(float timeMs)
         {
             if (_currentTimeline == null)
@@ -476,13 +352,6 @@ namespace IOStudio.Services.Motion
             var tracks = _currentTimeline.Tracks;
             if (tracks.Count == 0)
                 return;
-
-            // 速率限制的时间步长由实际派发时间差得出: Seek / 开始播放 / 长卡顿会自然
-            // 形成"不连续", 由 SafetyRateLimiter 识别为重置而非限速。
-            double deltaSec = double.IsNaN(_lastDispatchMs)
-                ? 0
-                : (timeMs - _lastDispatchMs) / 1000.0;
-            _lastDispatchMs = timeMs;
 
             _batchBuffer.Clear();
 
@@ -499,25 +368,7 @@ namespace IOStudio.Services.Motion
                         ? track.OAxisChannel
                         : track.OActionName;
 
-                // 安全限速 (仅当设备声明速率): 限制单帧归一化变化量, 防止命令出物理上过猛的跳变。
-                // 限速后的值同时用于 UI 批量值, 保证"看到的就是下发的"。
-                // native 派发模式下限速与写设备都在 native (所以这里只更新 UI 值)。
-                if (!UseNativeDispatch)
-                {
-                    float? maxRate = DeviceMaxRateProvider?.Invoke(track.DeviceName);
-                    if (maxRate is { } rate && rate > 0f)
-                        value = _rateLimiter.Limit(
-                            track.DeviceName + "|" + channelName,
-                            value,
-                            deltaSec,
-                            rate
-                        );
-                }
-
                 _batchBuffer.Add((track.DeviceName, channelName, value));
-
-                if (LiveOutputToDevice && !UseNativeDispatch)
-                    WriteToDevice(track, value);
             }
 
             if (_batchBuffer.Count > 0)
@@ -541,94 +392,11 @@ namespace IOStudio.Services.Motion
             );
 
         /// <summary>
-        /// Bool 轨道专用阶梯求值 — 与 TrackClipControl.DrawBoolStepCurve 渲染逻辑完全一致。
-        /// 忽略关键帧的 Interpolation 属性, 始终使用阶梯: 保持前一关键帧的值直到下一个关键帧。
-        /// </summary>
-        private static float EvaluateBoolStep(MotionClip clip, double absoluteTimeMs)
-        {
-            var kfs = clip.Keyframes;
-            if (kfs.Count == 0)
-                return 0f;
-
-            double localMs = absoluteTimeMs - clip.StartMs;
-
-            // 找到 localMs 所处位置的"最后一个已到达的关键帧"
-            float val = kfs[0].Value;
-            for (int k = 0; k < kfs.Count; k++)
-            {
-                if (kfs[k].TimeMs <= localMs)
-                    val = kfs[k].Value;
-                else
-                    break;
-            }
-            return val >= 0.5f ? 1f : 0f;
-        }
-
-        /// <summary>
-        /// 直接写入物理设备 (仅当 LiveOutputToDevice=true 时调用)
-        /// </summary>
-        private static void WriteToDevice(MotionTrack track, float value)
-        {
-            try
-            {
-                var device = IOToolkit.IODeviceController.GetIODevice(track.DeviceName);
-                if (device == null)
-                {
-                    // 设备名写错会导致整条轨道静默失效，这里明确告警一次
-                    Debug.WriteLine($"[NativeEngine] 设备不存在，轨道未输出: device='{track.DeviceName}' track='{track.Label}'");
-                    return;
-                }
-
-                // 值域换算：内容层是归一化 0..1（中位 = neutral），通道 ABI 要工程量。
-                // 放在这里（设备写入的唯一收口点），内容文件保持设备无关。
-                float engineering = ToEngineering(track, value);
-
-                if (track.OutputType == "oaxis" && !string.IsNullOrEmpty(track.OAxisChannel))
-                {
-                    IOToolkit.Key key = track.OAxisChannel;
-                    device.SetDO(key, engineering);
-                }
-                else
-                {
-                    device.SetDO(track.OActionName, engineering);
-                }
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine(
-                    $"[NativeEngine] WriteToDevice failed [{track.DeviceName}]: {ex.Message}"
-                );
-            }
-        }
-
-        /// <summary>
-        /// 归一化值 → 工程量。未声明量程时直通，保证既有动作文件行为不变。
-        /// <para>优先级：轨道 engineering_range（显式覆盖）→ （后续）设备 schema 声明量程 → 直通。</para>
-        /// </summary>
-        /// <summary>
         /// Device-declared engineering range provider. Injected by the host; the source
         /// should be the plugin capabilities / device schema. Returns (min,max) for the
         /// device+channel, or null when not declared.
         /// </summary>
         public static Func<string, string, (float Min, float Max)?>? DeviceRangeProvider { get; set; }
-
-        /// <summary>
-        /// 设备声明的最大变化速率 (归一化单位/秒)。由宿主注入; 返回 null = 未声明 → **不限速**。
-        ///
-        /// <para>只在设备自己声明速率时才启用限速, 因此对未声明的设备行为与引入前完全一致。
-        /// 与 DeviceRangeProvider 一样是纯缓存查表, 可在派发路径安全调用。</para>
-        /// </summary>
-        public static Func<string, float?>? DeviceMaxRateProvider { get; set; }
-
-        /// <summary>
-        /// 是否由 native 承担**派发** (量程换算 + SafetyGuard 限速都在 native, 与放映端同一段代码)。
-        ///
-        /// <para>默认关闭: C# 侧驱动时间并直接写设备。打开后: 把解析后的量程推给 native、按帧驱动
-        /// native Tick, C# 只负责驱动时间与 UI 显示 (不再直接写设备)。</para>
-        ///
-        /// <para>限速强度与驱动频率无关 —— native SafetyGuard 用内部时钟测实际间隔。</para>
-        /// </summary>
-        public bool UseNativeDispatch { get; set; }
 
         /// <summary>最近一次内部错误 (native 派发/启动失败等); null = 无。</summary>
         public string? LastError { get; private set; }
@@ -690,28 +458,6 @@ namespace IOStudio.Services.Motion
             track.OutputType == "oaxis" && !string.IsNullOrEmpty(track.OAxisChannel)
                 ? track.OAxisChannel
                 : track.OActionName;
-
-        /// <summary>
-        /// Normalized value -> engineering value. Pass-through when nothing is declared,
-        /// so existing motion files keep their behaviour.
-        /// Resolution order:
-        ///   1) track engineering_range (explicit override; a reviewable deviation)
-        ///   2) device-declared range via DeviceRangeProvider (single source of truth)
-        ///   3) pass-through
-        /// </summary>
-        private static float ToEngineering(MotionTrack track, float normalized)
-        {
-            // 设备声明量程: 纯缓存查表, 不触碰 native, 故可安全地在派发路径调用。
-            var declared = DeviceRangeProvider?.Invoke(track.DeviceName, ChannelKeyOf(track));
-
-            return EngineeringValueConverter.ToEngineering(
-                normalized,
-                track.ValueType,
-                track.NeutralValue,
-                track.EngineeringRange,
-                declared
-            );
-        }
 
         // ---- 状态管理 ----
 

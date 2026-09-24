@@ -107,13 +107,16 @@
                 </Border>
 
                 <!-- 无选中提示 -->
-                <TextBlock Text="选中一条轨道以显示检查器"
-                           IsVisible="{Binding !HasSelection}"
-                           FontSize="12" Foreground="{DynamicResource TlTextMuted}"
-                           TextAlignment="Center"
-                           VerticalAlignment="Center"
-                           HorizontalAlignment="Center"
-                           Margin="0,40" LineHeight="20"/>
+                <StackPanel IsVisible="{Binding !HasSelection}"
+                            VerticalAlignment="Center" HorizontalAlignment="Center"
+                            Spacing="8" Margin="0,40">
+                    <iconPacks:PackIconIonicons Kind="KeyiOS" Width="26" Height="26"
+                                                Opacity="0.55" HorizontalAlignment="Center"
+                                                Foreground="{DynamicResource TlTextMuted}"/>
+                    <TextBlock Text="选中一条轨道以显示检查器"
+                               FontSize="12" Foreground="{DynamicResource TlTextMuted}"
+                               TextAlignment="Center" LineHeight="18"/>
+                </StackPanel>
 
                 <!-- 属性编辑区 -->
                 <StackPanel IsVisible="{Binding HasSelection}" Spacing="2">
@@ -356,7 +359,7 @@
                                 <TextBlock Text="多选统计" FontSize="11" FontWeight="SemiBold"
                                            Foreground="{DynamicResource TlTextPrimary}" VerticalAlignment="Center"/>
                             </StackPanel>
-                            <Grid ColumnDefinitions="50,*">
+                            <Grid ColumnDefinitions="56,*">
                                 <TextBlock Classes="prop-label" Text="值范围" Grid.Column="0"/>
                                 <TextBox Classes="prop-input" IsReadOnly="True" Grid.Column="1"
                                          Text="{Binding ValueDisplayText, Mode=OneWay}"/>
@@ -425,7 +428,7 @@
                                     <iconPacks:PackIconIonicons Kind="RefreshiOS" Width="13" Height="13"/>
                                 </Button>
                             </Grid>
-                            <Grid ColumnDefinitions="50,*">
+                            <Grid ColumnDefinitions="56,*">
                                 <TextBlock Classes="prop-label" Text="类型" Grid.Column="0"/>
                                 <ComboBox Name="InterpolationCombo" Classes="prop-combo" Grid.Column="1"
                                           Focusable="False"
@@ -450,7 +453,7 @@
                                            Foreground="{DynamicResource TlTextMuted}" VerticalAlignment="Center"/>
                             </StackPanel>
                             <!-- 事件时间 (独立事件可编辑) -->
-                            <Grid ColumnDefinitions="50,*"
+                            <Grid ColumnDefinitions="56,*"
                                   IsVisible="{Binding IsStandaloneEvent}">
                                 <TextBlock Classes="prop-label" Text="时间" Grid.Column="0"/>
                                 <TextBox Name="EventTimeInput" Classes="prop-input" Grid.Column="1"
@@ -459,7 +462,7 @@
                                          LostFocus="OnEventLostFocus"
                                          KeyDown="OnEventKeyDown"/>
                             </Grid>
-                            <Grid ColumnDefinitions="50,*">
+                            <Grid ColumnDefinitions="56,*">
                                 <TextBlock Classes="prop-label" Text="名称" Grid.Column="0"/>
                                 <TextBox Name="EventNameInput" Classes="prop-input" Grid.Column="1"
                                          Watermark="例: on_impact"
@@ -472,7 +475,7 @@
                                        FontSize="10" Foreground="{DynamicResource TlDanger}"
                                        Margin="50,0,0,0"/>
                             <!-- 数据类型选择 -->
-                            <Grid ColumnDefinitions="50,*">
+                            <Grid ColumnDefinitions="56,*">
                                 <TextBlock Classes="prop-label" Text="类型" Grid.Column="0"/>
                                 <ComboBox Name="EventDataTypeCombo" Grid.Column="1" Classes="prop-combo"
                                           SelectionChanged="OnEventDataTypeChanged">
@@ -482,7 +485,7 @@
                                     <ComboBoxItem Content="number" Tag="number"/>
                                 </ComboBox>
                             </Grid>
-                            <Grid ColumnDefinitions="50,*"
+                            <Grid ColumnDefinitions="56,*"
                                   IsVisible="{Binding ShowEventDataInput}">
                                 <TextBlock Classes="prop-label" Text="参数" Grid.Column="0"/>
                                 <TextBox Name="EventDataInput" Classes="prop-input" Grid.Column="1"
@@ -520,7 +523,7 @@
                                 <TextBlock Text="播放头事件" FontSize="11" FontWeight="SemiBold"
                                            Foreground="{DynamicResource TlTextPrimary}" VerticalAlignment="Center"/>
                             </StackPanel>
-                            <Grid ColumnDefinitions="50,*">
+                            <Grid ColumnDefinitions="56,*">
                                 <TextBlock Classes="prop-label" Text="名称" Grid.Column="0"/>
                                 <TextBox Name="PlayheadEventNameInput" Classes="prop-input" Grid.Column="1"
                                          Text="{Binding PlayheadEventName, Mode=TwoWay}"
@@ -528,7 +531,7 @@
                                          KeyDown="OnPlayheadEventKeyDown"/>
                             </Grid>
                             <!-- 数据类型选择 -->
-                            <Grid ColumnDefinitions="50,*">
+                            <Grid ColumnDefinitions="56,*">
                                 <TextBlock Classes="prop-label" Text="类型" Grid.Column="0"/>
                                 <ComboBox Name="PlayheadEventDataTypeCombo" Grid.Column="1" Classes="prop-combo"
                                           SelectionChanged="OnPlayheadEventDataTypeChanged">
@@ -538,7 +541,7 @@
                                     <ComboBoxItem Content="number" Tag="number"/>
                                 </ComboBox>
                             </Grid>
-                            <Grid ColumnDefinitions="50,*"
+                            <Grid ColumnDefinitions="56,*"
                                   IsVisible="{Binding ShowPlayheadEventDataInput}">
                                 <TextBlock Classes="prop-label" Text="参数" Grid.Column="0"/>
                                 <TextBox Name="PlayheadEventDataInput" Classes="prop-input" Grid.Column="1"

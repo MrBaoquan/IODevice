@@ -217,6 +217,11 @@ namespace IOStudio.Cli
                         payload["pollCount"] = Services.Motion.PollDiagnostics.UpdateCount;
                         payload["pollMaxMs"] = Services.Motion.PollDiagnostics.MaxUpdateMs;
                         payload["pollTotalMs"] = Services.Motion.PollDiagnostics.TotalUpdateMs;
+                        // 进程调度压力 (区分"线程耗尽"与"CPU 忙")
+                        payload["sampleCount"] = Services.Motion.PollDiagnostics.SampleCount;
+                        payload["maxThreads"] = Services.Motion.PollDiagnostics.MaxThreadCount;
+                        payload["maxPendingWork"] = Services.Motion.PollDiagnostics.MaxPendingWork;
+                        payload["cpuDeltaMs"] = Services.Motion.PollDiagnostics.CpuDeltaMs;
                     }
                     catch { /* 编辑器状态不是关键路径，取不到就跳过 */ }
                 }

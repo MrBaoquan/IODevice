@@ -138,6 +138,7 @@ namespace IOStudio.ViewModels.Timeline
                     try
                     {
                         TickCount++;
+                        Services.Motion.PollDiagnostics.Sample();
 
                         var swMedia = System.Diagnostics.Stopwatch.StartNew();
                         PushMediaClock();

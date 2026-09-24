@@ -67,7 +67,7 @@ namespace IOStudio.ViewModels.Timeline
         {
             _dialogService = dialogService;
             _undoRedo = undoRedoService ?? new UndoRedoService();
-            _engine = playbackEngine ?? new MotionPlaybackEngine();
+            _engine = playbackEngine ?? new NativeMotionPlaybackEngine();
 
             // 统一引擎通知 (替代 5 个独立事件订阅)
             _engine.Notified += OnEngineNotified;

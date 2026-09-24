@@ -5,7 +5,7 @@ namespace IOStudio.Services.Motion
     /// 这是"内容值域 → 通道 ABI"的唯一收口，出错会让物理平台动到错误位置，
     /// 因此必须有测试锁定三级优先级。
     ///
-    /// <para>优先级 (与 <c>NativeMotionPlaybackEngine.ToEngineering</c> 一致):</para>
+    /// <para>优先级 (与 native MotionPlayer 的换算一致):</para>
     /// <list type="number">
     /// <item>轨道 <c>engineering_range</c> —— 绕中位的对称行程 <c>(normalized - neutral) * range</c>。
     ///   显式覆盖，代表"该轨道的工程含义与设备声明不同"，属于需要复核的偏离。</item>

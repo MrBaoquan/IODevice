@@ -12,9 +12,6 @@ namespace IOStudio.Models.Motion
         Playing,
 
         /// <summary>已暂停</summary>
-        Paused,
-
-        /// <summary>平滑回中中 (Stop 后渐变到中位)</summary>
-        Stopping
+        Paused
     }
 }

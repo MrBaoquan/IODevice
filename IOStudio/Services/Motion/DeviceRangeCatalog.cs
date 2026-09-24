@@ -43,10 +43,6 @@ namespace IOStudio.Services.Motion
         private static readonly Dictionary<string, string> Units =
             new(StringComparer.OrdinalIgnoreCase);
 
-        /// <summary>设备声明的最大变化速率 (归一化单位/秒) — 供实播路径限速。</summary>
-        private static readonly Dictionary<string, float> MaxRates =
-            new(StringComparer.OrdinalIgnoreCase);
-
         /// <summary>已从 capabilities 拿到明确答复的设备 — 不再重复查询。</summary>
         private static readonly HashSet<string> Queried = new(StringComparer.OrdinalIgnoreCase);
 
@@ -149,8 +145,6 @@ namespace IOStudio.Services.Motion
             // 单位与量程一并收取 (capabilities 是权威, 覆盖配置兜底)
             var units = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
             var map = ParseChannelRanges(json, units);
-            // 限速声明 (capabilities 的 motion.max_rate_per_second; 未声明 → 实播路径不限速)
-            float? maxRate = ParseMaxRate(json);
 
             lock (Gate)
             {
@@ -159,8 +153,6 @@ namespace IOStudio.Services.Motion
                     Cache[deviceName + "|" + kv.Key] = kv.Value;
                 foreach (var kv in units)
                     Units[deviceName + "|" + kv.Key] = kv.Value;
-                if (maxRate is { } r)
-                    MaxRates[deviceName] = r;
             }
         }
 
@@ -217,45 +209,6 @@ namespace IOStudio.Services.Motion
             }
             catch (JsonException) { }
             return map;
-        }
-
-        /// <summary>
-        /// 设备声明的最大变化速率 (归一化单位/秒); 未声明返回 null → 实播路径**不限速**。
-        /// 纯缓存查表, 可在派发路径安全调用。
-        /// </summary>
-        public static float? ResolveMaxRate(string deviceName)
-        {
-            if (string.IsNullOrEmpty(deviceName))
-                return null;
-
-            lock (Gate)
-            {
-                EnsureIniLoaded();
-                return MaxRates.TryGetValue(deviceName, out var rate) ? rate : null;
-            }
-        }
-
-        /// <summary>从 capabilities JSON 抽取 motion.max_rate_per_second。</summary>
-        private static float? ParseMaxRate(string json)
-        {
-            try
-            {
-                using var doc = JsonDocument.Parse(json);
-                if (!doc.RootElement.TryGetProperty("motion", out var motion))
-                    return null;
-                if (
-                    !motion.TryGetProperty("max_rate_per_second", out var v)
-                    || v.ValueKind != JsonValueKind.Number
-                )
-                    return null;
-
-                float rate = (float)v.GetDouble();
-                return rate > 0f ? rate : null;
-            }
-            catch (JsonException)
-            {
-                return null;
-            }
         }
 
         /// <summary>兜底来源: 设备配置 Config/&lt;DllName&gt;/config.ini 的 [channel_range] 段 (只读一次)。</summary>

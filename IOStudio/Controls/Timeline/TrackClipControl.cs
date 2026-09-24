@@ -310,64 +310,41 @@ namespace IOStudio.Controls.Timeline
         /// <summary>剪贴板是否有关键帧 (用于控制粘贴菜单项的启用状态)</summary>
         public bool HasClipboardKeyframes { get; set; }
 
-        // ═══════ 视觉常量 ═══════
+        // ═══════ 视觉常量 (统一取自 TimelineTheme 令牌, 不再各自写死 hex) ═══════
 
-        private static readonly IBrush EmptyLightBrush = new SolidColorBrush(Color.Parse("#fafafa"));
-        private static readonly IBrush EmptyDarkBrush = new SolidColorBrush(Color.Parse("#171a1e"));
-        private static readonly IPen GridLightPen = new Pen(
-            new SolidColorBrush(Color.Parse("#f3f4f6")),
-            0.5
-        );
-        private static readonly IPen GridDarkPen = new Pen(
-            new SolidColorBrush(Color.Parse("#252a30")),
-            0.5
-        );
-        private static readonly IBrush PlayheadBrush = new SolidColorBrush(Color.Parse("#ef4444"));
-        private static readonly IPen PlayheadPen = new Pen(PlayheadBrush, 1.5);
-        private static readonly IBrush MutedOverlayBrush = new SolidColorBrush(
-            Color.Parse("#80ffffff")
-        );
-        private static readonly IBrush SelectedBorderBrush = new SolidColorBrush(
-            Color.Parse("#3b82f6")
-        );
-        private static readonly IPen SelectedBorderPen = new Pen(SelectedBorderBrush, 2);
-        private static readonly IBrush SelectedKfBrush = new SolidColorBrush(
-            Color.Parse("#facc15")
-        );
-        private static readonly IPen SelectedKfPen = new Pen(Brushes.Black, 2);
-        private static readonly IBrush MultiSelectedKfBrush = new SolidColorBrush(
-            Color.Parse("#60a5fa")
-        );
-        private static readonly IPen MultiSelectedKfPen = new Pen(Brushes.White, 2);
+        private static IBrush EmptyLightBrush => TimelineTheme.ContentBg;
+        private static IBrush EmptyDarkBrush => TimelineTheme.CurveBg;
+        private static IPen GridLightPen => new Pen(TimelineTheme.GridLine, 0.5);
+        private static IPen GridDarkPen => new Pen(TimelineTheme.GridLine, 0.5);
+        private static IBrush PlayheadBrush => TimelineTheme.Playhead;
+        private static IPen PlayheadPen => new Pen(TimelineTheme.Playhead, 1.5);
+        private static IBrush MutedOverlayBrush => TimelineTheme.MutedOverlay;
+        private static IBrush SelectedBorderBrush => TimelineTheme.Accent;
+        private static IPen SelectedBorderPen => new Pen(TimelineTheme.Accent, 2);
+        private static IBrush SelectedKfBrush => TimelineTheme.Accent;
+        private static IPen SelectedKfPen => new Pen(Brushes.Black, 2);
+        private static IBrush MultiSelectedKfBrush => TimelineTheme.SnapGuide;
+        private static IPen MultiSelectedKfPen => new Pen(Brushes.White, 2);
 
         // Dedicated action lane for discoverable movie-level selection.
         internal const double ActionBandHeight = 14;
 
-        // 播放头附近最近关键帧高亮 (绿色光晕)
-        private static readonly IBrush PlayheadNearKfBrush = new SolidColorBrush(
-            Color.Parse("#34d399")
-        );
-        private static readonly IPen PlayheadNearKfPen = new Pen(
-            new SolidColorBrush(Color.Parse("#10b981")),
-            2.5
-        );
-        private static readonly IBrush PlayheadNearKfGlow = new SolidColorBrush(
-            Color.FromArgb(60, 52, 211, 153)
-        );
+        // 播放头附近最近关键帧高亮 (绿色光晕) — 令牌化
+        private static IBrush PlayheadNearKfBrush => TimelineTheme.Success;
+        private static IPen PlayheadNearKfPen => new Pen(TimelineTheme.Success, 2.5);
+        private static IBrush PlayheadNearKfGlow => TimelineTheme.WithAlpha(TimelineTheme.Success, 60);
 
         private const double KeyframeDiamondSize = 6;
         private const double KeyframeHitRadius = 8;
 
         // ═══════ 吸附参考线视觉 ═══════
 
-        private static readonly IPen SnapGuidePen = new Pen(
-            new SolidColorBrush(Color.Parse("#22d3ee")),
+        private static IPen SnapGuidePen => new Pen(
+            TimelineTheme.SnapGuide,
             1,
             new DashStyle(new double[] { 4, 3 }, 0)
         );
-        private static readonly IBrush SnapLabelBg = new SolidColorBrush(
-            Color.FromArgb(200, 34, 211, 238)
-        );
+        private static IBrush SnapLabelBg => TimelineTheme.WithAlpha(TimelineTheme.SnapGuide, 200);
 
         /// <summary>拖拽期间的吸附目标时间 (ms), null 表示未吸附</summary>
         private double? _snapTargetTimeMs;

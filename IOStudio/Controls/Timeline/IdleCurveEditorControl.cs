@@ -71,19 +71,16 @@ namespace IOStudio.Controls.Timeline
 
         // ═══════ 渲染缓存 (消除 60fps 预览下的每帧堆分配) ═══════
 
-        private static readonly IBrush BgBrush = new SolidColorBrush(Color.Parse("#15151f"));
-        private static readonly Pen GridPen =
-            new(new SolidColorBrush(Color.FromArgb(32, 255, 255, 255)), 0.5);
-        private static readonly IBrush LabelBrush = new SolidColorBrush(
-            Color.FromArgb(140, 255, 255, 255)
-        );
-        private static readonly IBrush LineBrush = new SolidColorBrush(Color.Parse("#38bdf8"));
-        private static readonly Pen LinePen = new(LineBrush, 1.8);
-        private static readonly IBrush SelBrush = new SolidColorBrush(Color.Parse("#facc15"));
-        private static readonly Pen SelOutlinePen = new(Brushes.White, 2);
-        private static readonly Pen KfOutlinePen = new(Brushes.Black, 1);
-        private static readonly Pen PlayPen = new(new SolidColorBrush(Color.Parse("#ef4444")), 1.5);
-        private static readonly IBrush PlayBrush = new SolidColorBrush(Color.Parse("#ef4444"));
+        private static IBrush BgBrush => TimelineTheme.CurveBg;
+        private static Pen GridPen => new(TimelineTheme.WithAlpha(TimelineTheme.TextMuted, 32), 0.5);
+        private static IBrush LabelBrush => TimelineTheme.WithAlpha(TimelineTheme.TextSecondary, 140);
+        private static IBrush LineBrush => TimelineTheme.SnapGuide;
+        private static Pen LinePen => new(LineBrush, 1.8);
+        private static IBrush SelBrush => TimelineTheme.Accent;
+        private static Pen SelOutlinePen => new(Brushes.White, 2);
+        private static Pen KfOutlinePen => new(Brushes.Black, 1);
+        private static Pen PlayPen => new(TimelineTheme.Playhead, 1.5);
+        private static IBrush PlayBrush => TimelineTheme.Playhead;
         private static readonly Typeface LabelTypeface = new("Consolas");
 
         private readonly FormattedText[] _valueLabels = new FormattedText[5];

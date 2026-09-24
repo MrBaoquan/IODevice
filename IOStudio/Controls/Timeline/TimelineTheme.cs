@@ -69,6 +69,15 @@ namespace IOStudio.Controls.Timeline
         public static IBrush TextSecondary => Resolve("TlTextSecondary", "#4f565f");
         public static IBrush ContentBg => Resolve("TlContentBg", "#ffffff");
         public static IBrush Border => Resolve("TlBorderBrush", "#d4d7db");
+        public static IBrush GridLine => Resolve("TlGridLine", "#e6e9ed");
+        public static IBrush CurveBg => Resolve("TlCurveBg", "#f7f8fa");
+        public static IBrush WorkIn => Resolve("TlWorkIn", "#22c55e");
+        public static IBrush WorkOut => Resolve("TlWorkOut", "#ef4444");
+        public static IBrush SnapGuide => Resolve("TlSnapGuide", "#0ea5e9");
+        public static IBrush MutedOverlay => Resolve("TlMutedOverlay", "#80ffffff");
+        public static IBrush Success => Resolve("TlSuccess", "#238b62");
+        public static IBrush Danger => Resolve("TlDanger", "#c84f4f");
+        public static IBrush Warning => Resolve("TlWarning", "#b87916");
 
         /// <summary>便捷构造画笔。</summary>
         public static IPen Pen(IBrush brush, double thickness, IDashStyle? dash = null) =>

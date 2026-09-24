@@ -61,16 +61,10 @@ namespace IOStudio.Controls.Timeline
             );
         }
 
-        private static readonly IBrush GridBrush = new SolidColorBrush(
-            Color.FromArgb(24, 148, 163, 184)
-        );
-        private static readonly IBrush LineBrush = new SolidColorBrush(
-            Color.FromArgb(220, 120, 200, 255)
-        );
-        private static readonly IBrush DotBrush = new SolidColorBrush(Color.Parse("#facc15"));
-        private static readonly IBrush DashBrush = new SolidColorBrush(
-            Color.FromArgb(70, 148, 163, 184)
-        );
+        private static IBrush GridBrush => TimelineTheme.WithAlpha(TimelineTheme.TextMuted, 24);
+        private static IBrush LineBrush => TimelineTheme.WithAlpha(TimelineTheme.SnapGuide, 220);
+        private static IBrush DotBrush => TimelineTheme.Warning;
+        private static IBrush DashBrush => TimelineTheme.WithAlpha(TimelineTheme.TextMuted, 70);
 
         public override void Render(DrawingContext context)
         {

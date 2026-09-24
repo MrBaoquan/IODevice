@@ -94,27 +94,16 @@ namespace IOStudio.Controls.Timeline
         // ═══════ 视觉常量 ═══════
 
         // 波形填充色 (RMS 区域)
-        private static readonly IBrush WaveformFillBrush = new SolidColorBrush(
-            Color.FromArgb(80, 59, 130, 246)
-        );
+        private static IBrush WaveformFillBrush => TimelineTheme.WithAlpha(TimelineTheme.Accent, 80);
 
         // 波形描边色 (峰值轮廓)
-        private static readonly IPen WaveformPeakPen = new Pen(
-            new SolidColorBrush(Color.Parse("#3b82f6")),
-            0.8
-        );
+        private static IPen WaveformPeakPen => new Pen(TimelineTheme.Accent, 0.8);
 
         // 播放头
-        private static readonly IPen PlayheadPen = new Pen(
-            new SolidColorBrush(Color.Parse("#ef4444")),
-            1.5
-        );
+        private static IPen PlayheadPen => new Pen(TimelineTheme.Playhead, 1.5);
 
         // 节拍标记
-        private static readonly IPen BeatPen = new Pen(
-            new SolidColorBrush(Color.FromArgb(180, 251, 191, 36)),
-            1
-        );
+        private static IPen BeatPen => new Pen(TimelineTheme.WithAlpha(TimelineTheme.Warning, 180), 1);
 
         // 标签字体
         private readonly Typeface _typeface = new Typeface("Inter, Segoe UI, sans-serif");
@@ -139,9 +128,7 @@ namespace IOStudio.Controls.Timeline
             double h = bounds.Height;
 
             // 背景
-            var bgBrush = IsDarkTheme
-                ? new SolidColorBrush(Color.Parse("#0f172a"))
-                : new SolidColorBrush(Color.Parse("#f8fafc"));
+            var bgBrush = TimelineTheme.ContentBg;
             context.DrawRectangle(bgBrush, null, new Rect(0, 0, w, h));
 
             if (PixelsPerMs <= 0 || h <= 0)
@@ -164,12 +151,7 @@ namespace IOStudio.Controls.Timeline
             }
 
             // 底部分隔线
-            var borderPen = new Pen(
-                IsDarkTheme
-                    ? new SolidColorBrush(Color.Parse("#1e293b"))
-                    : new SolidColorBrush(Color.Parse("#e2e8f0")),
-                1
-            );
+            var borderPen = new Pen(TimelineTheme.GridLine, 1);
             context.DrawLine(borderPen, new Point(0, h - 0.5), new Point(w, h - 0.5));
 
             // 播放头
@@ -248,12 +230,7 @@ namespace IOStudio.Controls.Timeline
             context.DrawGeometry(null, WaveformPeakPen, peakGeo);
 
             // ---- 中心线 ----
-            var centerPen = new Pen(
-                IsDarkTheme
-                    ? new SolidColorBrush(Color.FromArgb(40, 148, 163, 184))
-                    : new SolidColorBrush(Color.FromArgb(40, 100, 116, 139)),
-                0.5
-            );
+            var centerPen = new Pen(TimelineTheme.WithAlpha(TimelineTheme.TextMuted, 40), 0.5);
             context.DrawLine(centerPen, new Point(0, centerY), new Point(w, centerY));
         }
 
@@ -299,9 +276,7 @@ namespace IOStudio.Controls.Timeline
                 FlowDirection.LeftToRight,
                 _typeface,
                 10,
-                IsDarkTheme
-                    ? new SolidColorBrush(Color.Parse("#475569"))
-                    : new SolidColorBrush(Color.Parse("#94a3b8"))
+                TimelineTheme.TextMuted
             );
 
             double tx = (w - text.Width) / 2;

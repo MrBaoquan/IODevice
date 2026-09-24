@@ -14,6 +14,12 @@ namespace IOStudio.Controls
 {
     public partial class DeviceConfigPanel : UserControl
     {
+        /// <summary>从主题令牌取色 (深/浅色一致); 取不到时回退给定 hex。原实现写死浅色, 深色主题下会错。</summary>
+        private static IBrush Res(string key, string fallback) =>
+            Application.Current?.TryFindResource(key, out var v) == true && v is IBrush b
+                ? b
+                : new SolidColorBrush(Color.Parse(fallback));
+
         private string? _dllName;
         private int _currentDeviceIndex = 0;
         private DeviceSchema? _schema;
@@ -462,7 +468,7 @@ namespace IOStudio.Controls
                 HorizontalAlignment = HorizontalAlignment.Right,
                 Margin = new Thickness(0, 16, 8, 0),
                 Padding = new Thickness(16, 8, 16, 8),
-                Background = new SolidColorBrush(Color.Parse("#f59e0b")),
+                Background = Res("TlWarning", "#f59e0b"),
                 Foreground = Brushes.White
             };
 
@@ -501,7 +507,7 @@ namespace IOStudio.Controls
                     {
                         Text = "此操作将清除当前的配置修改，恢复为Schema中定义的默认值。",
                         TextWrapping = Avalonia.Media.TextWrapping.Wrap,
-                        Foreground = new SolidColorBrush(Color.Parse("#6b7280"))
+                        Foreground = Res("TlTextMuted", "#6b7280")
                     },
                     new StackPanel
                     {
@@ -644,7 +650,7 @@ namespace IOStudio.Controls
                 HorizontalAlignment = HorizontalAlignment.Right,
                 Margin = new Thickness(0, 16, 0, 0),
                 Padding = new Thickness(24, 8, 24, 8),
-                Background = new SolidColorBrush(Color.Parse("#3b82f6")),
+                Background = Res("TlAccent", "#3b82f6"),
                 Foreground = Brushes.White
             };
 
@@ -964,7 +970,7 @@ namespace IOStudio.Controls
                 {
                     Content = $"── {group.Key} ──",
                     IsEnabled = false,
-                    Foreground = new SolidColorBrush(Color.Parse("#9ca3af")),
+                    Foreground = Res("TlTextMuted", "#9ca3af"),
                     FontWeight = FontWeight.SemiBold
                 };
                 _presetComboBox.Items.Add(groupHeader);
@@ -1059,7 +1065,7 @@ namespace IOStudio.Controls
                 // 使用普通Border
                 var border = new Border
                 {
-                    BorderBrush = new SolidColorBrush(Color.Parse("#e5e7eb")),
+                    BorderBrush = Res("TlBorderLight", "#e5e7eb"),
                     BorderThickness = new Thickness(1),
                     Background = Brushes.White,
                     CornerRadius = new CornerRadius(6),
@@ -1075,7 +1081,7 @@ namespace IOStudio.Controls
                     Text = section.Title,
                     FontSize = 14,
                     FontWeight = FontWeight.SemiBold,
-                    Foreground = new SolidColorBrush(Color.Parse("#1f2937")),
+                    Foreground = Res("TlTextPrimary", "#1f2937"),
                     Margin = new Thickness(0, 0, 0, 8)
                 };
                 contentPanel.Children.Add(titleBlock);
@@ -1100,7 +1106,7 @@ namespace IOStudio.Controls
             {
                 Text = field.Label + (field.Required ? " *" : ""),
                 FontSize = 13,
-                Foreground = new SolidColorBrush(Color.Parse("#4b5563"))
+                Foreground = Res("TlTextSecondary", "#4b5563")
             };
             labelRow.Children.Add(label);
 
@@ -1117,7 +1123,7 @@ namespace IOStudio.Controls
                 {
                     Text = "(默认)",
                     FontSize = 11,
-                    Foreground = new SolidColorBrush(Color.Parse("#3b82f6")),
+                    Foreground = Res("TlAccent", "#3b82f6"),
                     FontStyle = FontStyle.Italic,
                     Margin = new Thickness(8, 0, 0, 0),
                     VerticalAlignment = VerticalAlignment.Center
@@ -1155,7 +1161,7 @@ namespace IOStudio.Controls
                 {
                     Text = field.Description,
                     FontSize = 11,
-                    Foreground = new SolidColorBrush(Color.Parse("#9ca3af")),
+                    Foreground = Res("TlTextMuted", "#9ca3af"),
                     TextWrapping = TextWrapping.Wrap,
                     Margin = new Thickness(0, 2, 0, 0)
                 };
@@ -1455,7 +1461,7 @@ namespace IOStudio.Controls
             // 可编辑的索引输入框 - 使用Border包裹以实现更好的居中效果
             var indexBorder = new Border
             {
-                BorderBrush = new SolidColorBrush(Color.Parse("#d1d5db")),
+                BorderBrush = Res("TlBorderLight", "#d1d5db"),
                 BorderThickness = new Thickness(1),
                 CornerRadius = new CornerRadius(4),
                 Width = 40,
@@ -1472,7 +1478,7 @@ namespace IOStudio.Controls
                 HorizontalAlignment = HorizontalAlignment.Stretch,
                 VerticalContentAlignment = VerticalAlignment.Center,
                 HorizontalContentAlignment = HorizontalAlignment.Center,
-                Foreground = new SolidColorBrush(Color.Parse("#374151")),
+                Foreground = Res("TlTextSecondary", "#374151"),
                 FontFamily = new FontFamily("Consolas"),
                 FontSize = 13,
                 BorderThickness = new Thickness(0),
@@ -1562,9 +1568,9 @@ namespace IOStudio.Controls
                     ),
                     Width = 12,
                     Height = 12,
-                    Foreground = new SolidColorBrush(Color.Parse("#9ca3af"))
+                    Foreground = Res("TlTextMuted", "#9ca3af")
                 },
-                Background = new SolidColorBrush(Color.Parse("#f3f4f6")),
+                Background = Res("TlSurfaceSubtle", "#f3f4f6"),
                 Padding = new Thickness(8),
                 Width = 32,
                 Height = 32,
@@ -1575,15 +1581,15 @@ namespace IOStudio.Controls
             // 悬停效果
             deleteButton.PointerEntered += (s, e) =>
             {
-                deleteButton.Background = new SolidColorBrush(Color.Parse("#fee2e2"));
+                deleteButton.Background = Res("TlStatusOfflineBg", "#fee2e2");
                 if (deleteButton.Content is PathIcon icon)
-                    icon.Foreground = new SolidColorBrush(Color.Parse("#ef4444"));
+                    icon.Foreground = Res("TlDanger", "#ef4444");
             };
             deleteButton.PointerExited += (s, e) =>
             {
-                deleteButton.Background = new SolidColorBrush(Color.Parse("#f3f4f6"));
+                deleteButton.Background = Res("TlSurfaceSubtle", "#f3f4f6");
                 if (deleteButton.Content is PathIcon icon)
-                    icon.Foreground = new SolidColorBrush(Color.Parse("#9ca3af"));
+                    icon.Foreground = Res("TlTextMuted", "#9ca3af");
             };
 
             ToolTip.SetTip(deleteButton, "删除此项");

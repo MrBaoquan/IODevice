@@ -112,6 +112,12 @@
             <SolidColorBrush x:Key="TlRulerBottom" Color="#e5e7eb"/>
             <SolidColorBrush x:Key="TlVideoRef" Color="#7c5cd6"/>
             <SolidColorBrush x:Key="TlFocusRing" Color="#3978d4"/>
+            <SolidColorBrush x:Key="TlGridLine" Color="#e6e9ed"/>
+            <SolidColorBrush x:Key="TlCurveBg" Color="#f7f8fa"/>
+            <SolidColorBrush x:Key="TlWorkIn" Color="#22c55e"/>
+            <SolidColorBrush x:Key="TlWorkOut" Color="#ef4444"/>
+            <SolidColorBrush x:Key="TlSnapGuide" Color="#0ea5e9"/>
+            <SolidColorBrush x:Key="TlMutedOverlay" Color="#80ffffff"/>
         </ResourceDictionary>
 
         <!-- ═══ Dark Theme ═══ -->
@@ -220,6 +226,12 @@
             <SolidColorBrush x:Key="TlRulerBottom" Color="#333a41"/>
             <SolidColorBrush x:Key="TlVideoRef" Color="#a98adb"/>
             <SolidColorBrush x:Key="TlFocusRing" Color="#5794e6"/>
+            <SolidColorBrush x:Key="TlGridLine" Color="#262b31"/>
+            <SolidColorBrush x:Key="TlCurveBg" Color="#171a1e"/>
+            <SolidColorBrush x:Key="TlWorkIn" Color="#34d399"/>
+            <SolidColorBrush x:Key="TlWorkOut" Color="#f87171"/>
+            <SolidColorBrush x:Key="TlSnapGuide" Color="#22d3ee"/>
+            <SolidColorBrush x:Key="TlMutedOverlay" Color="#40000000"/>
         </ResourceDictionary>
 
     </ResourceDictionary.ThemeDictionaries>

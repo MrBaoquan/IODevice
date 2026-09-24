@@ -253,35 +253,27 @@ namespace IOStudio.Controls.Timeline
             float Cp21
         )>? TangentEditCommitted;
 
-        // ═══════ 视觉常量 ═══════
+        // ═══════ 视觉常量 (统一取自 TimelineTheme 令牌) ═══════
 
-        private static readonly IBrush BgBrush = new SolidColorBrush(Color.Parse("#1e1e2e"));
-        private static readonly IBrush GridMajorBrush = new SolidColorBrush(
-            Color.FromArgb(40, 255, 255, 255)
-        );
-        private static readonly IBrush GridMinorBrush = new SolidColorBrush(
-            Color.FromArgb(15, 255, 255, 255)
-        );
-        private static readonly IPen GridMajorPen = new Pen(GridMajorBrush, 0.5);
-        private static readonly IPen GridMinorPen = new Pen(GridMinorBrush, 0.5);
-        private static readonly IBrush PlayheadBrush = new SolidColorBrush(Color.Parse("#ef4444"));
-        private static readonly IPen PlayheadPen = new Pen(PlayheadBrush, 1.5);
-        private static readonly IBrush LabelBrush = new SolidColorBrush(
-            Color.FromArgb(120, 255, 255, 255)
-        );
-        private static readonly IBrush SelectedKfBrush = new SolidColorBrush(
-            Color.Parse("#facc15")
-        );
-        private static readonly IPen SelectedKfPen = new Pen(Brushes.Black, 2);
-        private static readonly IBrush HandleBrush = new SolidColorBrush(Color.Parse("#a78bfa"));
-        private static readonly IPen HandleLinePen = new Pen(
-            new SolidColorBrush(Color.FromArgb(120, 167, 139, 250)),
+        private static IBrush BgBrush => TimelineTheme.CurveBg;
+        private static IBrush GridMajorBrush => TimelineTheme.WithAlpha(TimelineTheme.TextMuted, 40);
+        private static IBrush GridMinorBrush => TimelineTheme.WithAlpha(TimelineTheme.TextMuted, 18);
+        private static IPen GridMajorPen => new Pen(GridMajorBrush, 0.5);
+        private static IPen GridMinorPen => new Pen(GridMinorBrush, 0.5);
+        private static IBrush PlayheadBrush => TimelineTheme.Playhead;
+        private static IPen PlayheadPen => new Pen(TimelineTheme.Playhead, 1.5);
+        private static IBrush LabelBrush => TimelineTheme.WithAlpha(TimelineTheme.TextSecondary, 160);
+        private static IBrush SelectedKfBrush => TimelineTheme.Accent;
+        private static IPen SelectedKfPen => new Pen(Brushes.Black, 2);
+        private static IBrush HandleBrush => TimelineTheme.SnapGuide;
+        private static IPen HandleLinePen => new Pen(
+            TimelineTheme.WithAlpha(TimelineTheme.SnapGuide, 120),
             1
         );
 
         // 吸附参考线
-        private static readonly IPen SnapGuidePen = new Pen(
-            new SolidColorBrush(Color.Parse("#22d3ee")),
+        private static IPen SnapGuidePen => new Pen(
+            TimelineTheme.SnapGuide,
             1,
             new DashStyle(new double[] { 4, 3 }, 0)
         );

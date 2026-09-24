@@ -48,20 +48,10 @@ namespace IOStudio.Controls.Timeline
             set => SetValue(ScrollOffsetXProperty, value);
         }
 
-        private static readonly IBrush AreaBrush = new SolidColorBrush(
-            Color.FromArgb(28, 59, 130, 246)
-        );
-        private static readonly IBrush BandBrush = new SolidColorBrush(
-            Color.FromArgb(60, 96, 165, 250)
-        );
-        private static readonly IPen InPen = new Pen(
-            new SolidColorBrush(Color.FromArgb(220, 34, 197, 94)),
-            1.4
-        );
-        private static readonly IPen OutPen = new Pen(
-            new SolidColorBrush(Color.FromArgb(220, 239, 68, 68)),
-            1.4
-        );
+        private static IBrush AreaBrush => TimelineTheme.WithAlpha(TimelineTheme.Accent, 28);
+        private static IBrush BandBrush => TimelineTheme.WithAlpha(TimelineTheme.Accent, 60);
+        private static IPen InPen => new Pen(TimelineTheme.WithAlpha(TimelineTheme.WorkIn, 220), 1.4);
+        private static IPen OutPen => new Pen(TimelineTheme.WithAlpha(TimelineTheme.WorkOut, 220), 1.4);
 
         private static readonly Typeface BadgeTypeface = new("Inter, Microsoft YaHei UI");
 
@@ -118,15 +108,15 @@ namespace IOStudio.Controls.Timeline
                         FlowDirection.LeftToRight,
                         BadgeTypeface,
                         11,
-                        new SolidColorBrush(Color.FromArgb(255, 29, 78, 216))
+                        TimelineTheme.Accent
                     );
                     double bw = durFmt.Width + 10;
                     double bh = durFmt.Height + 4;
                     double bx = xStart + (xEnd - xStart) / 2 - bw / 2;
                     double by = 4;
                     context.DrawRectangle(
-                        new SolidColorBrush(Color.FromArgb(235, 255, 255, 255)),
-                        new Pen(new SolidColorBrush(Color.FromArgb(160, 96, 165, 250)), 1),
+                        TimelineTheme.WithAlpha(TimelineTheme.ContentBg, 235),
+                        new Pen(TimelineTheme.WithAlpha(TimelineTheme.Accent, 160), 1),
                         new Rect(bx, by, bw, bh)
                     );
                     context.DrawText(durFmt, new Point(bx + 5, by + 2));

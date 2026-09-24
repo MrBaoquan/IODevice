@@ -25,9 +25,14 @@
 
 		<!-- 工作台基础控件：统一密度、焦点和主题语义 -->
 		<Style Selector="Button">
-			<Setter Property="CornerRadius" Value="4" />
+			<Setter Property="CornerRadius" Value="6" />
 			<Setter Property="MinHeight" Value="32" />
 			<Setter Property="Padding" Value="10,5" />
+		</Style>
+		<!-- 键盘焦点可见性 (可达性): 统一焦点环 -->
+		<Style Selector="Button:focus-visible">
+			<Setter Property="BorderBrush" Value="{DynamicResource TlFocusRing}" />
+			<Setter Property="BorderThickness" Value="1" />
 		</Style>
 		<Style Selector="Button.icon-button">
 			<Setter Property="Width" Value="32" />
@@ -77,6 +82,7 @@
 		</Style>
 		<Style Selector="ComboBox, NumericUpDown">
 			<Setter Property="MinHeight" Value="32" />
+			<Setter Property="CornerRadius" Value="6" />
 			<Setter Property="Background" Value="{DynamicResource TlInputBg}" />
 			<Setter Property="BorderBrush" Value="{DynamicResource TlBorderLight}" />
 			<Setter Property="Foreground" Value="{DynamicResource TlTextPrimary}" />

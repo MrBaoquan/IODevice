@@ -32,6 +32,8 @@ namespace IOStudio.Views.Timeline
             SetupPresetDockEvents();
             SetupVideoPreviewEvents();
             SetupScrollSync();
+            // 未加载视频: 折叠预览区, 把高度还给时间轴 (标题栏保留, 仍可"加载视频")
+            SetVideoAreaCollapsed(true);
         }
 
         public TimelineEditorWindow(TimelineEditorViewModel viewModel)
@@ -646,6 +648,9 @@ namespace IOStudio.Views.Timeline
 
                         // 自动提取音频波形
                         ExtractWaveformAsync(path);
+
+                        // 视频就绪 → 展开预览区 (未加载时它被折叠成只留标题栏)
+                        SetVideoAreaCollapsed(false);
                     }
                 };
 
@@ -872,6 +877,31 @@ namespace IOStudio.Views.Timeline
 
         /// <summary>滚动同步的重入保护 (双向同步时避免相互触发)。</summary>
         private bool _syncingScroll;
+
+        private double _videoRowMinHeight = 150;
+
+        /// <summary>
+        /// 未加载视频时把预览区折叠成只留标题栏, 把空间还给时间轴 (原来空视频区固定占 ~1/5 高度)。
+        /// </summary>
+        private void SetVideoAreaCollapsed(bool collapsed)
+        {
+            var grid = this.FindControl<Grid>("MainContentGrid");
+            if (grid is null || grid.RowDefinitions.Count == 0)
+                return;
+
+            var row = grid.RowDefinitions[0];
+            if (collapsed)
+            {
+                _videoRowMinHeight = row.MinHeight;
+                row.MinHeight = 0;
+                row.Height = new GridLength(40);
+            }
+            else
+            {
+                row.MinHeight = _videoRowMinHeight;
+                row.Height = new GridLength(1, GridUnitType.Star);
+            }
+        }
 
         /// <summary>
         /// 同步左侧轨道头和右侧轨道片段的垂直滚动 (双向), 并让左侧轨道头区域也支持

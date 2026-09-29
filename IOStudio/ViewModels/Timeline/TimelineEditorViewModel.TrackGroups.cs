@@ -701,6 +701,82 @@ namespace IOStudio.ViewModels.Timeline
             );
         }
 
+        /// <summary>把整条轨道序列化为 JSON (供复制到系统剪贴板)。</summary>
+        public string? ExportTrackJson(TrackViewModel track) =>
+            track is null ? null : System.Text.Json.JsonSerializer.Serialize(track.Track);
+
+        /// <summary>
+        /// 从 JSON 粘贴一条轨道 (分配新 Id, 解除动作实例绑定), 插入到当前选中轨道之后。
+        /// 返回是否成功。
+        /// </summary>
+        public bool ImportTrackFromJson(string json)
+        {
+            if (Timeline is null || string.IsNullOrWhiteSpace(json))
+            {
+                PushStatus("剪贴板不是有效的轨道 JSON");
+                return false;
+            }
+
+            MotionTrack? track;
+            try
+            {
+                track = System.Text.Json.JsonSerializer.Deserialize<MotionTrack>(json);
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[Timeline] 粘贴轨道失败: {ex.Message}");
+                PushStatus("剪贴板不是有效的轨道 JSON");
+                return false;
+            }
+
+            if (track is null || track.Clips is null)
+            {
+                PushStatus("剪贴板不是有效的轨道 JSON");
+                return false;
+            }
+
+            track.Id = Guid.NewGuid().ToString("N")[..8];
+            foreach (var clip in track.Clips)
+            {
+                clip.Id = Guid.NewGuid().ToString("N")[..8];
+                clip.ActionInstanceId = null;
+                clip.SourceDefinitionId = null;
+            }
+
+            var trackVm = new TrackViewModel(track);
+            var anchor = SelectedTrack;
+            int vmAt = anchor is null ? Tracks.Count - 1 : Tracks.IndexOf(anchor);
+            int modelAt = anchor is null ? Timeline.Tracks.Count - 1 : Timeline.Tracks.IndexOf(anchor.Track);
+            if (vmAt < 0)
+                vmAt = Tracks.Count - 1;
+            if (modelAt < 0)
+                modelAt = Timeline.Tracks.Count - 1;
+
+            _undoRedo.Execute(
+                new LambdaCommand(
+                    $"粘贴轨道 {track.Label}",
+                    () =>
+                    {
+                        Timeline!.Tracks.Insert(modelAt + 1, track);
+                        Tracks.Insert(vmAt + 1, trackVm);
+                        trackVm.UpdateCompactDisplay(TrackHeight);
+                        RefreshDisplayList();
+                    },
+                    () =>
+                    {
+                        Timeline!.Tracks.Remove(track);
+                        Tracks.Remove(trackVm);
+                        if (ReferenceEquals(SelectedTrack, trackVm))
+                            SelectedTrack = null;
+                        RefreshDisplayList();
+                    }
+                )
+            );
+            MarkDirty();
+            PushStatus($"已粘贴轨道“{track.Label}”");
+            return true;
+        }
+
         /// <summary>
         /// 深拷贝一条轨道 (含片段/关键帧/待机循环), 插入到源轨道之后。
         /// 复制的片段会解除动作实例绑定 (避免两个轨道共享同一实例)。

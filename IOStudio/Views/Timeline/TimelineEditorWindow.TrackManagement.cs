@@ -281,6 +281,93 @@ namespace IOStudio.Views.Timeline
             }
         }
 
+        /// <summary>在播放头插入时间 (编辑菜单)。</summary>
+        private void OnRippleInsert(object? sender, RoutedEventArgs e)
+        {
+            if (ViewModel is null)
+                return;
+            if (sender is not MenuItem { Tag: string tag } || !double.TryParse(tag, out double ms))
+                return;
+            ViewModel.RippleInsertAtPlayhead(ms);
+            SyncCurveEditorData();
+            SyncMarkersToRuler();
+            SyncEventsToRuler();
+            RefreshAllTrackControls();
+            RefreshPropertyPanel();
+        }
+
+        /// <summary>删除工作区时间段 (Ripple)。</summary>
+        private void OnRippleDeleteWorkArea(object? sender, RoutedEventArgs e)
+        {
+            if (ViewModel is null)
+                return;
+            ViewModel.RippleDeleteWorkArea();
+            SyncCurveEditorData();
+            SyncMarkersToRuler();
+            SyncEventsToRuler();
+            RefreshAllTrackControls();
+            RefreshPropertyPanel();
+        }
+
+        /// <summary>把整条轨道序列化为 JSON 复制到系统剪贴板。</summary>
+        private async void OnCtxCopyTrackJson(object? sender, RoutedEventArgs e)
+        {
+            if (sender is not MenuItem { Tag: TrackViewModel trackVm } || ViewModel is null)
+                return;
+            var json = ViewModel.ExportTrackJson(trackVm);
+            if (string.IsNullOrEmpty(json))
+                return;
+
+            var top = TopLevel.GetTopLevel(this);
+            if (top?.Clipboard != null)
+            {
+                await top.Clipboard.SetTextAsync(json);
+                ViewModel.PushStatus($"已复制轨道“{trackVm.Label}” JSON 到剪贴板");
+            }
+            else
+            {
+                ViewModel.PushStatus("剪贴板不可用");
+            }
+        }
+
+        /// <summary>从系统剪贴板粘贴一条轨道。</summary>
+        private async void OnCtxPasteTrackFromClipboard(object? sender, RoutedEventArgs e)
+        {
+            if (ViewModel is null)
+                return;
+            var top = TopLevel.GetTopLevel(this);
+            string? text = null;
+            try
+            {
+                text = top?.Clipboard != null ? await top.Clipboard.GetTextAsync() : null;
+            }
+            catch
+            {
+                /* ignore */
+            }
+            if (string.IsNullOrWhiteSpace(text))
+            {
+                ViewModel.PushStatus("剪贴板为空");
+                return;
+            }
+
+            ViewModel.ImportTrackFromJson(text);
+            SyncCurveEditorData();
+            RefreshAllTrackControls();
+            RefreshPropertyPanel();
+        }
+
+        /// <summary>批量锁定/解锁分组。</summary>
+        private void OnCtxToggleGroupLock(object? sender, RoutedEventArgs e)
+        {
+            if (sender is MenuItem { Tag: GroupHeaderViewModel groupVm } && ViewModel is not null)
+            {
+                ViewModel.ToggleGroupLock(groupVm.Name);
+                RefreshAllTrackControls();
+                RefreshPropertyPanel();
+            }
+        }
+
         /// <summary>一键应用待机模板 (右键菜单: 呼吸/摇摆/微幅)。</summary>
         private void OnCtxApplyIdleTemplate(object? sender, RoutedEventArgs e)
         {

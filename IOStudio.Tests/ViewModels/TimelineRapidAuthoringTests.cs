@@ -672,6 +672,181 @@ namespace IOStudio.Tests.ViewModels
             }
         }
 
+        // ── Ripple 编辑 (纯模型变换) ──
+
+        [Fact]
+        public void RippleInsert_Shifts_Keyframes_Clips_Events_Markers_After_Point()
+        {
+            var tl = BuildRippleTimeline();
+            TimelineEditorViewModel.RippleInsert(tl, 1000, 500);
+
+            var track = tl.Tracks[0];
+            // clip A (start 0, 末端 7000, kfs 0/1000): 跨插入点 → kf@1000 右移 500, 起点不动, 末端延长 500
+            Assert.Equal(0, track.Clips[0].StartMs, precision: 3);
+            Assert.Equal(0, track.Clips[0].Keyframes[0].TimeMs, precision: 3);
+            Assert.Equal(1500, track.Clips[0].Keyframes[1].TimeMs, precision: 3);
+            Assert.Equal(7500, track.Clips[0].EndMs, precision: 3);
+            // clip B (start 6000) 整条右移
+            Assert.Equal(6500, track.Clips[1].StartMs, precision: 3);
+            Assert.Equal(7500, track.Clips[1].EndMs, precision: 3);
+            // 事件 / 标记 (Events[0]=500 不动, Events[1]=1000 右移)
+            Assert.Equal(500, tl.Events[0].TimeMs, precision: 3);
+            Assert.Equal(1500, tl.Events[1].TimeMs, precision: 3);
+            Assert.Equal(2500, tl.Markers![0].TimeMs, precision: 3); // 原 2000
+            // 总时长
+            Assert.Equal(10500, tl.DurationMs, precision: 3);
+        }
+
+        [Fact]
+        public void RippleDelete_Removes_Span_And_Shifts_After()
+        {
+            var tl = BuildRippleTimeline();
+            TimelineEditorViewModel.RippleDelete(tl, 1000, 1500); // 删 500ms
+
+            var track = tl.Tracks[0];
+            // clip A: kf@1000 落在区间内被删, 末端收缩 500
+            Assert.Equal(1, track.Clips[0].Keyframes.Count);
+            Assert.Equal(0, track.Clips[0].Keyframes[0].TimeMs, precision: 3);
+            Assert.Equal(6500, track.Clips[0].EndMs, precision: 3);
+            // clip B (start 6000) 整条左移 500
+            Assert.Equal(5500, track.Clips[1].StartMs, precision: 3);
+            // 事件: 1000 在区间内被删; 500 保留
+            Assert.Single(tl.Events);
+            Assert.Equal(500, tl.Events[0].TimeMs, precision: 3);
+            // 标记 2000 → 1500
+            Assert.Equal(1500, tl.Markers![0].TimeMs, precision: 3);
+            Assert.Equal(9500, tl.DurationMs, precision: 3);
+        }
+
+        [Fact]
+        public void RippleDelete_Removes_Clips_Entirely_Inside_Span()
+        {
+            var tl = BuildRippleTimeline();
+            // clip B 完全位于 [6000, 7000]
+            TimelineEditorViewModel.RippleDelete(tl, 6000, 7100);
+
+            Assert.Single(tl.Tracks[0].Clips);
+            Assert.Equal(0, tl.Tracks[0].Clips[0].StartMs, precision: 3);
+        }
+
+        [Fact]
+        public void Ripple_Is_Undoable_Via_Snapshot()
+        {
+            string path = WriteTempTimeline();
+            try
+            {
+                var vm = new TimelineEditorViewModel(null);
+                vm.LoadFromFile(path);
+                vm.CurrentTimeMs = 1000;
+
+                vm.RippleInsertAtPlayhead(1000);
+                Assert.Equal(36000.0, vm.Timeline!.DurationMs, precision: 3);
+
+                vm.Undo();
+                Assert.Equal(35000.0, vm.Timeline!.DurationMs, precision: 3);
+            }
+            finally
+            {
+                TryDelete(path);
+            }
+        }
+
+        // ── 整轨复制到系统剪贴板 (JSON 往返) ──
+
+        [Fact]
+        public void ExportImportTrackJson_RoundTrips_With_New_Ids()
+        {
+            string path = WriteTempTimeline();
+            try
+            {
+                var vm = new TimelineEditorViewModel(null);
+                vm.LoadFromFile(path);
+                var source = vm.Tracks[0];
+
+                var json = vm.ExportTrackJson(source);
+                Assert.False(string.IsNullOrWhiteSpace(json));
+
+                Assert.True(vm.ImportTrackFromJson(json!));
+                Assert.Equal(2, vm.Tracks.Count);
+
+                var pasted = vm.Tracks[1];
+                Assert.NotEqual(source.Id, pasted.Id);
+                Assert.Equal(source.Tracks0_KeyframeCount(), pasted.Tracks0_KeyframeCount());
+
+                vm.Undo();
+                Assert.Equal(1, vm.Tracks.Count);
+            }
+            finally
+            {
+                TryDelete(path);
+            }
+        }
+
+        [Fact]
+        public void ImportTrackFromJson_Rejects_Garbage()
+        {
+            string path = WriteTempTimeline();
+            try
+            {
+                var vm = new TimelineEditorViewModel(null);
+                vm.LoadFromFile(path);
+
+                Assert.False(vm.ImportTrackFromJson("not json at all"));
+                Assert.Equal(1, vm.Tracks.Count);
+            }
+            finally
+            {
+                TryDelete(path);
+            }
+        }
+
+        private static MotionTimeline BuildRippleTimeline()
+        {
+            var track = new MotionTrack
+            {
+                Id = "trk",
+                DeviceName = "Simulator-1",
+                OutputType = "oaxis",
+                OAxisChannel = "OAxis_01",
+                Label = "俯仰",
+            };
+            track.Clips.Add(
+                new MotionClip
+                {
+                    Id = "a",
+                    StartMs = 0,
+                    EndMs = 7000,
+                    Keyframes = new List<MotionKeyframe> { Kf(0, 0.2f), Kf(1000, 0.6f) },
+                }
+            );
+            track.Clips.Add(
+                new MotionClip
+                {
+                    Id = "b",
+                    StartMs = 6000,
+                    EndMs = 7000,
+                    Keyframes = new List<MotionKeyframe> { Kf(0, 0.4f) },
+                }
+            );
+
+            return new MotionTimeline
+            {
+                Version = "3.0",
+                Name = "ripple",
+                DurationMs = 10000,
+                Tracks = new List<MotionTrack> { track },
+                Events = new List<TimelineEvent>
+                {
+                    new() { TimeMs = 500, EventName = "keep" },
+                    new() { TimeMs = 1000, EventName = "move" },
+                },
+                Markers = new List<TimelineMarker>
+                {
+                    new() { TimeMs = 2000, Name = "M1" },
+                },
+            };
+        }
+
         // ── P2: 标记编辑走 MarkerService (带撤销) ──
         [Fact]
         public void MarkerService_UpdateMarker_Is_Undoable()

@@ -254,6 +254,14 @@
                           InputGesture="Delete"/>
                 <Separator/>
                 <MenuItem Header="删除选中轨道" Click="OnDeleteSelectedTrack"/>
+                <Separator/>
+                <MenuItem Header="在播放头插入时间">
+                    <MenuItem Header="插入 0.5 秒" Click="OnRippleInsert" Tag="500"/>
+                    <MenuItem Header="插入 1 秒" Click="OnRippleInsert" Tag="1000"/>
+                    <MenuItem Header="插入 5 秒" Click="OnRippleInsert" Tag="5000"/>
+                </MenuItem>
+                <MenuItem Header="删除工作区时间段 (Ripple)" Click="OnRippleDeleteWorkArea"
+                          ToolTip.Tip="删除 In/Out 之间的时间, 其后内容左移 (需先设置工作区 I/O)"/>
             </MenuItem>
             <MenuItem Header="视图(_V)">
                 <MenuItem Header="关键帧视图" Click="OnDopesheetClick"/>
@@ -812,6 +820,9 @@
                                                             <Separator/>
                                                             <MenuItem Header="添加轨道到此分组..." Tag="{Binding}"
                                                                       Click="OnAddTrackToGroup"/>
+                                                            <MenuItem Header="锁定 / 解锁分组" Tag="{Binding}"
+                                                                      Click="OnCtxToggleGroupLock"
+                                                                      ToolTip.Tip="批量锁定组内所有轨道 (锁定后不可编辑)"/>
                                                             <MenuItem Header="新建分组..." Click="OnPanelNewGroup"/>
                                                         </ContextMenu>
                                                     </Border.ContextMenu>
@@ -988,6 +999,14 @@
                                                                       Command="{Binding $parent[Window].((vm:TimelineEditorViewModel)DataContext).DeleteTrackCommand}"
                                                                       CommandParameter="{Binding}"
                                                                       Foreground="{DynamicResource TlDanger}"/>
+                                                            <Separator/>
+                                                            <MenuItem Header="复制轨道 JSON"
+                                                                      Tag="{Binding}"
+                                                                      Click="OnCtxCopyTrackJson"
+                                                                      ToolTip.Tip="把整条轨道 (含片段/关键帧) 复制到系统剪贴板"/>
+                                                            <MenuItem Header="从剪贴板粘贴轨道"
+                                                                      Click="OnCtxPasteTrackFromClipboard"
+                                                                      ToolTip.Tip="从系统剪贴板粘贴一条轨道 (自动分配新 Id, 解除动作实例绑定)"/>
                                                         </ContextMenu>
                                                     </Border.ContextMenu>
                                                     <Grid>

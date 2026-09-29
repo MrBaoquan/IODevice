@@ -122,7 +122,7 @@
                                   ItemsSource="{Binding PhaseModeOptions}"
                                   SelectedIndex="{Binding PhaseModeIndex}"/>
                         <TextBlock Classes="lbl" Text="模板:"/>
-                        <Button Classes="tpl" Content="🫁 呼吸" Tag="breathing"
+                        <Button Classes="tpl" Content="呼吸" Tag="breathing"
                                 Click="OnTemplateClick"
                                 ToolTip.Tip="上下平稳起伏（覆盖当前关键帧）"/>
                         <Button Classes="tpl" Content="摇摆" Tag="sway"

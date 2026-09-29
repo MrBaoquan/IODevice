@@ -50,7 +50,7 @@
                            Foreground="{DynamicResource TlTextPrimary}" Margin="0,0,0,8"/>
 
                 <!-- 导出格式 -->
-                <TextBlock Classes="section" Text="📄 导出格式"/>
+                <TextBlock Classes="section" Text="导出格式"/>
                 <ComboBox Name="FormatComboBox" SelectedIndex="0" Width="300"
                           SelectionChanged="OnFormatChanged">
                     <ComboBoxItem Content="Motion JSON (.motion) — 标准格式" Tag="MotionJson"/>
@@ -95,7 +95,7 @@
                            Text="结束时间为 0 表示使用时间轴总时长"/>
 
                 <!-- 选项 -->
-                <TextBlock Classes="section" Text="⚙ 选项"/>
+                <TextBlock Classes="section" Text="选项"/>
                 <CheckBox Name="ExcludeMutedCheck" IsChecked="True" Margin="0,2">
                     <TextBlock Text="排除已静音的轨道" FontSize="12"/>
                 </CheckBox>

@@ -134,7 +134,7 @@ namespace IOStudio.Views.Timeline
             {
                 var info = this.FindControl<TextBlock>("PreviewInfo");
                 if (info != null)
-                    info.Text = $"❌ 导出失败: {result.Error}";
+                    info.Text = $"导出失败: {result.Error}";
             }
         }
 

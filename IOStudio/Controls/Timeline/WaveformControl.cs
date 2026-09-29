@@ -271,7 +271,7 @@ namespace IOStudio.Controls.Timeline
         private void DrawEmptyHint(DrawingContext context, double w, double h)
         {
             var text = new FormattedText(
-                "🎵 加载视频后自动提取音频波形",
+                "加载视频后自动提取音频波形",
                 CultureInfo.CurrentCulture,
                 FlowDirection.LeftToRight,
                 _typeface,

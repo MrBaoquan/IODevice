@@ -348,7 +348,7 @@ namespace IOStudio.Controls.Timeline
         private void OnVideoFullscreen(object? sender, RoutedEventArgs e)
         {
             IsFullscreen = !IsFullscreen;
-            BtnFullscreen.Content = IsFullscreen ? "⬜" : "⛶";
+            BtnFullscreen.Content = IsFullscreen ? "还原" : "全屏";
             ToolTip.SetTip(BtnFullscreen, IsFullscreen ? "退出全屏" : "全屏预览");
             SetFullscreenMode(IsFullscreen);
             FullscreenRequested?.Invoke(IsFullscreen);
@@ -358,7 +358,7 @@ namespace IOStudio.Controls.Timeline
         public void ExitFullscreen()
         {
             IsFullscreen = false;
-            BtnFullscreen.Content = "⛶";
+            BtnFullscreen.Content = "全屏";
             ToolTip.SetTip(BtnFullscreen, "全屏预览");
             SetFullscreenMode(false);
         }

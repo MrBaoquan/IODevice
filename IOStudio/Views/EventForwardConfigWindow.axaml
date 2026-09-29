@@ -704,11 +704,12 @@
                                     HorizontalAlignment="Stretch"
                                     Padding="12,8">
                                 <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center">
-                                    <TextBlock Text="🗑️" FontSize="16"/>
+                                    <iconPacks:PackIconIonicons Kind="TrashiOS" Width="14" Height="14"
+                                                                VerticalAlignment="Center"/>
                                     <TextBlock Text="删除此协议组" FontWeight="Bold"/>
                                 </StackPanel>
                             </Button>
-                            <TextBlock Text="⚠️ 删除协议组将同时删除其下所有映射配置"
+                            <TextBlock Text="删除协议组将同时删除其下所有映射配置"
                                        FontSize="11"
                                        Foreground="#ef4444"
                                        HorizontalAlignment="Center"
@@ -838,7 +839,7 @@
                                 <TextBlock FontSize="11" Foreground="#9ca3af" Margin="4,0,0,0" TextWrapping="Wrap">
                                     <Run Text="按键释放时发送此数据，留空则不发送"/>
                                     <LineBreak/>
-                                    <Run Text="💡 提示 - ASCII格式：直接输入文本 | HEX格式：空格分隔，例：48 65 6C 6C 6F"/>
+                                    <Run Text="提示 — ASCII格式：直接输入文本 | HEX格式：空格分隔，例：48 65 6C 6C 6F"/>
                                 </TextBlock>
                             </StackPanel>
 

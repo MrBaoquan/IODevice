@@ -37,7 +37,7 @@
                 Background="#f9fafb">
             <Grid ColumnDefinitions="Auto,*,Auto,*" RowDefinitions="Auto,Auto" ColumnSpacing="20" RowSpacing="8">
                 <TextBlock Grid.Column="0" Grid.Row="0" Grid.ColumnSpan="4" 
-                           Text="📊 实时预览" 
+                           Text="实时预览" 
                            FontSize="13" 
                            FontWeight="SemiBold" 
                            Foreground="#374151" 
@@ -111,7 +111,7 @@
                                 Padding="12,10">
                             <StackPanel Orientation="Horizontal" Spacing="8">
                                 <TextBlock Name="CalibrationToggleIcon" Text="▶" FontSize="10" VerticalAlignment="Center"/>
-                                <TextBlock Text="🔧 自动校准助手" FontWeight="SemiBold" FontSize="13" Foreground="#92400e"/>
+                                <TextBlock Text="自动校准助手" FontWeight="SemiBold" FontSize="13" Foreground="#92400e"/>
                                 <TextBlock Text="（点击展开）" FontSize="11" Foreground="#a16207" VerticalAlignment="Center"/>
                             </StackPanel>
                         </Button>
@@ -149,7 +149,7 @@
                                         BorderBrush="#fde047" 
                                         BorderThickness="1">
                                     <StackPanel Spacing="6">
-                                        <TextBlock Text="📉 最小值" FontWeight="SemiBold" FontSize="12" Foreground="#854d0e"/>
+                                        <TextBlock Text="最小值" FontWeight="SemiBold" FontSize="12" Foreground="#854d0e"/>
                                         <StackPanel Orientation="Horizontal" Spacing="6">
                                             <TextBlock Text="已采集:" FontSize="11" Foreground="#a16207" VerticalAlignment="Center"/>
                                             <TextBlock Name="CapturedMinValueText" 
@@ -176,7 +176,7 @@
                                         BorderBrush="#fde047" 
                                         BorderThickness="1">
                                     <StackPanel Spacing="6">
-                                        <TextBlock Text="📈 最大值" FontWeight="SemiBold" FontSize="12" Foreground="#854d0e"/>
+                                        <TextBlock Text="最大值" FontWeight="SemiBold" FontSize="12" Foreground="#854d0e"/>
                                         <StackPanel Orientation="Horizontal" Spacing="6">
                                             <TextBlock Text="已采集:" FontSize="11" Foreground="#a16207" VerticalAlignment="Center"/>
                                             <TextBlock Name="CapturedMaxValueText" 
@@ -225,7 +225,7 @@
                                     BorderBrush="#6ee7b7" 
                                     BorderThickness="1">
                                 <StackPanel Spacing="6">
-                                    <TextBlock Text="✅ 计算结果" FontWeight="SemiBold" FontSize="12" Foreground="#065f46"/>
+                                    <TextBlock Text="计算结果" FontWeight="SemiBold" FontSize="12" Foreground="#065f46"/>
                                     <Grid ColumnDefinitions="Auto,*,Auto,*" ColumnSpacing="12">
                                         <TextBlock Grid.Column="0" Text="Offset:" FontSize="11" Foreground="#047857" VerticalAlignment="Center"/>
                                         <TextBlock Name="CalculatedOffsetText" 

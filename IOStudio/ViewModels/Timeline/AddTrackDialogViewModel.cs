@@ -89,7 +89,7 @@ namespace IOStudio.ViewModels.Timeline
         private int _selectedValueTypeIndex;
         private bool _isEditMode;
         private string _dialogTitle = "添加轨道";
-        private string _confirmButtonText = "✓ 确定添加";
+        private string _confirmButtonText = "确定添加";
 
         /// <summary>是否为编辑模式 (true=编辑已有轨道, false=新建)</summary>
         public bool IsEditMode
@@ -400,7 +400,7 @@ namespace IOStudio.ViewModels.Timeline
         {
             IsEditMode = true;
             DialogTitle = "编辑轨道属性";
-            ConfirmButtonText = "✓ 保存修改";
+            ConfirmButtonText = "保存修改";
 
             // 选中对应设备
             if (DeviceNames.Contains(track.DeviceName))

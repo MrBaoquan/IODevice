@@ -753,7 +753,7 @@ namespace IOStudio.ViewModels.Timeline
                     )
                 )
                 {
-                    EventDataError = "⚠ 请输入有效数字";
+                    EventDataError = "请输入有效数字";
                     return false;
                 }
                 EventDataError = "";
@@ -770,7 +770,7 @@ namespace IOStudio.ViewModels.Timeline
                 }
                 catch
                 {
-                    EventDataError = "⚠ JSON 格式无效";
+                    EventDataError = "JSON 格式无效";
                     return false;
                 }
             }

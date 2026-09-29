@@ -368,7 +368,7 @@ namespace IOStudio.Views
 
                         // 显示复制成功反馈
                         var originalText = textBlock.Text;
-                        textBlock.Text = "✓ 已复制";
+                        textBlock.Text = "已复制";
                         textBlock.Foreground = new SolidColorBrush(Color.Parse("#16a34a"));
 
                         await System.Threading.Tasks.Task.Delay(800);
@@ -519,7 +519,7 @@ namespace IOStudio.Views
 
                         // 显示复制成功反馈
                         var originalText = textBlock.Text;
-                        textBlock.Text = "✓ 已复制";
+                        textBlock.Text = "已复制";
                         textBlock.Foreground = new SolidColorBrush(Color.Parse("#16a34a"));
 
                         await System.Threading.Tasks.Task.Delay(800);

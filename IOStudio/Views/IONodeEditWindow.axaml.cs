@@ -263,7 +263,7 @@ namespace IOStudio.Views
         {
             if (errorText != null)
             {
-                errorText.Text = $"⚠ {message}";
+                errorText.Text = message;
                 errorText.IsVisible = true;
             }
             nameBox.Focus();

@@ -122,12 +122,12 @@
         <!-- ========== L4 安全警示条 ========== -->
         <Border DockPanel.Dock="Top" Background="{DynamicResource TlDanger}" Padding="16,6"
                 IsVisible="{Binding IsEstopActive}">
-            <TextBlock Text="⚠ 急停已触发 — 所有输出已强制归零并锁定写入。点击右上角 [复位] 恢复正常输出。"
+            <TextBlock Text="急停已触发 — 所有输出已强制归零并锁定写入。点击右上角 [复位] 恢复正常输出。"
                        Foreground="White" FontWeight="Bold"/>
         </Border>
         <Border DockPanel.Dock="Top" Background="{DynamicResource TlWarning}" Padding="16,6"
                 IsVisible="{Binding !IsOutputEnabled}">
-            <TextBlock Text="🔒 输出未使能 — 通道写入被锁定（保险）。点击右上角 [ARM 使能] 解锁后即可输出。"
+            <TextBlock Text="输出未使能 — 通道写入被锁定（保险）。点击右上角 [ARM 使能] 解锁后即可输出。"
                        Foreground="{DynamicResource TlTextPrimary}" FontWeight="SemiBold"/>
         </Border>
 
@@ -408,7 +408,7 @@
                         <ComboBox SelectedIndex="{Binding TriggerModeIndex}" Width="92">
                             <ComboBoxItem Content="自由运行"/><ComboBoxItem Content="上升沿"/><ComboBoxItem Content="下降沿"/>
                         </ComboBox>
-                        <ToggleButton IsChecked="{Binding IsScopePaused}" Content="❚❚ 暂停" Margin="12,0,0,0"/>
+                        <ToggleButton IsChecked="{Binding IsScopePaused}" Content="暂停" Margin="12,0,0,0"/>
                         <TextBlock Text="纵向" VerticalAlignment="Center" Foreground="{DynamicResource TlTextSecondary}" Margin="12,0,0,0"/>
                         <NumericUpDown Value="{Binding VerticalScalePercent}" Width="110" Minimum="20" Maximum="500" Increment="10" FormatString="0" VerticalAlignment="Center"/>
                         <TextBlock Text="% 缩放" VerticalAlignment="Center" Foreground="{DynamicResource TlTextMuted}"/>

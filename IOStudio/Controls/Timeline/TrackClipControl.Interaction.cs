@@ -681,7 +681,7 @@ namespace IOStudio.Controls.Timeline
                     float mine = ownClip.Keyframes[0].Value;
                     float other = clip.Keyframes[^1].Value;
                     if (Math.Abs(mine - other) > 0.05f)
-                        return $"⚠ 边界值 {other:F2}→{mine:F2}";
+                        return $"边界值 {other:F2}→{mine:F2}";
                 }
                 // 右边界与对方左边界衔接: 我方尾帧 vs 对方首帧
                 else if (Math.Abs(clip.StartMs - previewEnd) < 0.1)
@@ -689,7 +689,7 @@ namespace IOStudio.Controls.Timeline
                     float mine = ownClip.Keyframes[^1].Value;
                     float other = clip.Keyframes[0].Value;
                     if (Math.Abs(mine - other) > 0.05f)
-                        return $"⚠ 边界值 {mine:F2}→{other:F2}";
+                        return $"边界值 {mine:F2}→{other:F2}";
                 }
             }
             return null;

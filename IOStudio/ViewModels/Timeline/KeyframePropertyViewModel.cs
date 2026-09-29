@@ -252,6 +252,12 @@ namespace IOStudio.ViewModels.Timeline
         public void RequestBatchKeyframeInterp(IReadOnlyList<int> indices, string interp) =>
             BatchKeyframeInterpRequested?.Invoke(indices, interp);
 
+        /// <summary>批量时间结构操作: (indices, op, param)。indices 为空 = 整条 clip。</summary>
+        public event Action<IReadOnlyList<int>, string, double>? BatchKeyframeTimeRequested;
+
+        public void RequestBatchKeyframeTime(IReadOnlyList<int> indices, string op, double param) =>
+            BatchKeyframeTimeRequested?.Invoke(indices, op, param);
+
         /// <summary>提交贝塞尔切线数值编辑。</summary>
         public void CommitTangent(float? tangentIn, float? tangentOut) =>
             RaiseKeyframeEdited(null, null, null, tangentIn, tangentOut);

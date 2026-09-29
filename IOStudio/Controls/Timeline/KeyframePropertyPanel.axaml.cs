@@ -222,6 +222,24 @@ namespace IOStudio.Controls.Timeline
             vm.RequestBatchKeyframeValue(indices, parts[0], param);
         }
 
+        /// <summary>批量时间结构操作 (Tag = "op" 或 "op:param")。</summary>
+        private void OnBatchTimeOpClick(object? sender, RoutedEventArgs e)
+        {
+            if (Vm is not { } vm || sender is not Control { Tag: string tag })
+                return;
+            var indices = SelectedKeyframeIndices();
+            var parts = tag.Split(':');
+            double param = 0;
+            if (parts.Length == 2)
+                double.TryParse(
+                    parts[1],
+                    NumberStyles.Float,
+                    CultureInfo.InvariantCulture,
+                    out param
+                );
+            vm.RequestBatchKeyframeTime(indices, parts[0], param);
+        }
+
         private IReadOnlyList<int> SelectedKeyframeIndices()
         {
             var list = this.FindControl<ListBox>("KeyframeListBox");

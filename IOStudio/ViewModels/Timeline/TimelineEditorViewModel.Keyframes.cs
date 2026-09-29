@@ -193,7 +193,15 @@ namespace IOStudio.ViewModels.Timeline
         /// <summary>
         /// 在指定轨道的指定时间添加关键帧
         /// </summary>
-        public void AddKeyframeAtTime(TrackViewModel track, double absoluteTimeMs)
+        public void AddKeyframeAtTime(TrackViewModel track, double absoluteTimeMs) =>
+            AddKeyframeAtTime(track, absoluteTimeMs, null);
+
+        /// <summary>
+        /// 在指定轨道的指定时间添加关键帧。
+        /// <paramref name="desiredValue"/> 非空时用它作为新关键帧的值 (AutoKey 一次成型, 避免
+        /// "先建帧再改值" 产生两步撤销)。
+        /// </summary>
+        public void AddKeyframeAtTime(TrackViewModel track, double absoluteTimeMs, float? desiredValue)
         {
             if (!TryBeginTrackEdit(track, "添加关键帧"))
                 return;
@@ -249,11 +257,14 @@ namespace IOStudio.ViewModels.Timeline
                 targetClip.Clip.Keyframes,
                 localMs
             );
+            if (desiredValue.HasValue)
+                value = desiredValue.Value;
 
             // Bool 轨道: 值必须严格为 0 或 1, 且使用阶梯插值
             bool isBool = track.ValueType == "bool";
             if (isBool)
                 value = value >= 0.5f ? 1f : 0f;
+            value = Math.Clamp(value, 0f, 1f);
             string interpolation = isBool ? "step" : "bezier";
 
             int clipIdx = targetClipIdx;
@@ -858,6 +869,150 @@ namespace IOStudio.ViewModels.Timeline
                 )
             );
             MarkDirty();
+        }
+
+        /// <summary>
+        /// 批量时间变换 (带撤销)。indices 为空 = 整条 clip。
+        /// op: align (对齐选中块起点到播放头) | scale (以选中块起点为锚缩放, param=倍率)
+        ///   | reverse (在选中块时间跨度内镜像) | quantize (吸附到最近节拍标记)
+        /// </summary>
+        public void BatchTransformKeyframeTimes(
+            TrackViewModel track,
+            int clipIdx,
+            IReadOnlyList<int>? indices,
+            string op,
+            double param = 0
+        )
+        {
+            if (track is null || clipIdx < 0 || clipIdx >= track.Clips.Count)
+                return;
+            var clipVm = track.Clips[clipIdx];
+            if (clipVm.Keyframes.Count == 0)
+                return;
+
+            var target = indices is { Count: > 0 }
+                ? indices.Where(i => i >= 0 && i < clipVm.Keyframes.Count).Distinct().ToList()
+                : Enumerable.Range(0, clipVm.Keyframes.Count).ToList();
+            if (target.Count == 0)
+                return;
+
+            var selected = target.Select(i => clipVm.Keyframes[i]).ToList();
+            var oldTimes = selected.Select(k => k.TimeMs).ToList();
+            var newTimes = new List<double>(oldTimes.Count);
+
+            switch (op)
+            {
+                case "align":
+                {
+                    // 选中块的绝对起点对齐到播放头
+                    double delta = CurrentTimeMs - (oldTimes.Min() + clipVm.StartMs);
+                    foreach (var t in oldTimes)
+                        newTimes.Add(Math.Max(0, t + delta));
+                    break;
+                }
+                case "scale":
+                {
+                    if (param <= 0)
+                        return;
+                    double anchor = oldTimes.Min();
+                    foreach (var t in oldTimes)
+                        newTimes.Add(Math.Max(0, anchor + (t - anchor) * param));
+                    break;
+                }
+                case "reverse":
+                {
+                    double minT = oldTimes.Min();
+                    double maxT = oldTimes.Max();
+                    foreach (var t in oldTimes)
+                        newTimes.Add(minT + (maxT - t));
+                    break;
+                }
+                case "quantize":
+                {
+                    var beats = BeatMarkers;
+                    if (beats is null || beats.Count == 0)
+                        return;
+                    foreach (var t in oldTimes)
+                    {
+                        double abs = t + clipVm.StartMs;
+                        double best = abs;
+                        double bestDist = double.MaxValue;
+                        foreach (var b in beats)
+                        {
+                            double d = Math.Abs(abs - b);
+                            if (d < bestDist)
+                            {
+                                bestDist = d;
+                                best = b;
+                            }
+                        }
+                        newTimes.Add(Math.Max(0, best - clipVm.StartMs));
+                    }
+                    break;
+                }
+                default:
+                    return;
+            }
+
+            if (!TryBeginTrackEdit(track, "时间变换"))
+                return;
+
+            // 顺序也要快照: reverse 会让时间逆序, 需要按时间重排; 撤销时还原原顺序。
+            var orderBefore = clipVm.Keyframes.ToList();
+            var timesBefore = orderBefore.Select(k => k.TimeMs).ToList();
+            var changes = new List<(KeyframeViewModel Kf, double NewTime)>();
+            for (int i = 0; i < selected.Count; i++)
+                changes.Add((selected[i], newTimes[i]));
+
+            _undoRedo.Execute(
+                new LambdaCommand(
+                    "时间变换",
+                    () =>
+                    {
+                        foreach (var (kf, newTime) in changes)
+                            kf.TimeMs = newTime;
+                        SortKeyframesByTime(clipVm);
+                        NotifyTrackDataChanged(track);
+                        RecalculateDuration();
+                    },
+                    () =>
+                    {
+                        // 先还原顺序, 再还原时间
+                        RestoreKeyframeOrder(clipVm, orderBefore);
+                        for (int i = 0; i < orderBefore.Count; i++)
+                            orderBefore[i].TimeMs = timesBefore[i];
+                        NotifyTrackDataChanged(track);
+                        RecalculateDuration();
+                    }
+                )
+            );
+            MarkDirty();
+        }
+
+        /// <summary>按时间升序重排 clip 内的关键帧 (稳定, 就地 Move)。</summary>
+        private static void SortKeyframesByTime(ClipViewModel clipVm)
+        {
+            var sorted = clipVm.Keyframes.OrderBy(k => k.TimeMs).ToList();
+            for (int i = 0; i < sorted.Count; i++)
+            {
+                int cur = clipVm.Keyframes.IndexOf(sorted[i]);
+                if (cur != i)
+                    clipVm.Keyframes.Move(cur, i);
+            }
+        }
+
+        /// <summary>将 clip 内关键帧恢复到指定顺序。</summary>
+        private static void RestoreKeyframeOrder(
+            ClipViewModel clipVm,
+            IReadOnlyList<KeyframeViewModel> order
+        )
+        {
+            for (int i = 0; i < order.Count; i++)
+            {
+                int cur = clipVm.Keyframes.IndexOf(order[i]);
+                if (cur >= 0 && cur != i)
+                    clipVm.Keyframes.Move(cur, i);
+            }
         }
 
         /// <summary>

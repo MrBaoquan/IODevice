@@ -702,6 +702,128 @@ namespace IOStudio.ViewModels.Timeline
         }
 
         /// <summary>
+        /// 深拷贝一条轨道 (含片段/关键帧/待机循环), 插入到源轨道之后。
+        /// 复制的片段会解除动作实例绑定 (避免两个轨道共享同一实例)。
+        /// </summary>
+        public void DuplicateTrack(TrackViewModel source)
+        {
+            if (Timeline is null || source is null)
+                return;
+
+            MotionTrack? copyModel;
+            try
+            {
+                var json = System.Text.Json.JsonSerializer.Serialize(source.Track);
+                copyModel = System.Text.Json.JsonSerializer.Deserialize<MotionTrack>(json);
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[Timeline] 复制轨道失败: {ex.Message}");
+                return;
+            }
+            if (copyModel is null)
+                return;
+
+            copyModel.Id = Guid.NewGuid().ToString("N")[..8];
+            copyModel.Label = source.Label + " 副本";
+            foreach (var clip in copyModel.Clips)
+            {
+                clip.Id = Guid.NewGuid().ToString("N")[..8];
+                clip.ActionInstanceId = null;
+                clip.SourceDefinitionId = null;
+            }
+
+            var copyVm = new TrackViewModel(copyModel);
+            int vmAt = Tracks.IndexOf(source);
+            int modelAt = Timeline.Tracks.IndexOf(source.Track);
+
+            _undoRedo.Execute(
+                new LambdaCommand(
+                    $"复制轨道 {source.Label}",
+                    () =>
+                    {
+                        Timeline!.Tracks.Insert(modelAt + 1, copyModel);
+                        Tracks.Insert(vmAt + 1, copyVm);
+                        copyVm.UpdateCompactDisplay(TrackHeight);
+                        RefreshDisplayList();
+                    },
+                    () =>
+                    {
+                        Timeline!.Tracks.Remove(copyModel);
+                        Tracks.Remove(copyVm);
+                        if (ReferenceEquals(SelectedTrack, copyVm))
+                            SelectedTrack = null;
+                        RefreshDisplayList();
+                    }
+                )
+            );
+            MarkDirty();
+            PushStatus($"已复制轨道“{source.Label}”");
+        }
+
+        /// <summary>
+        /// 可撤销地设置轨道开关 (mute/solo/enable/lock)。
+        /// View 的 ToggleButton 已双向绑定并先行改值, 这里只登记一步撤销 (do 幂等)。
+        /// </summary>
+        public void PushTrackFlagUndo(TrackViewModel track, string kind, bool oldValue, bool newValue)
+        {
+            if (track is null || oldValue == newValue)
+                return;
+            _undoRedo.Execute(
+                new LambdaCommand(
+                    TrackFlagUndoLabel(kind, track.Label),
+                    () => SetTrackFlag(track, kind, newValue),
+                    () => SetTrackFlag(track, kind, oldValue)
+                )
+            );
+            MarkDirty();
+        }
+
+        private static string TrackFlagUndoLabel(string kind, string label) =>
+            kind switch
+            {
+                "mute" => $"{(label is null ? "轨道" : label)} 静音切换",
+                "solo" => $"{label} 独奏切换",
+                "enable" => $"{label} 启用切换",
+                "lock" => $"{label} 锁定切换",
+                _ => "轨道属性",
+            };
+
+        private static void SetTrackFlag(TrackViewModel track, string kind, bool value)
+        {
+            switch (kind)
+            {
+                case "mute":
+                    track.IsMuted = value;
+                    break;
+                case "solo":
+                    track.IsSolo = value;
+                    break;
+                case "enable":
+                    track.IsEnabled = value;
+                    break;
+                case "lock":
+                    track.IsLocked = value;
+                    break;
+            }
+        }
+
+        /// <summary>可撤销地设置轨道颜色。</summary>
+        public void PushTrackColorUndo(TrackViewModel track, string oldColor, string newColor)
+        {
+            if (track is null || oldColor == newColor)
+                return;
+            _undoRedo.Execute(
+                new LambdaCommand(
+                    $"设置轨道颜色 {track.Label}",
+                    () => track.Color = newColor,
+                    () => track.Color = oldColor
+                )
+            );
+            MarkDirty();
+        }
+
+        /// <summary>
         /// 将轨道上移一位
         /// </summary>
         public void MoveTrackUp(TrackViewModel trackVm)

@@ -301,5 +301,216 @@ namespace IOStudio.Tests.ViewModels
                 TryDelete(path);
             }
         }
+
+        // ── P1: 时间结构操作 ──
+
+        [Fact]
+        public void TimeOp_Align_Moves_Selection_Start_To_Playhead()
+        {
+            string path = WriteTempTimeline();
+            try
+            {
+                var vm = new TimelineEditorViewModel(null);
+                vm.LoadFromFile(path);
+                var track = vm.Tracks[0];
+
+                // clip A 两个 kf @0 和 @1000; 对齐到 5000 → 变为 5000 / 6000
+                vm.CurrentTimeMs = 5000;
+                vm.BatchTransformKeyframeTimes(track, 0, null, "align");
+
+                Assert.Equal(5000.0, track.Clips[0].Keyframes[0].TimeMs, precision: 3);
+                Assert.Equal(6000.0, track.Clips[0].Keyframes[1].TimeMs, precision: 3);
+            }
+            finally
+            {
+                TryDelete(path);
+            }
+        }
+
+        [Fact]
+        public void TimeOp_Scale_Anchors_At_Selection_Start()
+        {
+            string path = WriteTempTimeline();
+            try
+            {
+                var vm = new TimelineEditorViewModel(null);
+                vm.LoadFromFile(path);
+                var track = vm.Tracks[0];
+
+                // clip A: 0 和 1000, ×2 → 0 和 2000
+                vm.BatchTransformKeyframeTimes(track, 0, null, "scale", 2.0);
+
+                Assert.Equal(0.0, track.Clips[0].Keyframes[0].TimeMs, precision: 3);
+                Assert.Equal(2000.0, track.Clips[0].Keyframes[1].TimeMs, precision: 3);
+            }
+            finally
+            {
+                TryDelete(path);
+            }
+        }
+
+        [Fact]
+        public void TimeOp_Reverse_Mirrors_And_Keeps_Sorted()
+        {
+            string path = WriteTempTimeline();
+            try
+            {
+                var vm = new TimelineEditorViewModel(null);
+                vm.LoadFromFile(path);
+                var track = vm.Tracks[0];
+
+                // clip A: 0 和 1000 → 反转后仍是 {0, 1000}, 值顺序互换
+                vm.BatchTransformKeyframeTimes(track, 0, null, "reverse");
+
+                var kfs = track.Clips[0].Keyframes;
+                Assert.Equal(2, kfs.Count);
+                Assert.True(kfs[0].TimeMs <= kfs[1].TimeMs); // 仍按时间升序
+                Assert.Equal(0.6f, kfs[0].Value, precision: 4); // 原 1000ms 的 0.6 移到 0ms
+                Assert.Equal(0.2f, kfs[1].Value, precision: 4);
+            }
+            finally
+            {
+                TryDelete(path);
+            }
+        }
+
+        [Fact]
+        public void TimeOp_Quantize_Snaps_To_Nearest_Beat()
+        {
+            string path = WriteTempTimeline();
+            try
+            {
+                var vm = new TimelineEditorViewModel(null);
+                vm.LoadFromFile(path);
+                var track = vm.Tracks[0];
+                vm.BeatMarkers = new List<double> { 900, 1100 };
+
+                // clip A kf @1000 → 最近节拍 1100 (等距时取先遇到的; 这里 900/1100 距 1000 均为 100)
+                vm.BatchTransformKeyframeTimes(track, 0, null, "quantize");
+
+                double t = track.Clips[0].Keyframes[1].TimeMs;
+                Assert.True(Math.Abs(t - 900) < 0.01 || Math.Abs(t - 1100) < 0.01);
+            }
+            finally
+            {
+                TryDelete(path);
+            }
+        }
+
+        [Fact]
+        public void TimeOp_Quantize_NoBeat_Is_NoOp()
+        {
+            string path = WriteTempTimeline();
+            try
+            {
+                var vm = new TimelineEditorViewModel(null);
+                vm.LoadFromFile(path);
+                var track = vm.Tracks[0];
+                vm.BeatMarkers = null;
+
+                vm.BatchTransformKeyframeTimes(track, 0, null, "quantize");
+
+                Assert.Equal(1000.0, track.Clips[0].Keyframes[1].TimeMs, precision: 3);
+            }
+            finally
+            {
+                TryDelete(path);
+            }
+        }
+
+        [Fact]
+        public void TimeOp_Reverse_Is_Undoable()
+        {
+            string path = WriteTempTimeline();
+            try
+            {
+                var vm = new TimelineEditorViewModel(null);
+                vm.LoadFromFile(path);
+                var track = vm.Tracks[0];
+
+                vm.BatchTransformKeyframeTimes(track, 1, null, "reverse"); // clip B: 0 和 3000
+                Assert.Equal(0.9f, track.Clips[1].Keyframes[0].Value, precision: 4);
+
+                vm.Undo();
+                Assert.Equal(0.3f, track.Clips[1].Keyframes[0].Value, precision: 4);
+                Assert.Equal(0.0, track.Clips[1].Keyframes[0].TimeMs, precision: 3);
+                Assert.Equal(3000.0, track.Clips[1].Keyframes[1].TimeMs, precision: 3);
+            }
+            finally
+            {
+                TryDelete(path);
+            }
+        }
+
+        // ── P1: 轨道复制 ──
+
+        [Fact]
+        public void DuplicateTrack_Copies_Keyframes_With_New_Ids()
+        {
+            string path = WriteTempTimeline();
+            try
+            {
+                var vm = new TimelineEditorViewModel(null);
+                vm.LoadFromFile(path);
+                var source = vm.Tracks[0];
+
+                vm.DuplicateTrack(source);
+
+                Assert.Equal(2, vm.Tracks.Count);
+                Assert.Equal(2, vm.Timeline!.Tracks.Count);
+
+                var copy = vm.Tracks[1];
+                Assert.NotEqual(source.Id, copy.Id);
+                Assert.Equal(source.Label + " 副本", copy.Label);
+                Assert.Equal(source.Tracks0_KeyframeCount(), copy.Tracks0_KeyframeCount());
+                // 关键帧是深拷贝 (不同实例)
+                Assert.NotSame(
+                    source.Clips[0].Keyframes[0],
+                    copy.Clips[0].Keyframes[0]
+                );
+
+                vm.Undo();
+                Assert.Equal(1, vm.Tracks.Count);
+            }
+            finally
+            {
+                TryDelete(path);
+            }
+        }
+
+        // ── P1: AutoKey 单步撤销 ──
+
+        [Fact]
+        public void AddKeyframeAtTime_WithValue_Is_Single_Undo_Step()
+        {
+            string path = WriteTempTimeline();
+            try
+            {
+                var vm = new TimelineEditorViewModel(null);
+                vm.LoadFromFile(path);
+                var track = vm.Tracks[0];
+                int before = track.Clips[0].Keyframes.Count;
+
+                vm.AddKeyframeAtTime(track, 500, 0.77f);
+                Assert.Equal(before + 1, track.Clips[0].Keyframes.Count);
+                var added = track.Clips[0].Keyframes.First(k => Math.Abs(k.TimeMs - 500) < 0.01);
+                Assert.Equal(0.77f, added.Value, precision: 4);
+
+                // 一次撤销即完全移除 (旧实现是"建帧 + 改值"两步)
+                vm.Undo();
+                Assert.Equal(before, track.Clips[0].Keyframes.Count);
+            }
+            finally
+            {
+                TryDelete(path);
+            }
+        }
+    }
+
+    internal static class TrackVmTestExtensions
+    {
+        /// <summary>首个 clip 的关键帧数 (测试用简写)。</summary>
+        public static int Tracks0_KeyframeCount(this TrackViewModel track) =>
+            track.Clips.Count == 0 ? 0 : track.Clips[0].Keyframes.Count;
     }
 }

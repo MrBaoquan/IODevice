@@ -581,26 +581,12 @@ namespace IOStudio.Views.Timeline
                 RefreshAllTrackControls();
                 RefreshPropertyPanel();
             };
-            // AutoKey: 创建关键帧并赋予用户指定的值
+            // AutoKey: 创建关键帧并赋予用户指定的值 (一次成型 → 单步撤销)
             kfVm.AutoKeyCreateRequested += (timeMs, desiredValue) =>
             {
                 if (ViewModel?.SelectedTrack is null)
                     return;
-                ViewModel.AddKeyframeAtTime(ViewModel.SelectedTrack, timeMs);
-                // 赋予用户拖拽/输入的值
-                if (ViewModel.SelectedKeyframe != null)
-                {
-                    var kf = ViewModel.SelectedKeyframe;
-                    ViewModel.UpdateKeyframeProperties(
-                        kf.TimeMs,
-                        desiredValue,
-                        kf.Interpolation,
-                        kf.TangentIn,
-                        kf.TangentOut,
-                        kf.Cp1x,
-                        kf.Cp2x
-                    );
-                }
+                ViewModel.AddKeyframeAtTime(ViewModel.SelectedTrack, timeMs, desiredValue);
                 SyncCurveEditorData();
                 RefreshAllTrackControls();
                 RefreshPropertyPanel();
@@ -649,6 +635,15 @@ namespace IOStudio.Views.Timeline
             {
                 if (ViewModel != null && kfVm.TrackVm is { } track && kfVm.ClipIndex >= 0)
                     ViewModel.BatchEditClipKeyframes(track, kfVm.ClipIndex, indices, "interp", 0f, interp);
+                SyncCurveEditorData();
+                RefreshAllTrackControls();
+                RefreshPropertyPanel();
+            };
+            // 批量: 选中关键帧的时间结构操作 (对齐/缩放/反向/量化节拍)
+            kfVm.BatchKeyframeTimeRequested += (indices, op, param) =>
+            {
+                if (ViewModel != null && kfVm.TrackVm is { } track && kfVm.ClipIndex >= 0)
+                    ViewModel.BatchTransformKeyframeTimes(track, kfVm.ClipIndex, indices, op, param);
                 SyncCurveEditorData();
                 RefreshAllTrackControls();
                 RefreshPropertyPanel();

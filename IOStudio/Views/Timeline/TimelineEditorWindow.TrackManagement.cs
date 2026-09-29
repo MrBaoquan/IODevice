@@ -110,7 +110,8 @@ namespace IOStudio.Views.Timeline
                         t.RaiseDimmingChanged();
                 SyncCurveEditorData();
                 RefreshAllTrackControls();
-                ViewModel?.MarkDirty();
+                // 撤销: 绑定已先改值, 这里登记一步 (old = !new)
+                ViewModel?.PushTrackFlagUndo(trackVm, "enable", !trackVm.IsEnabled, trackVm.IsEnabled);
             }
         }
 
@@ -128,7 +129,7 @@ namespace IOStudio.Views.Timeline
                         t.RaiseDimmingChanged();
                 SyncCurveEditorData();
                 RefreshAllTrackControls();
-                ViewModel?.MarkDirty();
+                ViewModel?.PushTrackFlagUndo(trackVm, "solo", !trackVm.IsSolo, trackVm.IsSolo);
             }
         }
 
@@ -142,7 +143,7 @@ namespace IOStudio.Views.Timeline
             {
                 SyncCurveEditorData();
                 RefreshAllTrackControls();
-                ViewModel?.MarkDirty();
+                ViewModel?.PushTrackFlagUndo(trackVm, "mute", !trackVm.IsMuted, trackVm.IsMuted);
             }
         }
 
@@ -167,7 +168,7 @@ namespace IOStudio.Views.Timeline
                 && tb.DataContext is TrackViewModel trackVm
             )
             {
-                ViewModel?.MarkDirty();
+                ViewModel?.PushTrackFlagUndo(trackVm, "lock", !trackVm.IsLocked, trackVm.IsLocked);
                 SyncCurveEditorData();
                 RefreshAllTrackControls();
                 // The inspector caches ActionEditLocked when the action is selected.
@@ -266,7 +267,9 @@ namespace IOStudio.Views.Timeline
                 && mi.CommandParameter is string color
             )
             {
+                var previousColor = trackVm.Color;
                 trackVm.Color = color;
+                ViewModel?.PushTrackColorUndo(trackVm, previousColor, color);
                 // 刷新轨道绘制
                 foreach (var tcc in this.GetVisualDescendants().OfType<TrackClipControl>())
                 {

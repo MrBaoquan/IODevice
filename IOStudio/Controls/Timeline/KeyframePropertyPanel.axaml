@@ -315,6 +315,24 @@
                                 <Button Classes="reset-btn" Content="×0.9" FontSize="10" Click="OnBatchValueClick" Tag="scale:0.9"/>
                                 <Button Classes="reset-btn" Content="×1.1" FontSize="10" Click="OnBatchValueClick" Tag="scale:1.1"/>
                             </StackPanel>
+                            <!-- 批量: 选中关键帧的时间结构操作 -->
+                            <StackPanel Orientation="Horizontal" Spacing="4">
+                                <TextBlock Text="时间:" FontSize="10" Foreground="{DynamicResource TlTextMuted}"
+                                           VerticalAlignment="Center"/>
+                                <Button Classes="reset-btn" Content="对齐播放头" FontSize="10"
+                                        Click="OnBatchTimeOpClick" Tag="align"
+                                        ToolTip.Tip="选中块起点对齐到播放头"/>
+                                <Button Classes="reset-btn" Content="÷2" FontSize="10"
+                                        Click="OnBatchTimeOpClick" Tag="scale:0.5"/>
+                                <Button Classes="reset-btn" Content="×2" FontSize="10"
+                                        Click="OnBatchTimeOpClick" Tag="scale:2"/>
+                                <Button Classes="reset-btn" Content="反向" FontSize="10"
+                                        Click="OnBatchTimeOpClick" Tag="reverse"
+                                        ToolTip.Tip="在选中块时间跨度内镜像"/>
+                                <Button Classes="reset-btn" Content="量化节拍" FontSize="10"
+                                        Click="OnBatchTimeOpClick" Tag="quantize"
+                                        ToolTip.Tip="吸附到最近节拍标记 (需先开启节拍检测)"/>
+                            </StackPanel>
                         </StackPanel>
                     </Border>
 

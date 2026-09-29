@@ -965,6 +965,15 @@
                                                             <MenuItem Header="轨道属性..." Click="OnEditTrackProperties"
                                                                       Tag="{Binding}"
                                                                       InputGesture="F2"/>
+                                                            <MenuItem Header="复制轨道"
+                                                                      Command="{Binding $parent[Window].((vm:TimelineEditorViewModel)DataContext).DuplicateTrackCommand}"
+                                                                      CommandParameter="{Binding}"/>
+                                                            <MenuItem Header="上移"
+                                                                      Command="{Binding $parent[Window].((vm:TimelineEditorViewModel)DataContext).MoveTrackUpCommand}"
+                                                                      CommandParameter="{Binding}"/>
+                                                            <MenuItem Header="下移"
+                                                                      Command="{Binding $parent[Window].((vm:TimelineEditorViewModel)DataContext).MoveTrackDownCommand}"
+                                                                      CommandParameter="{Binding}"/>
                                                             <MenuItem Header="添加轨道..." Click="OnAddTrack"/>
                                                             <MenuItem Header="新建分组..." Click="OnPanelNewGroup"/>
                                                             <Separator/>

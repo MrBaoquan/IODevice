@@ -34,6 +34,12 @@ namespace IOStudio.ViewModels.Timeline
         public ReactiveCommand<TrackViewModel, Unit> DeleteTrackCommand =>
             _deleteTrackCmd ??= ReactiveCommand.Create<TrackViewModel>(RemoveTrack);
 
+        private ReactiveCommand<TrackViewModel, Unit>? _duplicateTrackCmd;
+
+        /// <summary>复制轨道命令 (含片段/关键帧/待机循环, 插入到源轨道之后)。</summary>
+        public ReactiveCommand<TrackViewModel, Unit> DuplicateTrackCommand =>
+            _duplicateTrackCmd ??= ReactiveCommand.Create<TrackViewModel>(DuplicateTrack);
+
         private ReactiveCommand<TrackViewModel, Unit>? _toggleTrackLockCmd;
 
         /// <summary>锁定/解锁轨道命令。</summary>

@@ -1,0 +1,305 @@
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using Xunit;
+using IOStudio.Models.Motion;
+using IOStudio.Services.Motion;
+using IOStudio.ViewModels.Timeline;
+
+namespace IOStudio.Tests.ViewModels
+{
+    /// <summary>
+    /// 快速编排回归 — 吸附点补全、方向键微调、全选/剪切、以及
+    /// "检查器绝对时间 ↔ 关键帧 clip 局部时间" 的换算 (偏移 clip 不得被改写时间)。
+    /// </summary>
+    public class TimelineRapidAuthoringTests
+    {
+        private static MotionKeyframe Kf(double t, float v) =>
+            new()
+            {
+                TimeMs = t,
+                Value = v,
+                Interpolation = "linear",
+            };
+
+        /// <summary>clip A 起点 0; clip B 起点 32000 (用于验证绝对/局部换算)。</summary>
+        private static string WriteTempTimeline()
+        {
+            var track = new MotionTrack
+            {
+                Id = "trk",
+                DeviceName = "Simulator-1",
+                OutputType = "oaxis",
+                OAxisChannel = "OAxis_01",
+                Label = "俯仰",
+            };
+            track.Clips.Add(
+                new MotionClip
+                {
+                    Id = "a",
+                    StartMs = 0,
+                    EndMs = 5000,
+                    Keyframes = new List<MotionKeyframe> { Kf(0, 0.2f), Kf(1000, 0.6f) },
+                }
+            );
+            track.Clips.Add(
+                new MotionClip
+                {
+                    Id = "b",
+                    StartMs = 32000,
+                    EndMs = 35000,
+                    Keyframes = new List<MotionKeyframe> { Kf(0, 0.3f), Kf(3000, 0.9f) },
+                }
+            );
+
+            var timeline = new MotionTimeline
+            {
+                Version = "3.0",
+                Name = "rapid",
+                DurationMs = 35000,
+                Tracks = new List<MotionTrack> { track },
+            };
+
+            string path = Path.Combine(Path.GetTempPath(), $"rapid_{Guid.NewGuid():N}.motion");
+            Assert.True(MotionFileReader.Write(timeline, path));
+            return path;
+        }
+
+        private static void TryDelete(string path)
+        {
+            try
+            {
+                File.Delete(path);
+            }
+            catch
+            {
+                /* ignore */
+            }
+        }
+
+        [Fact]
+        public void SnapPoints_Include_Playhead_ClipEdges_And_Markers()
+        {
+            string path = WriteTempTimeline();
+            try
+            {
+                var vm = new TimelineEditorViewModel(null);
+                vm.LoadFromFile(path);
+                vm.CurrentTimeMs = 1234;
+                vm.MarkerService.AddMarker(2000);
+
+                var points = vm.GetSnapPoints();
+
+                Assert.Contains(0.0, points); // 起点
+                Assert.Contains(5000.0, points); // clip A 末端
+                Assert.Contains(32000.0, points); // clip B 起点
+                Assert.Contains(1234.0, points); // 播放头
+                Assert.Contains(2000.0, points); // 标记
+            }
+            finally
+            {
+                TryDelete(path);
+            }
+        }
+
+        [Fact]
+        public void SnapPoints_Include_BeatMarkers()
+        {
+            string path = WriteTempTimeline();
+            try
+            {
+                var vm = new TimelineEditorViewModel(null);
+                vm.LoadFromFile(path);
+                vm.BeatMarkers = new List<double> { 800, 1600 };
+
+                var points = vm.GetSnapPoints();
+
+                Assert.Contains(800.0, points);
+                Assert.Contains(1600.0, points);
+            }
+            finally
+            {
+                TryDelete(path);
+            }
+        }
+
+        [Fact]
+        public void NudgeTime_Moves_Selected_Keyframe_By_10ms()
+        {
+            string path = WriteTempTimeline();
+            try
+            {
+                var vm = new TimelineEditorViewModel(null);
+                vm.LoadFromFile(path);
+                var track = vm.Tracks[0];
+                vm.SelectKeyframe(track, 0, 1); // clip A, kf @1000ms
+
+                Assert.Equal(
+                    ExecuteShortcutResult.HandledNeedsMultiSelectRefresh,
+                    vm.ExecuteShortcut(ShortcutAction.NudgeTimeForward)
+                );
+                Assert.Equal(1010.0, track.Clips[0].Keyframes[1].TimeMs, precision: 3);
+
+                vm.ExecuteShortcut(ShortcutAction.NudgeTimeBackwardLarge);
+                Assert.Equal(910.0, track.Clips[0].Keyframes[1].TimeMs, precision: 3);
+
+                // 撤销后回到 1000
+                vm.Undo();
+                Assert.Equal(1010.0, track.Clips[0].Keyframes[1].TimeMs, precision: 3);
+            }
+            finally
+            {
+                TryDelete(path);
+            }
+        }
+
+        [Fact]
+        public void NudgeTime_Does_Not_Go_Below_Zero()
+        {
+            string path = WriteTempTimeline();
+            try
+            {
+                var vm = new TimelineEditorViewModel(null);
+                vm.LoadFromFile(path);
+                var track = vm.Tracks[0];
+                vm.SelectKeyframe(track, 0, 0); // kf @0ms
+
+                vm.ExecuteShortcut(ShortcutAction.NudgeTimeBackward);
+
+                Assert.Equal(0.0, track.Clips[0].Keyframes[0].TimeMs, precision: 3);
+            }
+            finally
+            {
+                TryDelete(path);
+            }
+        }
+
+        [Fact]
+        public void NudgeValue_Adjusts_And_Clamps()
+        {
+            string path = WriteTempTimeline();
+            try
+            {
+                var vm = new TimelineEditorViewModel(null);
+                vm.LoadFromFile(path);
+                var track = vm.Tracks[0];
+                vm.SelectKeyframe(track, 0, 1); // value 0.6
+
+                vm.ExecuteShortcut(ShortcutAction.NudgeValueUp);
+                Assert.Equal(0.61f, track.Clips[0].Keyframes[1].Value, precision: 4);
+
+                vm.ExecuteShortcut(ShortcutAction.NudgeValueUpLarge); // +0.1 → 0.71
+                Assert.Equal(0.71f, track.Clips[0].Keyframes[1].Value, precision: 4);
+
+                // 钳位到 1.0
+                for (int i = 0; i < 40; i++)
+                    vm.ExecuteShortcut(ShortcutAction.NudgeValueUp);
+                Assert.Equal(1.0f, track.Clips[0].Keyframes[1].Value, precision: 4);
+            }
+            finally
+            {
+                TryDelete(path);
+            }
+        }
+
+        [Fact]
+        public void SelectAllKeyframes_SelectsWholeTrack()
+        {
+            string path = WriteTempTimeline();
+            try
+            {
+                var vm = new TimelineEditorViewModel(null);
+                vm.LoadFromFile(path);
+                var track = vm.Tracks[0];
+                vm.SelectKeyframe(track, 0, 0);
+
+                vm.ExecuteShortcut(ShortcutAction.SelectAllKeyframes);
+
+                // clip A 有 2 个 + clip B 有 2 个 = 4
+                Assert.Equal(4, vm.SelectedKeyframeCount);
+                Assert.True(vm.IsMultiSelectMode);
+            }
+            finally
+            {
+                TryDelete(path);
+            }
+        }
+
+        [Fact]
+        public void Cut_Removes_Selected_Keyframes_And_Keeps_Clipboard()
+        {
+            string path = WriteTempTimeline();
+            try
+            {
+                var vm = new TimelineEditorViewModel(null);
+                vm.LoadFromFile(path);
+                var track = vm.Tracks[0];
+                vm.SelectKeyframe(track, 0, 0);
+                vm.AddToSelection(track, 0, 1);
+                Assert.Equal(2, vm.SelectedKeyframeCount);
+
+                vm.ExecuteShortcut(ShortcutAction.Cut);
+
+                Assert.Equal(0, track.Clips[0].Keyframes.Count); // A 的 2 个被删空
+                Assert.True(vm.HasClipboardKeyframes); // 已复制到剪贴板
+
+                vm.Undo(); // 删除可撤销
+                Assert.Equal(2, track.Clips[0].Keyframes.Count);
+            }
+            finally
+            {
+                TryDelete(path);
+            }
+        }
+
+        [Fact]
+        public void UpdateKeyframeProperties_Keeps_Local_Time_On_Offset_Clip()
+        {
+            string path = WriteTempTimeline();
+            try
+            {
+                var vm = new TimelineEditorViewModel(null);
+                vm.LoadFromFile(path);
+                var track = vm.Tracks[0];
+
+                // clip B 起点 32000, 其 kf 局部时间 3000 → 绝对时间 35000
+                vm.SelectKeyframe(track, 1, 1);
+                Assert.Equal(3000.0, track.Clips[1].Keyframes[1].TimeMs, precision: 3);
+
+                // 检查器传入的是绝对时间 (播放头)。旧实现会把它直接写进模型 → 时间被改写成 35000。
+                vm.UpdateKeyframeProperties(35000, 0.42f, "linear", null, null);
+
+                Assert.Equal(0.42f, track.Clips[1].Keyframes[1].Value, precision: 4);
+                Assert.Equal(3000.0, track.Clips[1].Keyframes[1].TimeMs, precision: 3); // 时间保持不变
+            }
+            finally
+            {
+                TryDelete(path);
+            }
+        }
+
+        [Fact]
+        public void UpdateKeyframeProperties_Applies_New_Absolute_Time_As_Local()
+        {
+            string path = WriteTempTimeline();
+            try
+            {
+                var vm = new TimelineEditorViewModel(null);
+                vm.LoadFromFile(path);
+                var track = vm.Tracks[0];
+
+                vm.SelectKeyframe(track, 1, 1); // 绝对 35000 / 局部 3000
+
+                // 输入新的绝对时间 33500 → 局部应为 1500
+                vm.UpdateKeyframeProperties(33500, 0.9f, "linear", null, null);
+
+                Assert.Equal(1500.0, track.Clips[1].Keyframes[1].TimeMs, precision: 3);
+            }
+            finally
+            {
+                TryDelete(path);
+            }
+        }
+    }
+}

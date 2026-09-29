@@ -516,6 +516,16 @@
                                     <ComboBoxItem Content="Ease In/Out (缓入缓出)" Tag="ease_in_out"/>
                                 </ComboBox>
                             </Grid>
+                            <!-- 关键帧时间 (绝对时间, 可直接输入微调) -->
+                            <Grid ColumnDefinitions="56,*">
+                                <TextBlock Classes="prop-label" Text="时间" Grid.Column="0"
+                                           ToolTip.Tip="关键帧绝对时间: 毫秒 (3250) 或 00:03.250"/>
+                                <TextBox Name="KeyframeTimeInput" Classes="prop-input" Grid.Column="1"
+                                         Watermark="毫秒 或 00:03.250"
+                                         Text="{Binding KeyframeTimeText, Mode=OneWay}"
+                                         LostFocus="OnKeyframeTimeCommit"
+                                         KeyDown="OnKeyframeTimeKeyDown"/>
+                            </Grid>
                             <!-- 贝塞尔切线数值 (仅 bezier) -->
                             <Grid ColumnDefinitions="56,*" IsVisible="{Binding ShowTangent}">
                                 <TextBlock Classes="prop-label" Text="切线入" Grid.Column="0"/>

@@ -194,6 +194,63 @@ namespace IOStudio.Tests.ViewModels
             Assert.True(vm.IsTimeReadOnly);
         }
 
+        // ── 关键帧时间可直接输入 ──
+
+        [Fact]
+        public void CommitKeyframeTime_RaisesEdited_WithAbsoluteMs()
+        {
+            var vm = new KeyframePropertyViewModel();
+            vm.ShowTrackState(3250, 0.5f, "float", "Pitch", hasKfAtPlayhead: true);
+
+            double? editedTime = null;
+            vm.KeyframePropertyEdited += (t, v, i, tin, tout, cp1x, cp2x) => editedTime = t;
+
+            Assert.True(vm.CommitKeyframeTime("00:03.500"));
+
+            Assert.NotNull(editedTime);
+            Assert.Equal(3500, editedTime!.Value, precision: 3);
+        }
+
+        [Fact]
+        public void CommitKeyframeTime_Accepts_PlainMilliseconds()
+        {
+            var vm = new KeyframePropertyViewModel();
+            vm.ShowTrackState(1000, 0.5f, "float", "Pitch", hasKfAtPlayhead: true);
+
+            double? editedTime = null;
+            vm.KeyframePropertyEdited += (t, v, i, tin, tout, cp1x, cp2x) => editedTime = t;
+
+            // 纯数字按毫秒解析 (与既有事件时间输入一致)
+            Assert.True(vm.CommitKeyframeTime("2500"));
+
+            Assert.Equal(2500, editedTime!.Value, precision: 3);
+        }
+
+        [Fact]
+        public void CommitKeyframeTime_Ignored_WithoutKeyframe()
+        {
+            var vm = new KeyframePropertyViewModel();
+            vm.ShowTrackState(1000, 0.5f, "float", "Pitch", hasKfAtPlayhead: false);
+
+            bool edited = false;
+            vm.KeyframePropertyEdited += (t, v, i, tin, tout, cp1x, cp2x) => edited = true;
+
+            Assert.False(vm.CommitKeyframeTime("1.0"));
+            Assert.False(edited);
+        }
+
+        [Fact]
+        public void ShowTrackState_Prefills_KeyframeTimeText()
+        {
+            var vm = new KeyframePropertyViewModel();
+            vm.ShowTrackState(3250, 0.5f, "float", "Pitch", hasKfAtPlayhead: true);
+
+            Assert.Equal("00:03.250", vm.KeyframeTimeText);
+
+            vm.ShowTrackState(4000, 0.5f, "float", "Pitch", hasKfAtPlayhead: false);
+            Assert.Equal("", vm.KeyframeTimeText);
+        }
+
         [Fact]
         public void SelectionVersion_Increments_OnShowTrackState()
         {

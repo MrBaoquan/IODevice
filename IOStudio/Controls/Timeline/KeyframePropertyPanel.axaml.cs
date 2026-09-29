@@ -235,8 +235,29 @@ namespace IOStudio.Controls.Timeline
             return result;
         }
 
-        private void OnTangentLostFocus(object? sender, RoutedEventArgs e) => CommitTangents();
+        /// <summary>提交关键帧时间输入 (失焦 / 回车)。</summary>
+        private void OnKeyframeTimeCommit(object? sender, RoutedEventArgs e) => CommitKeyframeTime();
 
+        private void OnKeyframeTimeKeyDown(object? sender, KeyEventArgs e)
+        {
+            if (e.Key == Key.Enter)
+            {
+                CommitKeyframeTime();
+                e.Handled = true;
+            }
+        }
+
+        private void CommitKeyframeTime()
+        {
+            if (Vm is not { } vm)
+                return;
+            var tb = this.FindControl<TextBox>("KeyframeTimeInput");
+            if (tb is null)
+                return;
+            vm.CommitKeyframeTime(tb.Text);
+        }
+
+        private void OnTangentLostFocus(object? sender, RoutedEventArgs e) => CommitTangents();
         private void OnTangentKeyDown(object? sender, KeyEventArgs e)
         {
             if (e.Key == Key.Enter)

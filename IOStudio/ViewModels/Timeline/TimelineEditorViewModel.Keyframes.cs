@@ -920,6 +920,117 @@ namespace IOStudio.ViewModels.Timeline
         }
 
         /// <summary>
+        /// 微调选中关键帧的值 (归一化增量, 带撤销)。bool 轨道跳过。
+        /// </summary>
+        public void NudgeSelectedKeyframesValue(float delta)
+        {
+            if (_selectedKeyframes.Count == 0 || Math.Abs(delta) < 1e-9f)
+                return;
+            if (!TryBeginTrackEdit(_selectedKeyframes.Select(item => item.Track), "微调关键帧值"))
+                return;
+
+            var snapshot = new List<(KeyframeViewModel Kf, float OldValue, TrackViewModel Track)>();
+            foreach (var (track, clipIdx, kfIdx) in _selectedKeyframes)
+            {
+                if (clipIdx < 0 || clipIdx >= track.Clips.Count)
+                    continue;
+                var clipVm = track.Clips[clipIdx];
+                if (kfIdx < 0 || kfIdx >= clipVm.Keyframes.Count)
+                    continue;
+                if (track.ValueType == "bool")
+                    continue;
+                snapshot.Add((clipVm.Keyframes[kfIdx], clipVm.Keyframes[kfIdx].Value, track));
+            }
+
+            if (snapshot.Count == 0)
+                return;
+
+            _undoRedo.Execute(
+                new LambdaCommand(
+                    "微调关键帧值",
+                    () =>
+                    {
+                        var affected = new HashSet<TrackViewModel>();
+                        foreach (var (kf, _, track) in snapshot)
+                        {
+                            kf.Value = Math.Clamp(kf.Value + delta, 0f, 1f);
+                            affected.Add(track);
+                        }
+                        foreach (var track in affected)
+                            NotifyTrackDataChanged(track);
+                    },
+                    () =>
+                    {
+                        var affected = new HashSet<TrackViewModel>();
+                        foreach (var (kf, oldValue, track) in snapshot)
+                        {
+                            kf.Value = oldValue;
+                            affected.Add(track);
+                        }
+                        foreach (var track in affected)
+                            NotifyTrackDataChanged(track);
+                    }
+                )
+            );
+            MarkDirty();
+        }
+
+        /// <summary>
+        /// 全选关键帧: allTracks=false 仅当前轨道, true 为全部轨道。
+        /// </summary>
+        public void SelectAllKeyframes(bool allTracks)
+        {
+            List<TrackViewModel> targets;
+            if (allTracks)
+                targets = Tracks.ToList();
+            else if (SelectedTrack is not null)
+                targets = new List<TrackViewModel> { SelectedTrack };
+            else
+                targets = new List<TrackViewModel>();
+
+            _selectedKeyframes.Clear();
+            foreach (var track in targets)
+            {
+                for (int ci = 0; ci < track.Clips.Count; ci++)
+                {
+                    var clipVm = track.Clips[ci];
+                    for (int ki = 0; ki < clipVm.Keyframes.Count; ki++)
+                        _selectedKeyframes.Add((track, ci, ki));
+                }
+            }
+
+            if (_selectedKeyframes.Count > 0)
+            {
+                var last = _selectedKeyframes[_selectedKeyframes.Count - 1];
+                SelectedTrack = last.Track;
+                SelectedClipIndex = last.ClipIdx;
+                SelectedKeyframeIndex = last.KfIdx;
+                var clipVm = last.Track.Clips[last.ClipIdx];
+                SelectedKeyframe = last.KfIdx < clipVm.Keyframes.Count ? clipVm.Keyframes[last.KfIdx] : null;
+                this.RaisePropertyChanged(nameof(SelectedKeyframe));
+            }
+
+            this.RaisePropertyChanged(nameof(IsMultiSelectMode));
+            this.RaisePropertyChanged(nameof(SelectedKeyframeCount));
+        }
+
+        /// <summary>
+        /// 剪切选中关键帧 (复制 + 删除; 删除自带撤销, 故 Ctrl+Z 可恢复)。
+        /// </summary>
+        public void CutSelectedKeyframes()
+        {
+            if (_selectedKeyframes.Count == 0 && SelectedKeyframe is null)
+                return;
+
+            CopySelectedKeyframes();
+
+            if (_selectedKeyframes.Count > 0)
+                DeleteSelectedKeyframes();
+            else if (SelectedKeyframe is not null)
+                DeleteSelectedKeyframe();
+        }
+
+        /// <summary>
         /// 复制选中的关键帧到剪贴板
         /// 支持单选和多选模式
         /// </summary>
@@ -1326,6 +1437,17 @@ namespace IOStudio.ViewModels.Timeline
             // 快照旧属性
             var kf = SelectedKeyframe;
             var track = SelectedTrack;
+
+            // 检查器传入的是**绝对时间** (播放头), 而关键帧模型存的是 **clip 局部时间**。
+            // 这里统一换算; 值/切线编辑时 time 未变 (<0.5ms), 保持原时间以免 ±5ms 容差把关键帧轻微挪动。
+            double localTime = timeMs;
+            if (track is not null && SelectedClipIndex >= 0 && SelectedClipIndex < track.Clips.Count)
+                localTime -= track.Clips[SelectedClipIndex].StartMs;
+            if (localTime < 0)
+                localTime = 0;
+            if (Math.Abs(localTime - kf.TimeMs) < 0.5)
+                localTime = kf.TimeMs;
+
             double oldTime = kf.TimeMs;
             float oldValue = kf.Value;
             string oldInterp = kf.Interpolation;
@@ -1339,7 +1461,7 @@ namespace IOStudio.ViewModels.Timeline
                     "修改关键帧属性",
                     () =>
                     {
-                        kf.TimeMs = timeMs;
+                        kf.TimeMs = localTime;
                         kf.Value = value;
                         kf.Interpolation = interpolation;
                         kf.TangentIn = tangentIn;

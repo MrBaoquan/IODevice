@@ -321,6 +321,30 @@ namespace IOStudio.ViewModels.Timeline
             set => this.RaiseAndSetIfChanged(ref _timeMs, value);
         }
 
+        private string _keyframeTimeText = "";
+
+        /// <summary>关键帧时间输入框文本 (绝对时间, 可编辑; 提交走 CommitKeyframeTime)。</summary>
+        public string KeyframeTimeText
+        {
+            get => _keyframeTimeText;
+            set => this.RaiseAndSetIfChanged(ref _keyframeTimeText, value);
+        }
+
+        /// <summary>提交关键帧时间 (绝对时间文本, 支持 mm:ss.fff / 秒)。</summary>
+        /// <returns>解析并已提交返回 true。</returns>
+        public bool CommitKeyframeTime(string? text)
+        {
+            if (_isSyncing || _mode != DisplayMode.TrackInspector || !_hasKeyframeAtPlayhead)
+                return false;
+            if (!TryParseTimeInput(text, out double absMs))
+                return false;
+            if (absMs < 0)
+                absMs = 0;
+            // time 传入即绝对时间, 由父 VM 换算为 clip 局部时间。
+            RaiseKeyframeEdited(absMs, null, null, null, null);
+            return true;
+        }
+
         public string TimeDisplayText
         {
             get
@@ -767,6 +791,8 @@ namespace IOStudio.ViewModels.Timeline
             TotalKfCount = totalKfCount;
             IntervalInterpolation = intervalInterpolation;
             TimeMs = timeMs;
+            // 关键帧时间输入框: 仅在播放头落在关键帧上时预填 (绝对时间)
+            KeyframeTimeText = hasKfAtPlayhead ? FormatTimeMs(timeMs) : "";
             Value = interpolatedValue;
             HasKeyframeAtPlayhead = hasKfAtPlayhead;
             Interpolation = interpolation;

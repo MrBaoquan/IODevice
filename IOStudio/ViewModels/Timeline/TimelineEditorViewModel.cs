@@ -933,6 +933,42 @@ namespace IOStudio.ViewModels.Timeline
                     CopySelectedKeyframes();
                     return ExecuteShortcutResult.HandledNeedsSyncClipboard;
 
+                case Models.Motion.ShortcutAction.Cut:
+                    CutSelectedKeyframes();
+                    return ExecuteShortcutResult.HandledNeedsMultiSelectRefresh;
+
+                case Models.Motion.ShortcutAction.SelectAllKeyframes:
+                    SelectAllKeyframes(allTracks: false);
+                    return ExecuteShortcutResult.HandledNeedsMultiSelectRefresh;
+
+                case Models.Motion.ShortcutAction.SelectAllTrackKeyframes:
+                    SelectAllKeyframes(allTracks: true);
+                    return ExecuteShortcutResult.HandledNeedsMultiSelectRefresh;
+
+                case Models.Motion.ShortcutAction.NudgeTimeBackward:
+                    return NudgeSelectedTime(-1);
+
+                case Models.Motion.ShortcutAction.NudgeTimeForward:
+                    return NudgeSelectedTime(1);
+
+                case Models.Motion.ShortcutAction.NudgeTimeBackwardLarge:
+                    return NudgeSelectedTime(-10);
+
+                case Models.Motion.ShortcutAction.NudgeTimeForwardLarge:
+                    return NudgeSelectedTime(10);
+
+                case Models.Motion.ShortcutAction.NudgeValueDown:
+                    return NudgeSelectedValue(-1);
+
+                case Models.Motion.ShortcutAction.NudgeValueUp:
+                    return NudgeSelectedValue(1);
+
+                case Models.Motion.ShortcutAction.NudgeValueDownLarge:
+                    return NudgeSelectedValue(-10);
+
+                case Models.Motion.ShortcutAction.NudgeValueUpLarge:
+                    return NudgeSelectedValue(10);
+
                 case Models.Motion.ShortcutAction.Paste:
                     if (HasClipboardKeyframes)
                     {
@@ -1031,6 +1067,28 @@ namespace IOStudio.ViewModels.Timeline
             }
         }
 
+        /// <summary>关键帧微调步长 (时间 ms / 值 归一化)。Shift = ×10。</summary>
+        public const double NudgeTimeStepMs = 10.0;
+        public const float NudgeValueStep = 0.01f;
+
+        /// <summary>按步数微调选中关键帧时间 (带撤销, 不越过 0)。</summary>
+        private ExecuteShortcutResult NudgeSelectedTime(int steps)
+        {
+            if (_selectedKeyframes.Count == 0)
+                return ExecuteShortcutResult.Handled;
+            MoveSelectedKeyframes(steps * NudgeTimeStepMs);
+            return ExecuteShortcutResult.HandledNeedsMultiSelectRefresh;
+        }
+
+        /// <summary>按步数微调选中关键帧值 (带撤销, 钳位 0..1)。</summary>
+        private ExecuteShortcutResult NudgeSelectedValue(int steps)
+        {
+            if (_selectedKeyframes.Count == 0)
+                return ExecuteShortcutResult.Handled;
+            NudgeSelectedKeyframesValue(steps * NudgeValueStep);
+            return ExecuteShortcutResult.HandledNeedsMultiSelectRefresh;
+        }
+
         /// <summary>是否为深色主题</summary>
         private bool _isDarkTheme;
         public bool IsDarkTheme
@@ -1120,7 +1178,7 @@ namespace IOStudio.ViewModels.Timeline
         public double SnapThresholdMs => 10.0 / Math.Max(0.001, PixelsPerMs); // 约 10 像素的距离
 
         /// <summary>
-        /// 获取所有吸附点 (毫秒): 关键帧位置、视频结尾
+        /// 获取所有吸附点 (毫秒): 关键帧位置、片段边界、播放头、节拍、标记、视频结尾
         /// </summary>
         public System.Collections.Generic.List<double> GetSnapPoints()
         {
@@ -1133,6 +1191,9 @@ namespace IOStudio.ViewModels.Timeline
                 {
                     foreach (var clip in track.Clips)
                     {
+                        // 片段边界也作为吸附点 (便于首尾对齐)
+                        points.Add(clip.StartMs);
+                        points.Add(clip.EndMs);
                         foreach (var kf in clip.Keyframes)
                         {
                             double absTime = clip.StartMs + kf.TimeMs;
@@ -1141,6 +1202,17 @@ namespace IOStudio.ViewModels.Timeline
                     }
                 }
             }
+
+            // 播放头
+            points.Add(CurrentTimeMs);
+
+            // 节拍标记 (让"节拍检测"真正可用于对齐)
+            if (BeatMarkers is { Count: > 0 })
+                points.AddRange(BeatMarkers);
+
+            // 时间轴标记
+            foreach (var marker in MarkerService.Markers)
+                points.Add(marker.TimeMs);
 
             // 视频结尾
             if (VideoDurationMs > 0)

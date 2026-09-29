@@ -34,6 +34,39 @@ namespace IOStudio.Models.Motion
         /// <summary>复制关键帧 (Ctrl+C)</summary>
         Copy,
 
+        /// <summary>剪切关键帧 (Ctrl+X)</summary>
+        Cut,
+
+        /// <summary>全选当前轨道关键帧 (Ctrl+A)</summary>
+        SelectAllKeyframes,
+
+        /// <summary>全选所有轨道关键帧 (Ctrl+Shift+A)</summary>
+        SelectAllTrackKeyframes,
+
+        /// <summary>微调选中关键帧时间 −1 步 (Alt+←)</summary>
+        NudgeTimeBackward,
+
+        /// <summary>微调选中关键帧时间 +1 步 (Alt+→)</summary>
+        NudgeTimeForward,
+
+        /// <summary>微调选中关键帧时间 −10 步 (Alt+Shift+←)</summary>
+        NudgeTimeBackwardLarge,
+
+        /// <summary>微调选中关键帧时间 +10 步 (Alt+Shift+→)</summary>
+        NudgeTimeForwardLarge,
+
+        /// <summary>微调选中关键帧值 −1 步 (Alt+↓)</summary>
+        NudgeValueDown,
+
+        /// <summary>微调选中关键帧值 +1 步 (Alt+↑)</summary>
+        NudgeValueUp,
+
+        /// <summary>微调选中关键帧值 −10 步 (Alt+Shift+↓)</summary>
+        NudgeValueDownLarge,
+
+        /// <summary>微调选中关键帧值 +10 步 (Alt+Shift+↑)</summary>
+        NudgeValueUpLarge,
+
         /// <summary>粘贴关键帧 (Ctrl+V)</summary>
         Paste,
 

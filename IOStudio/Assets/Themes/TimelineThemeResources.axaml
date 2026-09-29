@@ -37,10 +37,11 @@
             <SolidColorBrush x:Key="TlTrackHeaderSelectedBg" Color="#dfe8f7"/>
             <SolidColorBrush x:Key="TlTrackHeaderSelectedBorder" Color="#3978d4"/>
 
-            <!-- 文本 -->
+            <!-- 文本 (对比度: Primary 14.3 / Secondary 6.8 / Muted 5.3, 对 TlPanelBg #f4f5f6;
+                 Muted 由 #747c86 调深 —— 原值仅 3.87:1, 11px 正文未达 WCAG 1.4.3 的 4.5:1) -->
             <SolidColorBrush x:Key="TlTextPrimary" Color="#20242a"/>
             <SolidColorBrush x:Key="TlTextSecondary" Color="#4f565f"/>
-            <SolidColorBrush x:Key="TlTextMuted" Color="#747c86"/>
+            <SolidColorBrush x:Key="TlTextMuted" Color="#5f666e"/>
 
             <!-- 工具栏按钮 hover -->
             <SolidColorBrush x:Key="TlBtnHover" Color="#dde0e4"/>

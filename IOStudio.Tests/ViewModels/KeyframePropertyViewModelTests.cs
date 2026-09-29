@@ -343,6 +343,74 @@ namespace IOStudio.Tests.ViewModels
             Assert.False(vm.ShowMarkerEditor);
         }
 
+        // ── 区段折叠 (辅助区段默认收起, 相关时自动展开) ──
+
+        [Fact]
+        public void AuxSections_Default_Collapsed()
+        {
+            var vm = new KeyframePropertyViewModel();
+            Assert.False(vm.IsIdleSectionExpanded);
+            Assert.False(vm.IsMarkerSectionExpanded);
+            Assert.False(vm.IsEventSectionExpanded);
+        }
+
+        [Fact]
+        public void ShowMarker_AutoExpands_MarkerSection()
+        {
+            var vm = new KeyframePropertyViewModel();
+            vm.ShowMarker(new IOStudio.Models.Motion.TimelineMarker { TimeMs = 0, Name = "M1" });
+            Assert.True(vm.IsMarkerSectionExpanded);
+        }
+
+        [Fact]
+        public void SetPlayheadEvent_AutoExpands_EventSection()
+        {
+            var vm = new KeyframePropertyViewModel();
+            vm.SetPlayheadEvent(new IOStudio.Models.Motion.TimelineEvent { TimeMs = 0, EventName = "e" });
+            Assert.True(vm.IsEventSectionExpanded);
+        }
+
+        [Fact]
+        public void ToggleSectionExpanded_Toggles_Requested_Section()
+        {
+            var vm = new KeyframePropertyViewModel();
+
+            vm.ToggleSectionExpanded("idle");
+            Assert.True(vm.IsIdleSectionExpanded);
+            Assert.False(vm.IsMarkerSectionExpanded); // 不影响其他区段
+
+            vm.ToggleSectionExpanded("idle");
+            Assert.False(vm.IsIdleSectionExpanded);
+        }
+
+        // ── 关键帧列表空态 (给出原因 + 下一步) ──
+
+        [Fact]
+        public void KeyframeListEmptyText_Tells_Why()
+        {
+            var vm = new KeyframePropertyViewModel();
+
+            // 播放头不在片段内 (clipIdx = -1)
+            vm.ShowTrackState(0, 0.5f, "float", "Pitch", hasKfAtPlayhead: false, clipIdx: -1);
+            Assert.True(vm.ShowKeyframeListEmpty);
+            Assert.Equal("播放头不在片段内", vm.KeyframeListEmptyText);
+
+            // 播放头在片段内但片段无关键帧
+            vm.ShowTrackState(0, 0.5f, "float", "Pitch", hasKfAtPlayhead: false, clipIdx: 0);
+            Assert.Equal("该片段没有关键帧，按 K 添加", vm.KeyframeListEmptyText);
+        }
+
+        [Fact]
+        public void KeyframeListEmpty_Hidden_When_List_Populated()
+        {
+            var vm = new KeyframePropertyViewModel();
+            vm.ShowTrackState(0, 0.5f, "float", "Pitch", hasKfAtPlayhead: false, clipIdx: -1);
+            Assert.True(vm.ShowKeyframeListEmpty);
+
+            vm.Clear();
+            Assert.False(vm.ShowKeyframeListEmpty); // 非 TrackInspector 模式不显示空态
+        }
+
         [Fact]
         public void SelectionVersion_Increments_OnShowTrackState()
         {

@@ -113,6 +113,22 @@
             <Setter Property="Foreground" Value="{DynamicResource TlTextPrimary}"/>
         </Style>
 
+        <!-- 区段折叠箭头按钮 -->
+        <Style Selector="Button.section-chevron">
+            <Setter Property="Focusable" Value="False"/>
+            <Setter Property="Padding" Value="4,2"/>
+            <Setter Property="MinWidth" Value="24"/>
+            <Setter Property="MinHeight" Value="24"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="CornerRadius" Value="6"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="HorizontalContentAlignment" Value="Center"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+        </Style>
+        <Style Selector="Button.section-chevron:pointerover">
+            <Setter Property="Background" Value="{DynamicResource TlHoverBg}"/>
+        </Style>
+
         <!-- 行/区段内的可收缩文本: 一律省略号, 绝不顶出容器 -->
         <Style Selector="TextBlock.prop-value">
             <Setter Property="FontSize" Value="11"/>
@@ -315,6 +331,11 @@
                                     <TextBlock Text="关键帧" Classes="prop-section-title"/>
                                 </StackPanel>
                             </Grid>
+                            <!-- 空态: 说明原因 + 下一步动作 (列表隐藏时不至于只剩一排按钮) -->
+                            <TextBlock Text="{Binding KeyframeListEmptyText}"
+                                       IsVisible="{Binding ShowKeyframeListEmpty}"
+                                       Classes="prop-value" TextWrapping="Wrap"
+                                       Foreground="{DynamicResource TlTextMuted}"/>
                             <ListBox Name="KeyframeListBox"
                                      ItemsSource="{Binding KeyframeItems}"
                                      IsVisible="{Binding HasKeyframeList}"
@@ -338,8 +359,8 @@
                                     </DataTemplate>
                                 </ListBox.ItemTemplate>
                             </ListBox>
-                            <!-- 批量操作: 收进浅底分组; 按钮用 WrapPanel, 窄面板下换行而非顶出容器 -->
-                            <Border Classes="prop-batch">
+                            <!-- 批量操作: 收进浅底分组; 无可编辑关键帧时整组禁用 -->
+                            <Border Classes="prop-batch" IsEnabled="{Binding HasKeyframeList}">
                                 <StackPanel Spacing="6">
                                     <Grid ColumnDefinitions="34,*" ColumnSpacing="4">
                                         <TextBlock Grid.Column="0" Text="插值" Classes="prop-label" MinWidth="0"/>
@@ -503,47 +524,55 @@
                         </StackPanel>
                     </Border>
 
-                    <!-- ═══ 待机循环 区段 (轨道检查器模式, 依赖 TrackVm) ═══ -->
+                    <!-- ═══ 待机循环 区段 (辅助; 可折叠, 默认收起) ═══ -->
                     <Border Classes="prop-section" IsVisible="{Binding IsTrackInspector}">
                         <StackPanel Spacing="6">
-                            <Grid ColumnDefinitions="*,Auto">
+                            <!-- 头部: 标题 + 状态摘要 + 折叠箭头 -->
+                            <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="6">
                                 <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="6">
                                     <Ellipse Classes="prop-dot"/>
                                     <TextBlock Text="待机循环" Classes="prop-section-title"/>
                                 </StackPanel>
-                                <Border Grid.Column="1" Background="{DynamicResource TlRoleBadgeBg}"
-                                        CornerRadius="6" Padding="5,1" VerticalAlignment="Center"
-                                        IsVisible="{Binding HasIdleLoop}">
-                                    <TextBlock Text="已启用" FontSize="10"
-                                               Foreground="{DynamicResource TlRoleBadgeText}" FontWeight="Bold"/>
-                                </Border>
-                            </Grid>
-                            <TextBlock Text="{Binding IdleStatusText}" FontSize="10"
-                                       Foreground="{DynamicResource TlTextMuted}" TextWrapping="Wrap"/>
-                            <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="6">
-                                <Button Grid.Column="0" Classes="reset-btn" Cursor="Hand"
-                                        Command="{Binding $parent[Window].((vm:TimelineEditorViewModel)DataContext).ToggleTrackIdleCommand}"
-                                        CommandParameter="{Binding TrackVm}">
-                                    <TextBlock Text="切换待机" FontSize="11"/>
-                                </Button>
-                                <Button Grid.Column="2" Classes="reset-btn" Cursor="Hand"
-                                        Command="{Binding $parent[Window].((vm:TimelineEditorViewModel)DataContext).EditTrackIdleCommand}"
-                                        CommandParameter="{Binding TrackVm}">
-                                    <TextBlock Text="编辑曲线…" FontSize="11"/>
+                                <TextBlock Grid.Column="1" Text="{Binding IdleStatusText}"
+                                           Classes="prop-value" TextTrimming="CharacterEllipsis"
+                                           Foreground="{DynamicResource TlTextMuted}"/>
+                                <Button Grid.Column="2" Classes="section-chevron" Tag="idle"
+                                        Click="OnToggleSectionClick" ToolTip.Tip="展开 / 收起">
+                                    <Panel>
+                                        <iconPacks:PackIconIonicons Kind="ArrowDowniOS" Width="12" Height="12"
+                                                                    IsVisible="{Binding IsIdleSectionExpanded}"
+                                                                    Foreground="{DynamicResource TlTextMuted}"/>
+                                        <iconPacks:PackIconIonicons Kind="ArrowForwardiOS" Width="12" Height="12"
+                                                                    IsVisible="{Binding !IsIdleSectionExpanded}"
+                                                                    Foreground="{DynamicResource TlTextMuted}"/>
+                                    </Panel>
                                 </Button>
                             </Grid>
-                            <StackPanel Orientation="Horizontal" Spacing="6">
-                                <TextBlock Text="模板:" FontSize="10" Foreground="{DynamicResource TlTextMuted}"
-                                           VerticalAlignment="Center"/>
-                                <Button Classes="reset-btn" Cursor="Hand" Content="呼吸"
-                                        Command="{Binding $parent[Window].((vm:TimelineEditorViewModel)DataContext).ApplyIdleTemplateToTrackCommand}"
-                                        CommandParameter="breathing"/>
-                                <Button Classes="reset-btn" Cursor="Hand" Content="摇摆"
-                                        Command="{Binding $parent[Window].((vm:TimelineEditorViewModel)DataContext).ApplyIdleTemplateToTrackCommand}"
-                                        CommandParameter="sway"/>
-                                <Button Classes="reset-btn" Cursor="Hand" Content="微幅"
-                                        Command="{Binding $parent[Window].((vm:TimelineEditorViewModel)DataContext).ApplyIdleTemplateToTrackCommand}"
-                                        CommandParameter="micro"/>
+                            <StackPanel Spacing="6" IsVisible="{Binding IsIdleSectionExpanded}">
+                                <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="6">
+                                    <Button Grid.Column="0" Classes="reset-btn" Cursor="Hand"
+                                            Command="{Binding $parent[Window].((vm:TimelineEditorViewModel)DataContext).ToggleTrackIdleCommand}"
+                                            CommandParameter="{Binding TrackVm}">
+                                        <TextBlock Text="切换待机" FontSize="11"/>
+                                    </Button>
+                                    <Button Grid.Column="2" Classes="reset-btn" Cursor="Hand"
+                                            Command="{Binding $parent[Window].((vm:TimelineEditorViewModel)DataContext).EditTrackIdleCommand}"
+                                            CommandParameter="{Binding TrackVm}">
+                                        <TextBlock Text="编辑曲线…" FontSize="11"/>
+                                    </Button>
+                                </Grid>
+                                <StackPanel Orientation="Horizontal" Spacing="6">
+                                    <TextBlock Text="模板:" Classes="prop-label" MinWidth="0"/>
+                                    <Button Classes="reset-btn" Cursor="Hand" Content="呼吸"
+                                            Command="{Binding $parent[Window].((vm:TimelineEditorViewModel)DataContext).ApplyIdleTemplateToTrackCommand}"
+                                            CommandParameter="breathing"/>
+                                    <Button Classes="reset-btn" Cursor="Hand" Content="摇摆"
+                                            Command="{Binding $parent[Window].((vm:TimelineEditorViewModel)DataContext).ApplyIdleTemplateToTrackCommand}"
+                                            CommandParameter="sway"/>
+                                    <Button Classes="reset-btn" Cursor="Hand" Content="微幅"
+                                            Command="{Binding $parent[Window].((vm:TimelineEditorViewModel)DataContext).ApplyIdleTemplateToTrackCommand}"
+                                            CommandParameter="micro"/>
+                                </StackPanel>
                             </StackPanel>
                         </StackPanel>
                     </Border>
@@ -616,13 +645,30 @@
                         </StackPanel>
                     </Border>
 
-                    <!-- ═══ 标记属性 (播放头落在标记上) ═══ -->
+                    <!-- ═══ 标记属性 (播放头落在标记上; 可折叠) ═══ -->
                     <Border Classes="prop-section" IsVisible="{Binding ShowMarkerEditor}">
                         <StackPanel Spacing="6">
-                            <StackPanel Orientation="Horizontal" Spacing="6">
-                                <Ellipse Classes="prop-dot" Fill="{Binding MarkerColor}"/>
-                                <TextBlock Text="标记" Classes="prop-section-title"/>
-                            </StackPanel>
+                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="6">
+                                <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="6">
+                                    <Ellipse Classes="prop-dot" Fill="{Binding MarkerColor}"/>
+                                    <TextBlock Text="标记" Classes="prop-section-title"/>
+                                    <TextBlock Text="{Binding MarkerName}" Classes="prop-value"
+                                               Foreground="{DynamicResource TlTextMuted}"
+                                               TextTrimming="CharacterEllipsis"/>
+                                </StackPanel>
+                                <Button Grid.Column="1" Classes="section-chevron" Tag="marker"
+                                        Click="OnToggleSectionClick" ToolTip.Tip="展开 / 收起">
+                                    <Panel>
+                                        <iconPacks:PackIconIonicons Kind="ArrowDowniOS" Width="12" Height="12"
+                                                                    IsVisible="{Binding IsMarkerSectionExpanded}"
+                                                                    Foreground="{DynamicResource TlTextMuted}"/>
+                                        <iconPacks:PackIconIonicons Kind="ArrowForwardiOS" Width="12" Height="12"
+                                                                    IsVisible="{Binding !IsMarkerSectionExpanded}"
+                                                                    Foreground="{DynamicResource TlTextMuted}"/>
+                                    </Panel>
+                                </Button>
+                            </Grid>
+                            <StackPanel Spacing="6" IsVisible="{Binding IsMarkerSectionExpanded}">
                             <Grid ColumnDefinitions="60,*">
                                 <TextBlock Classes="prop-label" Text="名称" Grid.Column="0"/>
                                 <TextBox Name="MarkerNameInput" Classes="prop-input" Grid.Column="1"
@@ -640,6 +686,11 @@
                             <Grid ColumnDefinitions="60,*">
                                 <TextBlock Classes="prop-label" Text="颜色" Grid.Column="0"/>
                                 <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4">
+                                    <!-- 当前颜色预览: 6 个色板之外显式给出"现在用哪个" -->
+                                    <Ellipse Width="16" Height="16" Fill="{Binding MarkerColor}"
+                                             Stroke="{DynamicResource TlBorderBrush}" StrokeThickness="1"
+                                             VerticalAlignment="Center" Margin="0,0,4,0"
+                                             ToolTip.Tip="当前颜色"/>
                                     <Button Classes="reset-btn" Width="24" Height="24" Click="OnMarkerColorClick" Tag="#f59e0b"
                                             ToolTip.Tip="琥珀"><Ellipse Width="11" Height="11" Fill="#f59e0b"/></Button>
                                     <Button Classes="reset-btn" Width="24" Height="24" Click="OnMarkerColorClick" Tag="#ef4444"
@@ -654,18 +705,36 @@
                                             ToolTip.Tip="粉"><Ellipse Width="11" Height="11" Fill="#ec4899"/></Button>
                                 </StackPanel>
                             </Grid>
+                            </StackPanel>
                         </StackPanel>
                     </Border>
 
-                    <!-- ═══ 事件 区段 (独立事件 或 播放头位置事件) ═══ -->
+                    <!-- ═══ 事件 区段 (独立事件 或 播放头位置事件; 可折叠) ═══ -->
                     <Border Classes="prop-section" IsVisible="{Binding ShowEventBinding}">
                         <StackPanel Spacing="6">
-                            <StackPanel Orientation="Horizontal" Spacing="6">
-                                <Ellipse Classes="prop-dot" Fill="{DynamicResource TlEvent}"/>
-                                <TextBlock Text="事件" Classes="prop-section-title"/>
-                                <TextBlock Text="{Binding EventBadge}" Classes="prop-value"
-                                           Foreground="{DynamicResource TlTextMuted}"/>
-                            </StackPanel>
+                            <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="6">
+                                <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="6">
+                                    <Ellipse Classes="prop-dot" Fill="{DynamicResource TlEvent}"/>
+                                    <TextBlock Text="事件" Classes="prop-section-title"/>
+                                    <TextBlock Text="{Binding EventBadge}" Classes="prop-value"
+                                               Foreground="{DynamicResource TlTextMuted}"/>
+                                </StackPanel>
+                                <TextBlock Grid.Column="1" Text="{Binding EventName}" Classes="prop-mono"
+                                           Foreground="{DynamicResource TlTextMuted}"
+                                           TextTrimming="CharacterEllipsis"/>
+                                <Button Grid.Column="2" Classes="section-chevron" Tag="event"
+                                        Click="OnToggleSectionClick" ToolTip.Tip="展开 / 收起">
+                                    <Panel>
+                                        <iconPacks:PackIconIonicons Kind="ArrowDowniOS" Width="12" Height="12"
+                                                                    IsVisible="{Binding IsEventSectionExpanded}"
+                                                                    Foreground="{DynamicResource TlTextMuted}"/>
+                                        <iconPacks:PackIconIonicons Kind="ArrowForwardiOS" Width="12" Height="12"
+                                                                    IsVisible="{Binding !IsEventSectionExpanded}"
+                                                                    Foreground="{DynamicResource TlTextMuted}"/>
+                                    </Panel>
+                                </Button>
+                            </Grid>
+                            <StackPanel Spacing="6" IsVisible="{Binding IsEventSectionExpanded}">
                             <!-- 事件时间 (独立事件可编辑) -->
                             <Grid ColumnDefinitions="60,*"
                                   IsVisible="{Binding IsStandaloneEvent}">
@@ -726,6 +795,7 @@
                                     Cursor="Hand">
                                 <TextBlock Text="删除事件" FontSize="11"/>
                             </Button>
+                            </StackPanel>
                         </StackPanel>
                     </Border>
 
@@ -733,9 +803,8 @@
                     <Border Classes="prop-section" IsVisible="{Binding ShowPlayheadEvent}">
                         <StackPanel Spacing="6">
                             <StackPanel Orientation="Horizontal" Spacing="6">
-                                <Ellipse Width="7" Height="7" Fill="{DynamicResource TlEvent}"/>
-                                <TextBlock Text="播放头事件" FontSize="11" FontWeight="SemiBold"
-                                           Foreground="{DynamicResource TlTextPrimary}" VerticalAlignment="Center"/>
+                                <Ellipse Classes="prop-dot" Fill="{DynamicResource TlEvent}"/>
+                                <TextBlock Text="播放头事件" Classes="prop-section-title"/>
                             </StackPanel>
                             <Grid ColumnDefinitions="60,*">
                                 <TextBlock Classes="prop-label" Text="名称" Grid.Column="0"/>

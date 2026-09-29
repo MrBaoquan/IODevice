@@ -326,8 +326,14 @@ namespace IOStudio.Controls.Timeline
             }
         }
 
-        private void OnMarkerColorClick(object? sender, RoutedEventArgs e)
+        /// <summary>折叠/展开区段 (Tag = idle | marker | event)。</summary>
+        private void OnToggleSectionClick(object? sender, RoutedEventArgs e)
         {
+            if (Vm is { } vm && sender is Control { Tag: string section })
+                vm.ToggleSectionExpanded(section);
+        }
+
+        private void OnMarkerColorClick(object? sender, RoutedEventArgs e)        {
             if (
                 Vm is not { } vm
                 || sender is not Control { Tag: string color }

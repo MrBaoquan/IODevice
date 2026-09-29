@@ -176,7 +176,7 @@ namespace IOStudio.ViewModels.Timeline
                 if (TrackVm?.IsLocked == true)
                     return "轨道已锁定，解锁后可编辑";
                 if (!_hasKeyframeAtPlayhead && !_isAutoKeyMode)
-                    return "将播放头移到关键帧上，或启用自动后编辑";
+                    return "播放头不在关键帧上";
                 return "";
             }
         }
@@ -227,6 +227,14 @@ namespace IOStudio.ViewModels.Timeline
         public ObservableCollection<KeyframeListItem> KeyframeItems { get; } = new();
 
         public bool HasKeyframeList => KeyframeItems.Count > 0;
+
+        /// <summary>是否显示"关键帧列表为空"的占位说明。</summary>
+        public bool ShowKeyframeListEmpty =>
+            _mode == DisplayMode.TrackInspector && KeyframeItems.Count == 0;
+
+        /// <summary>空态说明 (给出原因与下一步动作)。</summary>
+        public string KeyframeListEmptyText =>
+            ClipIndex < 0 ? "播放头不在片段内" : "该片段没有关键帧，按 K 添加";
 
         /// <summary>点击列表项: (kfIdx, 绝对时间 ms)。</summary>
         public event Action<int, double>? KeyframeListItemActivated;
@@ -290,6 +298,8 @@ namespace IOStudio.ViewModels.Timeline
                 }
             }
             this.RaisePropertyChanged(nameof(HasKeyframeList));
+            this.RaisePropertyChanged(nameof(ShowKeyframeListEmpty));
+            this.RaisePropertyChanged(nameof(KeyframeListEmptyText));
         }
 
         /// <summary>播放头位置有事件时显示</summary>
@@ -351,6 +361,52 @@ namespace IOStudio.ViewModels.Timeline
             return true;
         }
 
+        // ── 区段折叠 (辅助区段默认收起, 相关时自动展开; 主编辑区段常显) ──
+
+        private bool _isIdleSectionExpanded;
+
+        /// <summary>待机循环区段展开 (高级功能, 默认收起)。</summary>
+        public bool IsIdleSectionExpanded
+        {
+            get => _isIdleSectionExpanded;
+            set => this.RaiseAndSetIfChanged(ref _isIdleSectionExpanded, value);
+        }
+
+        private bool _isMarkerSectionExpanded;
+
+        /// <summary>标记区段展开 (播放头落到标记上时自动展开)。</summary>
+        public bool IsMarkerSectionExpanded
+        {
+            get => _isMarkerSectionExpanded;
+            set => this.RaiseAndSetIfChanged(ref _isMarkerSectionExpanded, value);
+        }
+
+        private bool _isEventSectionExpanded;
+
+        /// <summary>事件区段展开 (播放头落到事件上时自动展开)。</summary>
+        public bool IsEventSectionExpanded
+        {
+            get => _isEventSectionExpanded;
+            set => this.RaiseAndSetIfChanged(ref _isEventSectionExpanded, value);
+        }
+
+        /// <summary>切换区段折叠。</summary>
+        public void ToggleSectionExpanded(string section)
+        {
+            switch (section)
+            {
+                case "idle":
+                    IsIdleSectionExpanded = !IsIdleSectionExpanded;
+                    break;
+                case "marker":
+                    IsMarkerSectionExpanded = !IsMarkerSectionExpanded;
+                    break;
+                case "event":
+                    IsEventSectionExpanded = !IsEventSectionExpanded;
+                    break;
+            }
+        }
+
         // ── 标记编辑 (播放头落在标记上时) ──────────────────────
 
         /// <summary>标记属性编辑: (name, color, note)。</summary>
@@ -400,6 +456,9 @@ namespace IOStudio.ViewModels.Timeline
             MarkerName = marker?.Name ?? "";
             MarkerNote = marker?.Note ?? "";
             MarkerColor = marker?.Color ?? "#f59e0b";
+            // 播放头落到标记上时自动展开, 便于直接编辑
+            if (marker is not null)
+                IsMarkerSectionExpanded = true;
             _isSyncing = false;
         }
 
@@ -983,6 +1042,7 @@ namespace IOStudio.ViewModels.Timeline
             EventBadge = "事件";
             ActionEditLocked = false;
             EventNameDuplicate = false;
+            IsEventSectionExpanded = true;
             RaiseModeProperties();
         }
 
@@ -1002,6 +1062,8 @@ namespace IOStudio.ViewModels.Timeline
             EventNameDuplicate = false;
             KeyframeItems.Clear();
             this.RaisePropertyChanged(nameof(HasKeyframeList));
+            this.RaisePropertyChanged(nameof(ShowKeyframeListEmpty));
+            this.RaisePropertyChanged(nameof(KeyframeListEmptyText));
             ShowMarker(null);
             RaiseModeProperties();
         }
@@ -1093,6 +1155,8 @@ namespace IOStudio.ViewModels.Timeline
                 PlayheadEventName = evt.EventName ?? "";
                 PlayheadEventData = evt.EventData;
                 PlayheadEventDataType = evt.DataType ?? "string";
+                // 播放头落到事件上时自动展开
+                IsEventSectionExpanded = true;
             }
             else
             {

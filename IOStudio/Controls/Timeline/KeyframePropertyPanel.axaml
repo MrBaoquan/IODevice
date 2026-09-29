@@ -11,13 +11,42 @@
              KeyDown="OnPanelKeyDown">
 
     <UserControl.Styles>
-        <!-- Compact property-grid rows -->
+        <!-- ══════════════════════════════════════════════════════════
+             检查器度量令牌 — 全面板只引用这里, 改版只改这一处。
+             间距走 4/8/12 阶梯; 字号走 11/12 两档 (标题 12, 正文 11/12);
+             控件高度统一 30 (输入) / 30 (导航) / 26 (小动作)。
+             ══════════════════════════════════════════════════════════ -->
+
+        <!-- 字段标签: 统一列宽, 保证跨区段左基线对齐 -->
         <Style Selector="TextBlock.prop-label">
             <Setter Property="FontSize" Value="11"/>
             <Setter Property="Foreground" Value="{DynamicResource TlTextMuted}"/>
             <Setter Property="VerticalAlignment" Value="Center"/>
-            <Setter Property="MinWidth" Value="56"/>
+            <Setter Property="MinWidth" Value="60"/>
         </Style>
+
+        <!-- 数值/时间等度量文本: 等宽 + tabular 需要, 避免数字跳动 -->
+        <Style Selector="TextBlock.prop-mono">
+            <Setter Property="FontFamily" Value="Consolas, monospace"/>
+            <Setter Property="FontSize" Value="11"/>
+        </Style>
+
+        <!-- 区段标题: 统一字号/字重/颜色 -->
+        <Style Selector="TextBlock.prop-section-title">
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Foreground" Value="{DynamicResource TlTextPrimary}"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+
+        <!-- 区段标题前的语义点: 非语义区段共用同一令牌 -->
+        <Style Selector="Ellipse.prop-dot">
+            <Setter Property="Width" Value="7"/>
+            <Setter Property="Height" Value="7"/>
+            <Setter Property="Fill" Value="{DynamicResource TlPropSectionDot}"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+
         <Style Selector="TextBox.prop-input">
             <Setter Property="FontSize" Value="12"/>
             <Setter Property="Padding" Value="7,5"/>
@@ -32,19 +61,28 @@
             <Setter Property="HorizontalAlignment" Value="Stretch"/>
             <Setter Property="CornerRadius" Value="6"/>
         </Style>
-        <!-- 属性区段 -->
+
+        <!-- 属性区段: 统一上下留白 (12), 唯一分隔线 -->
         <Style Selector="Border.prop-section">
-            <Setter Property="Padding" Value="0,10,0,10"/>
+            <Setter Property="Padding" Value="0,12,0,12"/>
             <Setter Property="BorderBrush" Value="{DynamicResource TlBorderBrush}"/>
             <Setter Property="BorderThickness" Value="0,0,0,1"/>
             <Setter Property="Margin" Value="0"/>
         </Style>
+
+        <!-- 批量操作容器: 把并排的小按钮收进一个浅底分组, 避免"裸按钮堆叠" -->
+        <Style Selector="Border.prop-batch">
+            <Setter Property="Background" Value="{DynamicResource TlInputBg}"/>
+            <Setter Property="CornerRadius" Value="6"/>
+            <Setter Property="Padding" Value="6,5"/>
+        </Style>
+
         <!-- 导航/工具按钮: Focusable=False 防止抢占键盘焦点 -->
         <Style Selector="Button.nav-btn">
             <Setter Property="Focusable" Value="False"/>
             <Setter Property="Padding" Value="6,4"/>
-            <Setter Property="MinWidth" Value="28"/>
-            <Setter Property="MinHeight" Value="28"/>
+            <Setter Property="MinWidth" Value="30"/>
+            <Setter Property="MinHeight" Value="30"/>
             <Setter Property="Background" Value="Transparent"/>
             <Setter Property="CornerRadius" Value="6"/>
             <Setter Property="HorizontalContentAlignment" Value="Center"/>
@@ -56,12 +94,14 @@
         <Style Selector="Button.nav-btn:pressed">
             <Setter Property="Background" Value="{DynamicResource TlAccentSoftBg}"/>
         </Style>
-        <!-- 重置按钮 -->
+
+        <!-- 小动作按钮 (批量/重置/模板): 26×26, 满足桌面指针目标下限 -->
         <Style Selector="Button.reset-btn">
             <Setter Property="Focusable" Value="False"/>
-            <Setter Property="Padding" Value="4,2"/>
-            <Setter Property="MinWidth" Value="24"/>
-            <Setter Property="MinHeight" Value="24"/>
+            <Setter Property="Padding" Value="6,3"/>
+            <Setter Property="MinWidth" Value="26"/>
+            <Setter Property="MinHeight" Value="26"/>
+            <Setter Property="FontSize" Value="11"/>
             <Setter Property="Background" Value="Transparent"/>
             <Setter Property="Foreground" Value="{DynamicResource TlTextMuted}"/>
             <Setter Property="CornerRadius" Value="6"/>
@@ -70,6 +110,15 @@
         </Style>
         <Style Selector="Button.reset-btn:pointerover">
             <Setter Property="Background" Value="{DynamicResource TlHoverBg}"/>
+            <Setter Property="Foreground" Value="{DynamicResource TlTextPrimary}"/>
+        </Style>
+
+        <!-- 行/区段内的可收缩文本: 一律省略号, 绝不顶出容器 -->
+        <Style Selector="TextBlock.prop-value">
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="Foreground" Value="{DynamicResource TlTextSecondary}"/>
+            <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
         </Style>
     </UserControl.Styles>
 
@@ -100,7 +149,7 @@
                             <StackPanel Orientation="Horizontal" Spacing="3">
                                 <iconPacks:PackIconIonicons Kind="RadioButtonOniOS" Width="12" Height="12"
                                                             Foreground="{DynamicResource TlDanger}"/>
-                                <TextBlock Text="Auto" FontSize="10" VerticalAlignment="Center"/>
+                                <TextBlock Text="自动" FontSize="10" VerticalAlignment="Center"/>
                             </StackPanel>
                         </ToggleButton>
                     </Grid>
@@ -144,18 +193,18 @@
                                                FontFamily="Consolas, monospace"/>
                                 </Border>
                             </Grid>
-                            <Grid ColumnDefinitions="58,*" RowDefinitions="Auto,Auto,Auto" RowSpacing="7">
-                                <TextBlock Grid.Row="0" Grid.Column="0" Classes="prop-label" Text="范围"/>
+                            <Grid ColumnDefinitions="60,*" RowDefinitions="Auto,Auto,Auto" RowSpacing="7">
+                                <TextBlock Grid.Row="0" Grid.Column="0" Classes="prop-label" Text="时间范围"/>
                                 <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding ActionTimeRangeText}"
-                                           FontSize="11" Foreground="{DynamicResource TlTextSecondary}"
-                                           FontFamily="Consolas, monospace"/>
-                                <TextBlock Grid.Row="1" Grid.Column="0" Classes="prop-label" Text="参数"/>
+                                           Classes="prop-mono" TextTrimming="CharacterEllipsis"
+                                           Foreground="{DynamicResource TlTextSecondary}"/>
+                                <TextBlock Grid.Row="1" Grid.Column="0" Classes="prop-label" Text="动作参数"/>
                                 <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding ActionParametersText}"
-                                           FontSize="11" Foreground="{DynamicResource TlTextSecondary}"
-                                           FontFamily="Consolas, monospace"/>
+                                           Classes="prop-mono" TextTrimming="CharacterEllipsis"
+                                           Foreground="{DynamicResource TlTextSecondary}"/>
                                 <TextBlock Grid.Row="2" Grid.Column="0" Classes="prop-label" Text="绑定"/>
                                 <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding ActionBindingText}"
-                                           FontSize="11" Foreground="{DynamicResource TlTextSecondary}"/>
+                                           Classes="prop-value" TextTrimming="CharacterEllipsis"/>
                             </Grid>
                             <Border BorderBrush="{DynamicResource TlBorderBrush}"
                                     BorderThickness="0,1,0,0" Padding="0,8,0,0">
@@ -219,7 +268,7 @@
                                                Foreground="{DynamicResource TlTextPrimary}"/>
                                 </StackPanel>
                                 <TextBlock Text="{Binding TimeDisplayText}"
-                                           FontSize="11" FontFamily="Consolas, monospace"
+                                           Classes="prop-mono"
                                            Foreground="{DynamicResource TlTextMuted}"
                                            Margin="0,2,0,0"/>
                             </StackPanel>
@@ -252,24 +301,19 @@
                             </Button>
                             <!-- 状态标签 -->
                             <TextBlock Grid.Column="4" Text="{Binding IndexLabel}"
-                                       FontSize="10" Foreground="{DynamicResource TlTextMuted}"
-                                       VerticalAlignment="Center" Margin="6,0,0,0"
-                                       FontFamily="Consolas, monospace"/>
+                                       Classes="prop-mono" Foreground="{DynamicResource TlTextMuted}"
+                                       VerticalAlignment="Center" Margin="6,0,0,0"/>
                         </Grid>
                     </Border>
 
                     <!-- ═══ 关键帧列表 (当前 clip; 点击跳转) ═══ -->
                     <Border Classes="prop-section" IsVisible="{Binding IsTrackInspector}">
                         <StackPanel Spacing="6">
-                            <Grid ColumnDefinitions="*,Auto">
+                            <Grid ColumnDefinitions="*">
                                 <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="6">
-                                    <Ellipse Width="7" Height="7" Fill="{DynamicResource TlAccent}"/>
-                                    <TextBlock Text="关键帧" FontSize="11" FontWeight="SemiBold"
-                                               Foreground="{DynamicResource TlTextPrimary}" VerticalAlignment="Center"/>
+                                    <Ellipse Classes="prop-dot"/>
+                                    <TextBlock Text="关键帧" Classes="prop-section-title"/>
                                 </StackPanel>
-                                <TextBlock Grid.Column="1" Text="{Binding IndexLabel}" FontSize="10"
-                                           Foreground="{DynamicResource TlTextMuted}" VerticalAlignment="Center"
-                                           FontFamily="Consolas, monospace"/>
                             </Grid>
                             <ListBox Name="KeyframeListBox"
                                      ItemsSource="{Binding KeyframeItems}"
@@ -280,59 +324,61 @@
                                      CornerRadius="6" Padding="2">
                                 <ListBox.ItemTemplate>
                                     <DataTemplate x:DataType="vm:KeyframeListItem">
-                                        <Grid ColumnDefinitions="34,*,70,64" Height="22">
-                                            <TextBlock Grid.Column="0" Text="{Binding IndexText}" FontSize="10"
+                                        <Grid ColumnDefinitions="32,*,70,60" Height="24">
+                                            <TextBlock Grid.Column="0" Text="{Binding IndexText}" Classes="prop-mono"
+                                                       Foreground="{DynamicResource TlTextMuted}"/>
+                                            <TextBlock Grid.Column="1" Text="{Binding TimeText}" Classes="prop-mono"
+                                                       Foreground="{DynamicResource TlTextSecondary}"/>
+                                            <TextBlock Grid.Column="2" Text="{Binding ValueText}" Classes="prop-mono"
+                                                       Foreground="{DynamicResource TlTextPrimary}"/>
+                                            <TextBlock Grid.Column="3" Text="{Binding Interpolation}" Classes="prop-mono"
                                                        Foreground="{DynamicResource TlTextMuted}"
-                                                       VerticalAlignment="Center" FontFamily="Consolas, monospace"/>
-                                            <TextBlock Grid.Column="1" Text="{Binding TimeText}" FontSize="10"
-                                                       Foreground="{DynamicResource TlTextSecondary}"
-                                                       VerticalAlignment="Center" FontFamily="Consolas, monospace"/>
-                                            <TextBlock Grid.Column="2" Text="{Binding ValueText}" FontSize="10"
-                                                       Foreground="{DynamicResource TlTextPrimary}"
-                                                       VerticalAlignment="Center" FontFamily="Consolas, monospace"/>
-                                            <TextBlock Grid.Column="3" Text="{Binding Interpolation}" FontSize="10"
-                                                       Foreground="{DynamicResource TlTextMuted}"
-                                                       VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+                                                       TextTrimming="CharacterEllipsis"/>
                                         </Grid>
                                     </DataTemplate>
                                 </ListBox.ItemTemplate>
                             </ListBox>
-                            <!-- 批量: 整条或选中 clip 统一插值 -->
-                            <StackPanel Orientation="Horizontal" Spacing="4">
-                                <TextBlock Text="插值:" FontSize="10" Foreground="{DynamicResource TlTextMuted}"
-                                           VerticalAlignment="Center"/>
-                                <Button Classes="reset-btn" Content="Linear" FontSize="10" Click="OnApplyClipInterpolationClick" Tag="linear"/>
-                                <Button Classes="reset-btn" Content="Bezier" FontSize="10" Click="OnApplyClipInterpolationClick" Tag="bezier"/>
-                                <Button Classes="reset-btn" Content="Step" FontSize="10" Click="OnApplyClipInterpolationClick" Tag="step"/>
-                                <Button Classes="reset-btn" Content="Ease" FontSize="10" Click="OnApplyClipInterpolationClick" Tag="ease_in_out"/>
-                            </StackPanel>
-                            <!-- 批量: 选中关键帧的值 -->
-                            <StackPanel Orientation="Horizontal" Spacing="4">
-                                <TextBlock Text="选中值:" FontSize="10" Foreground="{DynamicResource TlTextMuted}"
-                                           VerticalAlignment="Center"/>
-                                <Button Classes="reset-btn" Content="−0.01" FontSize="10" Click="OnBatchValueClick" Tag="offset:-0.01"/>
-                                <Button Classes="reset-btn" Content="+0.01" FontSize="10" Click="OnBatchValueClick" Tag="offset:0.01"/>
-                                <Button Classes="reset-btn" Content="×0.9" FontSize="10" Click="OnBatchValueClick" Tag="scale:0.9"/>
-                                <Button Classes="reset-btn" Content="×1.1" FontSize="10" Click="OnBatchValueClick" Tag="scale:1.1"/>
-                            </StackPanel>
-                            <!-- 批量: 选中关键帧的时间结构操作 -->
-                            <StackPanel Orientation="Horizontal" Spacing="4">
-                                <TextBlock Text="时间:" FontSize="10" Foreground="{DynamicResource TlTextMuted}"
-                                           VerticalAlignment="Center"/>
-                                <Button Classes="reset-btn" Content="对齐播放头" FontSize="10"
-                                        Click="OnBatchTimeOpClick" Tag="align"
-                                        ToolTip.Tip="选中块起点对齐到播放头"/>
-                                <Button Classes="reset-btn" Content="÷2" FontSize="10"
-                                        Click="OnBatchTimeOpClick" Tag="scale:0.5"/>
-                                <Button Classes="reset-btn" Content="×2" FontSize="10"
-                                        Click="OnBatchTimeOpClick" Tag="scale:2"/>
-                                <Button Classes="reset-btn" Content="反向" FontSize="10"
-                                        Click="OnBatchTimeOpClick" Tag="reverse"
-                                        ToolTip.Tip="在选中块时间跨度内镜像"/>
-                                <Button Classes="reset-btn" Content="量化节拍" FontSize="10"
-                                        Click="OnBatchTimeOpClick" Tag="quantize"
-                                        ToolTip.Tip="吸附到最近节拍标记 (需先开启节拍检测)"/>
-                            </StackPanel>
+                            <!-- 批量操作: 收进浅底分组; 按钮用 WrapPanel, 窄面板下换行而非顶出容器 -->
+                            <Border Classes="prop-batch">
+                                <StackPanel Spacing="6">
+                                    <Grid ColumnDefinitions="34,*" ColumnSpacing="4">
+                                        <TextBlock Grid.Column="0" Text="插值" Classes="prop-label" MinWidth="0"/>
+                                        <WrapPanel Grid.Column="1" Orientation="Horizontal">
+                                            <Button Classes="reset-btn" Content="Linear" Margin="0,0,4,4" Click="OnApplyClipInterpolationClick" Tag="linear"/>
+                                            <Button Classes="reset-btn" Content="Bezier" Margin="0,0,4,4" Click="OnApplyClipInterpolationClick" Tag="bezier"/>
+                                            <Button Classes="reset-btn" Content="Step" Margin="0,0,4,4" Click="OnApplyClipInterpolationClick" Tag="step"/>
+                                            <Button Classes="reset-btn" Content="Ease" Margin="0,0,4,4" Click="OnApplyClipInterpolationClick" Tag="ease_in_out"/>
+                                        </WrapPanel>
+                                    </Grid>
+                                    <Grid ColumnDefinitions="34,*" ColumnSpacing="4">
+                                        <TextBlock Grid.Column="0" Text="值" Classes="prop-label" MinWidth="0"/>
+                                        <WrapPanel Grid.Column="1" Orientation="Horizontal">
+                                            <Button Classes="reset-btn" Content="−0.01" Margin="0,0,4,4" Click="OnBatchValueClick" Tag="offset:-0.01"/>
+                                            <Button Classes="reset-btn" Content="+0.01" Margin="0,0,4,4" Click="OnBatchValueClick" Tag="offset:0.01"/>
+                                            <Button Classes="reset-btn" Content="×0.9" Margin="0,0,4,4" Click="OnBatchValueClick" Tag="scale:0.9"/>
+                                            <Button Classes="reset-btn" Content="×1.1" Margin="0,0,4,4" Click="OnBatchValueClick" Tag="scale:1.1"/>
+                                        </WrapPanel>
+                                    </Grid>
+                                    <Grid ColumnDefinitions="34,*" ColumnSpacing="4">
+                                        <TextBlock Grid.Column="0" Text="时间" Classes="prop-label" MinWidth="0"/>
+                                        <WrapPanel Grid.Column="1" Orientation="Horizontal">
+                                            <Button Classes="reset-btn" Content="对齐播放头" Margin="0,0,4,4"
+                                                    Click="OnBatchTimeOpClick" Tag="align"
+                                                    ToolTip.Tip="选中块起点对齐到播放头"/>
+                                            <Button Classes="reset-btn" Content="÷2" Margin="0,0,4,4"
+                                                    Click="OnBatchTimeOpClick" Tag="scale:0.5"/>
+                                            <Button Classes="reset-btn" Content="×2" Margin="0,0,4,4"
+                                                    Click="OnBatchTimeOpClick" Tag="scale:2"/>
+                                            <Button Classes="reset-btn" Content="反向" Margin="0,0,4,4"
+                                                    Click="OnBatchTimeOpClick" Tag="reverse"
+                                                    ToolTip.Tip="在选中块时间跨度内镜像"/>
+                                            <Button Classes="reset-btn" Content="量化节拍" Margin="0,0,4,4"
+                                                    Click="OnBatchTimeOpClick" Tag="quantize"
+                                                    ToolTip.Tip="吸附到最近节拍标记 (需先开启节拍检测)"/>
+                                        </WrapPanel>
+                                    </Grid>
+                                </StackPanel>
+                            </Border>
                         </StackPanel>
                     </Border>
 
@@ -341,9 +387,8 @@
                         <StackPanel Spacing="4">
                             <Grid ColumnDefinitions="*,Auto">
                                 <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="6">
-                                    <Ellipse Width="7" Height="7" Fill="{DynamicResource TlPropSectionDot}"/>
-                                    <TextBlock Text="数值" FontSize="11" FontWeight="SemiBold"
-                                               Foreground="{DynamicResource TlTextPrimary}" VerticalAlignment="Center"/>
+                                    <Ellipse Classes="prop-dot"/>
+                                    <TextBlock Text="数值" Classes="prop-section-title"/>
                                 </StackPanel>
                                 <Button Grid.Column="1" Classes="reset-btn"
                                         ToolTip.Tip="重置为 0.5"
@@ -396,18 +441,17 @@
                                     </Button>
                                 </StackPanel>
                             </Grid>
-                            <!-- 编辑提示 (原因化) + 一键启用 Auto -->
-                            <StackPanel Orientation="Horizontal" Spacing="6"
-                                        HorizontalAlignment="Center"
-                                        IsVisible="{Binding ShowEditHint}" Margin="0,4,0,0">
-                                <TextBlock Text="{Binding EditHintText}"
-                                           FontSize="10" Foreground="{DynamicResource TlTextMuted}"
-                                           VerticalAlignment="Center" TextWrapping="Wrap" MaxWidth="190"
-                                           Opacity="0.85"/>
-                                <Button Classes="reset-btn" Content="启用 Auto" FontSize="10"
+                            <!-- 编辑提示 (原因化) + 一键启用自动 -->
+                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="6"
+                                  IsVisible="{Binding ShowEditHint}" Margin="0,4,0,0">
+                                <TextBlock Grid.Column="0" Text="{Binding EditHintText}"
+                                           FontSize="11" Foreground="{DynamicResource TlTextMuted}"
+                                           VerticalAlignment="Center" TextWrapping="Wrap"
+                                           Opacity="0.9"/>
+                                <Button Grid.Column="1" Classes="reset-btn" Content="启用自动"
                                         IsVisible="{Binding CanEnableAuto}"
                                         Click="OnEnableAutoClick"/>
-                            </StackPanel>
+                            </Grid>
                         </StackPanel>
                     </Border>
 
@@ -415,14 +459,13 @@
                     <Border Classes="prop-section" IsVisible="{Binding IsBoolMode}">
                         <StackPanel Spacing="6">
                             <StackPanel Orientation="Horizontal" Spacing="6">
-                                <Ellipse Width="7" Height="7" Fill="{DynamicResource TlPropSectionDot}"/>
-                                <TextBlock Text="开关" FontSize="11" FontWeight="SemiBold"
-                                           Foreground="{DynamicResource TlTextPrimary}" VerticalAlignment="Center"/>
+                                <Ellipse Classes="prop-dot"/>
+                                <TextBlock Text="开关" Classes="prop-section-title"/>
                             </StackPanel>
                             <Grid ColumnDefinitions="*,Auto">
                                 <ToggleSwitch Name="BoolToggle" Grid.Column="0"
                                               Focusable="False"
-                                              OnContent="ON (1)" OffContent="OFF (0)"
+                                              OnContent="开 (1)" OffContent="关 (0)"
                                               IsChecked="{Binding BoolValue}"
                                               IsEnabled="{Binding IsValueEditable}"
                                               IsCheckedChanged="OnBoolToggleChanged"/>
@@ -431,18 +474,17 @@
                                            Foreground="{DynamicResource TlTextMuted}" VerticalAlignment="Center"
                                            Margin="6,0,0,0"/>
                             </Grid>
-                            <!-- 编辑提示 (原因化) + 一键启用 Auto -->
-                            <StackPanel Orientation="Horizontal" Spacing="6"
-                                        HorizontalAlignment="Center"
-                                        IsVisible="{Binding ShowEditHint}" Margin="0,4,0,0">
-                                <TextBlock Text="{Binding EditHintText}"
-                                           FontSize="10" Foreground="{DynamicResource TlTextMuted}"
-                                           VerticalAlignment="Center" TextWrapping="Wrap" MaxWidth="190"
-                                           Opacity="0.85"/>
-                                <Button Classes="reset-btn" Content="启用 Auto" FontSize="10"
+                            <!-- 编辑提示 (原因化) + 一键启用自动 -->
+                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="6"
+                                  IsVisible="{Binding ShowEditHint}" Margin="0,4,0,0">
+                                <TextBlock Grid.Column="0" Text="{Binding EditHintText}"
+                                           FontSize="11" Foreground="{DynamicResource TlTextMuted}"
+                                           VerticalAlignment="Center" TextWrapping="Wrap"
+                                           Opacity="0.9"/>
+                                <Button Grid.Column="1" Classes="reset-btn" Content="启用自动"
                                         IsVisible="{Binding CanEnableAuto}"
                                         Click="OnEnableAutoClick"/>
-                            </StackPanel>
+                            </Grid>
                         </StackPanel>
                     </Border>
 
@@ -450,11 +492,10 @@
                     <Border Classes="prop-section" IsVisible="{Binding IsMultiSelect}">
                         <StackPanel Spacing="6">
                             <StackPanel Orientation="Horizontal" Spacing="6">
-                                <Ellipse Width="7" Height="7" Fill="{DynamicResource TlWarning}"/>
-                                <TextBlock Text="多选统计" FontSize="11" FontWeight="SemiBold"
-                                           Foreground="{DynamicResource TlTextPrimary}" VerticalAlignment="Center"/>
+                                <Ellipse Classes="prop-dot" Fill="{DynamicResource TlWarning}"/>
+                                <TextBlock Text="多选统计" Classes="prop-section-title"/>
                             </StackPanel>
-                            <Grid ColumnDefinitions="56,*">
+                            <Grid ColumnDefinitions="60,*">
                                 <TextBlock Classes="prop-label" Text="值范围" Grid.Column="0"/>
                                 <TextBox Classes="prop-input" IsReadOnly="True" Grid.Column="1"
                                          Text="{Binding ValueDisplayText, Mode=OneWay}"/>
@@ -467,9 +508,8 @@
                         <StackPanel Spacing="6">
                             <Grid ColumnDefinitions="*,Auto">
                                 <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="6">
-                                    <Ellipse Width="7" Height="7" Fill="{DynamicResource TlAccent}"/>
-                                    <TextBlock Text="待机循环" FontSize="11" FontWeight="SemiBold"
-                                               Foreground="{DynamicResource TlTextPrimary}" VerticalAlignment="Center"/>
+                                    <Ellipse Classes="prop-dot"/>
+                                    <TextBlock Text="待机循环" Classes="prop-section-title"/>
                                 </StackPanel>
                                 <Border Grid.Column="1" Background="{DynamicResource TlRoleBadgeBg}"
                                         CornerRadius="6" Padding="5,1" VerticalAlignment="Center"
@@ -484,7 +524,7 @@
                                 <Button Grid.Column="0" Classes="reset-btn" Cursor="Hand"
                                         Command="{Binding $parent[Window].((vm:TimelineEditorViewModel)DataContext).ToggleTrackIdleCommand}"
                                         CommandParameter="{Binding TrackVm}">
-                                    <TextBlock Text="启用/停用" FontSize="11"/>
+                                    <TextBlock Text="切换待机" FontSize="11"/>
                                 </Button>
                                 <Button Grid.Column="2" Classes="reset-btn" Cursor="Hand"
                                         Command="{Binding $parent[Window].((vm:TimelineEditorViewModel)DataContext).EditTrackIdleCommand}"
@@ -513,9 +553,8 @@
                         <StackPanel Spacing="6">
                             <Grid ColumnDefinitions="*,Auto">
                                 <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="6">
-                                    <Ellipse Width="7" Height="7" Fill="{DynamicResource TlPropSectionDot}"/>
-                                    <TextBlock Text="插值" FontSize="11" FontWeight="SemiBold"
-                                               Foreground="{DynamicResource TlTextPrimary}" VerticalAlignment="Center"/>
+                                    <Ellipse Classes="prop-dot"/>
+                                    <TextBlock Text="插值" Classes="prop-section-title"/>
                                 </StackPanel>
                                 <Button Grid.Column="1" Classes="reset-btn"
                                         ToolTip.Tip="重置为 Linear"
@@ -523,7 +562,7 @@
                                     <iconPacks:PackIconIonicons Kind="RefreshiOS" Width="13" Height="13"/>
                                 </Button>
                             </Grid>
-                            <Grid ColumnDefinitions="56,*">
+                            <Grid ColumnDefinitions="60,*">
                                 <TextBlock Classes="prop-label" Text="类型" Grid.Column="0"/>
                                 <ComboBox Name="InterpolationCombo" Classes="prop-combo" Grid.Column="1"
                                           Focusable="False"
@@ -535,7 +574,7 @@
                                 </ComboBox>
                             </Grid>
                             <!-- 关键帧时间 (绝对时间, 可直接输入微调) -->
-                            <Grid ColumnDefinitions="56,*">
+                            <Grid ColumnDefinitions="60,*">
                                 <TextBlock Classes="prop-label" Text="时间" Grid.Column="0"
                                            ToolTip.Tip="关键帧绝对时间: 毫秒 (3250) 或 00:03.250"/>
                                 <TextBox Name="KeyframeTimeInput" Classes="prop-input" Grid.Column="1"
@@ -545,32 +584,34 @@
                                          KeyDown="OnKeyframeTimeKeyDown"/>
                             </Grid>
                             <!-- 贝塞尔切线数值 (仅 bezier) -->
-                            <Grid ColumnDefinitions="56,*" IsVisible="{Binding ShowTangent}">
-                                <TextBlock Classes="prop-label" Text="切线入" Grid.Column="0"/>
+                            <Grid ColumnDefinitions="60,*" IsVisible="{Binding ShowTangent}">
+                                <TextBlock Classes="prop-label" Text="切线入" Grid.Column="0"
+                                           ToolTip.Tip="入切线纵坐标 (控制点 Y)"/>
                                 <TextBox Name="TangentInInput" Classes="prop-input" Grid.Column="1"
-                                         Watermark="入切线 (如 0.3)" Text="{Binding TangentIn, Mode=OneWay}"
+                                         Text="{Binding TangentIn, Mode=OneWay}"
                                          LostFocus="OnTangentLostFocus" KeyDown="OnTangentKeyDown"/>
                             </Grid>
-                            <Grid ColumnDefinitions="56,*" IsVisible="{Binding ShowTangent}">
-                                <TextBlock Classes="prop-label" Text="切线出" Grid.Column="0"/>
+                            <Grid ColumnDefinitions="60,*" IsVisible="{Binding ShowTangent}">
+                                <TextBlock Classes="prop-label" Text="切线出" Grid.Column="0"
+                                           ToolTip.Tip="出切线纵坐标 (控制点 Y)"/>
                                 <TextBox Name="TangentOutInput" Classes="prop-input" Grid.Column="1"
-                                         Watermark="出切线 (如 -0.2)" Text="{Binding TangentOut, Mode=OneWay}"
+                                         Text="{Binding TangentOut, Mode=OneWay}"
                                          LostFocus="OnTangentLostFocus" KeyDown="OnTangentKeyDown"/>
                             </Grid>
                             <!-- 贝塞尔控制点 X (决定切线的时间展布, 仅 bezier) -->
-                            <Grid ColumnDefinitions="56,*" IsVisible="{Binding ShowTangent}">
-                                <TextBlock Classes="prop-label" Text="控制X入" Grid.Column="0"
-                                           ToolTip.Tip="入控制点 X (0.2 ~ 3.0), 越大越晚发力"/>
+                            <Grid ColumnDefinitions="60,*" IsVisible="{Binding ShowTangent}">
+                                <TextBlock Classes="prop-label" Text="入控制点X" Grid.Column="0"
+                                           ToolTip.Tip="入控制点横坐标 (0.2 ~ 3.0), 越大越晚发力"/>
                                 <TextBox Name="Cp1xInput" Classes="prop-input" Grid.Column="1"
-                                         Watermark="入控制点 X (0.2 ~ 3)" Text="{Binding Cp1x, Mode=OneWay}"
-                                         LostFocus="OnTangentLostFocus" KeyDown="OnTangentKeyDown"/>
+                                          Text="{Binding Cp1x, Mode=OneWay}"
+                                          LostFocus="OnTangentLostFocus" KeyDown="OnTangentKeyDown"/>
                             </Grid>
-                            <Grid ColumnDefinitions="56,*" IsVisible="{Binding ShowTangent}">
-                                <TextBlock Classes="prop-label" Text="控制X出" Grid.Column="0"
-                                           ToolTip.Tip="出控制点 X (0.2 ~ 3.0), 越大越晚收尾"/>
+                            <Grid ColumnDefinitions="60,*" IsVisible="{Binding ShowTangent}">
+                                <TextBlock Classes="prop-label" Text="出控制点X" Grid.Column="0"
+                                           ToolTip.Tip="出控制点横坐标 (0.2 ~ 3.0), 越大越晚收尾"/>
                                 <TextBox Name="Cp2xInput" Classes="prop-input" Grid.Column="1"
-                                         Watermark="出控制点 X (0.2 ~ 3)" Text="{Binding Cp2x, Mode=OneWay}"
-                                         LostFocus="OnTangentLostFocus" KeyDown="OnTangentKeyDown"/>
+                                          Text="{Binding Cp2x, Mode=OneWay}"
+                                          LostFocus="OnTangentLostFocus" KeyDown="OnTangentKeyDown"/>
                             </Grid>
                         </StackPanel>
                     </Border>
@@ -579,39 +620,37 @@
                     <Border Classes="prop-section" IsVisible="{Binding ShowMarkerEditor}">
                         <StackPanel Spacing="6">
                             <StackPanel Orientation="Horizontal" Spacing="6">
-                                <Ellipse Width="7" Height="7" Fill="{Binding MarkerColor}"
-                                         VerticalAlignment="Center"/>
-                                <TextBlock Text="标记" FontSize="11" FontWeight="SemiBold"
-                                           Foreground="{DynamicResource TlTextPrimary}" VerticalAlignment="Center"/>
+                                <Ellipse Classes="prop-dot" Fill="{Binding MarkerColor}"/>
+                                <TextBlock Text="标记" Classes="prop-section-title"/>
                             </StackPanel>
-                            <Grid ColumnDefinitions="56,*">
+                            <Grid ColumnDefinitions="60,*">
                                 <TextBlock Classes="prop-label" Text="名称" Grid.Column="0"/>
                                 <TextBox Name="MarkerNameInput" Classes="prop-input" Grid.Column="1"
                                          Watermark="标记名称"
                                          Text="{Binding MarkerName, Mode=TwoWay}"
                                          LostFocus="OnMarkerLostFocus" KeyDown="OnMarkerKeyDown"/>
                             </Grid>
-                            <Grid ColumnDefinitions="56,*">
+                            <Grid ColumnDefinitions="60,*">
                                 <TextBlock Classes="prop-label" Text="备注" Grid.Column="0"/>
                                 <TextBox Name="MarkerNoteInput" Classes="prop-input" Grid.Column="1"
                                          Watermark="备注 (可选)"
                                          Text="{Binding MarkerNote, Mode=TwoWay}"
                                          LostFocus="OnMarkerLostFocus" KeyDown="OnMarkerKeyDown"/>
                             </Grid>
-                            <Grid ColumnDefinitions="56,*">
+                            <Grid ColumnDefinitions="60,*">
                                 <TextBlock Classes="prop-label" Text="颜色" Grid.Column="0"/>
                                 <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4">
-                                    <Button Classes="reset-btn" Width="20" Height="20" Click="OnMarkerColorClick" Tag="#f59e0b"
+                                    <Button Classes="reset-btn" Width="24" Height="24" Click="OnMarkerColorClick" Tag="#f59e0b"
                                             ToolTip.Tip="琥珀"><Ellipse Width="11" Height="11" Fill="#f59e0b"/></Button>
-                                    <Button Classes="reset-btn" Width="20" Height="20" Click="OnMarkerColorClick" Tag="#ef4444"
+                                    <Button Classes="reset-btn" Width="24" Height="24" Click="OnMarkerColorClick" Tag="#ef4444"
                                             ToolTip.Tip="红"><Ellipse Width="11" Height="11" Fill="#ef4444"/></Button>
-                                    <Button Classes="reset-btn" Width="20" Height="20" Click="OnMarkerColorClick" Tag="#22c55e"
+                                    <Button Classes="reset-btn" Width="24" Height="24" Click="OnMarkerColorClick" Tag="#22c55e"
                                             ToolTip.Tip="绿"><Ellipse Width="11" Height="11" Fill="#22c55e"/></Button>
-                                    <Button Classes="reset-btn" Width="20" Height="20" Click="OnMarkerColorClick" Tag="#3b82f6"
+                                    <Button Classes="reset-btn" Width="24" Height="24" Click="OnMarkerColorClick" Tag="#3b82f6"
                                             ToolTip.Tip="蓝"><Ellipse Width="11" Height="11" Fill="#3b82f6"/></Button>
-                                    <Button Classes="reset-btn" Width="20" Height="20" Click="OnMarkerColorClick" Tag="#a855f7"
+                                    <Button Classes="reset-btn" Width="24" Height="24" Click="OnMarkerColorClick" Tag="#a855f7"
                                             ToolTip.Tip="紫"><Ellipse Width="11" Height="11" Fill="#a855f7"/></Button>
-                                    <Button Classes="reset-btn" Width="20" Height="20" Click="OnMarkerColorClick" Tag="#ec4899"
+                                    <Button Classes="reset-btn" Width="24" Height="24" Click="OnMarkerColorClick" Tag="#ec4899"
                                             ToolTip.Tip="粉"><Ellipse Width="11" Height="11" Fill="#ec4899"/></Button>
                                 </StackPanel>
                             </Grid>
@@ -622,14 +661,13 @@
                     <Border Classes="prop-section" IsVisible="{Binding ShowEventBinding}">
                         <StackPanel Spacing="6">
                             <StackPanel Orientation="Horizontal" Spacing="6">
-                                <Ellipse Width="7" Height="7" Fill="{DynamicResource TlEvent}"/>
-                                <TextBlock Text="事件" FontSize="11" FontWeight="SemiBold"
-                                           Foreground="{DynamicResource TlTextPrimary}" VerticalAlignment="Center"/>
-                                <TextBlock Text="{Binding EventBadge}" FontSize="10"
-                                           Foreground="{DynamicResource TlTextMuted}" VerticalAlignment="Center"/>
+                                <Ellipse Classes="prop-dot" Fill="{DynamicResource TlEvent}"/>
+                                <TextBlock Text="事件" Classes="prop-section-title"/>
+                                <TextBlock Text="{Binding EventBadge}" Classes="prop-value"
+                                           Foreground="{DynamicResource TlTextMuted}"/>
                             </StackPanel>
                             <!-- 事件时间 (独立事件可编辑) -->
-                            <Grid ColumnDefinitions="56,*"
+                            <Grid ColumnDefinitions="60,*"
                                   IsVisible="{Binding IsStandaloneEvent}">
                                 <TextBlock Classes="prop-label" Text="时间" Grid.Column="0"/>
                                 <TextBox Name="EventTimeInput" Classes="prop-input" Grid.Column="1"
@@ -638,7 +676,7 @@
                                          LostFocus="OnEventLostFocus"
                                          KeyDown="OnEventKeyDown"/>
                             </Grid>
-                            <Grid ColumnDefinitions="56,*">
+                            <Grid ColumnDefinitions="60,*">
                                 <TextBlock Classes="prop-label" Text="名称" Grid.Column="0"/>
                                 <TextBox Name="EventNameInput" Classes="prop-input" Grid.Column="1"
                                          Watermark="例: on_impact"
@@ -649,9 +687,9 @@
                             <TextBlock Text="事件名称重复，请使用唯一名称"
                                        IsVisible="{Binding EventNameDuplicate}"
                                        FontSize="10" Foreground="{DynamicResource TlDanger}"
-                                       Margin="50,0,0,0"/>
+                                       Margin="60,0,0,0"/>
                             <!-- 数据类型选择 -->
-                            <Grid ColumnDefinitions="56,*">
+                            <Grid ColumnDefinitions="60,*">
                                 <TextBlock Classes="prop-label" Text="类型" Grid.Column="0"/>
                                 <ComboBox Name="EventDataTypeCombo" Grid.Column="1" Classes="prop-combo"
                                           SelectionChanged="OnEventDataTypeChanged">
@@ -661,9 +699,9 @@
                                     <ComboBoxItem Content="number" Tag="number"/>
                                 </ComboBox>
                             </Grid>
-                            <Grid ColumnDefinitions="56,*"
+                            <Grid ColumnDefinitions="60,*"
                                   IsVisible="{Binding ShowEventDataInput}">
-                                <TextBlock Classes="prop-label" Text="参数" Grid.Column="0"/>
+                                <TextBlock Classes="prop-label" Text="事件参数" Grid.Column="0"/>
                                 <TextBox Name="EventDataInput" Classes="prop-input" Grid.Column="1"
                                          Watermark="{Binding EventDataWatermark}"
                                          AcceptsReturn="True" MinHeight="36"
@@ -674,7 +712,7 @@
                             <TextBlock Text="{Binding EventDataError}"
                                        IsVisible="{Binding EventDataError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
                                        FontSize="10" Foreground="{DynamicResource TlDanger}"
-                                       Margin="50,0,0,0"/>
+                                       Margin="60,0,0,0"/>
                             <!-- 删除事件按钮 -->
                             <Button Focusable="False"
                                     HorizontalAlignment="Stretch"
@@ -699,7 +737,7 @@
                                 <TextBlock Text="播放头事件" FontSize="11" FontWeight="SemiBold"
                                            Foreground="{DynamicResource TlTextPrimary}" VerticalAlignment="Center"/>
                             </StackPanel>
-                            <Grid ColumnDefinitions="56,*">
+                            <Grid ColumnDefinitions="60,*">
                                 <TextBlock Classes="prop-label" Text="名称" Grid.Column="0"/>
                                 <TextBox Name="PlayheadEventNameInput" Classes="prop-input" Grid.Column="1"
                                          Text="{Binding PlayheadEventName, Mode=TwoWay}"
@@ -707,7 +745,7 @@
                                          KeyDown="OnPlayheadEventKeyDown"/>
                             </Grid>
                             <!-- 数据类型选择 -->
-                            <Grid ColumnDefinitions="56,*">
+                            <Grid ColumnDefinitions="60,*">
                                 <TextBlock Classes="prop-label" Text="类型" Grid.Column="0"/>
                                 <ComboBox Name="PlayheadEventDataTypeCombo" Grid.Column="1" Classes="prop-combo"
                                           SelectionChanged="OnPlayheadEventDataTypeChanged">
@@ -717,7 +755,7 @@
                                     <ComboBoxItem Content="number" Tag="number"/>
                                 </ComboBox>
                             </Grid>
-                            <Grid ColumnDefinitions="56,*"
+                            <Grid ColumnDefinitions="60,*"
                                   IsVisible="{Binding ShowPlayheadEventDataInput}">
                                 <TextBlock Classes="prop-label" Text="参数" Grid.Column="0"/>
                                 <TextBox Name="PlayheadEventDataInput" Classes="prop-input" Grid.Column="1"

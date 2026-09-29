@@ -56,7 +56,7 @@
                 BorderBrush="{DynamicResource TlBorderBrush}" BorderThickness="0,0,0,1">
             <StackPanel Spacing="8">
                 <!-- 标题 + 关闭 -->
-                <Grid ColumnDefinitions="*,Auto">
+                <Grid ColumnDefinitions="*,Auto,Auto">
                     <StackPanel Orientation="Horizontal" Spacing="6">
                         <iconPacks:PackIconIonicons Kind="BookmarkiOS" Width="14" Height="14"
                                                     Foreground="{DynamicResource TlAccent}"/>
@@ -66,6 +66,12 @@
                                    Foreground="{DynamicResource TlTextMuted}" VerticalAlignment="Center"/>
                     </StackPanel>
                     <Button Grid.Column="1" Classes="preset-btn" Padding="4,2" Cursor="Hand"
+                            ToolTip.Tip="从剪贴板导入预设 JSON"
+                            Click="OnImportPresetClick">
+                        <iconPacks:PackIconIonicons Kind="DownloadiOS" Width="13" Height="13"
+                                                    Foreground="{DynamicResource TlTextMuted}"/>
+                    </Button>
+                    <Button Grid.Column="2" Classes="preset-btn" Padding="4,2" Cursor="Hand"
                             ToolTip.Tip="关闭面板"
                             Click="OnClosePanelClick">
                         <iconPacks:PackIconIonicons Kind="CloseiOS" Width="13" Height="13"

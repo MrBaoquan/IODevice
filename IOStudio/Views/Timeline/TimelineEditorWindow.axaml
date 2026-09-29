@@ -447,7 +447,7 @@
                             </Button>
                             <!-- 上一关键帧 -->
                             <Button Classes="transport-btn" Click="OnPrevKeyframe"
-                                    ToolTip.Tip="上一关键帧 (J)" Foreground="{DynamicResource TlTransportBtn}">
+                                    ToolTip.Tip="上一关键帧 (←)" Foreground="{DynamicResource TlTransportBtn}">
                                 <iconPacks:PackIconIonicons Kind="ArrowBackiOS" Width="16" Height="16"/>
                             </Button>
                             <Button Classes="transport-play" Command="{Binding PlayCommand}"
@@ -499,7 +499,7 @@
                                        ToolTip.Tip="设备实时输出 (预览时将值发送到物理设备)"/>
                             <!-- 下一关键帧 -->
                             <Button Classes="transport-btn" Click="OnNextKeyframe"
-                                    ToolTip.Tip="下一关键帧 (L)" Foreground="{DynamicResource TlTransportBtn}">
+                                    ToolTip.Tip="下一关键帧 (→)" Foreground="{DynamicResource TlTransportBtn}">
                                 <iconPacks:PackIconIonicons Kind="ArrowForwardiOS" Width="16" Height="16"/>
                             </Button>
                             <!-- 跳转到结尾 -->

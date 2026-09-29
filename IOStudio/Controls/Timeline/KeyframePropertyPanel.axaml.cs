@@ -305,7 +305,37 @@ namespace IOStudio.Controls.Timeline
                     : null;
             }
 
-            vm.CommitTangent(Parse("TangentInInput"), Parse("TangentOutInput"));
+            vm.CommitBezier(
+                Parse("TangentInInput"),
+                Parse("TangentOutInput"),
+                Parse("Cp1xInput"),
+                Parse("Cp2xInput")
+            );
+        }
+
+        // ── 标记属性 ──
+
+        private void OnMarkerLostFocus(object? sender, RoutedEventArgs e) => Vm?.CommitMarker();
+
+        private void OnMarkerKeyDown(object? sender, KeyEventArgs e)
+        {
+            if (e.Key == Key.Enter)
+            {
+                Vm?.CommitMarker();
+                e.Handled = true;
+            }
+        }
+
+        private void OnMarkerColorClick(object? sender, RoutedEventArgs e)
+        {
+            if (
+                Vm is not { } vm
+                || sender is not Control { Tag: string color }
+                || string.IsNullOrWhiteSpace(color)
+            )
+                return;
+            vm.MarkerColor = color;
+            vm.CommitMarker();
         }
 
         private void OnResetValueClick(object? sender, RoutedEventArgs e)

@@ -557,6 +557,64 @@
                                          Watermark="出切线 (如 -0.2)" Text="{Binding TangentOut, Mode=OneWay}"
                                          LostFocus="OnTangentLostFocus" KeyDown="OnTangentKeyDown"/>
                             </Grid>
+                            <!-- 贝塞尔控制点 X (决定切线的时间展布, 仅 bezier) -->
+                            <Grid ColumnDefinitions="56,*" IsVisible="{Binding ShowTangent}">
+                                <TextBlock Classes="prop-label" Text="控制X入" Grid.Column="0"
+                                           ToolTip.Tip="入控制点 X (0.2 ~ 3.0), 越大越晚发力"/>
+                                <TextBox Name="Cp1xInput" Classes="prop-input" Grid.Column="1"
+                                         Watermark="入控制点 X (0.2 ~ 3)" Text="{Binding Cp1x, Mode=OneWay}"
+                                         LostFocus="OnTangentLostFocus" KeyDown="OnTangentKeyDown"/>
+                            </Grid>
+                            <Grid ColumnDefinitions="56,*" IsVisible="{Binding ShowTangent}">
+                                <TextBlock Classes="prop-label" Text="控制X出" Grid.Column="0"
+                                           ToolTip.Tip="出控制点 X (0.2 ~ 3.0), 越大越晚收尾"/>
+                                <TextBox Name="Cp2xInput" Classes="prop-input" Grid.Column="1"
+                                         Watermark="出控制点 X (0.2 ~ 3)" Text="{Binding Cp2x, Mode=OneWay}"
+                                         LostFocus="OnTangentLostFocus" KeyDown="OnTangentKeyDown"/>
+                            </Grid>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- ═══ 标记属性 (播放头落在标记上) ═══ -->
+                    <Border Classes="prop-section" IsVisible="{Binding ShowMarkerEditor}">
+                        <StackPanel Spacing="6">
+                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                <Ellipse Width="7" Height="7" Fill="{Binding MarkerColor}"
+                                         VerticalAlignment="Center"/>
+                                <TextBlock Text="标记" FontSize="11" FontWeight="SemiBold"
+                                           Foreground="{DynamicResource TlTextPrimary}" VerticalAlignment="Center"/>
+                            </StackPanel>
+                            <Grid ColumnDefinitions="56,*">
+                                <TextBlock Classes="prop-label" Text="名称" Grid.Column="0"/>
+                                <TextBox Name="MarkerNameInput" Classes="prop-input" Grid.Column="1"
+                                         Watermark="标记名称"
+                                         Text="{Binding MarkerName, Mode=TwoWay}"
+                                         LostFocus="OnMarkerLostFocus" KeyDown="OnMarkerKeyDown"/>
+                            </Grid>
+                            <Grid ColumnDefinitions="56,*">
+                                <TextBlock Classes="prop-label" Text="备注" Grid.Column="0"/>
+                                <TextBox Name="MarkerNoteInput" Classes="prop-input" Grid.Column="1"
+                                         Watermark="备注 (可选)"
+                                         Text="{Binding MarkerNote, Mode=TwoWay}"
+                                         LostFocus="OnMarkerLostFocus" KeyDown="OnMarkerKeyDown"/>
+                            </Grid>
+                            <Grid ColumnDefinitions="56,*">
+                                <TextBlock Classes="prop-label" Text="颜色" Grid.Column="0"/>
+                                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4">
+                                    <Button Classes="reset-btn" Width="20" Height="20" Click="OnMarkerColorClick" Tag="#f59e0b"
+                                            ToolTip.Tip="琥珀"><Ellipse Width="11" Height="11" Fill="#f59e0b"/></Button>
+                                    <Button Classes="reset-btn" Width="20" Height="20" Click="OnMarkerColorClick" Tag="#ef4444"
+                                            ToolTip.Tip="红"><Ellipse Width="11" Height="11" Fill="#ef4444"/></Button>
+                                    <Button Classes="reset-btn" Width="20" Height="20" Click="OnMarkerColorClick" Tag="#22c55e"
+                                            ToolTip.Tip="绿"><Ellipse Width="11" Height="11" Fill="#22c55e"/></Button>
+                                    <Button Classes="reset-btn" Width="20" Height="20" Click="OnMarkerColorClick" Tag="#3b82f6"
+                                            ToolTip.Tip="蓝"><Ellipse Width="11" Height="11" Fill="#3b82f6"/></Button>
+                                    <Button Classes="reset-btn" Width="20" Height="20" Click="OnMarkerColorClick" Tag="#a855f7"
+                                            ToolTip.Tip="紫"><Ellipse Width="11" Height="11" Fill="#a855f7"/></Button>
+                                    <Button Classes="reset-btn" Width="20" Height="20" Click="OnMarkerColorClick" Tag="#ec4899"
+                                            ToolTip.Tip="粉"><Ellipse Width="11" Height="11" Fill="#ec4899"/></Button>
+                                </StackPanel>
+                            </Grid>
                         </StackPanel>
                     </Border>
 

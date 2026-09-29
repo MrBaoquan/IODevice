@@ -126,8 +126,43 @@ namespace IOStudio.Controls.Timeline
             ViewModel?.RequestChangeCategory(preset);
         }
 
-        private async void OnExportPresetClick(object? sender, RoutedEventArgs e)
+        /// <summary>从剪贴板导入预设 JSON (导入为新预设, 不覆盖已有 Id)。</summary>
+        private async void OnImportPresetClick(object? sender, RoutedEventArgs e)
         {
+            if (ViewModel == null)
+                return;
+            try
+            {
+                var top = TopLevel.GetTopLevel(this);
+                var text = top?.Clipboard != null ? await top.Clipboard.GetTextAsync() : null;
+                if (string.IsNullOrWhiteSpace(text))
+                {
+                    ViewModel.OperationStatus = "剪贴板为空";
+                    return;
+                }
+
+                var preset = ViewModel.Library.ImportJson(text);
+                if (preset == null)
+                {
+                    ViewModel.OperationStatus = "JSON 无效, 导入失败";
+                    return;
+                }
+
+                // 视为新预设: 重新分配 Id, 避免覆盖同 Id 的已有预设
+                preset.Id = Guid.NewGuid().ToString("N")[..8];
+                ViewModel.Library.Upsert(preset);
+                ViewModel.Library.SaveToFile(preset);
+                ViewModel.RefreshCategories();
+                ViewModel.RefreshPresets();
+                ViewModel.OperationStatus = $"已导入预设“{preset.Name}”";
+            }
+            catch (Exception ex)
+            {
+                ViewModel.OperationStatus = "导入失败: " + ex.Message;
+            }
+        }
+
+        private async void OnExportPresetClick(object? sender, RoutedEventArgs e)        {
             var preset = ResolveContextPreset(sender);
             if (preset == null || ViewModel == null)
                 return;

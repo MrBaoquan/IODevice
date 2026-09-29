@@ -43,6 +43,9 @@ namespace IOStudio.Models.Motion
         /// <summary>全选所有轨道关键帧 (Ctrl+Shift+A)</summary>
         SelectAllTrackKeyframes,
 
+        /// <summary>导出 (Ctrl+E)</summary>
+        Export,
+
         /// <summary>微调选中关键帧时间 −1 步 (Alt+←)</summary>
         NudgeTimeBackward,
 

@@ -351,6 +351,74 @@ namespace IOStudio.ViewModels.Timeline
             return true;
         }
 
+        // ── 标记编辑 (播放头落在标记上时) ──────────────────────
+
+        /// <summary>标记属性编辑: (name, color, note)。</summary>
+        public event Action<string, string, string>? MarkerEdited;
+
+        private bool _showMarkerEditor;
+
+        /// <summary>是否显示标记属性编辑器 (播放头落在标记上)。</summary>
+        public bool ShowMarkerEditor
+        {
+            get => _showMarkerEditor;
+            private set => this.RaiseAndSetIfChanged(ref _showMarkerEditor, value);
+        }
+
+        private string _markerName = "";
+
+        public string MarkerName
+        {
+            get => _markerName;
+            set => this.RaiseAndSetIfChanged(ref _markerName, value);
+        }
+
+        private string _markerNote = "";
+
+        public string MarkerNote
+        {
+            get => _markerNote;
+            set => this.RaiseAndSetIfChanged(ref _markerNote, value);
+        }
+
+        private string _markerColor = "#f59e0b";
+
+        public string MarkerColor
+        {
+            get => _markerColor;
+            set => this.RaiseAndSetIfChanged(ref _markerColor, value);
+        }
+
+        private Models.Motion.TimelineMarker? _displayedMarker;
+
+        /// <summary>显示/隐藏标记属性编辑器。</summary>
+        public void ShowMarker(Models.Motion.TimelineMarker? marker)
+        {
+            _isSyncing = true;
+            _displayedMarker = marker;
+            ShowMarkerEditor = marker is not null;
+            MarkerName = marker?.Name ?? "";
+            MarkerNote = marker?.Note ?? "";
+            MarkerColor = marker?.Color ?? "#f59e0b";
+            _isSyncing = false;
+        }
+
+        /// <summary>提交标记属性 (名称/颜色/备注)。</summary>
+        public void CommitMarker()
+        {
+            if (_isSyncing || _displayedMarker is null)
+                return;
+            MarkerEdited?.Invoke(
+                MarkerName ?? "",
+                string.IsNullOrWhiteSpace(MarkerColor) ? "#f59e0b" : MarkerColor,
+                MarkerNote ?? ""
+            );
+        }
+
+        /// <summary>提交贝塞尔控制点 (切线 Y + 控制点 X)。</summary>
+        public void CommitBezier(float? tangentIn, float? tangentOut, float? cp1x, float? cp2x) =>
+            RaiseKeyframeEdited(null, null, null, tangentIn, tangentOut, cp1x, cp2x);
+
         public string TimeDisplayText
         {
             get
@@ -934,6 +1002,7 @@ namespace IOStudio.ViewModels.Timeline
             EventNameDuplicate = false;
             KeyframeItems.Clear();
             this.RaisePropertyChanged(nameof(HasKeyframeList));
+            ShowMarker(null);
             RaiseModeProperties();
         }
 

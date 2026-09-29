@@ -251,6 +251,98 @@ namespace IOStudio.Tests.ViewModels
             Assert.Equal("", vm.KeyframeTimeText);
         }
 
+        // ── P2: 贝塞尔控制点 X ──
+
+        [Fact]
+        public void CommitBezier_Raises_With_Cp_Values()
+        {
+            var vm = new KeyframePropertyViewModel();
+            vm.ShowTrackState(0, 0.5f, "float", "Pitch", hasKfAtPlayhead: true, interpolation: "bezier");
+
+            float? cp1 = null,
+                cp2 = null,
+                tin = null,
+                tout = null;
+            vm.KeyframePropertyEdited += (t, v, i, ti, to, c1, c2) =>
+            {
+                tin = ti;
+                tout = to;
+                cp1 = c1;
+                cp2 = c2;
+            };
+
+            vm.CommitBezier(0.3f, -0.2f, 0.8f, 1.4f);
+
+            Assert.Equal(0.3f, tin);
+            Assert.Equal(-0.2f, tout);
+            Assert.Equal(0.8f, cp1);
+            Assert.Equal(1.4f, cp2);
+        }
+
+        // ── P2: 标记属性编辑 ──
+
+        [Fact]
+        public void ShowMarker_Fills_Fields_And_Toggles_Visibility()
+        {
+            var vm = new KeyframePropertyViewModel();
+            var marker = new IOStudio.Models.Motion.TimelineMarker
+            {
+                TimeMs = 1000,
+                Name = "开场",
+                Color = "#22c55e",
+                Note = "第一幕",
+            };
+
+            vm.ShowMarker(marker);
+
+            Assert.True(vm.ShowMarkerEditor);
+            Assert.Equal("开场", vm.MarkerName);
+            Assert.Equal("#22c55e", vm.MarkerColor);
+            Assert.Equal("第一幕", vm.MarkerNote);
+
+            vm.ShowMarker(null);
+            Assert.False(vm.ShowMarkerEditor);
+        }
+
+        [Fact]
+        public void CommitMarker_Raises_Edited()
+        {
+            var vm = new KeyframePropertyViewModel();
+            vm.ShowMarker(
+                new IOStudio.Models.Motion.TimelineMarker { TimeMs = 0, Name = "M1" }
+            );
+
+            string? name = null,
+                color = null,
+                note = null;
+            vm.MarkerEdited += (n, c, no) =>
+            {
+                name = n;
+                color = c;
+                note = no;
+            };
+
+            vm.MarkerName = "高潮";
+            vm.MarkerNote = "第二幕";
+            vm.CommitMarker();
+
+            Assert.Equal("高潮", name);
+            Assert.NotNull(color);
+            Assert.Equal("第二幕", note);
+        }
+
+        [Fact]
+        public void Clear_Hides_MarkerEditor()
+        {
+            var vm = new KeyframePropertyViewModel();
+            vm.ShowMarker(new IOStudio.Models.Motion.TimelineMarker { TimeMs = 0, Name = "M1" });
+            Assert.True(vm.ShowMarkerEditor);
+
+            vm.Clear();
+
+            Assert.False(vm.ShowMarkerEditor);
+        }
+
         [Fact]
         public void SelectionVersion_Increments_OnShowTrackState()
         {

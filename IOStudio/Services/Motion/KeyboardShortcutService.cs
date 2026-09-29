@@ -63,6 +63,7 @@ namespace IOStudio.Services.Motion
                     (Key.S, false) => ShortcutAction.Save,
                     (Key.N, _) => ShortcutAction.NewProject,
                     (Key.O, _) => ShortcutAction.OpenFile,
+                    (Key.E, _) => ShortcutAction.Export,
                     (Key.C, _) => ShortcutAction.Copy,
                     (Key.X, _) => ShortcutAction.Cut,
                     (Key.A, true) => ShortcutAction.SelectAllTrackKeyframes,

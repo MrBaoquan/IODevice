@@ -481,8 +481,7 @@ namespace IOStudio.Tests.ViewModels
         // ── P1: AutoKey 单步撤销 ──
 
         [Fact]
-        public void AddKeyframeAtTime_WithValue_Is_Single_Undo_Step()
-        {
+        public void AddKeyframeAtTime_WithValue_Is_Single_Undo_Step()        {
             string path = WriteTempTimeline();
             try
             {
@@ -499,6 +498,81 @@ namespace IOStudio.Tests.ViewModels
                 // 一次撤销即完全移除 (旧实现是"建帧 + 改值"两步)
                 vm.Undo();
                 Assert.Equal(before, track.Clips[0].Keyframes.Count);
+            }
+            finally
+            {
+                TryDelete(path);
+            }
+        }
+
+        // ── Bug 回归: 轨道高度是视图状态, 不得标脏文档 ──
+
+        [Fact]
+        public void TrackHeight_Changes_Do_Not_Mark_Document_Dirty()
+        {
+            string path = WriteTempTimeline();
+            try
+            {
+                var vm = new TimelineEditorViewModel(null);
+                vm.LoadFromFile(path);
+                var track = vm.Tracks[0];
+                vm.IsDirty = false;
+
+                vm.SetTrackIndividualHeight(track, 80);
+                vm.AdjustAllTrackHeights(8);
+                vm.TrackHeightLevel = 2;
+                vm.ResetTrackHeight(track);
+                vm.ResetAllTrackHeights();
+
+                Assert.False(vm.IsDirty); // 高度不写入内容, 不应置脏
+            }
+            finally
+            {
+                TryDelete(path);
+            }
+        }
+
+        [Fact]
+        public void Track_Content_Edit_Still_Marks_Dirty()
+        {
+            string path = WriteTempTimeline();
+            try
+            {
+                var vm = new TimelineEditorViewModel(null);
+                vm.LoadFromFile(path);
+                vm.IsDirty = false;
+
+                vm.AddKeyframeAtTime(vm.Tracks[0], 500, 0.6f);
+
+                Assert.True(vm.IsDirty);
+            }
+            finally
+            {
+                TryDelete(path);
+            }
+        }
+
+        // ── P2: 标记编辑走 MarkerService (带撤销) ──
+
+        [Fact]
+        public void MarkerService_UpdateMarker_Is_Undoable()
+        {
+            string path = WriteTempTimeline();
+            try
+            {
+                var vm = new TimelineEditorViewModel(null);
+                vm.LoadFromFile(path);
+                var marker = vm.MarkerService.AddMarker(1000, "M1", "#f59e0b");
+
+                vm.MarkerService.UpdateMarker(marker, name: "开场", color: "#22c55e", note: "第一幕");
+
+                Assert.Equal("开场", marker.Name);
+                Assert.Equal("#22c55e", marker.Color);
+                Assert.Equal("第一幕", marker.Note);
+
+                vm.Undo();
+                Assert.Equal("M1", marker.Name);
+                Assert.Equal("#f59e0b", marker.Color);
             }
             finally
             {

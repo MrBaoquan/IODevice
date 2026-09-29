@@ -563,6 +563,20 @@ namespace IOStudio.Views.Timeline
             {
                 return ViewModel?.IsEventNameUnique(name, exclude) ?? true;
             };
+            // 标记属性编辑 → 写回 MarkerService (带撤销)
+            kfVm.MarkerEdited += (name, color, note) =>
+            {
+                if (ViewModel?.MarkerService.SelectedMarker is { } marker)
+                {
+                    ViewModel.MarkerService.UpdateMarker(
+                        marker,
+                        name: name,
+                        color: color,
+                        note: note
+                    );
+                    SyncMarkersToRuler();
+                }
+            };
             kfVm.BatchInterpolationChanged += interp =>
             {
                 if (ViewModel != null)
@@ -1103,6 +1117,10 @@ namespace IOStudio.Views.Timeline
                     return;
                 case ShortcutAction.OpenFile:
                     OnOpenFile();
+                    e.Handled = true;
+                    return;
+                case ShortcutAction.Export:
+                    OnExportDialog(null, new RoutedEventArgs());
                     e.Handled = true;
                     return;
                 case ShortcutAction.AddKeyframeAtPlayhead:

@@ -276,9 +276,8 @@ namespace IOStudio.Views.Timeline
                     if (tcc.DataContext == trackVm)
                         tcc.InvalidateVisual();
                 }
-                // 同步颜色到曲线编辑器
+                // 同步颜色到曲线编辑器 (撤销由 PushTrackColorUndo 登记并标脏)
                 SyncCurveEditorData();
-                ViewModel?.MarkDirty();
             }
         }
 

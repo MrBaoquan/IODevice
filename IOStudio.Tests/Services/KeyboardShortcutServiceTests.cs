@@ -35,6 +35,12 @@ namespace IOStudio.Tests.Services
             Assert.Equal(ShortcutAction.Cut, Resolve(Key.X, KeyModifiers.Control));
         }
 
+        [Fact]
+        public void CtrlE_Exports()
+        {
+            Assert.Equal(ShortcutAction.Export, Resolve(Key.E, KeyModifiers.Control));
+        }
+
         [Theory]
         [InlineData(Key.Left, ShortcutAction.NudgeTimeBackward)]
         [InlineData(Key.Right, ShortcutAction.NudgeTimeForward)]

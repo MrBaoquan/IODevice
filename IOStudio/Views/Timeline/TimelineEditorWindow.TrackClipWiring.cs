@@ -663,6 +663,19 @@ namespace IOStudio.Views.Timeline
                 track
             );
             kfVm.SetPlayheadEvent(playheadEvent);
+
+            // 播放头落在标记上 → 显示标记属性编辑器 (±5ms 容差)
+            Models.Motion.TimelineMarker? playheadMarker = null;
+            foreach (var marker in ViewModel.MarkerService.Markers)
+            {
+                if (Math.Abs(marker.TimeMs - playheadMs) < 5)
+                {
+                    playheadMarker = marker;
+                    break;
+                }
+            }
+            ViewModel.MarkerService.SelectedMarker = playheadMarker;
+            kfVm.ShowMarker(playheadMarker);
         }
 
         /// <summary>

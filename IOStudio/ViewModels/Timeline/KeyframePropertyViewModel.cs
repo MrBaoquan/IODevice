@@ -176,7 +176,7 @@ namespace IOStudio.ViewModels.Timeline
                 if (TrackVm?.IsLocked == true)
                     return "轨道已锁定，解锁后可编辑";
                 if (!_hasKeyframeAtPlayhead && !_isAutoKeyMode)
-                    return "将播放头移到关键帧上，或启用 Auto 后编辑";
+                    return "将播放头移到关键帧上，或启用自动后编辑";
                 return "";
             }
         }

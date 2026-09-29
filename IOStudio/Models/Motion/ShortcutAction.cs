@@ -43,6 +43,15 @@ namespace IOStudio.Models.Motion
         /// <summary>全选所有轨道关键帧 (Ctrl+Shift+A)</summary>
         SelectAllTrackKeyframes,
 
+        /// <summary>反向选择当前轨道关键帧 (Ctrl+Shift+I)</summary>
+        InvertSelection,
+
+        /// <summary>选中工作区 (In/Out) 内所有轨道关键帧 (Ctrl+Shift+W)</summary>
+        SelectInWorkArea,
+
+        /// <summary>快捷键速查面板 (F1)</summary>
+        ShowShortcuts,
+
         /// <summary>导出 (Ctrl+E)</summary>
         Export,
 

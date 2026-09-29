@@ -1123,6 +1123,10 @@ namespace IOStudio.Views.Timeline
                     OnExportDialog(null, new RoutedEventArgs());
                     e.Handled = true;
                     return;
+                case ShortcutAction.ShowShortcuts:
+                    new IOStudio.Views.Timeline.ShortcutsWindow().Show(this);
+                    e.Handled = true;
+                    return;
                 case ShortcutAction.AddKeyframeAtPlayhead:
                     OnAddKeyframeAtPlayhead(null, new RoutedEventArgs());
                     e.Handled = true;

@@ -1186,6 +1186,98 @@ namespace IOStudio.ViewModels.Timeline
         }
 
         /// <summary>
+        /// 反向选择: 当前轨道 (allTracks=false) 或全部轨道上, 未选中的关键帧变为选中, 已选中的取消。
+        /// </summary>
+        public void InvertKeyframeSelection(bool allTracks)
+        {
+            List<TrackViewModel> scope;
+            if (allTracks)
+                scope = Tracks.ToList();
+            else if (SelectedTrack is not null)
+                scope = new List<TrackViewModel> { SelectedTrack };
+            else
+                scope = new List<TrackViewModel>();
+
+            if (scope.Count == 0)
+                return;
+
+            foreach (var track in scope)
+            {
+                for (int ci = 0; ci < track.Clips.Count; ci++)
+                {
+                    var clipVm = track.Clips[ci];
+                    for (int ki = 0; ki < clipVm.Keyframes.Count; ki++)
+                    {
+                        int idx = _selectedKeyframes.FindIndex(s =>
+                            ReferenceEquals(s.Track, track) && s.ClipIdx == ci && s.KfIdx == ki
+                        );
+                        if (idx >= 0)
+                            _selectedKeyframes.RemoveAt(idx);
+                        else
+                            _selectedKeyframes.Add((track, ci, ki));
+                    }
+                }
+            }
+
+            SyncPrimarySelectionFromMulti();
+            this.RaisePropertyChanged(nameof(IsMultiSelectMode));
+            this.RaisePropertyChanged(nameof(SelectedKeyframeCount));
+        }
+
+        /// <summary>
+        /// 选中工作区 (In/Out) 时间范围内的所有轨道关键帧 — 跨轨批量编辑的快捷入口。
+        /// </summary>
+        public void SelectKeyframesInWorkArea()
+        {
+            if (!HasWorkArea || WorkAreaInMs is null || WorkAreaOutMs is null)
+                return;
+
+            double from = Math.Min(WorkAreaInMs.Value, WorkAreaOutMs.Value);
+            double to = Math.Max(WorkAreaInMs.Value, WorkAreaOutMs.Value);
+
+            _selectedKeyframes.Clear();
+            foreach (var track in Tracks)
+            {
+                for (int ci = 0; ci < track.Clips.Count; ci++)
+                {
+                    var clipVm = track.Clips[ci];
+                    for (int ki = 0; ki < clipVm.Keyframes.Count; ki++)
+                    {
+                        double abs = clipVm.StartMs + clipVm.Keyframes[ki].TimeMs;
+                        if (abs >= from - 0.5 && abs <= to + 0.5)
+                            _selectedKeyframes.Add((track, ci, ki));
+                    }
+                }
+            }
+
+            SyncPrimarySelectionFromMulti();
+            this.RaisePropertyChanged(nameof(IsMultiSelectMode));
+            this.RaisePropertyChanged(nameof(SelectedKeyframeCount));
+        }
+
+        /// <summary>把多选集的最后一项同步为主选中 (供全选/反选/区域选择复用)。</summary>
+        private void SyncPrimarySelectionFromMulti()
+        {
+            if (_selectedKeyframes.Count == 0)
+            {
+                SelectedKeyframe = null;
+                this.RaisePropertyChanged(nameof(SelectedKeyframe));
+                return;
+            }
+
+            var last = _selectedKeyframes[_selectedKeyframes.Count - 1];
+            SelectedTrack = last.Track;
+            SelectedClipIndex = last.ClipIdx;
+            SelectedKeyframeIndex = last.KfIdx;
+            var clipVm = last.Track.Clips[last.ClipIdx];
+            SelectedKeyframe =
+                last.KfIdx >= 0 && last.KfIdx < clipVm.Keyframes.Count
+                    ? clipVm.Keyframes[last.KfIdx]
+                    : null;
+            this.RaisePropertyChanged(nameof(SelectedKeyframe));
+        }
+
+        /// <summary>
         /// 复制选中的关键帧到剪贴板
         /// 支持单选和多选模式
         /// </summary>

@@ -552,8 +552,127 @@ namespace IOStudio.Tests.ViewModels
             }
         }
 
-        // ── P2: 标记编辑走 MarkerService (带撤销) ──
+        // ── 网格吸附 ──
 
+        [Fact]
+        public void ApplySnap_Snaps_To_Grid_When_Enabled()
+        {
+            string path = WriteTempTimeline();
+            try
+            {
+                var vm = new TimelineEditorViewModel(null);
+                vm.LoadFromFile(path);
+                vm.IsSnapEnabled = true;
+                vm.PixelsPerMs = 1.0; // 吸附阈值 ≈ 10ms, 便于精确断言
+                vm.SelectedSnapGrid = vm.SnapGridOptions.First(o => o.Ms == 500);
+                vm.CurrentTimeMs = 999999;
+
+                Assert.Equal(1500.0, vm.ApplySnap(1504), precision: 3);
+                Assert.Equal(1000.0, vm.ApplySnap(1004), precision: 3);
+            }
+            finally
+            {
+                TryDelete(path);
+            }
+        }
+
+        [Fact]
+        public void ApplySnap_NoGrid_Leaves_Far_Time_Unchanged()
+        {
+            string path = WriteTempTimeline();
+            try
+            {
+                var vm = new TimelineEditorViewModel(null);
+                vm.LoadFromFile(path);
+                vm.IsSnapEnabled = true;
+                vm.PixelsPerMs = 1.0;
+                vm.SelectedSnapGrid = vm.SnapGridOptions.First(o => o.Ms == 0);
+                vm.CurrentTimeMs = 999999;
+
+                // 无网格 + 附近无吸附点 → 保持原值
+                Assert.Equal(1510.0, vm.ApplySnap(1510), precision: 3);
+            }
+            finally
+            {
+                TryDelete(path);
+            }
+        }
+
+        // ── 反向选择 / 工作区全选 ──
+
+        [Fact]
+        public void InvertSelection_Toggles_Membership()
+        {
+            string path = WriteTempTimeline();
+            try
+            {
+                var vm = new TimelineEditorViewModel(null);
+                vm.LoadFromFile(path);
+                var track = vm.Tracks[0];
+
+                vm.SelectKeyframe(track, 0, 0); // 选中 1 个 (共 4 个)
+                Assert.Equal(1, vm.SelectedKeyframeCount);
+
+                vm.InvertKeyframeSelection(allTracks: false);
+
+                Assert.Equal(3, vm.SelectedKeyframeCount);
+                Assert.False(vm.IsKeyframeSelected(track, 0, 0));
+                Assert.True(vm.IsKeyframeSelected(track, 0, 1));
+
+                vm.InvertKeyframeSelection(allTracks: false);
+                Assert.Equal(1, vm.SelectedKeyframeCount);
+                Assert.True(vm.IsKeyframeSelected(track, 0, 0));
+            }
+            finally
+            {
+                TryDelete(path);
+            }
+        }
+
+        [Fact]
+        public void SelectInWorkArea_Picks_Keyframes_Across_Clips()
+        {
+            string path = WriteTempTimeline();
+            try
+            {
+                var vm = new TimelineEditorViewModel(null);
+                vm.LoadFromFile(path);
+
+                // 工作区 [32000, 35000] → 命中 clip B 的 2 个关键帧 (绝对 32000 / 35000)
+                vm.WorkAreaInMs = 32000;
+                vm.WorkAreaOutMs = 35000;
+
+                vm.SelectKeyframesInWorkArea();
+
+                Assert.Equal(2, vm.SelectedKeyframeCount);
+            }
+            finally
+            {
+                TryDelete(path);
+            }
+        }
+
+        [Fact]
+        public void SelectInWorkArea_NoWorkArea_Is_NoOp()
+        {
+            string path = WriteTempTimeline();
+            try
+            {
+                var vm = new TimelineEditorViewModel(null);
+                vm.LoadFromFile(path);
+                vm.SelectKeyframe(vm.Tracks[0], 0, 0);
+
+                vm.SelectKeyframesInWorkArea();
+
+                Assert.Equal(1, vm.SelectedKeyframeCount); // 保持原选择
+            }
+            finally
+            {
+                TryDelete(path);
+            }
+        }
+
+        // ── P2: 标记编辑走 MarkerService (带撤销) ──
         [Fact]
         public void MarkerService_UpdateMarker_Is_Undoable()
         {

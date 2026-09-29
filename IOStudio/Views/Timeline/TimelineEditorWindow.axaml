@@ -644,13 +644,20 @@
                                     <ToggleButton Classes="tl-toggle-btn"
                                                   Name="SnapToggle"
                                                   IsChecked="{Binding IsSnapEnabled}"
-                                                  ToolTip.Tip="吸附 (关键帧/事件/视频结尾)"
+                                                  ToolTip.Tip="吸附 (关键帧/片段边界/播放头/节拍/标记)"
                                                   Cursor="Hand" Padding="4,3">
                                         <Canvas Width="14" Height="14">
                                             <Path Data="M 3,2 C 3,2 2,6 5,7 C 8,8 3,12 3,12 M 11,2 C 11,2 12,6 9,7 C 6,8 11,12 11,12"
                                                   Stroke="{DynamicResource TlTextSecondary}" StrokeThickness="1.4" Fill="Transparent"/>
                                         </Canvas>
                                     </ToggleButton>
+
+                                    <!-- 网格吸附步长 -->
+                                    <ComboBox Name="SnapGridCombo" FontSize="11" Padding="6,1" MinWidth="84"
+                                              VerticalAlignment="Center"
+                                              ItemsSource="{Binding SnapGridOptions}"
+                                              SelectedItem="{Binding SelectedSnapGrid, Mode=TwoWay}"
+                                              ToolTip.Tip="网格吸附步长 (与关键帧/节拍吸附并存, 取更近者)"/>
 
                                     <Border Width="1" Background="{DynamicResource TlBorderLight}" Margin="2,4"/>
 

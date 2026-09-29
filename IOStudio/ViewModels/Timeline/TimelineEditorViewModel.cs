@@ -99,6 +99,7 @@ namespace IOStudio.ViewModels.Timeline
             RedoCommand = ReactiveCommand.Create(Redo);
             ToggleThemeCommand = ReactiveCommand.Create(ToggleTheme);
             DismissLiveOutputHintCommand = ReactiveCommand.Create(DismissLiveOutputHint);
+            SelectedSnapGrid = SnapGridOptions[0];
 
             // 恢复上次的「设备输出」开关状态 (默认关闭: 编排默认仅预览, 避免误驱动设备)。
             // 这里只同步字段与引擎标志, 不做 Seek —— 构造时还没有时间轴。
@@ -945,6 +946,14 @@ namespace IOStudio.ViewModels.Timeline
                     SelectAllKeyframes(allTracks: true);
                     return ExecuteShortcutResult.HandledNeedsMultiSelectRefresh;
 
+                case Models.Motion.ShortcutAction.InvertSelection:
+                    InvertKeyframeSelection(allTracks: false);
+                    return ExecuteShortcutResult.HandledNeedsMultiSelectRefresh;
+
+                case Models.Motion.ShortcutAction.SelectInWorkArea:
+                    SelectKeyframesInWorkArea();
+                    return ExecuteShortcutResult.HandledNeedsMultiSelectRefresh;
+
                 case Models.Motion.ShortcutAction.NudgeTimeBackward:
                     return NudgeSelectedTime(-1);
 
@@ -1059,6 +1068,7 @@ namespace IOStudio.ViewModels.Timeline
                 case Models.Motion.ShortcutAction.ZoomToFit:
                 case Models.Motion.ShortcutAction.PreviousKeyframe:
                 case Models.Motion.ShortcutAction.NextKeyframe:
+                case Models.Motion.ShortcutAction.ShowShortcuts:
                 case Models.Motion.ShortcutAction.ExitVideoFullscreen:
                     return ExecuteShortcutResult.DelegateToView;
 
@@ -1167,6 +1177,44 @@ namespace IOStudio.ViewModels.Timeline
             set => this.RaiseAndSetIfChanged(ref _isSnapEnabled, value);
         }
 
+        // ---- 网格吸附 ----
+        // 粗排时"每 1 秒打一个点"比对齐到相邻关键帧更省事; 与已有点吸附并存, 取最近者。
+
+        /// <summary>网格吸附步长选项。</summary>
+        public sealed class SnapGridOption
+        {
+            public string Label { get; init; } = "";
+            public double Ms { get; init; }
+
+            public override string ToString() => Label;
+        }
+
+        public ObservableCollection<SnapGridOption> SnapGridOptions { get; } =
+            new()
+            {
+                new SnapGridOption { Label = "无网格", Ms = 0 },
+                new SnapGridOption { Label = "100ms", Ms = 100 },
+                new SnapGridOption { Label = "250ms", Ms = 250 },
+                new SnapGridOption { Label = "500ms", Ms = 500 },
+                new SnapGridOption { Label = "1s", Ms = 1000 },
+                new SnapGridOption { Label = "2s", Ms = 2000 },
+            };
+
+        private SnapGridOption? _selectedSnapGrid;
+
+        public SnapGridOption? SelectedSnapGrid
+        {
+            get => _selectedSnapGrid;
+            set
+            {
+                this.RaiseAndSetIfChanged(ref _selectedSnapGrid, value);
+                SnapGridMs = value?.Ms ?? 0;
+            }
+        }
+
+        /// <summary>网格吸附步长 (毫秒); 0 = 关闭。</summary>
+        public double SnapGridMs { get; private set; }
+
         /// <summary>曲线编辑器 ViewModel (Phase 4.2.8)</summary>
         private CurveEditorViewModel? _curveEditorVm;
         public CurveEditorViewModel CurveEditorVm =>
@@ -1245,6 +1293,17 @@ namespace IOStudio.ViewModels.Timeline
                 {
                     bestDist = dist;
                     bestTime = pt;
+                }
+            }
+
+            // 网格吸附 (与点吸附共存, 取更近者)
+            if (SnapGridMs > 0)
+            {
+                double grid = Math.Round(timeMs / SnapGridMs) * SnapGridMs;
+                double dist = Math.Abs(timeMs - grid);
+                if (dist < bestDist && dist <= threshold)
+                {
+                    bestTime = grid;
                 }
             }
 

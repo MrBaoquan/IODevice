@@ -1,0 +1,51 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:tl="using:IOStudio.Views.Timeline"
+        x:Class="IOStudio.Views.Timeline.ShortcutsWindow"
+        Title="快捷键速查"
+        Width="620" Height="620"
+        WindowStartupLocation="CenterOwner"
+        CanResize="True"
+        Background="{DynamicResource TlWindowBg}">
+
+    <DockPanel Margin="14">
+        <TextBlock DockPanel.Dock="Top" Margin="0,0,0,10"
+                   Text="动作编排器 · 快捷键"
+                   FontSize="15" FontWeight="SemiBold"
+                   Foreground="{DynamicResource TlTextPrimary}"/>
+
+        <Button DockPanel.Dock="Bottom" Content="关闭" HorizontalAlignment="Right"
+                Margin="0,10,0,0" Padding="16,4" Click="OnCloseClick"/>
+
+        <ScrollViewer VerticalScrollBarVisibility="Auto">
+            <ItemsControl x:Name="GroupsHost">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="tl:ShortcutGroup">
+                        <StackPanel Margin="0,0,0,14">
+                            <TextBlock Text="{Binding Title}" FontSize="12" FontWeight="SemiBold"
+                                       Foreground="{DynamicResource TlAccent}" Margin="0,0,0,6"/>
+                            <ItemsControl ItemsSource="{Binding Items}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate x:DataType="tl:ShortcutItem">
+                                        <Grid ColumnDefinitions="170,*" Margin="0,2">
+                                            <Border Grid.Column="0" HorizontalAlignment="Left"
+                                                    Background="{DynamicResource TlInputBg}"
+                                                    CornerRadius="4" Padding="6,1">
+                                                <TextBlock Text="{Binding Keys}" FontSize="11"
+                                                           FontFamily="Consolas, monospace"
+                                                           Foreground="{DynamicResource TlTextPrimary}"/>
+                                            </Border>
+                                            <TextBlock Grid.Column="1" Text="{Binding Description}"
+                                                       FontSize="11" VerticalAlignment="Center"
+                                                       Foreground="{DynamicResource TlTextSecondary}"/>
+                                        </Grid>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </ScrollViewer>
+    </DockPanel>
+</Window>

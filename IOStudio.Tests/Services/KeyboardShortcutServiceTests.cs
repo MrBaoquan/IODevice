@@ -41,6 +41,30 @@ namespace IOStudio.Tests.Services
             Assert.Equal(ShortcutAction.Export, Resolve(Key.E, KeyModifiers.Control));
         }
 
+        [Fact]
+        public void CtrlShiftI_Inverts()
+        {
+            Assert.Equal(
+                ShortcutAction.InvertSelection,
+                Resolve(Key.I, KeyModifiers.Control | KeyModifiers.Shift)
+            );
+        }
+
+        [Fact]
+        public void CtrlShiftW_SelectsWorkArea()
+        {
+            Assert.Equal(
+                ShortcutAction.SelectInWorkArea,
+                Resolve(Key.W, KeyModifiers.Control | KeyModifiers.Shift)
+            );
+        }
+
+        [Fact]
+        public void F1_OpensShortcuts()
+        {
+            Assert.Equal(ShortcutAction.ShowShortcuts, Resolve(Key.F1));
+        }
+
         [Theory]
         [InlineData(Key.Left, ShortcutAction.NudgeTimeBackward)]
         [InlineData(Key.Right, ShortcutAction.NudgeTimeForward)]

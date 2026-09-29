@@ -40,6 +40,18 @@ namespace IOStudio.Models
         [XmlAttribute("TimelineLiveOutputHintShown")]
         public bool TimelineLiveOutputHintShown { get; set; } = false;
 
+        /// <summary>检查器「待机循环」区段是否展开 (默认收起)。</summary>
+        [XmlAttribute("InspectorIdleExpanded")]
+        public bool InspectorIdleExpanded { get; set; } = false;
+
+        /// <summary>检查器「标记」区段是否展开。</summary>
+        [XmlAttribute("InspectorMarkerExpanded")]
+        public bool InspectorMarkerExpanded { get; set; } = false;
+
+        /// <summary>检查器「事件」区段是否展开。</summary>
+        [XmlAttribute("InspectorEventExpanded")]
+        public bool InspectorEventExpanded { get; set; } = false;
+
         /// <summary>
         /// 验证并修正配置值
         /// </summary>

@@ -3,12 +3,17 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:vm="using:IOStudio.ViewModels.Timeline"
+             xmlns:conv="using:IOStudio.Converters"
              xmlns:iconPacks="https://github.com/MahApps/IconPacks.Avalonia"
              mc:Ignorable="d" d:DesignWidth="320" d:DesignHeight="400"
              x:Class="IOStudio.Controls.Timeline.KeyframePropertyPanel"
              x:DataType="vm:KeyframePropertyViewModel"
              Focusable="True"
              KeyDown="OnPanelKeyDown">
+
+    <UserControl.Resources>
+        <conv:TextEqualsConverter x:Key="TextEquals" />
+    </UserControl.Resources>
 
     <UserControl.Styles>
         <!-- ══════════════════════════════════════════════════════════
@@ -77,9 +82,8 @@
             <Setter Property="Padding" Value="6,5"/>
         </Style>
 
-        <!-- 导航/工具按钮: Focusable=False 防止抢占键盘焦点 -->
+        <!-- 导航/工具按钮 (可键盘聚焦; 焦点环见下方统一规则) -->
         <Style Selector="Button.nav-btn">
-            <Setter Property="Focusable" Value="False"/>
             <Setter Property="Padding" Value="6,4"/>
             <Setter Property="MinWidth" Value="30"/>
             <Setter Property="MinHeight" Value="30"/>
@@ -97,7 +101,6 @@
 
         <!-- 小动作按钮 (批量/重置/模板): 26×26, 满足桌面指针目标下限 -->
         <Style Selector="Button.reset-btn">
-            <Setter Property="Focusable" Value="False"/>
             <Setter Property="Padding" Value="6,3"/>
             <Setter Property="MinWidth" Value="26"/>
             <Setter Property="MinHeight" Value="26"/>
@@ -113,20 +116,54 @@
             <Setter Property="Foreground" Value="{DynamicResource TlTextPrimary}"/>
         </Style>
 
-        <!-- 区段折叠箭头按钮 -->
-        <Style Selector="Button.section-chevron">
-            <Setter Property="Focusable" Value="False"/>
-            <Setter Property="Padding" Value="4,2"/>
-            <Setter Property="MinWidth" Value="24"/>
-            <Setter Property="MinHeight" Value="24"/>
+        <!-- 区段头: 整行可点 (Blender / Resolve 惯例), 箭头只作指示 -->
+        <Style Selector="Button.section-head">
             <Setter Property="Background" Value="Transparent"/>
-            <Setter Property="CornerRadius" Value="6"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="0,2"/>
+            <Setter Property="MinHeight" Value="0"/>
+            <Setter Property="MinWidth" Value="0"/>
+            <Setter Property="HorizontalAlignment" Value="Stretch"/>
+            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="CornerRadius" Value="4"/>
+        </Style>
+        <Style Selector="Button.section-head /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="Transparent"/>
+        </Style>
+        <Style Selector="Button.section-head:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="{DynamicResource TlHoverBg}"/>
+        </Style>
+
+        <!-- 颜色色板: 选中项加环 (Resolve 惯例) -->
+        <Style Selector="Button.swatch">
+            <Setter Property="Padding" Value="2"/>
+            <Setter Property="MinWidth" Value="26"/>
+            <Setter Property="MinHeight" Value="26"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderBrush" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="1.5"/>
+            <Setter Property="CornerRadius" Value="14"/>
             <Setter Property="Cursor" Value="Hand"/>
             <Setter Property="HorizontalContentAlignment" Value="Center"/>
             <Setter Property="VerticalContentAlignment" Value="Center"/>
         </Style>
-        <Style Selector="Button.section-chevron:pointerover">
+        <Style Selector="Button.swatch:pointerover">
             <Setter Property="Background" Value="{DynamicResource TlHoverBg}"/>
+        </Style>
+        <Style Selector="Button.swatch.selected">
+            <Setter Property="BorderBrush" Value="{DynamicResource TlTextPrimary}"/>
+            <Setter Property="Background" Value="{DynamicResource TlAccentSoftBg}"/>
+        </Style>
+
+        <!-- 统一焦点环 (键盘可达; WCAG 2.4.7 / 2.4.13) -->
+        <Style Selector="Button:focus-visible /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="BorderBrush" Value="{DynamicResource TlAccent}"/>
+            <Setter Property="BorderThickness" Value="1.5"/>
+        </Style>
+        <Style Selector="ToggleButton:focus-visible /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="BorderBrush" Value="{DynamicResource TlAccent}"/>
+            <Setter Property="BorderThickness" Value="1.5"/>
         </Style>
 
         <!-- 行/区段内的可收缩文本: 一律省略号, 绝不顶出容器 -->
@@ -417,7 +454,7 @@
                                     <iconPacks:PackIconIonicons Kind="RefreshiOS" Width="13" Height="13"/>
                                 </Button>
                             </Grid>
-                            <!-- 滑块 + 数值输入 同行布局 -->
+                            <!-- 滑块 + 数值输入 同行布局 (主流: 拖拽数值框即可微调) -->
                             <Grid ColumnDefinitions="*,80" IsEnabled="{Binding IsValueEditable}">
                                 <Slider Name="ValueSlider" Grid.Column="0"
                                         Minimum="0" Maximum="1"
@@ -431,9 +468,14 @@
                                 <TextBox Name="ValueInput" Grid.Column="1"
                                          Classes="prop-input" Margin="6,0,0,0"
                                          Text="{Binding ValueDisplayText, Mode=OneWay}"
+                                         ToolTip.Tip="左右拖动微调 · 单击输入 · Alt+↑↓ 步进"
+                                         Cursor="SizeWestEast"
                                          GotFocus="OnInputGotFocus"
                                          LostFocus="OnValueLostFocus"
                                          KeyDown="OnValueKeyDown"
+                                         PointerPressed="OnValueScrubStart"
+                                         PointerMoved="OnValueScrubMove"
+                                         PointerReleased="OnValueScrubEnd"
                                          HorizontalContentAlignment="Center"/>
                             </Grid>
                             <!-- 工程量: 与归一化值并列, 直接看到设备实际值 -->
@@ -441,27 +483,6 @@
                                        IsVisible="{Binding ShowEngineering}"
                                        FontSize="10" Foreground="{DynamicResource TlTextMuted}"
                                        HorizontalAlignment="Right"/>
-                            <!-- 微调按钮行: 精细/粗调步进 -->
-                            <Grid ColumnDefinitions="*,Auto" IsEnabled="{Binding IsValueEditable}">
-                                <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="2">
-                                    <Button Classes="nav-btn" ToolTip.Tip="精细减小 0.001"
-                                            Click="OnValueDecFineClick">
-                                        <TextBlock Text="−0.001" FontSize="10"/>
-                                    </Button>
-                                    <Button Classes="nav-btn" ToolTip.Tip="减小 0.01"
-                                            Click="OnValueDecClick">
-                                        <TextBlock Text="−0.01" FontSize="10"/>
-                                    </Button>
-                                    <Button Classes="nav-btn" ToolTip.Tip="增加 0.01"
-                                            Click="OnValueIncClick">
-                                        <TextBlock Text="+0.01" FontSize="10"/>
-                                    </Button>
-                                    <Button Classes="nav-btn" ToolTip.Tip="精细增加 0.001"
-                                            Click="OnValueIncFineClick">
-                                        <TextBlock Text="+0.001" FontSize="10"/>
-                                    </Button>
-                                </StackPanel>
-                            </Grid>
                             <!-- 编辑提示 (原因化) + 一键启用自动 -->
                             <Grid ColumnDefinitions="*,Auto" ColumnSpacing="6"
                                   IsVisible="{Binding ShowEditHint}" Margin="0,4,0,0">
@@ -527,18 +548,18 @@
                     <!-- ═══ 待机循环 区段 (辅助; 可折叠, 默认收起) ═══ -->
                     <Border Classes="prop-section" IsVisible="{Binding IsTrackInspector}">
                         <StackPanel Spacing="6">
-                            <!-- 头部: 标题 + 状态摘要 + 折叠箭头 -->
-                            <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="6">
-                                <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="6">
-                                    <Ellipse Classes="prop-dot"/>
-                                    <TextBlock Text="待机循环" Classes="prop-section-title"/>
-                                </StackPanel>
-                                <TextBlock Grid.Column="1" Text="{Binding IdleStatusText}"
-                                           Classes="prop-value" TextTrimming="CharacterEllipsis"
-                                           Foreground="{DynamicResource TlTextMuted}"/>
-                                <Button Grid.Column="2" Classes="section-chevron" Tag="idle"
-                                        Click="OnToggleSectionClick" ToolTip.Tip="展开 / 收起">
-                                    <Panel>
+                            <!-- 整行可点 (主流 Inspector 惯例); 箭头仅作指示 -->
+                            <Button Classes="section-head" Tag="idle"
+                                    Click="OnToggleSectionClick" ToolTip.Tip="展开 / 收起">
+                                <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="6">
+                                    <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="6">
+                                        <Ellipse Classes="prop-dot"/>
+                                        <TextBlock Text="待机循环" Classes="prop-section-title"/>
+                                    </StackPanel>
+                                    <TextBlock Grid.Column="1" Text="{Binding IdleStatusText}"
+                                               Classes="prop-value" TextTrimming="CharacterEllipsis"
+                                               Foreground="{DynamicResource TlTextMuted}"/>
+                                    <Panel Grid.Column="2" VerticalAlignment="Center">
                                         <iconPacks:PackIconIonicons Kind="ArrowDowniOS" Width="12" Height="12"
                                                                     IsVisible="{Binding IsIdleSectionExpanded}"
                                                                     Foreground="{DynamicResource TlTextMuted}"/>
@@ -546,8 +567,8 @@
                                                                     IsVisible="{Binding !IsIdleSectionExpanded}"
                                                                     Foreground="{DynamicResource TlTextMuted}"/>
                                     </Panel>
-                                </Button>
-                            </Grid>
+                                </Grid>
+                            </Button>
                             <StackPanel Spacing="6" IsVisible="{Binding IsIdleSectionExpanded}">
                                 <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="6">
                                     <Button Grid.Column="0" Classes="reset-btn" Cursor="Hand"
@@ -648,17 +669,17 @@
                     <!-- ═══ 标记属性 (播放头落在标记上; 可折叠) ═══ -->
                     <Border Classes="prop-section" IsVisible="{Binding ShowMarkerEditor}">
                         <StackPanel Spacing="6">
-                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="6">
-                                <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="6">
-                                    <Ellipse Classes="prop-dot" Fill="{Binding MarkerColor}"/>
-                                    <TextBlock Text="标记" Classes="prop-section-title"/>
-                                    <TextBlock Text="{Binding MarkerName}" Classes="prop-value"
-                                               Foreground="{DynamicResource TlTextMuted}"
-                                               TextTrimming="CharacterEllipsis"/>
-                                </StackPanel>
-                                <Button Grid.Column="1" Classes="section-chevron" Tag="marker"
-                                        Click="OnToggleSectionClick" ToolTip.Tip="展开 / 收起">
-                                    <Panel>
+                            <Button Classes="section-head" Tag="marker"
+                                    Click="OnToggleSectionClick" ToolTip.Tip="展开 / 收起">
+                                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="6">
+                                    <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="6">
+                                        <Ellipse Classes="prop-dot" Fill="{Binding MarkerColor}"/>
+                                        <TextBlock Text="标记" Classes="prop-section-title"/>
+                                        <TextBlock Text="{Binding MarkerName}" Classes="prop-value"
+                                                   Foreground="{DynamicResource TlTextMuted}"
+                                                   TextTrimming="CharacterEllipsis"/>
+                                    </StackPanel>
+                                    <Panel Grid.Column="1" VerticalAlignment="Center">
                                         <iconPacks:PackIconIonicons Kind="ArrowDowniOS" Width="12" Height="12"
                                                                     IsVisible="{Binding IsMarkerSectionExpanded}"
                                                                     Foreground="{DynamicResource TlTextMuted}"/>
@@ -666,8 +687,8 @@
                                                                     IsVisible="{Binding !IsMarkerSectionExpanded}"
                                                                     Foreground="{DynamicResource TlTextMuted}"/>
                                     </Panel>
-                                </Button>
-                            </Grid>
+                                </Grid>
+                            </Button>
                             <StackPanel Spacing="6" IsVisible="{Binding IsMarkerSectionExpanded}">
                             <Grid ColumnDefinitions="60,*">
                                 <TextBlock Classes="prop-label" Text="名称" Grid.Column="0"/>
@@ -685,24 +706,26 @@
                             </Grid>
                             <Grid ColumnDefinitions="60,*">
                                 <TextBlock Classes="prop-label" Text="颜色" Grid.Column="0"/>
-                                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4">
-                                    <!-- 当前颜色预览: 6 个色板之外显式给出"现在用哪个" -->
-                                    <Ellipse Width="16" Height="16" Fill="{Binding MarkerColor}"
-                                             Stroke="{DynamicResource TlBorderBrush}" StrokeThickness="1"
-                                             VerticalAlignment="Center" Margin="0,0,4,0"
-                                             ToolTip.Tip="当前颜色"/>
-                                    <Button Classes="reset-btn" Width="24" Height="24" Click="OnMarkerColorClick" Tag="#f59e0b"
-                                            ToolTip.Tip="琥珀"><Ellipse Width="11" Height="11" Fill="#f59e0b"/></Button>
-                                    <Button Classes="reset-btn" Width="24" Height="24" Click="OnMarkerColorClick" Tag="#ef4444"
-                                            ToolTip.Tip="红"><Ellipse Width="11" Height="11" Fill="#ef4444"/></Button>
-                                    <Button Classes="reset-btn" Width="24" Height="24" Click="OnMarkerColorClick" Tag="#22c55e"
-                                            ToolTip.Tip="绿"><Ellipse Width="11" Height="11" Fill="#22c55e"/></Button>
-                                    <Button Classes="reset-btn" Width="24" Height="24" Click="OnMarkerColorClick" Tag="#3b82f6"
-                                            ToolTip.Tip="蓝"><Ellipse Width="11" Height="11" Fill="#3b82f6"/></Button>
-                                    <Button Classes="reset-btn" Width="24" Height="24" Click="OnMarkerColorClick" Tag="#a855f7"
-                                            ToolTip.Tip="紫"><Ellipse Width="11" Height="11" Fill="#a855f7"/></Button>
-                                    <Button Classes="reset-btn" Width="24" Height="24" Click="OnMarkerColorClick" Tag="#ec4899"
-                                            ToolTip.Tip="粉"><Ellipse Width="11" Height="11" Fill="#ec4899"/></Button>
+                                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="2">
+                                    <!-- 当前颜色: 选中项加环 (Resolve 惯例) -->
+                                    <Button Classes="swatch" Click="OnMarkerColorClick" Tag="#f59e0b"
+                                            Classes.selected="{Binding MarkerColor, Converter={StaticResource TextEquals}, ConverterParameter=#f59e0b}"
+                                            ToolTip.Tip="琥珀"><Ellipse Width="12" Height="12" Fill="#f59e0b"/></Button>
+                                    <Button Classes="swatch" Click="OnMarkerColorClick" Tag="#ef4444"
+                                            Classes.selected="{Binding MarkerColor, Converter={StaticResource TextEquals}, ConverterParameter=#ef4444}"
+                                            ToolTip.Tip="红"><Ellipse Width="12" Height="12" Fill="#ef4444"/></Button>
+                                    <Button Classes="swatch" Click="OnMarkerColorClick" Tag="#22c55e"
+                                            Classes.selected="{Binding MarkerColor, Converter={StaticResource TextEquals}, ConverterParameter=#22c55e}"
+                                            ToolTip.Tip="绿"><Ellipse Width="12" Height="12" Fill="#22c55e"/></Button>
+                                    <Button Classes="swatch" Click="OnMarkerColorClick" Tag="#3b82f6"
+                                            Classes.selected="{Binding MarkerColor, Converter={StaticResource TextEquals}, ConverterParameter=#3b82f6}"
+                                            ToolTip.Tip="蓝"><Ellipse Width="12" Height="12" Fill="#3b82f6"/></Button>
+                                    <Button Classes="swatch" Click="OnMarkerColorClick" Tag="#a855f7"
+                                            Classes.selected="{Binding MarkerColor, Converter={StaticResource TextEquals}, ConverterParameter=#a855f7}"
+                                            ToolTip.Tip="紫"><Ellipse Width="12" Height="12" Fill="#a855f7"/></Button>
+                                    <Button Classes="swatch" Click="OnMarkerColorClick" Tag="#ec4899"
+                                            Classes.selected="{Binding MarkerColor, Converter={StaticResource TextEquals}, ConverterParameter=#ec4899}"
+                                            ToolTip.Tip="粉"><Ellipse Width="12" Height="12" Fill="#ec4899"/></Button>
                                 </StackPanel>
                             </Grid>
                             </StackPanel>
@@ -712,19 +735,19 @@
                     <!-- ═══ 事件 区段 (独立事件 或 播放头位置事件; 可折叠) ═══ -->
                     <Border Classes="prop-section" IsVisible="{Binding ShowEventBinding}">
                         <StackPanel Spacing="6">
-                            <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="6">
-                                <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="6">
-                                    <Ellipse Classes="prop-dot" Fill="{DynamicResource TlEvent}"/>
-                                    <TextBlock Text="事件" Classes="prop-section-title"/>
-                                    <TextBlock Text="{Binding EventBadge}" Classes="prop-value"
-                                               Foreground="{DynamicResource TlTextMuted}"/>
-                                </StackPanel>
-                                <TextBlock Grid.Column="1" Text="{Binding EventName}" Classes="prop-mono"
-                                           Foreground="{DynamicResource TlTextMuted}"
-                                           TextTrimming="CharacterEllipsis"/>
-                                <Button Grid.Column="2" Classes="section-chevron" Tag="event"
-                                        Click="OnToggleSectionClick" ToolTip.Tip="展开 / 收起">
-                                    <Panel>
+                            <Button Classes="section-head" Tag="event"
+                                    Click="OnToggleSectionClick" ToolTip.Tip="展开 / 收起">
+                                <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="6">
+                                    <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="6">
+                                        <Ellipse Classes="prop-dot" Fill="{DynamicResource TlEvent}"/>
+                                        <TextBlock Text="事件" Classes="prop-section-title"/>
+                                        <TextBlock Text="{Binding EventBadge}" Classes="prop-value"
+                                                   Foreground="{DynamicResource TlTextMuted}"/>
+                                    </StackPanel>
+                                    <TextBlock Grid.Column="1" Text="{Binding EventName}" Classes="prop-mono"
+                                               Foreground="{DynamicResource TlTextMuted}"
+                                               TextTrimming="CharacterEllipsis"/>
+                                    <Panel Grid.Column="2" VerticalAlignment="Center">
                                         <iconPacks:PackIconIonicons Kind="ArrowDowniOS" Width="12" Height="12"
                                                                     IsVisible="{Binding IsEventSectionExpanded}"
                                                                     Foreground="{DynamicResource TlTextMuted}"/>
@@ -732,8 +755,8 @@
                                                                     IsVisible="{Binding !IsEventSectionExpanded}"
                                                                     Foreground="{DynamicResource TlTextMuted}"/>
                                     </Panel>
-                                </Button>
-                            </Grid>
+                                </Grid>
+                            </Button>
                             <StackPanel Spacing="6" IsVisible="{Binding IsEventSectionExpanded}">
                             <!-- 事件时间 (独立事件可编辑) -->
                             <Grid ColumnDefinitions="60,*"

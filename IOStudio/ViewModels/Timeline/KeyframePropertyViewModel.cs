@@ -33,8 +33,7 @@ namespace IOStudio.ViewModels.Timeline
     public class KeyframePropertyViewModel : ViewModelBase
     {
         // ── 显示模式 ──
-        public enum DisplayMode
-        {
+        public enum DisplayMode        {
             /// <summary>无轨道选中</summary>
             None,
 
@@ -51,8 +50,7 @@ namespace IOStudio.ViewModels.Timeline
             StandaloneEvent
         }
 
-        private DisplayMode _mode = DisplayMode.None;
-        private bool _isSyncing; // ShowTrackState 期间抑制编辑事件
+        private DisplayMode _mode = DisplayMode.None;        private bool _isSyncing; // ShowTrackState 期间抑制编辑事件
         private bool _isAutoKeyMode;
         private bool _hasKeyframeAtPlayhead;
         private double _timeMs;
@@ -390,7 +388,7 @@ namespace IOStudio.ViewModels.Timeline
             set => this.RaiseAndSetIfChanged(ref _isEventSectionExpanded, value);
         }
 
-        /// <summary>切换区段折叠。</summary>
+        /// <summary>切换区段折叠 (用户显式操作 → 持久化到设置)。</summary>
         public void ToggleSectionExpanded(string section)
         {
             switch (section)
@@ -404,6 +402,21 @@ namespace IOStudio.ViewModels.Timeline
                 case "event":
                     IsEventSectionExpanded = !IsEventSectionExpanded;
                     break;
+                default:
+                    return;
+            }
+
+            try
+            {
+                var settings = IOStudio.Models.IOStudioSettings.Instance;
+                settings.InspectorIdleExpanded = IsIdleSectionExpanded;
+                settings.InspectorMarkerExpanded = IsMarkerSectionExpanded;
+                settings.InspectorEventExpanded = IsEventSectionExpanded;
+                settings.Save();
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[Inspector] 保存区段折叠状态失败: {ex.Message}");
             }
         }
 
@@ -873,6 +886,19 @@ namespace IOStudio.ViewModels.Timeline
 
         public KeyframePropertyViewModel()
         {
+            // 恢复上次的区段折叠状态 (辅助区段默认收起; 用户显式操作才持久化)
+            try
+            {
+                var settings = IOStudio.Models.IOStudioSettings.Instance;
+                _isIdleSectionExpanded = settings.InspectorIdleExpanded;
+                _isMarkerSectionExpanded = settings.InspectorMarkerExpanded;
+                _isEventSectionExpanded = settings.InspectorEventExpanded;
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[Inspector] 读取区段折叠状态失败: {ex.Message}");
+            }
+
             DeleteCommand = ReactiveCommand.Create(() =>
             {
                 if (_displayedEvent is not null)

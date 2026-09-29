@@ -114,6 +114,66 @@ namespace IOStudio.Controls.Timeline
             Vm.CommitValue(val);
         }
 
+        // ── 数值拖拽微调 (AE / Blender / Resolve 惯例: 数值框左右拖动改值) ──
+        // 拖动期间只更新本地显示, 松手才提交一次 —— 避免每移动一像素写一条撤销。
+
+        private bool _isScrubbing;
+        private double _scrubStartX;
+        private float _scrubStartValue;
+
+        private void OnValueScrubStart(object? sender, PointerPressedEventArgs e)
+        {
+            if (Vm is not { IsValueEditable: true } vm || sender is not TextBox tb)
+                return;
+            var point = e.GetCurrentPoint(tb);
+            if (!point.Properties.IsLeftButtonPressed)
+                return;
+
+            _isScrubbing = true;
+            _scrubStartX = point.Position.X;
+            _scrubStartValue = vm.Value;
+            e.Pointer.Capture(tb);
+        }
+
+        private void OnValueScrubMove(object? sender, PointerEventArgs e)
+        {
+            if (!_isScrubbing || sender is not TextBox tb || Vm is not { } vm)
+                return;
+
+            double dx = e.GetPosition(tb).X - _scrubStartX;
+            if (Math.Abs(dx) < 3.0)
+                return; // 小位移视为点击, 不进入拖拽
+
+            // Shift 精细 (×0.1); 每 200px 走满量程 1.0
+            double sensitivity = e.KeyModifiers.HasFlag(KeyModifiers.Shift) ? 0.0005 : 0.005;
+            float next = (float)Math.Clamp(_scrubStartValue + dx * sensitivity, 0.0, 1.0);
+            tb.Text = next.ToString("F3", CultureInfo.InvariantCulture);
+        }
+
+        private void OnValueScrubEnd(object? sender, PointerReleasedEventArgs e)
+        {
+            if (!_isScrubbing)
+                return;
+            _isScrubbing = false;
+            e.Pointer.Capture(null);
+
+            if (sender is not TextBox tb || Vm is not { } vm)
+                return;
+
+            // 用最终显示值提交一次 (与拖动预览一致)
+            if (
+                float.TryParse(
+                    tb.Text,
+                    NumberStyles.Float,
+                    CultureInfo.InvariantCulture,
+                    out float final
+                )
+            )
+            {
+                vm.CommitValue(final);
+            }
+        }
+
         private void OnValueLostFocus(object? sender, RoutedEventArgs e)
         {
             CommitValueFromTextBox();
@@ -152,26 +212,6 @@ namespace IOStudio.Controls.Timeline
             {
                 Vm.CommitValue(val);
             }
-        }
-
-        private void OnValueDecClick(object? sender, RoutedEventArgs e)
-        {
-            Vm?.CommitValue((Vm?.Value ?? 0.5f) - 0.01f);
-        }
-
-        private void OnValueIncClick(object? sender, RoutedEventArgs e)
-        {
-            Vm?.CommitValue((Vm?.Value ?? 0.5f) + 0.01f);
-        }
-
-        private void OnValueDecFineClick(object? sender, RoutedEventArgs e)
-        {
-            Vm?.CommitValue((Vm?.Value ?? 0.5f) - 0.001f);
-        }
-
-        private void OnValueIncFineClick(object? sender, RoutedEventArgs e)
-        {
-            Vm?.CommitValue((Vm?.Value ?? 0.5f) + 0.001f);
         }
 
         private void OnEnableAutoClick(object? sender, RoutedEventArgs e)

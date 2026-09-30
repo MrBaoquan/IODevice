@@ -93,6 +93,12 @@ namespace IOStudio.Views.Timeline
                     var trackVm = tcc.DataContext as TrackViewModel;
                     if (trackVm != null && ViewModel != null)
                     {
+                        // 排查"我双击了但没反应": 记录请求与其落点, 与后续 [Action] 执行对照即可判断
+                        // 是"手势没送到" 还是 "被片段/锁定规则拒绝"。
+                        Services.AppLog.Action(
+                            "双击添加关键帧",
+                            $"{trackVm.Label} @ {ms:F0}ms"
+                        );
                         ViewModel.AddKeyframeAtTime(trackVm, ms);
                         RefreshPropertyPanel();
                         tcc.InvalidateVisual();
@@ -126,7 +132,21 @@ namespace IOStudio.Views.Timeline
                         SyncSelectedTrackToCurveEditor(trackVm);
 
                         if (clipIdx >= 0 && kfIdx >= 0)
+                        {
                             ViewModel.SelectKeyframe(trackVm, clipIdx, kfIdx);
+
+                            // 检查器由"播放头位置"驱动: 选中关键帧时把播放头同步过去。
+                            // 否则面板停在"播放头不在关键帧上"的禁用态 —— 用户看到的就是
+                            // "选了关键帧但调不了参数"。与 ◀/▶ 及关键帧列表点击行为保持一致。
+                            if (clipIdx < trackVm.Clips.Count)
+                            {
+                                var clickedClip = trackVm.Clips[clipIdx];
+                                if (kfIdx < clickedClip.Keyframes.Count)
+                                    ViewModel.SeekToExact(
+                                        clickedClip.StartMs + clickedClip.Keyframes[kfIdx].TimeMs
+                                    );
+                            }
+                        }
                         else
                             ViewModel.ClearKeyframeSelection();
 

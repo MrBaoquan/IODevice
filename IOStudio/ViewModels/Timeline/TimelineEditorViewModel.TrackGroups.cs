@@ -1015,6 +1015,22 @@ namespace IOStudio.ViewModels.Timeline
             this.RaisePropertyChanged(nameof(CurrentTimeDisplay));
         }
 
+        /// <summary>
+        /// 精确跳转 (不吸附)。用于"选中/新建关键帧"这类必须与关键帧时刻严格对齐的场景:
+        /// 检查器由播放头驱动, 播放头差几毫秒就会停在"不在关键帧上"的禁用态。
+        /// </summary>
+        public void SeekToExact(double timeMs)
+        {
+            if (IsPlaying)
+                Pause();
+
+            CurrentTimeMs = ClampTime(timeMs);
+            if (Timeline != null)
+                _engine.EnsureTimelineLoaded(Timeline);
+            _engine.Seek(CurrentTimeMs);
+            this.RaisePropertyChanged(nameof(CurrentTimeDisplay));
+        }
+
         /// <summary>原子更新轨道属性并纳入撤销栈。</summary>
         public void UpdateTrackProperties(TrackViewModel trackVm, AddTrackResult result)
         {

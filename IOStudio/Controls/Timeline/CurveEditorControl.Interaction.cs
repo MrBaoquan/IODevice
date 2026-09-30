@@ -279,11 +279,9 @@ namespace IOStudio.Controls.Timeline
                     }
 
                     if (!tooClose)
-                    {
                         AddKeyframeRequested?.Invoke(trackIdx, timeMs, value);
-                        e.Handled = true;
-                        return;
-                    }
+                    e.Handled = true;
+                    return;
                 }
             }
 

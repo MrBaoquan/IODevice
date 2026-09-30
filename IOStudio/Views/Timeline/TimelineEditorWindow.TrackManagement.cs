@@ -1155,6 +1155,19 @@ namespace IOStudio.Views.Timeline
                 curveEditor.KeyframeSelected += (ti, ci, ki) =>
                 {
                     ViewModel.CurveEditorVm.OnKeyframeSelected(ti, ci, ki);
+                    // 同 dopesheet: 检查器由播放头驱动, 选中关键帧需同步播放头, 否则停在禁用态
+                    if (ti >= 0 && ti < ViewModel.Tracks.Count)
+                    {
+                        var selectedTrack = ViewModel.Tracks[ti];
+                        if (ci >= 0 && ci < selectedTrack.Clips.Count)
+                        {
+                            var selectedClip = selectedTrack.Clips[ci];
+                            if (ki >= 0 && ki < selectedClip.Keyframes.Count)
+                                ViewModel.SeekToExact(
+                                    selectedClip.StartMs + selectedClip.Keyframes[ki].TimeMs
+                                );
+                        }
+                    }
                     // 同步轨道选中状态到 TrackClipControl (保持一致性)
                     if (ti >= 0 && ti < ViewModel.Tracks.Count)
                     {

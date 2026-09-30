@@ -196,6 +196,32 @@ namespace IOStudio.ViewModels.Timeline
         public void AddKeyframeAtTime(TrackViewModel track, double absoluteTimeMs) =>
             AddKeyframeAtTime(track, absoluteTimeMs, null);
 
+        /// <summary>按"到片段时间范围的距离"取最近的 clip (用于把关键帧放到空窗时的依附目标)。</summary>
+        private static (ClipViewModel? Clip, int Index) FindNearestClip(
+            TrackViewModel track,
+            double timeMs
+        )
+        {
+            ClipViewModel? best = null;
+            int bestIdx = -1;
+            double bestDist = double.MaxValue;
+            for (int i = 0; i < track.Clips.Count; i++)
+            {
+                var clip = track.Clips[i];
+                double dist =
+                    timeMs < clip.StartMs ? clip.StartMs - timeMs
+                    : timeMs > clip.EndMs ? timeMs - clip.EndMs
+                    : 0;
+                if (dist < bestDist)
+                {
+                    bestDist = dist;
+                    best = clip;
+                    bestIdx = i;
+                }
+            }
+            return (best, bestIdx);
+        }
+
         /// <summary>
         /// 在指定轨道的指定时间添加关键帧。
         /// <paramref name="desiredValue"/> 非空时用它作为新关键帧的值 (AutoKey 一次成型, 避免
@@ -206,7 +232,11 @@ namespace IOStudio.ViewModels.Timeline
             if (!TryBeginTrackEdit(track, "添加关键帧"))
                 return;
             if (track.Clips.Count == 0)
+            {
+                // 静默失败是排查噩梦: 明确告知为什么加不了
+                PushStatus($"轨道“{track.Label}”没有片段，无法添加关键帧");
                 return;
+            }
 
             absoluteTimeMs = ClampTime(absoluteTimeMs);
 
@@ -224,33 +254,27 @@ namespace IOStudio.ViewModels.Timeline
                 }
             }
 
-            // 如果没有找到包含该时间的 clip, 使用最后一个 clip 并扩展其 EndMs
+            // 未落在任何 clip 内 (空窗 / 片段之外) → 依附到距离最近的 clip 并扩展到该时刻。
+            // 此前只处理"超出最后一段 / 早于第一段", 中间的空窗会静默 return —— 表现为"双击没反应"。
             if (targetClip == null)
             {
-                // 查找离 absoluteTimeMs 最近的 clip (通常是最后一个)
-                int lastIdx = track.Clips.Count - 1;
-                var lastClip = track.Clips[lastIdx];
-                if (absoluteTimeMs > lastClip.EndMs)
-                {
-                    targetClip = lastClip;
-                    targetClipIdx = lastIdx;
-                }
-                else if (absoluteTimeMs < track.Clips[0].StartMs)
-                {
-                    targetClip = track.Clips[0];
-                    targetClipIdx = 0;
-                }
+                (targetClip, targetClipIdx) = FindNearestClip(track, absoluteTimeMs);
             }
 
             if (targetClip == null || targetClipIdx < 0)
-                return;
-
-            double localMs = absoluteTimeMs - targetClip.StartMs;
-            // 如果超出 clip 末端, 先扩展 EndMs
-            if (absoluteTimeMs > targetClip.EndMs)
             {
-                targetClip.EndMs = absoluteTimeMs + 500;
+                // 静默失败是排查噩梦: 明确告知为什么加不了
+                PushStatus($"轨道“{track.Label}”没有可写入的片段，无法添加关键帧");
+                return;
             }
+
+            // 若落在片段之外, 先把片段范围扩到该时刻 (否则关键帧会落在片段外, 求值不到)
+            if (absoluteTimeMs < targetClip.StartMs)
+                targetClip.StartMs = Math.Max(0, absoluteTimeMs);
+            else if (absoluteTimeMs > targetClip.EndMs)
+                targetClip.EndMs = absoluteTimeMs + 500;
+
+            double localMs = Math.Max(0, absoluteTimeMs - targetClip.StartMs);
 
             // 计算插值后的当前值作为新关键帧初始值
             float value = Services.Motion.InterpolationEngine.Evaluate(
@@ -293,6 +317,12 @@ namespace IOStudio.ViewModels.Timeline
                     }
                 )
             );
+
+            // 播放头同步到新关键帧 (检查器由播放头驱动, 否则加完仍是禁用态)。
+            // 用精确跳转: 吸附可能落到几毫秒外, 面板就找不到这个关键帧了。
+            if (Math.Abs(CurrentTimeMs - absoluteTimeMs) > 0.5)
+                SeekToExact(absoluteTimeMs);
+
             MarkDirty();
         }
 

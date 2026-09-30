@@ -751,6 +751,124 @@ namespace IOStudio.Tests.ViewModels
             }
         }
 
+        // ── 双击添加关键帧: 片段之间/之外的"空窗"此前会静默失败 ──
+
+        /// <summary>两条片段之间留出空窗: A=[0,1000], B=[5000,6000]。</summary>
+        private static string WriteGapTimeline()
+        {
+            var track = new MotionTrack
+            {
+                Id = "trk",
+                DeviceName = "Simulator-1",
+                OutputType = "oaxis",
+                OAxisChannel = "OAxis_01",
+                Label = "俯仰",
+            };
+            track.Clips.Add(
+                new MotionClip
+                {
+                    Id = "a",
+                    StartMs = 0,
+                    EndMs = 1000,
+                    Keyframes = new List<MotionKeyframe> { Kf(0, 0.2f), Kf(1000, 0.6f) },
+                }
+            );
+            track.Clips.Add(
+                new MotionClip
+                {
+                    Id = "b",
+                    StartMs = 5000,
+                    EndMs = 6000,
+                    Keyframes = new List<MotionKeyframe> { Kf(0, 0.3f), Kf(1000, 0.7f) },
+                }
+            );
+
+            var timeline = new MotionTimeline
+            {
+                Version = "3.0",
+                Name = "gap",
+                DurationMs = 6000,
+                Tracks = new List<MotionTrack> { track },
+            };
+            string path = Path.Combine(Path.GetTempPath(), $"gap_{Guid.NewGuid():N}.motion");
+            Assert.True(MotionFileReader.Write(timeline, path));
+            return path;
+        }
+
+        [Fact]
+        public void AddKeyframeAtTime_InGap_Attaches_To_Nearest_Clip()
+        {
+            string path = WriteGapTimeline();
+            try
+            {
+                var vm = new TimelineEditorViewModel(null);
+                vm.LoadFromFile(path);
+                var track = vm.Tracks[0];
+
+                // 2000 距 A(末 1000) 1000ms, 距 B(起 5000) 3000ms → 依附 A 并扩展其末端
+                vm.AddKeyframeAtTime(track, 2000);
+
+                Assert.Equal(3, track.Clips[0].Keyframes.Count);
+                Assert.Equal(2500.0, track.Clips[0].EndMs, precision: 3); // 2000 + 500
+                Assert.Contains(track.Clips[0].Keyframes, k => Math.Abs(k.TimeMs - 2000) < 0.01);
+                Assert.Equal(2, track.Clips[1].Keyframes.Count); // 另一段不受影响
+
+                // 播放头必须精确落在新增的关键帧上, 否则检查器停在禁用态 (改不了参数)
+                Assert.Equal(2000.0, vm.CurrentTimeMs, precision: 3);
+                Assert.NotNull(vm.SelectedKeyframe);
+            }
+            finally
+            {
+                TryDelete(path);
+            }
+        }
+
+        [Fact]
+        public void AddKeyframeAtTime_BeforeFirstClip_Extends_Start()
+        {
+            string path = WriteGapTimeline();
+            try
+            {
+                var vm = new TimelineEditorViewModel(null);
+                vm.LoadFromFile(path);
+                var track = vm.Tracks[0];
+                // 先把 A 整体右移, 制造"早于首段"的情形
+                track.Clips[0].StartMs = 1000;
+                track.Clips[0].EndMs = 2000;
+
+                vm.AddKeyframeAtTime(track, 200);
+
+                Assert.Equal(200.0, track.Clips[0].StartMs, precision: 3); // 向左扩到该时刻
+                Assert.Contains(track.Clips[0].Keyframes, k => Math.Abs(k.TimeMs) < 0.01);
+            }
+            finally
+            {
+                TryDelete(path);
+            }
+        }
+
+        [Fact]
+        public void AddKeyframeAtTime_NoClips_Explains_Instead_Of_Silent_NoOp()
+        {
+            string path = WriteGapTimeline();
+            try
+            {
+                var vm = new TimelineEditorViewModel(null);
+                vm.LoadFromFile(path);
+                var track = vm.Tracks[0];
+                track.Clips.Clear();
+
+                vm.AddKeyframeAtTime(track, 1000);
+
+                // 静默失败是排查噩梦: 必须给出原因
+                Assert.Contains("无法添加关键帧", vm.StatusMessage);
+            }
+            finally
+            {
+                TryDelete(path);
+            }
+        }
+
         // ── 整轨复制到系统剪贴板 (JSON 往返) ──
 
         [Fact]

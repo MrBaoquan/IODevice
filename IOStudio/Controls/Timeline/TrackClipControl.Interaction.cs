@@ -46,6 +46,16 @@ namespace IOStudio.Controls.Timeline
 
             if (props.IsLeftButtonPressed)
             {
+                // 双击优先于其它拖拽分支: 动作实例条带/边缘剪裁都会抢先 return,
+                // 若把双击判定放在它们之后, 在预设生成的片段上双击就加不了关键帧。
+                if (e.ClickCount == 2)
+                {
+                    if (!IsTrackLocked)
+                        AddKeyframeRequested?.Invoke(XToTimeMs(pos.X));
+                    e.Handled = true;
+                    return;
+                }
+
                 // 边界剪裁优先: 命中动作实例 clip 的左/右边缘进入拉伸。
                 var edgeHit = HitTestActionClipEdge(pos);
                 if (edgeHit.HasValue && Clips != null)
@@ -106,14 +116,6 @@ namespace IOStudio.Controls.Timeline
                     e.Pointer.Capture(this);
                     Focus();
                     InvalidateVisual();
-                    e.Handled = true;
-                    return;
-                }
-
-                if (e.ClickCount == 2)
-                {
-                    if (!IsTrackLocked)
-                        AddKeyframeRequested?.Invoke(XToTimeMs(pos.X));
                     e.Handled = true;
                     return;
                 }

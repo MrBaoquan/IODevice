@@ -42,6 +42,17 @@ namespace IOStudio.Services.Motion
         /// </summary>
         public void Execute(IUndoableCommand command)
         {
+            // 操作追踪: 每条可撤销命令都带描述, 这是"用户做了什么"覆盖面最广的记录点
+            // (关键帧增删改/轨道操作/批量/波纹/预设…都经此)。日志失败不影响执行。
+            try
+            {
+                Services.AppLog.Action("执行", command.Description);
+            }
+            catch
+            {
+                /* ignore */
+            }
+
             command.Execute();
             PushUndo(command);
             _redoStack.Clear(); // 新操作清除重做栈
@@ -58,6 +69,14 @@ namespace IOStudio.Services.Motion
 
             var command = _undoStack[^1];
             _undoStack.RemoveAt(_undoStack.Count - 1);
+            try
+            {
+                Services.AppLog.Action("撤销", command.Description);
+            }
+            catch
+            {
+                /* ignore */
+            }
             command.Undo();
             _redoStack.Add(command);
             StateChanged?.Invoke();
@@ -73,6 +92,14 @@ namespace IOStudio.Services.Motion
 
             var command = _redoStack[^1];
             _redoStack.RemoveAt(_redoStack.Count - 1);
+            try
+            {
+                Services.AppLog.Action("重做", command.Description);
+            }
+            catch
+            {
+                /* ignore */
+            }
             command.Execute();
             PushUndo(command);
             StateChanged?.Invoke();

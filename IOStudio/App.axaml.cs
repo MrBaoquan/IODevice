@@ -1,11 +1,17 @@
 using Avalonia;
+using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
+using Avalonia.Threading;
 using IOStudio.Services;
 using IOStudio.Services.Motion;
 using IOStudio.ViewModels;
 using IOStudio.Views;
 using Microsoft.Extensions.DependencyInjection;
+using MsBox.Avalonia;
+using MsBox.Avalonia.Enums;
+using System;
+using System.Linq;
 
 namespace IOStudio
 {
@@ -18,6 +24,12 @@ namespace IOStudio
 
         public override void OnFrameworkInitializationCompleted()
         {
+            // ── 日志与全局异常捕获最先就位: 后续任何一步失败都能留下证据 ──
+            AppLog.Initialize();
+            InstallGlobalExceptionHandlers();
+            AppLog.Info("App", $"启动 pid={Environment.ProcessId} version={GetType().Assembly.GetName().Version} os={Environment.OSVersion}");
+            AppLog.Info("App", $"args={string.Join(' ', Environment.GetCommandLineArgs().Skip(1))}");
+
             // ── 注册 DI 服务 ──
             var services = new ServiceCollection();
             ConfigureServices(services);
@@ -33,6 +45,12 @@ namespace IOStudio
 
             if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
             {
+                desktop.Exit += (_, _) =>
+                {
+                    AppLog.Info("App", "退出");
+                    AppLog.Shutdown();
+                };
+
                 // ── CLI 支持：让「加载 .motion → 播放 → 观察 Simulator」可被脚本驱动 ──
                 var cli = Cli.CliOptions.Parse(desktop.Args);
                 if (cli.ShowHelp)
@@ -66,6 +84,49 @@ namespace IOStudio
             }
 
             base.OnFrameworkInitializationCompleted();
+        }
+
+        /// <summary>
+        /// 安装全局异常捕获 —— 此前 UI 层任何异常都无处可查 (无处理器, 直接静默或弹崩溃框)。
+        /// 全部落盘; UI 线程异常额外提示用户并保留会话, 便于先存盘再排查。
+        /// </summary>
+        private static void InstallGlobalExceptionHandlers()
+        {
+            AppDomain.CurrentDomain.UnhandledException += (_, e) =>
+            {
+                AppLog.Error(
+                    "App",
+                    $"AppDomain 未处理异常 (IsTerminating={e.IsTerminating})",
+                    e.ExceptionObject as Exception
+                );
+            };
+
+            System.Threading.Tasks.TaskScheduler.UnobservedTaskException += (_, e) =>
+            {
+                AppLog.Error("App", "未观察的任务异常", e.Exception);
+                e.SetObserved();
+            };
+
+            Dispatcher.UIThread.UnhandledException += (_, e) =>
+            {
+                AppLog.Error("App", "UI 线程未处理异常", e.Exception);
+                try
+                {
+                    // 保留会话: 让用户有机会先保存工程, 再据日志排查
+                    e.Handled = true;
+                    _ = MessageBoxManager
+                        .GetMessageBoxStandard(
+                            "出现未处理异常",
+                            $"操作已中断, 详情已写入日志:\n{AppLog.CurrentFile}\n\n{AppLog.Describe(e.Exception)}",
+                            ButtonEnum.Ok
+                        )
+                        .ShowAsync();
+                }
+                catch
+                {
+                    /* 提示失败不影响日志已落盘 */
+                }
+            };
         }
 
         /// <summary>注册所有服务到 DI 容器。</summary>

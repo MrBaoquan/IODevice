@@ -55,6 +55,8 @@
     <PackageReference Include="ini-parser-netstandard" Version="2.5.2" />
     <PackageReference Include="MessageBox.Avalonia" Version="3.3.1.1" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="8.0.1" />
+    <!-- 成熟日志库: 文件目标 + 分级 + 归档/保留 由 nlog.config 配置, 改级别无需重编译 -->
+    <PackageReference Include="NLog" Version="6.0.0" />
     <PackageReference Include="ReactiveUI.Avalonia" Version="11.3.8" />
     <PackageReference Include="System.IO.Ports" Version="10.0.1" />
     <PackageReference Include="LibVLCSharp" Version="3.9.3" />
@@ -85,6 +87,11 @@
 
   <ItemGroup>
     <Content Include="Assets\avalonia-logo.ico" />
+
+    <!-- NLog 配置: 必须与 exe 同目录, 便于现场调级别/保留策略而不重编译 -->
+    <None Update="nlog.config">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 
   <ItemGroup>

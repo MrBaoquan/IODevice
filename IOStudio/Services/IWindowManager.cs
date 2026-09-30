@@ -62,9 +62,23 @@ namespace IOStudio.Services
                 return;
             }
 
-            var window = factory();
+            Window window;
+            try
+            {
+                window = factory();
+            }
+            catch (Exception ex)
+            {
+                // 窗口创建失败此前会静默冒泡 (编辑器窗口起不来时无任何线索)
+                AppLog.Error("Window", $"创建窗口 {typeof(TWindow).Name} 失败", ex);
+                throw;
+            }
+
             if (window == null)
+            {
+                AppLog.Warn("Window", $"窗口工厂 {typeof(TWindow).Name} 返回 null");
                 return;
+            }
 
             _windows[typeof(TWindow)] = window;
 
@@ -72,9 +86,11 @@ namespace IOStudio.Services
             {
                 _windows.Remove(typeof(TWindow));
                 WindowStateChanged?.Invoke(typeof(TWindow), false);
+                AppLog.Info("Window", $"{typeof(TWindow).Name} 已关闭");
             };
 
             window.Show();
+            AppLog.Info("Window", $"{typeof(TWindow).Name} 已打开");
             WindowStateChanged?.Invoke(typeof(TWindow), true);
         }
 

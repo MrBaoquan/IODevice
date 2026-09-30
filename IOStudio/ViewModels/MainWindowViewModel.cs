@@ -116,6 +116,9 @@ namespace IOStudio.ViewModels
         public ReactiveCommand<Unit, Unit> AboutCommand { get; }
         public ReactiveCommand<Unit, Unit> OpenCloseDeviceCommand { get; }
         public ReactiveCommand<Unit, Unit> ViewIOLogCommand { get; }
+
+        /// <summary>打开 IOStudio 操作日志 (用户操作 + 异常, 排查"我点了什么"用)。</summary>
+        public ReactiveCommand<Unit, Unit> ViewStudioLogCommand { get; }
         public ReactiveCommand<Unit, Unit> EditIOConfigCommand { get; }
         public ReactiveCommand<Unit, Unit> OpenEventForwardConfigCommand { get; }
         public ReactiveCommand<Unit, Unit> ToggleEditModeCommand { get; }
@@ -509,6 +512,16 @@ namespace IOStudio.ViewModels
             {
                 var _logPath = Path.Combine(AppRoot, "Logs/IODevice.log");
                 EditorLauncher.OpenWithPreferredEditor(_logPath);
+            });
+
+            ViewStudioLogCommand = ReactiveCommand.Create(() =>
+            {
+                // 今天的文件可能尚未产生 (刚启动无操作) —— 此时退化为打开日志目录
+                var logFile = Services.AppLog.CurrentFile;
+                if (File.Exists(logFile))
+                    EditorLauncher.OpenWithPreferredEditor(logFile);
+                else
+                    EditorLauncher.OpenWithPreferredEditor(Services.AppLog.LogDir);
             });
 
             EditIOConfigCommand = ReactiveCommand.Create(() =>

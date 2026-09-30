@@ -194,6 +194,10 @@ namespace IOStudio.Cli
         }
 
         /// <summary>写状态文件（失败不抛，CLI 不应因为写文件而崩）。</summary>
+        /// <summary>最近一次写入状态文件的 phase (用于避免退出定时器覆盖错误状态)。</summary>
+        private static string? _lastPhase;
+
+        /// <summary>最近一次写入状态文件的时间。</summary>
         public static void WriteStatus(
             CliOptions options,
             string phase,
@@ -201,6 +205,7 @@ namespace IOStudio.Cli
             IReadOnlyDictionary<string, object?>? validation = null
         )
         {
+            _lastPhase = phase;
             string? target = options.ResolveStatusFile();
             if (string.IsNullOrWhiteSpace(target)) return;
             try
@@ -344,6 +349,7 @@ namespace IOStudio.Cli
                 }
                 catch (Exception ex)
                 {
+                    AppLog.Error("Cli", "CLI 运行失败", ex);
                     WriteStatus(options, "error:" + ex.Message, editor);
                 }
 
@@ -354,6 +360,14 @@ namespace IOStudio.Cli
                     timer.Tick += (_, _) =>
                     {
                         timer.Stop();
+                        // 不回退已写入的错误状态: 此前会把 "error:…" 覆盖成 "exited",
+                        // 异常信息被静默丢弃 (排查时只剩一个"正常退出"的假象)。
+                        if (_lastPhase is { } p && p.StartsWith("error", StringComparison.OrdinalIgnoreCase))
+                        {
+                            AppLog.Warn("Cli", $"退出定时器跳过覆盖 (保留 phase={p})");
+                            desktop.Shutdown(1);
+                            return;
+                        }
                         WriteStatus(options, "exited", editor);
                         desktop.Shutdown(0);
                     };

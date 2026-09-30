@@ -147,7 +147,10 @@
 					<MenuItem Header="{Binding ThemeMenuText}" Command="{Binding ToggleThemeCommand}" />
 				</MenuItem>
 			<MenuItem Header="诊断(_D)">
-				<MenuItem Header="查看日志(_L)" Command="{Binding ViewIOLogCommand}"/>
+				<MenuItem Header="查看日志(_L)">
+					<MenuItem Header="操作日志（IOStudio）" Command="{Binding ViewStudioLogCommand}"/>
+					<MenuItem Header="设备日志（IODevice）" Command="{Binding ViewIOLogCommand}"/>
+				</MenuItem>
 			</MenuItem>
 			<MenuItem Header="帮助(_H)">
 				<MenuItem Header="检查更新(_U)" Command="{Binding CheckUpdateCommand}" />

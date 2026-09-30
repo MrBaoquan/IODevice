@@ -1142,6 +1142,8 @@ namespace IOStudio.ViewModels.Timeline
             if (string.IsNullOrEmpty(message))
                 return;
             StatusMessage = message;
+            // 界面状态反馈落盘 (内容变更操作由 UndoRedoService 记录为 Action, 二者可分开过滤)
+            Services.AppLog.Status(message);
             var line = $"[{DateTime.Now:HH:mm:ss}] {message}";
 
             // 连续重复的消息不再刷屏 (例如预检摘要在同一次编辑里会被反复推送)。

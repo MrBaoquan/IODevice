@@ -25,12 +25,12 @@ WINDOW_KEYWORD = os.environ.get("IOSTUDIO_WINDOW_KEYWORD", "showcase")
 WINDOW_TIMEOUT = int(os.environ.get("IOSTUDIO_WINDOW_TIMEOUT", "20"))
 
 # 已验证: 这些控件可通过 AutomationId 稳定定位 (检查器 / 走带 / 菜单)
+# 注: 只列**常显**的控件。标记/事件输入框位于可折叠区段(默认收起),
+#     仅在播放头落在标记/事件上时才出现, 因此不放进"必须存在"清单。
 KNOWN_VISIBLE_IDS = [
     "KfPropertyPanel",   # 检查器面板
     "ValueInput",        # 数值输入框 —— "选关键帧后改不了参数" 的关键控件
     "ValueSlider",       # 数值滑块
-    "MarkerNameInput",
-    "PlayheadEventDataInput",
     "CurrentTimeDisplayText",
     "DurationDisplayText",
     "SpeedComboBox",
@@ -38,6 +38,23 @@ KNOWN_VISIBLE_IDS = [
     "MenuBar",
     "MainMenu",
     "AutoKeyToggle",
+    # 走带: 图标按钮补 AutomationId 后才可定位
+    "TransportPrevKeyframe",
+    "TransportNextKeyframe",
+    "TransportJumpToStart",
+    "TransportJumpToEnd",
+    "TransportPlay",
+    "TransportStop",
+]
+
+# 折叠区段内的控件: 需要触发条件才出现, 只做"条件出现"的记录, 不做必须存在的断言。
+CONDITIONAL_IDS = [
+    "MarkerNameInput",
+    "PlayheadEventDataInput",
+    "KeyframeTimeInput",
+    "InterpolationCombo",
+    "BoolToggle",
+    "CurrentTimeEditBox",  # 仅双击时间显示进入编辑时存在
 ]
 
 # 已验证: 时间轴/曲线等自绘控件<b>不</b>暴露到 UIA
@@ -138,6 +155,10 @@ def _report():
     print("\n已知可见 Id 命中情况:")
     for aid in KNOWN_VISIBLE_IDS:
         print(f"  {'OK ' if aid in ids else 'MISS'} {aid}")
+
+    print("\n折叠区段内(按条件出现)的 Id:")
+    for aid in CONDITIONAL_IDS:
+        print(f"  {'present' if aid in ids else 'absent '} {aid}")
 
     print("\n已知盲区(应不可见):")
     names = {getattr(d.element_info, "class_name", "") or "" for d in ds}

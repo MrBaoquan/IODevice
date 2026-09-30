@@ -74,26 +74,50 @@ C:\Python311\python.exe -m pytest scripts\e2e\probe_uia.py -v
 > (见第 2 节); 用 UIA 能做的是**间接**覆盖: 通过走带时间框 + 检查器关键帧列表,
 > 驱动并断言检查器状态。
 
-## 4. 已实现的 UIA 断言套件
+## 4. 已实现的断言套件
 
-`scripts\e2e\test_inspector_editable.py` —— "选中关键帧后检查器可编辑" 回归套件 (7 项)。
+三套共 30 项, **一起跑 30/30 通过**。注意**执行顺序**:
 
 ```powershell
-# 先启动应用 (需含关键帧的影片), 再:
-C:\Python311\python.exe -m pytest scripts\e2e\test_inspector_editable.py -v
+# 启动应用后:
+C:\Python311\python.exe -m pytest scripts\e2e\probe_uia.py `
+                                   scripts\e2e\test_inspector_editable.py `
+                                   scripts\e2e\test_timeline_double_click.py -v
 ```
 
-覆盖 (含负面基线, 保证断言有判别力):
-- 检查器 `ValueInput`/`ValueSlider` 可定位;
-- 播放头不在关键帧上 → 数值控件**必须禁用**;
-- 播放头落到关键帧 → **必须可编辑**;
-- 播放头在片段内(不在关键帧上) → 检查器**仍须认片段** (关键帧列表非空);
-- 点击关键帧列表项 → 播放头跳到该帧且变为可编辑;
-- 可编辑后**确实能写入**并读回;
-- 走带时间框输入**精确时间不被吸附改写**。
+| 套件 | 项数 | 通道 | 说明 |
+|---|---|---|---|
+| `probe_uia.py` | 19 | UIA | UIA 可见性回归 (哪些控件可定位 / 时间轴仍是盲区) |
+| `test_inspector_editable.py` | 7 | UIA | "选中关键帧 → 检查器可编辑" |
+| `test_timeline_double_click.py` | 4 | 窗口消息 | "双击加帧" 手势送达 + 真正落库 |
 
-可配置项 (换影片时):
-`IOSTUDIO_WINDOW_KEYWORD` / `IOSTUDIO_FIRST_CLIP_MS` / `IOSTUDIO_GAP_MS` / `IOSTUDIO_MID_CLIP_MS`
+> **顺序要求**: `test_timeline_double_click.py` 会**真的往文档里加关键帧**
+> (它是写操作), 所以放在最后跑。前两套只读/自我复位。
+
+### 关键设计点 (踩过的坑)
+
+1. **常量必须从影片文件推导**, 不能写死。
+   写死 `FIRST_CLIP_MS=32000` 时, 影片被双击加帧改动后片段范围变化,
+   常量就指向了错误位置, 断言忽真忽假。现由 `_first_clip_span()` 读 `.motion`
+   解析首片段 `[start_ms, end_ms]`, 并由它推导空窗与中点。
+
+2. **关键帧列表的"当前项"再点一次是无操作**。
+   列表中被标为 `IsCurrent` 的那条 (播放头已在其上) 点击不会切面板。
+   所以不能盲点 `items[0]`; 正确做法是从片段中间(无当前项)开始, 依次尝试前几项
+   直到面板变为可编辑 (`_click_effective_keyframe_list_item`)。
+
+3. **同进程多窗口会抢焦点**。
+   若设备调试工作台等窗口在前台, UIA 双击会丢失 —— 打开时间编辑框前先 `set_focus()`。
+
+4. **窗口消息套件必须 `ShowWindow(hwnd, 9)`**。
+   窗口最小化时鼠标消息不会被处理。
+
+### 可配置项
+
+`IOSTUDIO_WINDOW_KEYWORD`(窗口标题关键字) ·
+`IOSTUDIO_MOTION`(用于推导常量的 .motion 路径) ·
+`IOSTUDIO_DEPLOY_DIR`(含 Logs 的部署目录) ·
+`IOSTUDIO_CLICK_X` / `IOSTUDIO_CLICK_Y`(双击落点, 客户区坐标)
 
 ## 5. 由本套件发现并修复的产品缺陷
 

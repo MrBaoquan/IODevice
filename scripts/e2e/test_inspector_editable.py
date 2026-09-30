@@ -27,7 +27,9 @@ UIA 端到端验证: "选中关键帧后检查器必须可编辑" (bug #2 的回
     C:\\Python311\\python.exe -m pytest scripts\\e2e\\test_inspector_editable.py -v
 """
 import os
+import re
 import time
+from pathlib import Path
 
 import pytest
 from pywinauto import Desktop
@@ -35,16 +37,56 @@ from pywinauto import Desktop
 WINDOW_KEYWORD = os.environ.get("IOSTUDIO_WINDOW_KEYWORD", "showcase")
 WINDOW_TIMEOUT = int(os.environ.get("IOSTUDIO_WINDOW_TIMEOUT", "25"))
 
-# showcase 影片首片段起点 (ms)。换影片时用 IOSTUDIO_FIRST_CLIP_MS 覆盖。
-FIRST_CLIP_MS = float(os.environ.get("IOSTUDIO_FIRST_CLIP_MS", "32000"))
-GAP_MS = float(os.environ.get("IOSTUDIO_GAP_MS", "30000"))  # 首片段之前
-# 片段内、且刻意远离任何关键帧的位置。
-# showcase 首片段: [32000,35000], 关键帧在 32000/32600/34400/35000 → 取中点 33500。
-MID_CLIP_MS = float(os.environ.get("IOSTUDIO_MID_CLIP_MS", "33500"))
-
 VALUE_INPUT_ID = "ValueInput"
 VALUE_SLIDER_ID = "ValueSlider"
 PANEL_ID = "KfPropertyPanel"
+
+# 影片路径: 用于从文件里**推导**首片段时间, 避免把常量写死后随文件/编辑漂移。
+MOTION_PATH = Path(
+    os.environ.get(
+        "IOSTUDIO_MOTION",
+        str(
+            Path(__file__).resolve().parents[2]
+            / "Binaries"
+            / "Win64"
+            / "Debug"
+            / "Config"
+            / "Motion"
+            / "showcase_10min.motion"
+        ),
+    )
+)
+
+
+def _first_clip_span(path=MOTION_PATH):
+    """
+    从 .motion 里取第一条片段的时间范围 (毫秒)。
+
+    测试常量必须来自**文件本身**, 否则一旦影片被编辑过(例如双击加帧改变了片段范围),
+    写死的常量就会指向错误位置, 导致断言忽真忽假。
+    """
+    try:
+        text = path.read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return None
+    m = re.search(r'"clips"\s*:\s*\[\s*\{[^}]*?"start_ms"\s*:\s*(\d+)[^}]*?"end_ms"\s*:\s*(\d+)', text)
+    if not m:
+        return None
+    return float(m.group(1)), float(m.group(2))
+
+
+_SPAN = _first_clip_span()
+if _SPAN is None:
+    # 文件不可读时退回环境变量/默认 (仅用于无法读取文件的场景)
+    FIRST_CLIP_MS = float(os.environ.get("IOSTUDIO_FIRST_CLIP_MS", "27400"))
+    CLIP_END_MS = float(os.environ.get("IOSTUDIO_CLIP_END_MS", "30400"))
+else:
+    FIRST_CLIP_MS, CLIP_END_MS = _SPAN
+
+# 首片段之前 (必为空窗 -> 禁用态)
+GAP_MS = max(0.0, FIRST_CLIP_MS - 2000.0)
+# 片段内、且刻意远离首尾关键帧的中点 (首/末关键帧通常贴片段两端)
+MID_CLIP_MS = (FIRST_CLIP_MS + CLIP_END_MS) / 2.0
 
 
 # ─────────────────────────── 基础设施 ───────────────────────────
@@ -93,7 +135,18 @@ def _wait_until(fn, timeout=6.0, interval=0.2):
 
 
 def _open_time_editor(win):
-    """打开走带时间编辑框; 返回控件或 None。"""
+    """
+    打开走带时间编辑框; 返回控件或 None。
+
+    先把窗口置前: 若同一进程另有窗口(如设备调试工作台)抢占了焦点,
+    双击事件会因为窗口未处于前台而丢失 —— 这属于环境干扰, 不是被测缺陷。
+    """
+    try:
+        win.set_focus()
+    except Exception:
+        pass
+    time.sleep(0.15)
+
     box = _by_id(win, "CurrentTimeEditBox")
     if box is not None and box.is_visible():
         return box
@@ -251,6 +304,26 @@ def test_inspector_recognizes_clip_membership_off_keyframe(win):
     )
 
 
+def _click_effective_keyframe_list_item(win):
+    """
+    点检查器关键帧列表里一个**会真正生效**的项。
+
+    关键: 列表中被标为"当前项"(IsCurrent) 的那一条再点一次是**无操作**
+    (播放头已在其上, 面板无需切换)。所以不能盲点 items[0] ——
+    若恰好命中当前项, 就会误判为"点选无效"。
+    做法: 从播放头位于片段中间(无当前项)开始, 依次尝试前几项, 直到面板变为可编辑。
+    """
+    items = _list_items(win)
+    if not items:
+        return False
+
+    for i in range(min(len(items), 3)):
+        items[i].click_input()
+        if _wait_until(lambda: _by_id(win, VALUE_INPUT_ID).is_enabled(), timeout=4.0):
+            return True
+    return False
+
+
 def test_clicking_keyframe_list_item_selects_that_keyframe(win):
     """
     应用自身的"选中关键帧"入口 (检查器关键帧列表点击) 必须:
@@ -259,23 +332,19 @@ def test_clicking_keyframe_list_item_selects_that_keyframe(win):
     """
     assert _set_playhead(win, MID_CLIP_MS), f"无法把播放头设到 {MID_CLIP_MS}ms"
 
-    items = _list_items(win)
-    if not items:
+    if not _list_items(win):
         pytest.fail(
             f"{MID_CLIP_MS}ms 处检查器没有关键帧列表项 —— "
             "见 test_inspector_recognizes_clip_membership_off_keyframe。"
         )
 
-    items[0].click_input()
+    clicked = _click_effective_keyframe_list_item(win)
 
-    assert _wait_until(
-        lambda: _by_id(win, VALUE_INPUT_ID).is_enabled()
-        and _by_id(win, VALUE_SLIDER_ID).is_enabled(),
-        timeout=8.0,
-    ), (
+    assert clicked and _by_id(win, VALUE_INPUT_ID).is_enabled(), (
         "点击关键帧列表项后数值控件未变为可编辑 —— "
         f"ValueInput.enabled={_by_id(win, VALUE_INPUT_ID).is_enabled()}, "
-        f"ValueSlider.enabled={_by_id(win, VALUE_SLIDER_ID).is_enabled()}。"
+        f"ValueSlider.enabled={_by_id(win, VALUE_SLIDER_ID).is_enabled()}, "
+        f"当前时间={_current_ms(win):.0f}ms。"
     )
 
 
@@ -285,12 +354,10 @@ def test_value_input_accepts_write_after_selection(win):
     """
     assert _set_playhead(win, MID_CLIP_MS), f"无法把播放头设到 {MID_CLIP_MS}ms"
 
-    items = _list_items(win)
-    if not items:
+    if not _list_items(win):
         pytest.fail("检查器没有关键帧列表项, 无法点选")
 
-    items[0].click_input()
-    if not _wait_until(lambda: _by_id(win, VALUE_INPUT_ID).is_enabled(), timeout=8.0):
+    if not _click_effective_keyframe_list_item(win):
         pytest.fail("点选关键帧后数值框仍不可编辑 —— 先修上一条测试")
 
     edit = _by_id(win, VALUE_INPUT_ID)

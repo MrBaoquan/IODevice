@@ -8,7 +8,11 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.6.0" />
+        <!-- Avalonia.Headless: 无桌面环境下驱动真实控件(含自绘控件的指针交互)做 E2E 验证。
+         版本与主工程 Avalonia 严格对齐, 避免 AVLN 类型冲突。 -->
+    <PackageReference Include="Avalonia.Headless" Version="11.3.10" />
+    <PackageReference Include="Avalonia.Headless.XUnit" Version="11.3.10" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.6.0" />
         <PackageReference Include="xunit" Version="2.5.3" />
         <PackageReference Include="xunit.runner.visualstudio" Version="2.5.3">
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>

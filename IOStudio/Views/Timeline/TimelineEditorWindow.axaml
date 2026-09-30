@@ -450,23 +450,33 @@
                                     VerticalAlignment="Center">
                             <!-- 跳转到开始 -->
                             <Button Classes="transport-btn" Click="OnJumpToStart"
+                                    AutomationProperties.AutomationId="TransportJumpToStart"
+                                    AutomationProperties.Name="跳转到开始"
                                     ToolTip.Tip="跳转到开始 (Home)" Foreground="{DynamicResource TlTransportBtn}">
                                 <iconPacks:PackIconIonicons Kind="SkipBackwardiOS" Width="16" Height="16"/>
                             </Button>
                             <!-- 上一关键帧 -->
                             <Button Classes="transport-btn" Click="OnPrevKeyframe"
+                                    AutomationProperties.AutomationId="TransportPrevKeyframe"
+                                    AutomationProperties.Name="上一关键帧"
                                     ToolTip.Tip="上一关键帧 (←)" Foreground="{DynamicResource TlTransportBtn}">
                                 <iconPacks:PackIconIonicons Kind="ArrowBackiOS" Width="16" Height="16"/>
                             </Button>
                             <Button Classes="transport-play" Command="{Binding PlayCommand}"
+                                    AutomationProperties.AutomationId="TransportPlay"
+                                    AutomationProperties.Name="播放"
                                     IsVisible="{Binding !IsPlaying}" ToolTip.Tip="播放 (Space)">
                                 <iconPacks:PackIconIonicons Kind="PlayiOS" Width="17" Height="17" Foreground="{DynamicResource TlTransportAccent}"/>
                             </Button>
                             <Button Classes="transport-play" Command="{Binding PauseCommand}"
+                                    AutomationProperties.AutomationId="TransportPause"
+                                    AutomationProperties.Name="暂停"
                                     IsVisible="{Binding IsPlaying}" ToolTip.Tip="暂停 (Space)">
                                 <iconPacks:PackIconIonicons Kind="PauseiOS" Width="17" Height="17" Foreground="{DynamicResource TlTransportWarn}"/>
                             </Button>
                             <Button Classes="transport-btn" Command="{Binding StopCommand}"
+                                    AutomationProperties.AutomationId="TransportStop"
+                                    AutomationProperties.Name="停止"
                                     ToolTip.Tip="停止" Foreground="{DynamicResource TlTransportBtn}">
                                 <iconPacks:PackIconIonicons Kind="SquareiOS" Width="15" Height="15"/>
                             </Button>
@@ -507,11 +517,15 @@
                                        ToolTip.Tip="设备实时输出 (预览时将值发送到物理设备)"/>
                             <!-- 下一关键帧 -->
                             <Button Classes="transport-btn" Click="OnNextKeyframe"
+                                    AutomationProperties.AutomationId="TransportNextKeyframe"
+                                    AutomationProperties.Name="下一关键帧"
                                     ToolTip.Tip="下一关键帧 (→)" Foreground="{DynamicResource TlTransportBtn}">
                                 <iconPacks:PackIconIonicons Kind="ArrowForwardiOS" Width="16" Height="16"/>
                             </Button>
                             <!-- 跳转到结尾 -->
                             <Button Classes="transport-btn" Click="OnJumpToEnd"
+                                    AutomationProperties.AutomationId="TransportJumpToEnd"
+                                    AutomationProperties.Name="跳转到结尾"
                                     ToolTip.Tip="跳转到结尾 (End)" Foreground="{DynamicResource TlTransportBtn}">
                                 <iconPacks:PackIconIonicons Kind="SkipForwardiOS" Width="16" Height="16"/>
                             </Button>
@@ -539,11 +553,15 @@
                                     Cursor="Hand">
                                 <Panel>
                                     <TextBlock Name="CurrentTimeDisplayText"
+                                               AutomationProperties.AutomationId="CurrentTimeDisplayText"
+                                               AutomationProperties.Name="当前时间"
                                                FontFamily="Consolas, monospace" FontSize="14"
                                                Foreground="{DynamicResource TlTransportTimeText}" FontWeight="Bold"
                                                Text="{Binding CurrentTimeDisplay}"
                                                DoubleTapped="OnCurrentTimeDoubleClick"/>
                                     <TextBox Name="CurrentTimeEditBox"
+                                             AutomationProperties.AutomationId="CurrentTimeEditBox"
+                                             AutomationProperties.Name="时间输入"
                                              IsVisible="False"
                                              FontFamily="Consolas, monospace" FontSize="13"
                                              FontWeight="Bold" Foreground="{DynamicResource TlTransportTimeText}"

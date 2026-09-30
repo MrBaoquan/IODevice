@@ -613,6 +613,11 @@ namespace IOStudio.Views.Timeline
                 if (playheadMs >= clipVm.StartMs && playheadMs <= clipVm.EndMs)
                 {
                     double localMs = playheadMs - clipVm.StartMs;
+                    // 播放头落在该片段内 —— 立即记录片段归属 (与"是否命中关键帧"无关)。
+                    // 此前 clipIdx 只在恰好命中关键帧时才赋值, 于是播放头处于片段内
+                    // 但不在关键帧上时 ClipIndex 仍为 -1: 面板误报"播放头不在片段内",
+                    // 关键帧列表也不显示, 用户无法从列表点选关键帧。
+                    clipIdx = ci;
                     interpolatedValue = Services.Motion.InterpolationEngine.Evaluate(
                         clipVm.Clip.Keyframes,
                         localMs
@@ -629,7 +634,6 @@ namespace IOStudio.Views.Timeline
                             tangentOut = kfModel.TangentOut;
                             cp1x = kfModel.Cp1x;
                             cp2x = kfModel.Cp2x;
-                            clipIdx = ci;
                             kfIdx = ki;
                             // 同步选中状态以便编辑
                             ViewModel.SelectKeyframe(track, ci, ki);

@@ -660,6 +660,11 @@ namespace IOStudio.Views.Timeline
             if (displayText == null || editBox == null || ViewModel == null)
                 return;
 
+            // 已经处于编辑态时不要重复进入:
+            // 否则会把用户正在输入的内容重置为当前时间, 也会让 "再次双击" 看起来没反应。
+            if (editBox.IsVisible)
+                return;
+
             displayText.IsVisible = false;
             editBox.IsVisible = true;
             // 显示当前秒数
@@ -685,6 +690,11 @@ namespace IOStudio.Views.Timeline
 
         private void OnCurrentTimeEditLostFocus(object? sender, RoutedEventArgs e)
         {
+            // 仅在编辑态才提交, 避免"控件已被隐藏"后由聚焦切换再次触发提交
+            // (Enter 提交会隐藏编辑框, 进而引发 LostFocus → 重复 SeekTo)。
+            var editBox = this.FindControl<TextBox>("CurrentTimeEditBox");
+            if (editBox is { IsVisible: false })
+                return;
             CommitCurrentTimeEdit();
         }
 
@@ -700,7 +710,10 @@ namespace IOStudio.Views.Timeline
             if (timeMs.HasValue)
             {
                 double clamped = Math.Max(0, Math.Min(timeMs.Value, ViewModel.DurationMs));
-                ViewModel.SeekTo(clamped);
+                // 键盘输入的是精确值, 不应被吸附改写:
+                // 吸附半径是"10 像素"换算的时间(缩放较小时可达 1 秒以上),
+                // 若走 SeekTo, 输入 33.500 会被吸到 32.600, 用户根本无法定位到目标时间。
+                ViewModel.SeekToExact(clamped);
                 // 直接同步视频
                 var videoPreview = this.FindControl<VideoPreviewControl>("VideoPreview");
                 videoPreview?.SyncTime(clamped);

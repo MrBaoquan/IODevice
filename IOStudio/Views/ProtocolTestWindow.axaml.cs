@@ -1,4 +1,6 @@
+using System.Linq;
 using Avalonia.Controls;
+using Avalonia.Platform.Storage;
 using IOStudio.ViewModels;
 using ReactiveUI.Avalonia;
 
@@ -18,8 +20,24 @@ namespace IOStudio.Views
             InitializeComponent();
             DataContext = ViewModel = new ProtocolTestViewModel();
 
+            // 文件选择器由窗口注入 —— ViewModel 不依赖 UI, 才能脱离桌面做确定性测试
+            ViewModel.FilePicker = PickFileAsync;
+
             // 关窗必须释放监听端口/取消接收循环, 否则端口会被窗口"占着"到进程退出
             Closed += (_, _) => ViewModel?.Dispose();
+        }
+
+        private async System.Threading.Tasks.Task<string?> PickFileAsync()
+        {
+            var files = await StorageProvider.OpenFilePickerAsync(
+                new FilePickerOpenOptions
+                {
+                    Title = "选择要发送的文件",
+                    AllowMultiple = false,
+                }
+            );
+            var first = files?.FirstOrDefault();
+            return first?.TryGetLocalPath();
         }
     }
 }

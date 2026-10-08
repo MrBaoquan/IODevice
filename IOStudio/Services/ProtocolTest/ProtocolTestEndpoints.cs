@@ -773,7 +773,10 @@ namespace IOStudio.Services.ProtocolTest
     }
 
     /// <summary>
-    /// WebSocket 服务端。
+    /// WebSocket 服务端: **多客户端**。
+    ///
+    /// <para>与 TCP 服务端同样支持多客户端接入 / 对端列表 / 定向发送与广播 ——
+    /// 单客户端服务端无法验证"多端并发", 而这正是服务端最常见的排错对象。</para>
     ///
     /// <para>用 TcpListener + 自实现 HTTP Upgrade 握手 + WebSocket.CreateFromStream,
     /// 而不是 HttpListener —— 后者在 Windows 上需要 URL ACL/管理员权限, 会让测试
@@ -783,14 +786,47 @@ namespace IOStudio.Services.ProtocolTest
     {
         private const string WsGuid = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
 
+        private sealed class Client
+        {
+            public Client(string id, TcpClient tcp, WebSocket ws)
+            {
+                Id = id;
+                Tcp = tcp;
+                Ws = ws;
+            }
+
+            public string Id { get; }
+            public TcpClient Tcp { get; }
+            public WebSocket Ws { get; }
+            public Task<byte[]>? ReadTask { get; set; }
+        }
+
+        private readonly object _lock = new();
+        private readonly List<Client> _clients = new();
         private TcpListener? _listener;
-        private TcpClient? _client;
-        private WebSocket? _ws;
-        private Task<bool>? _acceptTask;
-        private Task<byte[]>? _inflight;
+        private string? _selected;
+        private string? _lastReceived;
 
         public string Kind => "websocket-server";
         public int Port { get; private set; }
+
+        public IReadOnlyList<string> Peers
+        {
+            get
+            {
+                lock (_lock)
+                    return _clients.Select(c => c.Id).ToArray();
+            }
+        }
+
+        /// <summary>null = 广播给所有客户端。</summary>
+        public string? SelectedPeer
+        {
+            get => _selected;
+            set => _selected = value;
+        }
+
+        public string? LastReceivedPeer => _lastReceived;
 
         public Task OpenAsync(string host, int port, CancellationToken ct)
         {
@@ -798,35 +834,53 @@ namespace IOStudio.Services.ProtocolTest
             _listener.Start();
             Port = ((IPEndPoint)_listener.LocalEndpoint).Port;
 
-            // 必须**主动** accept: WebSocket 客户端 ConnectAsync 要等服务端的 101 握手响应,
+            // 必须**主动** accept: 客户端 ConnectAsync 要等服务端的 101 握手响应,
             // 而握手只在 accept 之后才发生。若等到首次收发才 accept, 客户端会一直等 → 死锁。
-            _acceptTask ??= DoAcceptAsync(ct);
+            _ = AcceptLoopAsync(ct);
             return Task.CompletedTask;
         }
 
-        private Task<bool> EnsureAcceptedAsync(CancellationToken ct)
+        private async Task AcceptLoopAsync(CancellationToken ct)
         {
-            if (_ws is not null)
-                return Task.FromResult(true);
-            _acceptTask ??= DoAcceptAsync(ct);
-            return _acceptTask;
-        }
-
-        private async Task<bool> DoAcceptAsync(CancellationToken ct)
-        {
-            if (_listener is null)
-                return false;
-            _client = await _listener.AcceptTcpClientAsync(ct).ConfigureAwait(false);
-            _client.NoDelay = true;
-            var stream = _client.GetStream();
-            await HandshakeAsync(stream, ct).ConfigureAwait(false);
-            _ws = WebSocket.CreateFromStream(
-                stream,
-                isServer: true,
-                subProtocol: null,
-                keepAliveInterval: TimeSpan.Zero
-            );
-            return true;
+            while (!ct.IsCancellationRequested)
+            {
+                try
+                {
+                    var tcp = await _listener!.AcceptTcpClientAsync(ct).ConfigureAwait(false);
+                    tcp.NoDelay = true;
+                    var ep = (IPEndPoint)tcp.Client.RemoteEndPoint!;
+                    var stream = tcp.GetStream();
+                    await HandshakeAsync(stream, ct).ConfigureAwait(false);
+                    var ws = WebSocket.CreateFromStream(
+                        stream,
+                        isServer: true,
+                        subProtocol: null,
+                        keepAliveInterval: TimeSpan.Zero
+                    );
+                    lock (_lock)
+                        _clients.Add(new Client($"{ep.Address}:{ep.Port}", tcp, ws));
+                }
+                catch (OperationCanceledException)
+                {
+                    break;
+                }
+                catch (ObjectDisposedException)
+                {
+                    break; // 正常停止
+                }
+                catch
+                {
+                    // 单个客户端握手失败不应终止整个监听; 稍等避免忙循环
+                    try
+                    {
+                        await Task.Delay(50, ct).ConfigureAwait(false);
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        break;
+                    }
+                }
+            }
         }
 
         private static async Task HandshakeAsync(NetworkStream stream, CancellationToken ct)
@@ -883,35 +937,166 @@ namespace IOStudio.Services.ProtocolTest
             return null;
         }
 
-        public async Task SendAsync(byte[] data, CancellationToken ct)
-        {
-            if (!await EnsureAcceptedAsync(ct).ConfigureAwait(false) || _ws is null)
-                throw new InvalidOperationException("WebSocket 服务端未被连接");
-            await _ws.SendAsync(data, WebSocketMessageType.Binary, true, ct).ConfigureAwait(false);
-        }
-
         public async Task<byte[]?> ReceiveAsync(TimeSpan timeout, CancellationToken ct)
         {
-            var (accepted, _) = await TimeoutHelper
-                .TryWithTimeout(EnsureAcceptedAsync(ct), timeout, ct)
-                .ConfigureAwait(false);
-            if (!accepted || _ws is null)
-                return null;
+            var deadline = DateTime.UtcNow + timeout;
+            while (true)
+            {
+                if (ct.IsCancellationRequested)
+                    return null;
 
-            _inflight ??= WebSocketClientEndpoint.ReadMessageAsync(_ws, ct);
-            var (ok, data) = await TimeoutHelper.TryWithTimeout(_inflight, timeout, ct)
-                .ConfigureAwait(false);
-            if (!ok)
-                return null;
-            _inflight = null;
-            return data;
+                if (Harvest(out var frame, out var from))
+                {
+                    _lastReceived = from;
+                    return frame;
+                }
+
+                var remaining = deadline - DateTime.UtcNow;
+                if (remaining <= TimeSpan.Zero)
+                    return null;
+
+                Client[] snapshot;
+                lock (_lock)
+                {
+                    snapshot = _clients.ToArray();
+                    foreach (var c in snapshot)
+                        c.ReadTask ??= WebSocketClientEndpoint.ReadMessageAsync(c.Ws, ct);
+                }
+
+                if (snapshot.Length == 0)
+                {
+                    try
+                    {
+                        await Task.Delay(remaining, ct).ConfigureAwait(false);
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        return null;
+                    }
+                    continue;
+                }
+
+                var reads = snapshot.Select(c => (Task)(c.ReadTask ?? Task.CompletedTask)).ToList();
+                reads.Add(Task.Delay(remaining, ct));
+                await Task.WhenAny(reads).ConfigureAwait(false);
+            }
+        }
+
+        /// <summary>取任一客户端已就绪的消息; 顺手清掉已关闭的客户端。</summary>
+        private bool Harvest(out byte[] frame, out string? from)
+        {
+            lock (_lock)
+            {
+                foreach (var c in _clients.ToList())
+                {
+                    var t = c.ReadTask;
+                    if (t is null)
+                        continue;
+
+                    if (t.IsCompletedSuccessfully)
+                    {
+                        frame = t.Result;
+                        from = c.Id;
+                        c.ReadTask = null;
+                        return true;
+                    }
+
+                    if (t.IsFaulted || t.IsCanceled)
+                        RemoveClientLocked(c);
+                }
+            }
+            frame = Array.Empty<byte>();
+            from = null;
+            return false;
+        }
+
+        private void RemoveClientLocked(Client c)
+        {
+            _clients.Remove(c);
+            try
+            {
+                c.Ws.Dispose();
+            }
+            catch
+            {
+                /* ignore */
+            }
+            try
+            {
+                c.Tcp.Dispose();
+            }
+            catch
+            {
+                /* ignore */
+            }
+        }
+
+        public async Task SendAsync(byte[] data, CancellationToken ct)
+        {
+            Client[] targets;
+            string? sel;
+            lock (_lock)
+            {
+                sel = _selected;
+                targets = sel is null
+                    ? _clients.ToArray()
+                    : _clients.Where(c => c.Id == sel).ToArray();
+            }
+
+            if (targets.Length == 0)
+                throw new InvalidOperationException(
+                    sel is null ? "WebSocket 服务端尚无客户端连接" : $"目标客户端 {sel} 已断开"
+                );
+
+            foreach (var c in targets)
+            {
+                try
+                {
+                    await c.Ws.SendAsync(data, WebSocketMessageType.Binary, true, ct).ConfigureAwait(false);
+                }
+                catch
+                {
+                    lock (_lock)
+                        RemoveClientLocked(c);
+                }
+            }
         }
 
         public void Dispose()
         {
-            _ws?.Dispose();
-            _client?.Dispose();
-            _listener?.Stop();
+            Client[] snapshot;
+            lock (_lock)
+            {
+                snapshot = _clients.ToArray();
+                _clients.Clear();
+            }
+            foreach (var c in snapshot)
+            {
+                try
+                {
+                    c.Ws.Dispose();
+                }
+                catch
+                {
+                    /* ignore */
+                }
+                try
+                {
+                    c.Tcp.Dispose();
+                }
+                catch
+                {
+                    /* ignore */
+                }
+            }
+            try
+            {
+                _listener?.Stop();
+            }
+            catch
+            {
+                /* ignore */
+            }
         }
     }
 }

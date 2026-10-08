@@ -72,6 +72,7 @@ namespace IOStudio.ViewModels
                 _sessionCounter++;
                 var s = new ProtocolSessionViewModel($"s{_sessionCounter}", t);
                 s.Restore(st);
+                s.FilePicker = _filePicker;
                 Sessions.Add(s);
             }
         }
@@ -105,6 +106,20 @@ namespace IOStudio.ViewModels
 
         public bool HasSelection => SelectedSession is not null;
 
+        private Func<Task<string?>>? _filePicker;
+
+        /// <summary>由窗口注入的文件选择器 (下发到各会话; VM 不依赖 UI 才能脱离桌面测试)。</summary>
+        public Func<Task<string?>>? FilePicker
+        {
+            get => _filePicker;
+            set
+            {
+                _filePicker = value;
+                foreach (var s in Sessions)
+                    s.FilePicker = value;
+            }
+        }
+
         private string? _selectedScenario;
         public string? SelectedScenario
         {
@@ -133,6 +148,7 @@ namespace IOStudio.ViewModels
             var session = new ProtocolSessionViewModel($"s{_sessionCounter}", transport)
             {
                 Label = $"{transport.Label} #{_sessionCounter}",
+                FilePicker = _filePicker,
             };
             session.Port = SuggestPort(transport);
             Sessions.Add(session);

@@ -583,6 +583,86 @@ namespace IOStudio.Tests.E2E
         }
 
         [Fact]
+        public async Task SendFile_Delivers_Raw_Bytes_In_Chunks()
+        {
+            var s = NewSession();
+            var port = await _session.Dispatch(
+                () =>
+                {
+                    using var probe = new UdpClient(new IPEndPoint(IPAddress.Loopback, 0));
+                    return ((IPEndPoint)probe.Client.LocalEndPoint!).Port;
+                },
+                CancellationToken.None
+            );
+
+            var payload = new byte[] { 0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09 };
+            var path = Path.Combine(Path.GetTempPath(), $"ptfile-{Guid.NewGuid():N}.bin");
+            File.WriteAllBytes(path, payload);
+
+            try
+            {
+                await _session.Dispatch(
+                    () =>
+                    {
+                        s.Port = port;
+                        s.FrameMode = ProtocolUiOptions.FrameModes.First(f => f.Mode == "none");
+                        s.StartCommand.Execute().Subscribe();
+                        return true;
+                    },
+                    CancellationToken.None
+                );
+
+                var started = false;
+                for (int i = 0; i < 60 && !started; i++)
+                {
+                    started = await _session.Dispatch(() => s.IsRunning, CancellationToken.None);
+                    if (!started)
+                        await Task.Delay(50);
+                }
+                Assert.True(started, "UDP 监听未启动");
+
+                using var client = new UdpClient(new IPEndPoint(IPAddress.Loopback, 0));
+                var target = new IPEndPoint(IPAddress.Loopback, port);
+                await client.SendAsync(Encoding.UTF8.GetBytes("HI"), target); // 让监听端知道发往何处
+
+                await _session.Dispatch(
+                    () =>
+                    {
+                        s.FilePath = path;
+                        s.FileChunkSize = 4;      // 4 字节/包 → 4 + 4 + 2
+                        s.FileChunkIntervalMs = 0;
+                        s.SendFileCommand.Execute().Subscribe();
+                        return true;
+                    },
+                    CancellationToken.None
+                );
+
+                var received = new System.Collections.Generic.List<byte>();
+                for (int i = 0; i < 20 && received.Count < payload.Length; i++)
+                {
+                    var recv = client.ReceiveAsync();
+                    var done = await Task.WhenAny(recv, Task.Delay(300));
+                    if (done == recv)
+                        received.AddRange((await recv).Buffer);
+                }
+
+                Assert.Equal(payload, received.ToArray());
+            }
+            finally
+            {
+                try { File.Delete(path); } catch { /* ignore */ }
+                await _session.Dispatch(
+                    () =>
+                    {
+                        s.StopCommand.Execute().Subscribe();
+                        return true;
+                    },
+                    CancellationToken.None
+                );
+            }
+        }
+
+        [Fact]
         public void Main_Vm_Starts_With_One_Selected_Session()
         {
             // 打开窗口就能收: 默认已有一路会话并处于选中态

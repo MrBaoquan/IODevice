@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Globalization;
+using System.IO;
 using System.Linq;
 using System.Reactive;
 using System.Text;
@@ -68,6 +69,11 @@ namespace IOStudio.ViewModels
             ResetStatsCommand = ReactiveCommand.Create(ResetStats);
             SendBreakCommand = ReactiveCommand.Create(
                 () => _endpoint?.SendBreak(),
+                this.WhenAnyValue(x => x.IsRunning)
+            );
+            BrowseFileCommand = ReactiveCommand.CreateFromTask(BrowseFileAsync);
+            SendFileCommand = ReactiveCommand.CreateFromTask(
+                SendFileAsync,
                 this.WhenAnyValue(x => x.IsRunning)
             );
         }
@@ -535,6 +541,98 @@ namespace IOStudio.ViewModels
             }
         }
 
+        // ───────────── 发送文件 ─────────────
+
+        private string _filePath = "";
+        public string FilePath
+        {
+            get => _filePath;
+            set => this.RaiseAndSetIfChanged(ref _filePath, value);
+        }
+
+        private int _fileChunkSize;
+        /// <summary>分块大小 (字节); 0 = 整份发送。大文件/慢设备按块发更贴近真实协议。</summary>
+        public int FileChunkSize
+        {
+            get => _fileChunkSize;
+            set => this.RaiseAndSetIfChanged(ref _fileChunkSize, value);
+        }
+
+        private int _fileChunkIntervalMs = 50;
+        public int FileChunkIntervalMs
+        {
+            get => _fileChunkIntervalMs;
+            set => this.RaiseAndSetIfChanged(ref _fileChunkIntervalMs, value);
+        }
+
+        /// <summary>由窗口注入的文件选择器 (VM 不依赖 UI, 便于测试)。</summary>
+        public Func<Task<string?>>? FilePicker { get; set; }
+
+        private async Task BrowseFileAsync()
+        {
+            if (FilePicker is null)
+                return;
+            try
+            {
+                var picked = await FilePicker().ConfigureAwait(true);
+                if (!string.IsNullOrWhiteSpace(picked))
+                    FilePath = picked;
+            }
+            catch (Exception ex)
+            {
+                AddEntry(ProtocolLogEntry.Info("选择文件失败: " + ex.Message));
+            }
+        }
+
+        /// <summary>发送文件内容 (原始字节, 不走编码/新行/校验设置)。</summary>
+        private async Task SendFileAsync()
+        {
+            var ep = _endpoint;
+            if (ep is null)
+                return;
+
+            if (string.IsNullOrWhiteSpace(FilePath) || !File.Exists(FilePath))
+            {
+                AddEntry(ProtocolLogEntry.Info("文件不存在: " + FilePath));
+                return;
+            }
+
+            try
+            {
+                var bytes = await File.ReadAllBytesAsync(FilePath).ConfigureAwait(true);
+                var chunk = FileChunkSize > 0 ? FileChunkSize : bytes.Length;
+                var ct = _cts?.Token ?? CancellationToken.None;
+                var sent = 0;
+
+                for (int off = 0; off < bytes.Length; off += chunk)
+                {
+                    var len = Math.Min(chunk, bytes.Length - off);
+                    var part = new byte[len];
+                    Buffer.BlockCopy(bytes, off, part, 0, len);
+
+                    await ep.SendAsync(part, ct).ConfigureAwait(true);
+                    _txCount++;
+                    _txBytes += len;
+                    RaiseStats();
+                    AddEntry(ProtocolLogEntry.Frame("发", "文件", part, null));
+                    sent += len;
+
+                    if (off + len < bytes.Length && FileChunkIntervalMs > 0)
+                        await Task.Delay(FileChunkIntervalMs, ct).ConfigureAwait(true);
+                }
+
+                AddEntry(ProtocolLogEntry.Info($"文件已发送: {sent} 字节 (每包 {chunk} 字节)"));
+            }
+            catch (OperationCanceledException)
+            {
+                /* 停止中 */
+            }
+            catch (Exception ex)
+            {
+                AddEntry(ProtocolLogEntry.Info("发送文件失败: " + ex.Message));
+            }
+        }
+
         // ───────────── 串口控制线 ─────────────
 
         public bool ShowSerialControls => Transport.Transport == "serial";
@@ -581,6 +679,8 @@ namespace IOStudio.ViewModels
         public ReactiveCommand<Unit, Unit> ClearLogCommand { get; }
         public ReactiveCommand<Unit, Unit> ResetStatsCommand { get; }
         public ReactiveCommand<Unit, Unit> SendBreakCommand { get; }
+        public ReactiveCommand<Unit, Unit> BrowseFileCommand { get; }
+        public ReactiveCommand<Unit, Unit> SendFileCommand { get; }
 
         private IProtocolEndpoint? _endpoint;
         private CancellationTokenSource? _cts;

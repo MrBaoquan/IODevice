@@ -447,6 +447,33 @@
                                            Foreground="{DynamicResource TlTextSecondary}"/>
                             </Grid>
 
+                            <Grid ColumnDefinitions="*,Auto,Auto,120,120" VerticalAlignment="Bottom">
+                                <StackPanel Grid.Column="0" Margin="0,0,8,0">
+                                    <TextBlock Text="发送文件 (原始字节, 不走编码/新行/校验)" Classes="field-label"/>
+                                    <TextBox Text="{Binding FilePath, Mode=TwoWay}"
+                                             Watermark="文件路径 (可直接填, 便于脚本)"
+                                             AutomationProperties.AutomationId="ProtocolFilePath"
+                                             AutomationProperties.Name="发送文件路径"
+                                             FontFamily="Consolas,Menlo,monospace"/>
+                                </StackPanel>
+                                <Button Grid.Column="1" Content="浏览…" Classes="tool-btn" Margin="0,0,8,0"
+                                        Command="{Binding BrowseFileCommand}"
+                                        AutomationProperties.AutomationId="ProtocolBrowseFile"/>
+                                <Button Grid.Column="2" Content="发送文件" Classes="tool-btn" MinWidth="88"
+                                        Command="{Binding SendFileCommand}"
+                                        AutomationProperties.AutomationId="ProtocolSendFile"/>
+                                <StackPanel Grid.Column="3" Margin="10,0,8,0">
+                                    <TextBlock Text="分块 (字节, 0=整份)" Classes="field-label"/>
+                                    <TextBox Text="{Binding FileChunkSize, Mode=TwoWay}"
+                                             AutomationProperties.AutomationId="ProtocolFileChunkSize"/>
+                                </StackPanel>
+                                <StackPanel Grid.Column="4">
+                                    <TextBlock Text="块间隔 (ms)" Classes="field-label"/>
+                                    <TextBox Text="{Binding FileChunkIntervalMs, Mode=TwoWay}"
+                                             AutomationProperties.AutomationId="ProtocolFileChunkInterval"/>
+                                </StackPanel>
+                            </Grid>
+
                             <Grid ColumnDefinitions="150,Auto,*,Auto" VerticalAlignment="Center">
                                 <StackPanel Grid.Column="0" Margin="0,0,8,0">
                                     <TextBlock Text="校验和 (追加到发送)" Classes="field-label"/>

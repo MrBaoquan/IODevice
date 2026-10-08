@@ -38,6 +38,23 @@ namespace IOStudio.Services.ProtocolTest
         /// <summary>最近一次收帧的来源 (UDP / 多客户端服务端)。</summary>
         string? LastReceivedPeer => null;
 
+        /// <summary>串口 DTR (其它传输忽略)。</summary>
+        bool? Dtr
+        {
+            get => null;
+            set { }
+        }
+
+        /// <summary>串口 RTS (其它传输忽略)。</summary>
+        bool? Rts
+        {
+            get => null;
+            set { }
+        }
+
+        /// <summary>发送串口 Break (其它传输忽略)。</summary>
+        void SendBreak() { }
+
         Task OpenAsync(string host, int port, CancellationToken ct);
 
         Task SendAsync(byte[] data, CancellationToken ct);
@@ -604,6 +621,48 @@ namespace IOStudio.Services.ProtocolTest
         }
 
         public override string Kind => $"serial({_device})";
+
+        /// <summary>串口控制线: 有些设备用 DTR/RTS 做使能或复位。</summary>
+        public bool? Dtr
+        {
+            get => _port?.DtrEnable;
+            set
+            {
+                if (_port is { IsOpen: true })
+                    _port.DtrEnable = value ?? false;
+            }
+        }
+
+        public bool? Rts
+        {
+            get => _port?.RtsEnable;
+            set
+            {
+                if (_port is { IsOpen: true })
+                    _port.RtsEnable = value ?? false;
+            }
+        }
+
+        /// <summary>发送 Break (典型 100ms)。放到后台线程, 不阻塞 UI。</summary>
+        public void SendBreak()
+        {
+            var p = _port;
+            if (p is not { IsOpen: true })
+                return;
+            _ = Task.Run(() =>
+            {
+                try
+                {
+                    p.BreakState = true;
+                    Thread.Sleep(100);
+                    p.BreakState = false;
+                }
+                catch
+                {
+                    /* 控制线操作失败不应影响其它功能 */
+                }
+            });
+        }
 
         public override Task OpenAsync(string host, int port, CancellationToken ct)
         {

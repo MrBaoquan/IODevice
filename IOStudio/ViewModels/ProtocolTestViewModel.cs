@@ -176,6 +176,16 @@ namespace IOStudio.ViewModels
             SaveWorkspace();
         }
 
+        /// <summary>导出格式 (按选中会话导出; 主流工具都是"另存为")。</summary>
+        public IReadOnlyList<string> ExportFormats { get; } = new[] { "文本", "CSV", "JSON" };
+
+        private string _exportFormat = "文本";
+        public string ExportFormat
+        {
+            get => _exportFormat;
+            set => this.RaiseAndSetIfChanged(ref _exportFormat, value);
+        }
+
         /// <summary>
         /// 导出日志。落到 &lt;程序目录&gt;/Logs/ProtocolTests/ —— 不弹对话框,
         /// 便于脚本/AI 也能拿到路径。
@@ -184,19 +194,26 @@ namespace IOStudio.ViewModels
         {
             try
             {
+                var session = SelectedSession;
+                if (session is null)
+                    return;
+
+                var (ext, body) = ExportFormat switch
+                {
+                    "CSV" => ("csv", session.ExportCsv()),
+                    "JSON" => ("json", session.ExportJson()),
+                    _ => ("txt", session.ExportText()),
+                };
+
                 var dir = Path.Combine(AppContext.BaseDirectory, "Logs", "ProtocolTests");
                 Directory.CreateDirectory(dir);
-                var stamp = DateTime.Now.ToString("yyyyMMdd-HHmmss");
-                var path = Path.Combine(dir, $"protocol-{stamp}.txt");
+                var safe = string.Concat(session.Label.Where(c => !Path.GetInvalidFileNameChars().Contains(c)));
+                var path = Path.Combine(
+                    dir,
+                    $"{safe}-{DateTime.Now:yyyyMMdd-HHmmss}.{ext}"
+                );
 
-                using (var w = new StreamWriter(path, false, new System.Text.UTF8Encoding(false)))
-                {
-                    foreach (var s in Sessions)
-                    {
-                        w.Write(s.ExportText());
-                        w.WriteLine();
-                    }
-                }
+                File.WriteAllText(path, body, new System.Text.UTF8Encoding(false));
                 StatusText = "已导出: " + path;
             }
             catch (Exception ex)

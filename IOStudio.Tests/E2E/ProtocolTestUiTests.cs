@@ -137,8 +137,8 @@ namespace IOStudio.Tests.E2E
         public void Binary_Frame_Leaves_Text_Empty_And_Keeps_Hex()
         {
             var e = ProtocolLogEntry.Frame("收", "srv", new byte[] { 0x00, 0xFF, 0x10, 0xAB }, null);
-            Assert.Equal("", e.Text);          // 二进制不该被当文本渲染成乱码
-            Assert.Equal("00FF10AB", e.Hex);
+            Assert.Equal("", e.ContentText);   // 二进制不该被当文本渲染成乱码
+            Assert.Equal("00FF10AB", e.HexColumn);
         }
 
         [Fact]
@@ -165,7 +165,7 @@ namespace IOStudio.Tests.E2E
                 Index = 3, Op = "expect", Via = "srv", Ok = false, Reason = "超时",
             });
             Assert.True(fail.IsBad);
-            Assert.Contains("超时", fail.Text);
+            Assert.Contains("超时", fail.ContentText);
         }
 
         // ─────────── 自由收发: 编解码 ───────────
@@ -356,7 +356,7 @@ namespace IOStudio.Tests.E2E
             // 过滤: 只有含 PING 的那条可见
             await _session.Dispatch(() => { s.FilterText = "PING"; return true; }, CancellationToken.None);
             var visible = await _session.Dispatch(
-                () => string.Join("|", s.Messages.Select(m => m.Text)),
+                () => string.Join("|", s.Messages.Select(m => m.ContentText)),
                 CancellationToken.None
             );
             Assert.Equal("PING", visible);
@@ -435,6 +435,151 @@ namespace IOStudio.Tests.E2E
                     await Task.Delay(50);
             }
             Assert.True(stopped, "UDP 监听未停止 (端口会被一直占着)");
+        }
+
+        [Fact]
+        public void Checksums_Match_Standard_Test_Vectors()
+        {
+            // CRC 写错极难靠肉眼发现, 必须对标准 "123456789" 检查值
+            var check = Encoding.ASCII.GetBytes("123456789");
+
+            Assert.Equal(0x4B37, Checksums.Crc16Modbus(check));   // CRC-16/MODBUS
+            Assert.Equal(0x29B1, Checksums.Crc16Ccitt(check));    // CRC-16/CCITT-FALSE
+            Assert.Equal(0xCBF43926u, Checksums.Crc32(check));    // CRC-32/IEEE
+
+            Assert.Equal(6, Checksums.Sum8(new byte[] { 1, 2, 3 }));
+            Assert.Equal(0, Checksums.Xor8(new byte[] { 1, 2, 3 }));
+
+            // 字节序: Modbus 惯例低字节在前
+            var le = Checksums.Compute("CRC16-Modbus", check, littleEndian: true);
+            var be = Checksums.Compute("CRC16-Modbus", check, littleEndian: false);
+            Assert.Equal(new byte[] { 0x37, 0x4B }, le);
+            Assert.Equal(new byte[] { 0x4B, 0x37 }, be);
+
+            Assert.Empty(Checksums.Compute("无", check));
+        }
+
+        [Fact]
+        public void HexDump_Formats_Offset_Hex_Ascii()
+        {
+            var data = Encoding.ASCII.GetBytes("Hello, hexdump! 0123456789");
+            var lines = HexDump.Format(data).Split('\n');
+
+            // 26 字节 → 16 + 10, 两行; 偏移按 16 递增
+            Assert.Equal(2, lines.Length);
+            Assert.StartsWith("0000  48 65 6C 6C 6F 2C 20 68", lines[0]);
+            Assert.EndsWith("Hello, hexdump! ", lines[0]); // 第 16 字节是空格, 属可打印
+            Assert.StartsWith("0010  30 31 32 33 34 35 36 37", lines[1]);
+            Assert.EndsWith("0123456789", lines[1]);
+
+            // 不可打印字节以 '.' 呈现; 末尾不留换行
+            var four = HexDump.Format(new byte[] { 0, 1, 0xFF, 0x41 });
+            Assert.StartsWith("0000  00 01 FF 41", four);
+            Assert.EndsWith("...A", four);
+            Assert.DoesNotContain("\n", four);
+
+            Assert.Equal("", HexDump.Format(Array.Empty<byte>()));
+            Assert.Equal("", HexDump.Format(null));
+        }
+
+        [Fact]
+        public void Log_Entry_Timing_Text_Formats()
+        {
+            var e = ProtocolLogEntry.Frame("发", "", new byte[] { 1 }, null);
+            Assert.Equal("", e.TimingText);                 // 无时序信息时为空
+
+            e.DeltaMs = 1000;
+            Assert.Equal("1000", e.TimingText);
+
+            e.RttMs = 12;
+            Assert.Equal("1000 / 12", e.TimingText);
+
+            var rx = ProtocolLogEntry.Frame("收", "", new byte[] { 1 }, null);
+            rx.RttMs = 7;
+            Assert.Equal("– / 7", rx.TimingText);
+            Assert.Equal("7", rx.RttText);
+        }
+
+        [Fact]
+        public void ContentMode_Switch_Updates_Existing_Rows()
+        {
+            var e = ProtocolLogEntry.Frame("收", "", Encoding.ASCII.GetBytes("AB"), null);
+
+            e.DisplayMode = ProtocolContentMode.TextAndHex;
+            Assert.Equal("AB", e.ContentText);
+            Assert.Equal("4142", e.HexColumn);
+
+            e.DisplayMode = ProtocolContentMode.HexOnly;
+            Assert.Equal("", e.ContentText);
+            Assert.Equal("4142", e.HexColumn);
+
+            e.DisplayMode = ProtocolContentMode.Dump;
+            Assert.Contains("0000  41 42", e.ContentText);
+            Assert.Equal("", e.HexColumn);
+
+            // 过滤/导出用原始表示, 与显示模式无关
+            Assert.Equal("AB", e.PlainText);
+            Assert.Equal("4142", e.HexText);
+        }
+
+        [Fact]
+        public async Task Send_Timing_Is_Recorded()
+        {
+            var s = NewSession();
+            var port = await _session.Dispatch(
+                () =>
+                {
+                    using var probe = new UdpClient(new IPEndPoint(IPAddress.Loopback, 0));
+                    return ((IPEndPoint)probe.Client.LocalEndPoint!).Port;
+                },
+                CancellationToken.None
+            );
+
+            await _session.Dispatch(
+                () =>
+                {
+                    s.Port = port;
+                    s.FrameMode = ProtocolUiOptions.FrameModes.First(f => f.Mode == "none");
+                    s.StartCommand.Execute().Subscribe();
+                    return true;
+                },
+                CancellationToken.None
+            );
+
+            var started = false;
+            for (int i = 0; i < 60 && !started; i++)
+            {
+                started = await _session.Dispatch(() => s.IsRunning, CancellationToken.None);
+                if (!started)
+                    await Task.Delay(50);
+            }
+            Assert.True(started, "UDP 监听未启动");
+
+            // 先让监听端知道"发给谁"
+            using (var peer = new UdpClient(new IPEndPoint(IPAddress.Loopback, 0)))
+                await peer.SendAsync(Encoding.UTF8.GetBytes("HELLO"), new IPEndPoint(IPAddress.Loopback, port));
+
+            await Task.Delay(300);
+            await _session.Dispatch(() => true, CancellationToken.None); // 泵一次, 让收帧日志落地
+
+            // 间隔发两次
+            await _session.Dispatch(() => { s.SendCommand.Execute().Subscribe(); return true; }, CancellationToken.None);
+            await Task.Delay(180);
+            await _session.Dispatch(() => { s.SendCommand.Execute().Subscribe(); return true; }, CancellationToken.None);
+            await Task.Delay(200);
+            await _session.Dispatch(() => true, CancellationToken.None);
+
+            var deltas = await _session.Dispatch(
+                () => s.Messages.Where(m => m.IsSent).Select(m => m.DeltaMs).ToList(),
+                CancellationToken.None
+            );
+
+            Assert.True(deltas.Count >= 2, $"发送未被记录: {deltas.Count}");
+            // 第二条发送必须记录与第一条的间隔, 且量级正确 (≥100ms)
+            Assert.NotNull(deltas[1]);
+            Assert.True(deltas[1] >= 100, $"Δt 不合理: {deltas[1]}");
+
+            await _session.Dispatch(() => { s.StopCommand.Execute().Subscribe(); return true; }, CancellationToken.None);
         }
 
         [Fact]

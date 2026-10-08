@@ -77,28 +77,47 @@ def _free_udp_port():
 
 
 def _open_protocol_window(main):
-    """通过「工作区 → 协议测试台」菜单打开窗口。"""
-    main.set_focus()
-    time.sleep(0.4)
+    """通过「工作区 → 协议测试台」菜单打开窗口。
 
-    tools = None
-    for d in _menu_items(main):
-        if "工作区" in (d.element_info.name or ""):
-            tools = d
-            break
-    assert tools is not None, "未找到「工作区」菜单"
+    失败重试: 连跑其它 UI 用例时, 残留窗口会抢焦点导致菜单未展开 ——
+    属环境干扰而非被测缺陷, 测试侧必须重试而不是直接失败。
+    """
+    for _ in range(4):
+        main.set_focus()
+        time.sleep(0.5)
 
-    tools.click_input()
-    time.sleep(0.8)
+        tools = None
+        for d in _menu_items(main):
+            if "工作区" in (d.element_info.name or ""):
+                tools = d
+                break
+        assert tools is not None, "未找到「工作区」菜单"
 
-    item = None
-    for d in _menu_items(main):
-        if (d.element_info.name or "") == TEST_WINDOW_TITLE:
-            item = d
-            break
-    assert item is not None, "「工作区」菜单里没有「协议测试台」"
-    item.click_input()
-    time.sleep(1.2)
+        try:
+            tools.click_input()
+        except Exception:
+            pass
+        time.sleep(0.8)
+
+        item = None
+        for d in _menu_items(main):
+            if (d.element_info.name or "") == TEST_WINDOW_TITLE:
+                item = d
+                break
+
+        if item is not None:
+            item.click_input()
+            time.sleep(1.2)
+            return
+
+        # 菜单没展开: 先把焦点收回来再试
+        try:
+            main.set_focus()
+        except Exception:
+            pass
+        time.sleep(0.6)
+
+    raise AssertionError("「工作区」菜单里没有「协议测试台」 (重试 4 次仍未展开)")
 
 
 def _row_texts(win):
@@ -156,6 +175,9 @@ def app():
         ws.unlink()
     except OSError:
         pass
+
+    # 等前序用例(如 YDL 播放)的进程真正退出: 残留窗口会抢焦点
+    time.sleep(2.0)
 
     proc = subprocess.Popen([str(EXE)], cwd=str(DEPLOY))
     main = find_window(MAIN_KEYWORD, timeout=WINDOW_TIMEOUT)

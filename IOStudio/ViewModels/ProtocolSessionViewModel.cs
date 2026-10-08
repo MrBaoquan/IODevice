@@ -66,6 +66,10 @@ namespace IOStudio.ViewModels
                 QuickCommands.Add(new QuickCommandViewModel(this, r => QuickCommands.Remove(r))));
             ClearLogCommand = ReactiveCommand.Create(ClearLog);
             ResetStatsCommand = ReactiveCommand.Create(ResetStats);
+            SendBreakCommand = ReactiveCommand.Create(
+                () => _endpoint?.SendBreak(),
+                this.WhenAnyValue(x => x.IsRunning)
+            );
         }
 
         // ───────────── 标识与配置 ─────────────
@@ -185,6 +189,7 @@ namespace IOStudio.ViewModels
             this.RaisePropertyChanged(nameof(ShowPrefixBytes));
             this.RaisePropertyChanged(nameof(ShowFixedSize));
             this.RaisePropertyChanged(nameof(ShowPeers));
+            this.RaisePropertyChanged(nameof(ShowSerialControls));
         }
 
         // ───────────── 运行态与统计 ─────────────
@@ -281,15 +286,81 @@ namespace IOStudio.ViewModels
             set => this.RaiseAndSetIfChanged(ref _autoScroll, value);
         }
 
+        /// <summary>日志内容显示方式 (主流调试台的"HEX 显示"开关)。</summary>
+        public IReadOnlyList<string> ContentModes { get; } =
+            new[] { "文本+HEX", "仅HEX", "HEX转储", "仅文本" };
+
+        private string _contentModeLabel = "文本+HEX";
+        public string ContentModeLabel
+        {
+            get => _contentModeLabel;
+            set
+            {
+                this.RaiseAndSetIfChanged(ref _contentModeLabel, value);
+                // 已经显示的行要一起切换, 否则"切了没反应"很反直觉
+                var mode = CurrentContentMode();
+                foreach (var e in _all)
+                    e.DisplayMode = mode;
+            }
+        }
+
+        private ProtocolContentMode CurrentContentMode() =>
+            _contentModeLabel switch
+            {
+                "仅HEX" => ProtocolContentMode.HexOnly,
+                "HEX转储" => ProtocolContentMode.Dump,
+                "仅文本" => ProtocolContentMode.Text,
+                _ => ProtocolContentMode.TextAndHex,
+            };
+
         private bool MatchesFilter(ProtocolLogEntry e) =>
             string.IsNullOrWhiteSpace(_filterText)
-            || (e.Text?.Contains(_filterText, StringComparison.OrdinalIgnoreCase) ?? false)
-            || (e.Hex?.Contains(_filterText, StringComparison.OrdinalIgnoreCase) ?? false)
+            || (e.PlainText?.Contains(_filterText, StringComparison.OrdinalIgnoreCase) ?? false)
+            || (e.HexText?.Contains(_filterText, StringComparison.OrdinalIgnoreCase) ?? false)
             || (e.Direction?.Contains(_filterText, StringComparison.OrdinalIgnoreCase) ?? false)
             || (e.Channel?.Contains(_filterText, StringComparison.OrdinalIgnoreCase) ?? false);
 
+        // ── 时序: Δt(与上一次同方向帧的间隔) 与 RTT(上次发送→本次收到) ──
+
+        private long _lastRxTicks;
+        private long _lastTxTicks;
+        private long _awaitingReplyAt;
+
+        private void StampTiming(ProtocolLogEntry entry, long now)
+        {
+            if (!entry.IsReceived && !entry.IsSent)
+                return;
+
+            if (entry.IsReceived)
+            {
+                if (_lastRxTicks != 0)
+                    entry.DeltaMs = now - _lastRxTicks;
+                if (_awaitingReplyAt != 0)
+                {
+                    entry.RttMs = now - _awaitingReplyAt;
+                    _awaitingReplyAt = 0;
+                }
+                _lastRxTicks = now;
+            }
+            else
+            {
+                if (_lastTxTicks != 0)
+                    entry.DeltaMs = now - _lastTxTicks;
+                _lastTxTicks = now;
+                _awaitingReplyAt = now;
+            }
+        }
+
+        private void ResetTiming()
+        {
+            _lastRxTicks = _lastTxTicks = _awaitingReplyAt = 0;
+        }
+
         private void AddEntry(ProtocolLogEntry entry)
         {
+            entry.DisplayMode = CurrentContentMode();
+            StampTiming(entry, Environment.TickCount64);
+
             _all.Add(entry);
             if (_all.Count > MaxLogEntries)
                 _all.RemoveRange(0, _all.Count - MaxLogEntries);
@@ -324,10 +395,56 @@ namespace IOStudio.ViewModels
             var sb = new StringBuilder();
             sb.AppendLine($"# 协议会话 {Label} ({Transport.Label})  导出 {DateTime.Now:yyyy-MM-dd HH:mm:ss}");
             sb.AppendLine($"# {StatsText}");
-            sb.AppendLine("# 时间\t方向\t对端\t字节\t内容\tHEX");
+            sb.AppendLine("# 时间\t方向\t对端\t字节\tΔt(ms)\tRTT(ms)\t内容\tHEX");
             foreach (var e in Messages)
-                sb.AppendLine($"{e.Time}\t{e.Direction}\t{e.Channel}\t{e.Size}\t{e.Text}\t{e.Hex}");
+                sb.AppendLine(
+                    $"{e.Time}\t{e.Direction}\t{e.Channel}\t{e.Size}\t{e.DeltaText}\t{e.RttText}\t{e.PlainText}\t{e.HexText}"
+                );
             return sb.ToString();
+        }
+
+        /// <summary>导出 CSV (Excel 可直接打开; 用引号转义避免内容里的逗号/引号破坏列)。</summary>
+        public string ExportCsv()
+        {
+            var sb = new StringBuilder();
+            sb.AppendLine("time,direction,peer,bytes,delta_ms,rtt_ms,text,hex");
+            foreach (var e in Messages)
+            {
+                sb.AppendLine(
+                    string.Join(
+                        ",",
+                        Csv(e.Time), Csv(e.Direction), Csv(e.Channel), Csv(e.Size),
+                        Csv(e.DeltaText), Csv(e.RttText), Csv(e.PlainText), Csv(e.HexText)
+                    )
+                );
+            }
+            return sb.ToString();
+        }
+
+        private static string Csv(string? s) => "\"" + (s ?? "").Replace("\"", "\"\"") + "\"";
+
+        /// <summary>导出 JSON (便于脚本/AI 直接消费)。</summary>
+        public string ExportJson()
+        {
+            var rows = Messages.Select(e => new
+            {
+                time = e.Time,
+                direction = e.Direction,
+                peer = e.Channel,
+                bytes = int.TryParse(e.Size, out var n) ? n : 0,
+                delta_ms = e.DeltaMs,
+                rtt_ms = e.RttMs,
+                text = e.PlainText,
+                hex = e.HexText,
+            });
+            return System.Text.Json.JsonSerializer.Serialize(
+                rows,
+                new System.Text.Json.JsonSerializerOptions
+                {
+                    WriteIndented = true,
+                    Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
+                }
+            );
         }
 
         // ───────────── 发送 ─────────────
@@ -336,14 +453,22 @@ namespace IOStudio.ViewModels
         public string SendText
         {
             get => _sendText;
-            set => this.RaiseAndSetIfChanged(ref _sendText, value);
+            set
+            {
+                this.RaiseAndSetIfChanged(ref _sendText, value);
+                this.RaisePropertyChanged(nameof(ChecksumPreview));
+            }
         }
 
         private string _sendEncoding = "UTF-8";
         public string SendEncoding
         {
             get => _sendEncoding;
-            set => this.RaiseAndSetIfChanged(ref _sendEncoding, value);
+            set
+            {
+                this.RaiseAndSetIfChanged(ref _sendEncoding, value);
+                this.RaisePropertyChanged(nameof(ChecksumPreview));
+            }
         }
 
         private string _sendNewLine = "无";
@@ -368,6 +493,74 @@ namespace IOStudio.ViewModels
             set => this.RaiseAndSetIfChanged(ref _loopIntervalMs, value);
         }
 
+        // ───────────── 校验和 (工业协议刚需) ─────────────
+
+        public IReadOnlyList<string> ChecksumModes => Checksums.Names;
+
+        private string _checksumMode = "无";
+        public string ChecksumMode
+        {
+            get => _checksumMode;
+            set
+            {
+                this.RaiseAndSetIfChanged(ref _checksumMode, value);
+                this.RaisePropertyChanged(nameof(ChecksumPreview));
+            }
+        }
+
+        private bool _appendChecksum;
+        public bool AppendChecksum
+        {
+            get => _appendChecksum;
+            set => this.RaiseAndSetIfChanged(ref _appendChecksum, value);
+        }
+
+        /// <summary>实时显示当前发送内容算出的校验值 (填对之前先看一眼)。</summary>
+        public string ChecksumPreview
+        {
+            get
+            {
+                if (_checksumMode == "无")
+                    return "";
+                try
+                {
+                    var payload = ProtocolEncoding.Encode(SendText, SendEncoding);
+                    var cs = Checksums.Compute(_checksumMode, payload);
+                    return cs.Length == 0 ? "" : Convert.ToHexString(cs);
+                }
+                catch
+                {
+                    return "(内容无法编码)";
+                }
+            }
+        }
+
+        // ───────────── 串口控制线 ─────────────
+
+        public bool ShowSerialControls => Transport.Transport == "serial";
+
+        public bool? Dtr
+        {
+            get => _endpoint?.Dtr;
+            set
+            {
+                if (_endpoint is not null)
+                    _endpoint.Dtr = value;
+                this.RaisePropertyChanged();
+            }
+        }
+
+        public bool? Rts
+        {
+            get => _endpoint?.Rts;
+            set
+            {
+                if (_endpoint is not null)
+                    _endpoint.Rts = value;
+                this.RaisePropertyChanged();
+            }
+        }
+
         // ───────────── 快捷指令 ─────────────
 
         public ObservableCollection<QuickCommandViewModel> QuickCommands { get; } = new();
@@ -387,6 +580,7 @@ namespace IOStudio.ViewModels
         public ReactiveCommand<Unit, Unit> SendCommand { get; }
         public ReactiveCommand<Unit, Unit> ClearLogCommand { get; }
         public ReactiveCommand<Unit, Unit> ResetStatsCommand { get; }
+        public ReactiveCommand<Unit, Unit> SendBreakCommand { get; }
 
         private IProtocolEndpoint? _endpoint;
         private CancellationTokenSource? _cts;
@@ -435,6 +629,7 @@ namespace IOStudio.ViewModels
                 await _endpoint.OpenAsync(Host, Port, _cts.Token).ConfigureAwait(true);
 
                 IsRunning = true;
+                ResetTiming();
                 var actual = Transport.Transport == "serial"
                     ? SerialDevice
                     : _endpoint.Port.ToString(CultureInfo.InvariantCulture);
@@ -510,6 +705,7 @@ namespace IOStudio.ViewModels
             }
 
             IsRunning = false;
+            ResetTiming();
             StatusText = "已停止";
             Peers.Clear();
             RaisePeerSummary();
@@ -669,6 +865,15 @@ namespace IOStudio.ViewModels
             try
             {
                 var bytes = ProtocolEncoding.Encode(text + ProtocolUiOptions.NewLineToText(newLine), encoding);
+
+                // 追加校验和: 工业协议常见做法 (先算净值再校验)
+                if (AppendChecksum && ChecksumMode != "无")
+                {
+                    var cs = Checksums.Compute(ChecksumMode, bytes);
+                    if (cs.Length > 0)
+                        bytes = bytes.Concat(cs).ToArray();
+                }
+
                 await ep.SendAsync(bytes, ct).ConfigureAwait(true);
                 _txCount++;
                 _txBytes += bytes.Length;

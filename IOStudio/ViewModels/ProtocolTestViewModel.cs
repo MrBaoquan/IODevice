@@ -127,7 +127,7 @@ namespace IOStudio.ViewModels
             set => this.RaiseAndSetIfChanged(ref _selectedScenario, value);
         }
 
-        private string _statusText = "";
+        private string _statusText = "就绪";
         public string StatusText
         {
             get => _statusText;

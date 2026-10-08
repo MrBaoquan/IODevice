@@ -4,10 +4,18 @@ using IOStudio.Services.ProtocolTest;
 namespace IOStudio.ViewModels
 {
     /// <summary>传输选项。NeedsHost: 需要填目标主机 (主动连接类)。</summary>
-    public sealed record ProtocolTransportOption(string Label, string Transport, bool IsListener, bool NeedsHost);
+    public sealed record ProtocolTransportOption(string Label, string Transport, bool IsListener, bool NeedsHost)
+    {
+        // 下拉框直接显示 ToString(): 不重写就会渲染成
+        // "ProtocolTransportOption { Label = UDP 监听, Transport = udp, ... }" (用户可见的硬伤)
+        public override string ToString() => Label;
+    }
 
     /// <summary>组帧选项。</summary>
-    public sealed record ProtocolFrameOption(string Label, string Mode);
+    public sealed record ProtocolFrameOption(string Label, string Mode)
+    {
+        public override string ToString() => Label;
+    }
 
     /// <summary>
     /// 协议测试台的静态选项集。

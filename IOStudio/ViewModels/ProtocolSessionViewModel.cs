@@ -183,8 +183,8 @@ namespace IOStudio.ViewModels
         public bool ShowPrefixBytes => FrameMode.Mode == "length-prefix";
         public bool ShowFixedSize => FrameMode.Mode == "fixed";
 
-        /// <summary>只有多客户端服务端才会出现对端列表。</summary>
-        public bool ShowPeers => Transport.Transport == "tcp-server";
+        /// <summary>多客户端服务端才会出现对端列表 (TCP / WebSocket 都是多客户端)。</summary>
+        public bool ShowPeers => Transport.Transport is "tcp-server" or "websocket-server";
 
         private void RaiseFieldVisibility()
         {
@@ -599,7 +599,12 @@ namespace IOStudio.ViewModels
 
             try
             {
-                var bytes = await File.ReadAllBytesAsync(FilePath).ConfigureAwait(true);
+                AddEntry(ProtocolLogEntry.Info("开始发送文件: " + Path.GetFileName(FilePath)));
+
+                // 发送循环**不占 UI 线程**: 大文件/多分块时若把续体挂在 dispatcher 上,
+                // 界面会卡, 且 headless 下线程池 Post 回来的续体不保证被执行 (会假死)。
+                // 这里全部 ConfigureAwait(false), 只有"更新界面"才 Post 回 UI 线程。
+                var bytes = await File.ReadAllBytesAsync(FilePath).ConfigureAwait(false);
                 var chunk = FileChunkSize > 0 ? FileChunkSize : bytes.Length;
                 var ct = _cts?.Token ?? CancellationToken.None;
                 var sent = 0;
@@ -610,18 +615,27 @@ namespace IOStudio.ViewModels
                     var part = new byte[len];
                     Buffer.BlockCopy(bytes, off, part, 0, len);
 
-                    await ep.SendAsync(part, ct).ConfigureAwait(true);
-                    _txCount++;
-                    _txBytes += len;
-                    RaiseStats();
-                    AddEntry(ProtocolLogEntry.Frame("发", "文件", part, null));
+                    await ep.SendAsync(part, ct).ConfigureAwait(false);
+
+                    Dispatcher.UIThread.Post(() =>
+                    {
+                        _txCount++;
+                        _txBytes += len;
+                        RaiseStats();
+                        AddEntry(ProtocolLogEntry.Frame("发", "文件", part, null));
+                    });
+
                     sent += len;
 
                     if (off + len < bytes.Length && FileChunkIntervalMs > 0)
-                        await Task.Delay(FileChunkIntervalMs, ct).ConfigureAwait(true);
+                        await Task.Delay(FileChunkIntervalMs, ct).ConfigureAwait(false);
                 }
 
-                AddEntry(ProtocolLogEntry.Info($"文件已发送: {sent} 字节 (每包 {chunk} 字节)"));
+                var total = sent;
+                var per = chunk;
+                Dispatcher.UIThread.Post(() =>
+                    AddEntry(ProtocolLogEntry.Info($"文件已发送: {total} 字节 (每包 {per} 字节)"))
+                );
             }
             catch (OperationCanceledException)
             {
@@ -629,7 +643,10 @@ namespace IOStudio.ViewModels
             }
             catch (Exception ex)
             {
-                AddEntry(ProtocolLogEntry.Info("发送文件失败: " + ex.Message));
+                var msg = ex.Message;
+                Dispatcher.UIThread.Post(() =>
+                    AddEntry(ProtocolLogEntry.Info("发送文件失败: " + msg))
+                );
             }
         }
 
@@ -663,11 +680,29 @@ namespace IOStudio.ViewModels
 
         public ObservableCollection<QuickCommandViewModel> QuickCommands { get; } = new();
 
+        private bool _quickCommandsExpanded;
+
+        /// <summary>「快捷指令」区段是否展开 —— 辅助区段默认收起, 把纵向空间让给日志。</summary>
+        public bool QuickCommandsExpanded
+        {
+            get => _quickCommandsExpanded;
+            set => this.RaiseAndSetIfChanged(ref _quickCommandsExpanded, value);
+        }
+
         public ReactiveCommand<Unit, Unit> AddQuickCommandCommand { get; }
 
         // ───────────── 自动应答 ─────────────
 
         public ObservableCollection<AutoReplyRuleViewModel> Rules { get; } = new();
+
+        private bool _autoReplyExpanded;
+
+        /// <summary>「自动应答」区段是否展开 (默认收起, 同上)。</summary>
+        public bool AutoReplyExpanded
+        {
+            get => _autoReplyExpanded;
+            set => this.RaiseAndSetIfChanged(ref _autoReplyExpanded, value);
+        }
 
         public ReactiveCommand<Unit, Unit> AddRuleCommand { get; }
 

@@ -622,8 +622,20 @@ namespace IOStudio.Tests.E2E
                 Assert.True(started, "UDP 监听未启动");
 
                 using var client = new UdpClient(new IPEndPoint(IPAddress.Loopback, 0));
-                var target = new IPEndPoint(IPAddress.Loopback, port);
-                await client.SendAsync(Encoding.UTF8.GetBytes("HI"), target); // 让监听端知道发往何处
+                var clientPort = ((IPEndPoint)client.Client.LocalEndPoint!).Port;
+
+                // UDP 监听端没有对端地址, 默认要等"收到第一帧"才学会回发目标 —— 而那次学习
+                // 是通过后台线程 Post 回 UI 再更新统计/日志的, headless 下这条链路不可靠
+                // (本类文档已注明), 会让用例 flaky。这里直接显式指定对端, 用例只测
+                // "文件分块 + 原始字节送达" 本身 (对端学习由真实进程里的协议场景覆盖)。
+                await _session.Dispatch(
+                    () =>
+                    {
+                        s.SelectedPeer = $"127.0.0.1:{clientPort}";
+                        return true;
+                    },
+                    CancellationToken.None
+                );
 
                 await _session.Dispatch(
                     () =>
@@ -637,15 +649,34 @@ namespace IOStudio.Tests.E2E
                     CancellationToken.None
                 );
 
+                // 发送循环本身不占 UI 线程 (VM 里全 ConfigureAwait(false)), 所以这里不需要
+                // 靠泵 dispatcher 来推进发送; 保留一次泵是为了让 ReactiveCommand 的
+                // canExecute (跟着 IsRunning 走) 有机会结算, 然后边收边等。
                 var received = new System.Collections.Generic.List<byte>();
-                for (int i = 0; i < 20 && received.Count < payload.Length; i++)
+                var deadline = DateTime.UtcNow.AddSeconds(8);
+                while (received.Count < payload.Length && DateTime.UtcNow < deadline)
                 {
-                    var recv = client.ReceiveAsync();
-                    var done = await Task.WhenAny(recv, Task.Delay(300));
-                    if (done == recv)
-                        received.AddRange((await recv).Buffer);
+                    await _session.Dispatch(() => true, CancellationToken.None);
+
+                    while (client.Available > 0)
+                        received.AddRange((await client.ReceiveAsync()).Buffer);
+
+                    if (received.Count < payload.Length)
+                        await Task.Delay(20);
                 }
 
+                var diag = await _session.Dispatch(
+                    () =>
+                        $"running={s.IsRunning} status={s.StatusText} peer={s.SelectedPeer} "
+                        + "msgs="
+                        + string.Join(" | ", s.Messages.Select(m => m.Direction + ":" + m.ContentText)),
+                    CancellationToken.None
+                );
+
+                Assert.True(
+                    received.Count == payload.Length,
+                    $"期望 {payload.Length} 字节, 实收 {received.Count} 字节. {diag}"
+                );
                 Assert.Equal(payload, received.ToArray());
             }
             finally

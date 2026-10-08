@@ -36,7 +36,8 @@ DEPLOY = Path(
 MOTION = DEPLOY / "Config" / "Motion" / "mp_ydl_game_demo.motion"
 EXE = DEPLOY / "IOStudio.exe"
 
-GAME_PORT = 30121          # 协议: 游戏端端口 (插件发往这里)
+GAME_PORT = 30121          # 协议: 游戏端端口 —— 本插件(游戏端)监听它
+PLATFORM_PORT = 30120      # 协议: 播控端端口 —— 插件发往这里 (本测试在此抓包)
 PLAY_MS = int(os.environ.get("YDL_PLAY_MS", "30000"))
 CAPTURE_PAD = 4.0
 
@@ -58,10 +59,13 @@ MIN_CYLINDER_INTERVAL_MS = 45.0   # 协议建议 50ms, 留调度抖动余量
 
 
 def _capture(seconds):
-    """绑定游戏端端口, 收集 (ms, text)。"""
+    """绑定播控端端口 (插件发往这里), 收集 (ms, text)。
+
+    不用 SO_REUSEADDR: 在 Windows 上它允许抢占已被占用的端口,
+    会让"端口是否被占"的判断失真。
+    """
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-    sock.bind(("127.0.0.1", GAME_PORT))
+    sock.bind(("127.0.0.1", PLATFORM_PORT))
     sock.settimeout(0.3)
     records = []
     t0 = time.time()
@@ -77,6 +81,33 @@ def _capture(seconds):
     return records
 
 
+def _udp_port_owners(port):
+    """用 netstat 查出绑定该 UDP 端口的进程 ID。
+
+    不能用"能否 bind"来判断: 在 Windows 上 UDP 允许 0.0.0.0 与 127.0.0.1
+    同端口共存, bind 探测会误判为"空闲"。netstat 才是权威。
+    """
+    try:
+        out = subprocess.run(
+            ["netstat", "-ano", "-p", "UDP"],
+            capture_output=True, text=True, timeout=10,
+        ).stdout
+    except Exception:
+        return set()
+    owners = set()
+    for line in out.splitlines():
+        parts = line.split()
+        if len(parts) < 4 or parts[0].upper() != "UDP":
+            continue
+        local = parts[1]
+        if local.endswith(f":{port}"):
+            try:
+                owners.add(int(parts[-1]))
+            except ValueError:
+                pass
+    return owners
+
+
 @pytest.fixture(scope="module")
 def captured():
     if not EXE.exists():
@@ -84,14 +115,19 @@ def captured():
     if not MOTION.exists():
         pytest.skip(f"未找到 {MOTION} (先运行 --motion-build)")
 
-    # 前置检查: 端口不被占用 (否则可能是另一个 IOStudio 在跑, 会污染抓包)
-    probe = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    try:
-        probe.bind(("127.0.0.1", GAME_PORT))
-    except OSError as e:
-        pytest.fail(f"端口 {GAME_PORT} 已被占用 (是否有其它 IOStudio 在跑?): {e}")
-    finally:
-        probe.close()
+    # 前置检查: 抓包端口不能被占用 (否则可能是另一个 IOStudio 在跑, 会污染抓包)
+    busy = _udp_port_owners(PLATFORM_PORT)
+    if busy:
+        pytest.fail(
+            f"端口 {PLATFORM_PORT} (播控端) 已被进程 {sorted(busy)} 占用 —— "
+            "是否有其它 IOStudio/厂家软件在跑? 本用例需要在该端口抓包。"
+        )
+    busy_game = _udp_port_owners(GAME_PORT)
+    if busy_game:
+        pytest.fail(
+            f"端口 {GAME_PORT} (游戏端) 已被进程 {sorted(busy_game)} 占用 —— "
+            "是否有其它 IOStudio/插件实例在跑? 本用例需要独占该端口。"
+        )
 
     result = {}
 
@@ -112,6 +148,11 @@ def captured():
         stderr=subprocess.PIPE,
     )
     try:
+        # 等插件完成 OpenDevice 后校验端口角色: 游戏端端口应被"本进程"占住
+        time.sleep(6.0)
+        owners = _udp_port_owners(GAME_PORT)
+        result["game_port_owner_is_cli"] = proc.pid in owners
+        result["game_port_owners"] = sorted(owners)
         proc.wait(timeout=PLAY_MS / 1000.0 + 40)
     except subprocess.TimeoutExpired:
         proc.kill()
@@ -120,7 +161,7 @@ def captured():
     records = result.get("records", [])
     if not records:
         pytest.skip("未捕获到任何 UDP 报文 (插件未加载或设备未注册为 YDL-0)")
-    return records
+    return result
 
 
 def _split(records):
@@ -142,9 +183,21 @@ def _split(records):
     return valid, invalid, paras
 
 
+def test_port_roles_match_protocol(captured):
+    """
+    角色/端口校验 (P1-4): 本插件是"游戏端", 运行时应占住 30121 (游戏端端口),
+    并把自己产生的命令发往 30120 (播控端端口, 由厂家服务软件/本测试接收)。
+    """
+    assert captured.get("game_port_owner_is_cli") is True, (
+        f"插件运行时未占住 {GAME_PORT} (游戏端端口) —— "
+        f"当前占用者={captured.get('game_port_owners')}, CLI pid 应在其内。"
+        "端口角色与协议不符 (插件应以游戏端身份监听 30121)。"
+    )
+
+
 def test_messages_are_all_valid_json(captured):
     """P0-1 回归: 所有报文必须能被标准 JSON 解析器解析。"""
-    valid, invalid, _ = _split(captured)
+    valid, invalid, _ = _split(captured["records"])
     assert invalid == [], (
         f"{len(invalid)}/{len(captured)} 条报文不是合法 JSON (修复前为 97%)。"
         f"示例: {invalid[0][1][:160]!r}"
@@ -153,14 +206,14 @@ def test_messages_are_all_valid_json(captured):
 
 def test_para_payload_is_valid_json(captured):
     """P0-1 回归: Para 反转义后自身必须是合法 JSON (协议要求 Para 为转义后的 JSON 字符串)。"""
-    _, _, paras = _split(captured)
+    _, _, paras = _split(captured["records"])
     bad = [(ms, cmd) for ms, cmd, obj in paras if obj is None]
     assert paras, "没有任何带 Para 的报文, 无法验证"
     assert bad == [], f"以下报文的 Para 不是合法 JSON: {bad[:5]}"
 
 
 def test_commands_are_known(captured):
-    valid, _, _ = _split(captured)
+    valid, _, _ = _split(captured["records"])
     cmds = {obj.get("Cmd") for _, obj in valid}
     unknown = cmds - KNOWN_CMDS
     assert not unknown, f"出现协议未定义的 Cmd: {unknown}"
@@ -168,7 +221,7 @@ def test_commands_are_known(captured):
 
 def test_cylinder_is_rate_limited(captured):
     """P1-6 回归: 电缸间隔需 >= 协议建议 (修复前实测 22ms)。"""
-    valid, _, _ = _split(captured)
+    valid, _, _ = _split(captured["records"])
     cyl = [ms for ms, obj in valid if obj.get("Cmd") == "GamePlatform_Cylinder"]
     assert len(cyl) > 3, f"电缸报文太少 ({len(cyl)}), 无法验证节流"
     gaps = [cyl[i + 1] - cyl[i] for i in range(len(cyl) - 1)]
@@ -180,7 +233,7 @@ def test_cylinder_is_rate_limited(captured):
 
 
 def test_cylinder_values_in_range(captured):
-    valid, _, _ = _split(captured)
+    valid, _, _ = _split(captured["records"])
     bad = []
     for ms, obj in valid:
         if obj.get("Cmd") != "GamePlatform_Cylinder":
@@ -193,7 +246,7 @@ def test_cylinder_values_in_range(captured):
 
 
 def test_heartbeat_is_periodic(captured):
-    valid, _, _ = _split(captured)
+    valid, _, _ = _split(captured["records"])
     beats = [ms for ms, obj in valid if obj.get("Cmd") == "GamePlatform_Heart"]
     assert len(beats) >= 3, f"心跳太少 ({len(beats)})"
     gaps = [beats[i + 1] - beats[i] for i in range(len(beats) - 1)]
@@ -203,7 +256,7 @@ def test_heartbeat_is_periodic(captured):
 
 def test_effect_intensity_is_within_protocol_range(captured):
     """P2-1 回归: Intensity 若出现, 必须在协议规定的 1..100。"""
-    valid, _, _ = _split(captured)
+    valid, _, _ = _split(captured["records"])
     bad = []
     for ms, obj in valid:
         if obj.get("Cmd") != "GamePlatform_PlatformEffect":

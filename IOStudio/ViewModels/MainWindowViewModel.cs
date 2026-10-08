@@ -842,24 +842,47 @@ namespace IOStudio.ViewModels
                         .ObserveOn(RxApp.TaskpoolScheduler) // 后台线程执行
                         .Subscribe(_ =>
                         {
-                            // C++ 设备轮询在后台线程执行
-                            var swPoll = System.Diagnostics.Stopwatch.StartNew();
-                            IODeviceController.Update();
-                            long pollMs = swPoll.ElapsedMilliseconds;
-                            Services.Motion.PollDiagnostics.UpdateCount++;
-                            Services.Motion.PollDiagnostics.TotalUpdateMs += pollMs;
-                            if (pollMs > Services.Motion.PollDiagnostics.MaxUpdateMs)
-                                Services.Motion.PollDiagnostics.MaxUpdateMs = pollMs;
-
-                            if (IsStared == false)
-                                return;
-
-                            // 只在 UI 更新时切换到主线程
-                            RxApp.MainThreadScheduler.Schedule(() =>
+                            // 轮询体必须自带兜底: Rx 的 Subscribe 一旦抛出异常就会**终止整个订阅**,
+                            // 此后设备轮询永久停止且没有任何提示 —— 现场表现为"设备全都不刷新/不响应",
+                            // 与真正死锁的现象极为相似 (但 tick 仍在走)。这里吞掉异常以保住订阅,
+                            // 同时写日志, 避免又一次静默失效。
+                            try
                             {
-                                SelectedIODevcie?.Update();
-                                RefreshStatusDerived();
-                            });
+                                // C++ 设备轮询在后台线程执行
+                                var swPoll = System.Diagnostics.Stopwatch.StartNew();
+                                IODeviceController.Update();
+                                long pollMs = swPoll.ElapsedMilliseconds;
+                                Services.Motion.PollDiagnostics.UpdateCount++;
+                                Services.Motion.PollDiagnostics.TotalUpdateMs += pollMs;
+                                if (pollMs > Services.Motion.PollDiagnostics.MaxUpdateMs)
+                                    Services.Motion.PollDiagnostics.MaxUpdateMs = pollMs;
+
+                                if (IsStared == false)
+                                    return;
+
+                                // 只在 UI 更新时切换到主线程
+                                RxApp.MainThreadScheduler.Schedule(() =>
+                                {
+                                    SelectedIODevcie?.Update();
+                                    RefreshStatusDerived();
+                                });
+                            }
+                            catch (Exception ex)
+                            {
+                                // 去重: 该异常可能每个轮询周期都发生 (例如某个命令的 CanExecute
+                                // 绑定到设备状态, 后台线程变更时 Avalonia 会抛"Call from invalid thread"),
+                                // 不能每个周期都写一条, 否则日志被刷满。
+                                string sig = ex.GetType().Name + ": " + ex.Message;
+                                if (sig != s_lastPollErrorSignature)
+                                {
+                                    s_lastPollErrorSignature = sig;
+                                    Services.AppLog.Error(
+                                        "DevicePoll",
+                                        "设备轮询单次失败 (已保住订阅, 同类错误不再重复记录)",
+                                        ex
+                                    );
+                                }
+                            }
                         });
 
                     Disposable
@@ -873,6 +896,9 @@ namespace IOStudio.ViewModels
                 }
             );
         }
+
+        /// <summary>设备轮询异常去重用的签名 (避免同一异常每周期刷屏)。</summary>
+        private static string? s_lastPollErrorSignature;
 
         /// <summary>
         /// 更新设备的录制按钮显示状态

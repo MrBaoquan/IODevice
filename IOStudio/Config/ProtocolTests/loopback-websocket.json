@@ -1,0 +1,22 @@
+{
+  "name": "WebSocket 往返 (client/server)",
+  "timeout_ms": 3000,
+  "steps": [
+    { "op": "listen",  "as": "srv", "transport": "websocket-server", "port": 0 },
+    { "op": "connect", "as": "cli", "transport": "websocket-client", "host": "127.0.0.1", "port_from": "srv", "path": "/ws" },
+
+    { "op": "send",    "via": "cli", "encoding": "utf8", "data": "{\"Cmd\":\"Ping\"}" },
+    { "op": "expect",  "via": "srv", "match": { "type": "json", "path": "Cmd", "value": "Ping" } },
+
+    { "op": "send",    "via": "srv", "encoding": "utf8", "data": "PONG" },
+    { "op": "expect",  "via": "cli", "match": { "type": "equals", "value": "PONG" } },
+
+    { "op": "send",    "via": "cli", "encoding": "utf8", "data": "TWO" },
+    { "op": "send",    "via": "cli", "encoding": "utf8", "data": "THREE" },
+    { "op": "expect",  "via": "srv", "match": { "type": "equals", "value": "TWO" } },
+    { "op": "expect",  "via": "srv", "match": { "type": "equals", "value": "THREE" } },
+
+    { "op": "close",   "via": "cli" },
+    { "op": "close",   "via": "srv" }
+  ]
+}

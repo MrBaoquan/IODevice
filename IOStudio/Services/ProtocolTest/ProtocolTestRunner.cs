@@ -19,9 +19,20 @@ namespace IOStudio.Services.ProtocolTest
     /// </summary>
     public static class ProtocolTestRunner
     {
+        private static readonly Regex VarPattern = new(
+            @"\$\{([A-Za-z_][A-Za-z0-9_]*)\}",
+            RegexOptions.Compiled
+        );
+
         public static async Task<ProtocolTestReport> RunFileAsync(string scenarioPath, CancellationToken ct = default)
         {
             var json = await File.ReadAllTextAsync(scenarioPath, ct).ConfigureAwait(false);
+            // 环境变量替换: 让同一份场景可直接指向不同对端 (现场联调不必改 JSON)。
+            //   { "host": "${PEER_HOST}", "port": ${PEER_PORT} }  -- 未定义的变量原样保留
+            json = VarPattern.Replace(
+                json,
+                m => Environment.GetEnvironmentVariable(m.Groups[1].Value) ?? m.Value
+            );
             var scenario = JsonSerializer.Deserialize<ProtocolTestScenario>(
                 json,
                 new JsonSerializerOptions { PropertyNameCaseInsensitive = true }
@@ -108,7 +119,7 @@ namespace IOStudio.Services.ProtocolTest
                     if (endpoints.ContainsKey(step.Alias))
                         throw new InvalidOperationException($"别名 '{step.Alias}' 重复");
 
-                    var endpoint = CreateEndpoint(step.Transport, op == "listen");
+                    var endpoint = CreateEndpoint(step, op == "listen");
                     int port = ResolvePort(step, endpoints);
                     await endpoint.OpenAsync(step.Host, port, ct).ConfigureAwait(false);
                     endpoints[step.Alias] = endpoint;
@@ -183,15 +194,50 @@ namespace IOStudio.Services.ProtocolTest
             }
         }
 
-        private static IProtocolEndpoint CreateEndpoint(string transport, bool isListener)
+        private static IProtocolEndpoint CreateEndpoint(ProtocolTestStep step, bool isListener)
         {
-            var t = (transport ?? "").Trim().ToLowerInvariant();
+            var t = (step.Transport ?? "").Trim().ToLowerInvariant();
+            var codec = BuildCodec(step.Frame);
             return t switch
             {
-                "udp" => new UdpEndpoint(isListener),
-                "tcp-client" => new TcpClientEndpoint(),
-                "tcp-server" => new TcpServerEndpoint(),
-                _ => throw new InvalidOperationException($"未知 transport: {transport}"),
+                "udp" => new UdpEndpoint(isListener, codec),
+                "tcp-client" => new TcpClientEndpoint(codec),
+                "tcp-server" => new TcpServerEndpoint(codec),
+                "websocket-client" => new WebSocketClientEndpoint(step.Path),
+                "websocket-server" => new WebSocketServerEndpoint(),
+                "serial" => new SerialEndpoint(codec, step.Device, step.Baud),
+                _ => throw new InvalidOperationException($"未知 transport: {step.Transport}"),
+            };
+        }
+
+        private static FrameCodec BuildCodec(FrameSpec? spec)
+        {
+            if (spec is null)
+                return FrameCodec.None;
+
+            var mode = (spec.Mode ?? "none").Trim().ToLowerInvariant();
+            return mode switch
+            {
+                "" or "none" => FrameCodec.None,
+                "delimiter" => new FrameCodec
+                {
+                    Mode = FrameMode.Delimiter,
+                    Delimiter = (spec.DelimiterEncoding ?? "utf8").Trim().ToLowerInvariant() == "hex"
+                        ? Convert.FromHexString(spec.Delimiter.Replace(" ", ""))
+                        : Encoding.UTF8.GetBytes(spec.Delimiter),
+                },
+                "length-prefix" => new FrameCodec
+                {
+                    Mode = FrameMode.LengthPrefix,
+                    PrefixBytes = spec.PrefixBytes,
+                    LittleEndian = (spec.Endian ?? "big").Trim().ToLowerInvariant() == "little",
+                },
+                "fixed" => new FrameCodec
+                {
+                    Mode = FrameMode.Fixed,
+                    FixedSize = spec.Size,
+                },
+                _ => throw new InvalidOperationException($"未知 frame.mode: {spec.Mode}"),
             };
         }
 
@@ -247,6 +293,21 @@ namespace IOStudio.Services.ProtocolTest
                     return text.Contains(value, StringComparison.Ordinal)
                         ? (true, "")
                         : (false, $"未包含 {Short(value)}; 实际 {Short(text)}");
+
+                case "notcontains":
+                    return !text.Contains(value, StringComparison.Ordinal)
+                        ? (true, "")
+                        : (false, $"不应包含 {Short(value)}; 实际 {Short(text)}");
+
+                case "startswith":
+                    return text.StartsWith(value, StringComparison.Ordinal)
+                        ? (true, "")
+                        : (false, $"未以 {Short(value)} 开头; 实际 {Short(text)}");
+
+                case "endswith":
+                    return text.EndsWith(value, StringComparison.Ordinal)
+                        ? (true, "")
+                        : (false, $"未以 {Short(value)} 结尾; 实际 {Short(text)}");
 
                 case "regex":
                     return Regex.IsMatch(text, value)

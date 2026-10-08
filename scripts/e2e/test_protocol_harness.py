@@ -30,6 +30,9 @@ EXE = DEPLOY / "IOStudio.exe"
 SRC_SCENARIOS = ROOT / "IOStudio" / "Config" / "ProtocolTests"
 MOTION = DEPLOY / "Config" / "Motion" / "mp_ydl_game_demo.motion"
 
+# 所有 loopback-*.json 都自动纳入门禁 —— 新增自测场景无需改测试代码。
+LOOPBACK_SCENARIOS = sorted(p.name for p in SRC_SCENARIOS.glob("loopback-*.json"))
+
 GAME_PORT = 30121
 PLATFORM_PORT = 30120
 PLAY_MS = int(os.environ.get("YDL_PLAY_MS", "30000"))
@@ -85,7 +88,7 @@ def _run_scenario(name, report_path):
 
 # ───────────────────────── A. loopback 自测 ─────────────────────────
 
-@pytest.mark.parametrize("name", ["loopback-udp.json", "loopback-tcp.json"])
+@pytest.mark.parametrize("name", LOOPBACK_SCENARIOS)
 def test_loopback_scenario_passes(name, tmp_path):
     """
     loopback 场景必须全通过: 起监听 + 连接 + 往返 + 各类断言。
@@ -141,6 +144,33 @@ def test_loopback_scenario_fails_when_expectation_is_wrong(tmp_path):
     assert reason, "失败步骤必须带 reason"
 
 
+def test_loopback_scenarios_exist():
+    """门禁必须真的有场景可跑, 否则"全绿"是空集。"""
+    assert LOOPBACK_SCENARIOS, f"未找到任何 loopback 场景: {SRC_SCENARIOS}"
+    # 至少覆盖 UDP / TCP / WebSocket 与三种组帧
+    joined = " ".join(LOOPBACK_SCENARIOS)
+    assert "udp" in joined and "tcp" in joined and "websocket" in joined, joined
+
+
+# ───────────────────────── C. 串口 (需真实/虚拟串口) ─────────────────────────
+
+def test_serial_scenario(tmp_path):
+    """
+    串口往返。需要 IOUI_TEST_SERIAL 指向一个真实/虚拟串口, 且该串口有回环
+    或回显设备 (否则收不到数据)。未配置则跳过 —— 串口依赖物理环境, 不适合硬门禁。
+    """
+    _require_exe()
+    if not os.environ.get("IOUI_TEST_SERIAL"):
+        pytest.skip("未设置 IOUI_TEST_SERIAL (例如 COM3), 跳过串口用例")
+    report_path = tmp_path / "serial.report.json"
+    code, report, output = _run_scenario("serial-echo.json", report_path)
+    assert report is not None, f"未生成报告:\n{output}"
+    assert code == 0, (
+        f"串口场景未通过 (exit={code}):\n{output}\n"
+        + json.dumps(report, ensure_ascii=False, indent=2)
+    )
+
+
 # ───────────────────────── B. MP-YDL 真实链路验收 ─────────────────────────
 
 @pytest.fixture(scope="module")
@@ -166,8 +196,24 @@ def ydl_harness_result(tmp_path_factory):
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
     )
+
+    # 播放端必须真的占住 30121 —— 否则插件绑定失败, 电缸线程不会启动, 表现为
+    # "收不到 Cylinder"这种难以定位的现象。这里把环境问题变成明确失败。
+    owners = set()
+    for _ in range(40):
+        owners = _udp_port_owners(GAME_PORT)
+        if player.pid in owners:
+            break
+        time.sleep(0.25)
+    if player.pid not in owners:
+        player.kill()
+        pytest.fail(
+            f"播放端未占住 {GAME_PORT} (当前占用者={sorted(owners)}) —— "
+            "可能有其它 IOStudio 实例残留; 这会让插件绑定失败、不产生电缸报文。"
+        )
+
     try:
-        time.sleep(2.0)  # 让播放先起来, 开始产生报文
+        time.sleep(1.0)  # 让播放先跑起来, 开始产生报文
 
         # 2) 测试台作为"播控端": 绑定 30120 并断言收到的报文
         report_path = tmp_path_factory.mktemp("pt") / "ydl.report.json"

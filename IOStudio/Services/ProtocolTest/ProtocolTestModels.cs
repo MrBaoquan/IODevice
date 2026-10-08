@@ -61,11 +61,58 @@ namespace IOStudio.Services.ProtocolTest
         [JsonPropertyName("encoding")]
         public string Encoding { get; set; } = "utf8";
 
+        /// <summary>组帧方式 (流式传输 TCP/串口 必需)。</summary>
+        [JsonPropertyName("frame")]
+        public FrameSpec? Frame { get; set; }
+
+        /// <summary>串口端口名 (如 COM3); 仅 transport=serial 使用。</summary>
+        [JsonPropertyName("device")]
+        public string Device { get; set; } = "";
+
+        /// <summary>串口波特率; 仅 transport=serial 使用。</summary>
+        [JsonPropertyName("baud")]
+        public int Baud { get; set; }
+
+        /// <summary>WebSocket 路径 (默认 /)。</summary>
+        [JsonPropertyName("path")]
+        public string Path { get; set; } = "/";
+
         [JsonPropertyName("timeout_ms")]
         public int TimeoutMs { get; set; }
 
         [JsonPropertyName("match")]
         public ProtocolTestMatch Match { get; set; } = new();
+    }
+
+    /// <summary>
+    /// 组帧规格。流式传输(TCP/串口)没有天然边界, 不声明组帧就无法确定"一帧到哪结束",
+    /// 断言会因粘包/拆包随机失败。
+    /// </summary>
+    public sealed class FrameSpec
+    {
+        /// <summary>none | delimiter | length-prefix | fixed</summary>
+        [JsonPropertyName("mode")]
+        public string Mode { get; set; } = "none";
+
+        /// <summary>分隔符 (mode=delimiter)。</summary>
+        [JsonPropertyName("delimiter")]
+        public string Delimiter { get; set; } = "\n";
+
+        /// <summary>分隔符编码: utf8 | hex。</summary>
+        [JsonPropertyName("delimiter_encoding")]
+        public string DelimiterEncoding { get; set; } = "utf8";
+
+        /// <summary>长度前缀字节数 (mode=length-prefix), 1..4。</summary>
+        [JsonPropertyName("prefix_bytes")]
+        public int PrefixBytes { get; set; } = 4;
+
+        /// <summary>长度前缀字节序: big | little。</summary>
+        [JsonPropertyName("endian")]
+        public string Endian { get; set; } = "big";
+
+        /// <summary>定长帧字节数 (mode=fixed)。</summary>
+        [JsonPropertyName("size")]
+        public int Size { get; set; }
     }
 
     public sealed class ProtocolTestMatch

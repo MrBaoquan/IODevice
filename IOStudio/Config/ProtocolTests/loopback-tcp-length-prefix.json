@@ -1,0 +1,22 @@
+{
+  "name": "TCP 长度前缀组帧 (粘包/拆包)",
+  "timeout_ms": 3000,
+  "steps": [
+    { "op": "listen",  "as": "srv", "transport": "tcp-server", "port": 0,
+      "frame": { "mode": "length-prefix", "prefix_bytes": 4, "endian": "big" } },
+    { "op": "connect", "as": "cli", "transport": "tcp-client", "host": "127.0.0.1", "port_from": "srv",
+      "frame": { "mode": "length-prefix", "prefix_bytes": 4, "endian": "big" } },
+
+    { "op": "send",    "via": "cli", "encoding": "utf8", "data": "FIRST" },
+    { "op": "send",    "via": "cli", "encoding": "utf8", "data": "SECOND-MESSAGE" },
+
+    { "op": "expect",  "via": "srv", "match": { "type": "equals", "value": "FIRST" } },
+    { "op": "expect",  "via": "srv", "match": { "type": "equals", "value": "SECOND-MESSAGE" } },
+
+    { "op": "send",    "via": "srv", "encoding": "utf8", "data": "ACK-1" },
+    { "op": "expect",  "via": "cli", "match": { "type": "equals", "value": "ACK-1" } },
+
+    { "op": "close",   "via": "cli" },
+    { "op": "close",   "via": "srv" }
+  ]
+}

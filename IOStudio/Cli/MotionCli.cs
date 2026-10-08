@@ -5,12 +5,14 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Text.Json;
+using System.Threading;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Threading;
 using IOStudio.Services;
 using IOStudio.Services.Motion;
+using IOStudio.Services.ProtocolTest;
 using IOStudio.ViewModels;
 using IOStudio.ViewModels.Timeline;
 
@@ -60,7 +62,14 @@ namespace IOStudio.Cli
             || DumpTracks
             || Validate
             || ShowHelp
-            || !string.IsNullOrWhiteSpace(MotionBuildSpec);
+            || !string.IsNullOrWhiteSpace(MotionBuildSpec)
+            || !string.IsNullOrWhiteSpace(ProtocolTestPath);
+
+        /// <summary>协议测试场景 (JSON)。设置后仅执行协议测试并退出 (0 通过 / 2 失败)。</summary>
+        public string? ProtocolTestPath { get; private set; }
+
+        /// <summary>协议测试报告输出路径 (JSON)。</summary>
+        public string? ReportFile { get; private set; }
 
         public const string Usage =
             "IOStudio CLI\n" +
@@ -72,6 +81,8 @@ namespace IOStudio.Cli
             "  --headless             窗口最小化且不占任务栏（便于自动化时不抢焦点）\n" +
             "  --dump-tracks          仅解析并输出轨道映射，然后退出（不打开窗口）\n" +
             "  --validate             仅做编排预检并输出问题清单，然后退出；有 Error 时退出码 2\n" +
+            "  --protocol-test <path> 执行协议测试场景 (JSON)，退出码 0 通过 / 2 失败\n" +
+            "  --report <path>        协议测试报告输出 (JSON)\n" +
             "  --status-file <path>   指定 JSON 状态文件路径\n" +
             "  --validate-report <path>  预检时额外写一份人类可读的 Markdown 报告\n" +
             "  --motion-build <spec.json>  由演出规格生成 .motion (官方程序化生成入口)\n" +
@@ -119,6 +130,12 @@ namespace IOStudio.Cli
                         break;
                     case "--out":
                         if (i + 1 < args.Length) { o.OutFile = args[++i]; }
+                        break;
+                    case "--protocol-test":
+                        if (i + 1 < args.Length) { o.ProtocolTestPath = args[++i]; }
+                        break;
+                    case "--report":
+                        if (i + 1 < args.Length) { o.ReportFile = args[++i]; }
                         break;
                     default:
                         // 位置参数：把 .motion 路径当 --motion 用
@@ -382,6 +399,76 @@ namespace IOStudio.Cli
             ReadCommentHandling = JsonCommentHandling.Skip,
             AllowTrailingCommas = true,
         };
+
+        /// <summary>
+        /// 执行协议测试场景 (JSON), 不开窗口。
+        ///
+        /// <para>退出码: 0 全通过 / 2 有失败 —— 与 --validate 一致, 便于脚本与 CI 门禁。
+        /// 场景只做网络收发, 不依赖任何设备/窗口, 因此可脱离 --motion 单独运行。</para>
+        /// </summary>
+        public static void RunProtocolTest(
+            CliOptions options,
+            IClassicDesktopStyleApplicationLifetime desktop
+        )
+        {
+            string scenarioPath = options.ProtocolTestPath!;
+            ProtocolTestReport? report = null;
+            string? error = null;
+            try
+            {
+                // 场景内部一律 ConfigureAwait(false), 不会回到 UI 线程, 可安全同步等待
+                report = ProtocolTestRunner
+                    .RunFileAsync(scenarioPath, CancellationToken.None)
+                    .GetAwaiter()
+                    .GetResult();
+            }
+            catch (Exception ex)
+            {
+                error = ex.Message;
+            }
+
+            if (report is not null && !string.IsNullOrWhiteSpace(options.ReportFile))
+            {
+                try
+                {
+                    // 不带 BOM: JSON 报告要能被标准解析器 (Python json / jq) 直接读,
+                    // Encoding.UTF8 会写 BOM, 会让 json.loads 报 "Unexpected UTF-8 BOM"。
+                    File.WriteAllText(
+                        options.ReportFile!,
+                        report.ToJson(),
+                        new UTF8Encoding(encoderShouldEmitUTF8Identifier: false)
+                    );
+                    SafePrint($"protocol-test report written: {options.ReportFile}");
+                }
+                catch (Exception ex)
+                {
+                    SafePrint("protocol-test report failed: " + ex.Message);
+                }
+            }
+
+            if (report is null)
+            {
+                SafePrint("protocol-test: 场景执行失败: " + (error ?? "unknown"));
+                WriteStatus(options, "protocol-test-failed");
+                RequestShutdown(desktop, 2);
+                return;
+            }
+
+            foreach (var s in report.Steps)
+            {
+                SafePrint(
+                    $"  [{(s.Ok ? "PASS" : "FAIL")}] #{s.Index} {s.Op}"
+                        + (string.IsNullOrEmpty(s.Via) ? "" : $" via={s.Via}")
+                        + (s.Ok ? $" ({s.ElapsedMs}ms)" : $" — {s.Reason}")
+                );
+            }
+            SafePrint(
+                $"protocol-test: {report.Summary.Passed} passed, {report.Summary.Failed} failed"
+                    + (report.Ok ? " -> ok (exit 0)" : " -> failed (exit 2)")
+            );
+            WriteStatus(options, report.Ok ? "protocol-test-ok" : "protocol-test-failed");
+            RequestShutdown(desktop, report.Ok ? 0 : 2);
+        }
 
         /// <summary>由演出规格 (show spec) 生成 .motion, 不开窗口。</summary>
         public static void RunBuild(CliOptions options, IClassicDesktopStyleApplicationLifetime desktop)

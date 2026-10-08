@@ -103,6 +103,10 @@
     <Content Include="Config\Motion\*.motion">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+    <!-- 协议测试场景 (loopback 自测 + 真实链路), 随输出复制供 CLI/AI 直接引用 -->
+    <Content Include="Config\ProtocolTests\*.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
 
   <!-- HiMind 软件分发：distribution.json 随输出复制 -->

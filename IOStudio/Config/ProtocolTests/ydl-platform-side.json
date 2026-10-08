@@ -1,0 +1,16 @@
+{
+  "name": "MP-YDL 影动力 · 播控端侧协议验收",
+  "timeout_ms": 12000,
+  "steps": [
+    { "op": "listen", "as": "platform", "transport": "udp", "port": 30120 },
+
+    { "op": "expect", "via": "platform", "timeout_ms": 12000,
+      "match": { "type": "json", "path": "Cmd", "value": "GamePlatform_Cylinder" } },
+
+    { "op": "expect", "via": "platform", "timeout_ms": 12000,
+      "match": { "type": "contains", "value": "\"Para\":\"{\\\"HeightRatioList\\\":" } },
+
+    { "op": "expect", "via": "platform", "timeout_ms": 25000,
+      "match": { "type": "json", "path": "Cmd", "value": "GamePlatform_PlatformEffect" } }
+  ]
+}

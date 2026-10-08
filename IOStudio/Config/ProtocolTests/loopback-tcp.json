@@ -1,0 +1,20 @@
+{
+  "name": "TCP loopback (连接 + 往返)",
+  "timeout_ms": 3000,
+  "steps": [
+    { "op": "listen",  "as": "srv", "transport": "tcp-server", "port": 0 },
+    { "op": "connect", "as": "cli", "transport": "tcp-client", "host": "127.0.0.1", "port_from": "srv" },
+
+    { "op": "send",    "via": "cli", "encoding": "utf8", "data": "HELLO" },
+    { "op": "expect",  "via": "srv", "match": { "type": "equals", "value": "HELLO" } },
+
+    { "op": "send",    "via": "srv", "encoding": "utf8", "data": "WORLD" },
+    { "op": "expect",  "via": "cli", "match": { "type": "equals", "value": "WORLD" } },
+
+    { "op": "send",    "via": "cli", "encoding": "utf8", "data": "{\"type\":\"effect\",\"id\":42}" },
+    { "op": "expect",  "via": "srv", "match": { "type": "regex", "value": "\"id\":\\s*42" } },
+
+    { "op": "close",   "via": "cli" },
+    { "op": "close",   "via": "srv" }
+  ]
+}

@@ -71,6 +71,13 @@ namespace IOStudio
                     Cli.CliRunner.RunBuild(cli, desktop);
                     return;
                 }
+                // 协议测试：纯网络收发, 不需要窗口, 也不依赖 --motion
+                if (!string.IsNullOrWhiteSpace(cli.ProtocolTestPath))
+                {
+                    Cli.CliRunner.WriteStatus(cli, "protocol-test");
+                    Cli.CliRunner.RunProtocolTest(cli, desktop);
+                    return;
+                }
 
                 var mainViewModel = new MainWindowViewModel();
                 var mainWindow = new MainWindow { DataContext = mainViewModel, };

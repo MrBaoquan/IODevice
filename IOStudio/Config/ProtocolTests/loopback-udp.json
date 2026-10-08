@@ -1,0 +1,23 @@
+{
+  "name": "UDP loopback (往返 + 回包地址)",
+  "timeout_ms": 3000,
+  "steps": [
+    { "op": "listen",  "as": "srv", "transport": "udp", "port": 0 },
+    { "op": "connect", "as": "cli", "transport": "udp", "host": "127.0.0.1", "port_from": "srv" },
+
+    { "op": "send",    "via": "cli", "encoding": "utf8", "data": "PING" },
+    { "op": "expect",  "via": "srv", "match": { "type": "equals", "value": "PING" } },
+
+    { "op": "send",    "via": "srv", "encoding": "utf8", "data": "PONG" },
+    { "op": "expect",  "via": "cli", "match": { "type": "equals", "value": "PONG" } },
+
+    { "op": "send",    "via": "cli", "encoding": "utf8", "data": "{\"Cmd\":\"Cylinder\",\"Para\":\"{\\\"Height\\\":120}\"}" },
+    { "op": "expect",  "via": "srv", "match": { "type": "json", "path": "Cmd", "value": "Cylinder" } },
+
+    { "op": "send",    "via": "cli", "encoding": "hex", "data": "00FF10AB" },
+    { "op": "expect",  "via": "srv", "match": { "type": "hexEquals", "value": "00FF10AB" } },
+
+    { "op": "close",   "via": "cli" },
+    { "op": "close",   "via": "srv" }
+  ]
+}

@@ -158,8 +158,7 @@ namespace IOStudio.Services.Motion
                 }
                 catch (Exception ex)
                 {
-                    LastError = "native 派发启动失败: " + ex.Message;
-                    Debug.WriteLine($"[NativeEngine] {LastError}");
+                    SetError("native 派发启动失败: " + ex.Message);
                 }
             }
 
@@ -203,8 +202,7 @@ namespace IOStudio.Services.Motion
                 }
                 catch (Exception ex)
                 {
-                    LastError = "native 停止失败: " + ex.Message;
-                    Debug.WriteLine($"[NativeEngine] {LastError}");
+                    SetError("native 停止失败: " + ex.Message);
                 }
             }
 
@@ -231,8 +229,7 @@ namespace IOStudio.Services.Motion
                 }
                 catch (Exception ex)
                 {
-                    LastError = "native seek 失败: " + ex.Message;
-                    Debug.WriteLine($"[NativeEngine] {LastError}");
+                    SetError("native seek 失败: " + ex.Message);
                 }
             }
 
@@ -347,8 +344,7 @@ namespace IOStudio.Services.Motion
                 }
                 catch (Exception ex)
                 {
-                    LastError = "native 派发失败: " + ex.Message;
-                    Debug.WriteLine($"[NativeEngine] {LastError}");
+                    SetError("native 派发失败: " + ex.Message);
                 }
             }
 
@@ -419,6 +415,37 @@ namespace IOStudio.Services.Motion
 
         /// <summary>最近一次内部错误 (native 派发/启动失败等); null = 无。</summary>
         public string? LastError { get; private set; }
+
+        /// <summary>
+        /// 记录一次 native 派发/启动失败。
+        ///
+        /// <para>此前这些失败只写 <c>Debug.WriteLine</c> —— Release 下等于没有, GUI 也从不展示,
+        /// 于是"时间轴在走、设备却一动不动、且没有任何提示"这种最难排查的状态会静默出现。
+        /// 现在: 写入应用日志(去重, 避免每帧刷屏) + 抛事件供界面提示。</para>
+        /// </summary>
+        private void SetError(string message)
+        {
+            LastError = message;
+            if (_lastLoggedError == message)
+                return; // 同一错误持续发生 (例如每帧 tick 失败) 不重复刷屏
+            _lastLoggedError = message;
+
+            try
+            {
+                Services.AppLog.Error("Engine", message);
+            }
+            catch
+            {
+                /* 日志失败不得影响播放 */
+            }
+
+            DispatchFailed?.Invoke(message);
+        }
+
+        /// <summary>native 派发/启动失败时触发 (已去重; 供界面提示, 不得抛异常)。</summary>
+        public event Action<string>? DispatchFailed;
+
+        private string? _lastLoggedError;
 
         /// <summary>
         /// Device-range warm-up hook. Invoked at safe points (timeline load / play), NEVER from the

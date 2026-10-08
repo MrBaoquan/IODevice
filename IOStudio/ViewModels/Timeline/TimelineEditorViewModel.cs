@@ -72,6 +72,10 @@ namespace IOStudio.ViewModels.Timeline
             // 统一引擎通知 (替代 5 个独立事件订阅)
             _engine.Notified += OnEngineNotified;
 
+            // native 派发失败必须让用户看见: 否则表现为"时间轴在走、设备一动不动、且无任何提示"
+            if (_engine is NativeMotionPlaybackEngine nativeEngine)
+                nativeEngine.DispatchFailed += OnEngineDispatchFailed;
+
             // 监听设备分发值变化 (Phase 3.1.5: 播放时 DO 值同步)
             _engine.Dispatcher.ValueDispatched += OnValueDispatched;
 
@@ -1344,6 +1348,26 @@ namespace IOStudio.ViewModels.Timeline
             _engine.ForceStop();
             _engine.Notified -= OnEngineNotified;
             _engine.Dispatcher.ValueDispatched -= OnValueDispatched;
+            if (_engine is NativeMotionPlaybackEngine nativeEngine)
+                nativeEngine.DispatchFailed -= OnEngineDispatchFailed;
+        }
+
+        /// <summary>
+        /// native 派发失败 → 状态栏 + 日志。
+        ///
+        /// <para>这个提示很关键: 没有它, 失败表现为"时间轴在走、设备却一动不动、且没有任何提示",
+        /// 用户只能靠猜 (本次现场问题正是如此)。</para>
+        /// </summary>
+        private void OnEngineDispatchFailed(string message)
+        {
+            try
+            {
+                Dispatcher.UIThread.Post(() => PushStatus(message));
+            }
+            catch
+            {
+                /* 提示失败不得影响播放 */
+            }
         }
     }
 }

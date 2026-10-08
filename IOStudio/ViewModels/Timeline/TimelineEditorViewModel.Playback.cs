@@ -73,6 +73,11 @@ namespace IOStudio.ViewModels.Timeline
             // 播放前预检: 把静默失效问题摆到状态栏 (不阻断播放)
             ReportValidationSummary();
 
+            // 设备输出关闭时, 播放不会驱动任何设备 —— 这是"时间轴在走但设备不动"的常见原因,
+            // 且工具栏只有一个很小的状态点, 容易被忽略。这里明确说一次。
+            if (!IsLiveOutputEnabled)
+                PushStatus("设备输出未开启：仅本地预览，不会驱动设备 (点击走带「设备输出」开启)");
+
             if (_engine.State == PlaybackState.Paused)
             {
                 _engine.Resume();

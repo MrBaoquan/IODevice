@@ -493,6 +493,8 @@
                             <Border Width="1" Background="{DynamicResource TlTransportSeparator}" Margin="4,5"/>
                             <!-- 设备实时输出开关 -->
                             <ToggleButton Classes="transport-toggle" IsChecked="{Binding IsLiveOutputEnabled}"
+                                          AutomationProperties.AutomationId="TransportLiveOutput"
+                                          AutomationProperties.Name="设备输出"
                                           ToolTip.Tip="设备实时输出 (预览时将值发送到物理设备)"
                                           Foreground="{DynamicResource TlTransportBtn}">
                                 <!-- Device output: 信号塔/广播图标 -->

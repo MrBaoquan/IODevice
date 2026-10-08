@@ -2,4 +2,34 @@
 <IORoot>
   <Device Name="ExtDev" Type="External" DllName="DEBUGGER" Index="1" />
   <Device Name="Simulator-1" Type="External" DllName="Simulator" Index="1" />
+  <!-- 影动力 (MP-YDL) 游戏动感平台: UDP JSON, 本地 30120 / 远端 30121 -->
+  <Device Name="YDL-0" Type="External" DllName="MP-YDL" Index="0">
+    <!-- 平台机构 -->
+    <OAction Name="Heave" Label="电缸升降">
+      <Key Name="OAxis_6" />
+    </OAction>
+    <!-- 环境特效域 DO[16..31] -->
+    <OAction Name="Water" Label="喷水">
+      <Key Name="OAxis_16" />
+    </OAction>
+    <OAction Name="Wind" Label="风扇">
+      <Key Name="OAxis_18" />
+    </OAction>
+    <OAction Name="Hot" Label="热风">
+      <Key Name="OAxis_20" />
+    </OAction>
+    <OAction Name="Vibrate" Label="震动">
+      <Key Name="OAxis_22" />
+    </OAction>
+    <OAction Name="Scent" Label="香味">
+      <Key Name="OAxis_24" />
+    </OAction>
+    <!-- 硬件交互扩展域 DO[48..63] -->
+    <OAction Name="Shoot" Label="射击">
+      <Key Name="OAxis_48" />
+    </OAction>
+    <OAction Name="Action" Label="动作">
+      <Key Name="OAxis_49" />
+    </OAction>
+  </Device>
 </IORoot>

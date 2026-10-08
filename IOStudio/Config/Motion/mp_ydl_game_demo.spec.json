@@ -1,0 +1,173 @@
+{
+  "name": "影动力 MP-YDL 体感游戏动作编排 (72s)",
+  "duration_ms": 72000,
+  "fps": 60,
+  "device": "YDL-0",
+  "tracks": [
+    {
+      "role": "heave",
+      "channel": "OAxis_6",
+      "label": "电缸升降",
+      "color": "#4FC3F7",
+      "group": "平台机构",
+      "value_type": "float",
+      "neutral": 0,
+      "engineering_range": 1000,
+      "idle": {
+        "period_ms": 4000,
+        "blend_ms": 500,
+        "phase_mode": "continuous",
+        "keyframes": [
+          { "time_ms": 0, "value": 0.04, "interpolation": "ease_in_out" },
+          { "time_ms": 1000, "value": 0.08, "interpolation": "ease_in_out" },
+          { "time_ms": 2000, "value": 0.04, "interpolation": "ease_in_out" },
+          { "time_ms": 3000, "value": 0.01, "interpolation": "ease_in_out" },
+          { "time_ms": 4000, "value": 0.04, "interpolation": "ease_in_out" }
+        ]
+      }
+    },
+    { "role": "water",   "channel": "OAxis_16", "label": "喷水",   "color": "#38BDF8", "group": "环境特效", "value_type": "bool", "neutral": 0 },
+    { "role": "wind",    "channel": "OAxis_18", "label": "风扇",   "color": "#7DD3FC", "group": "环境特效", "value_type": "bool", "neutral": 0 },
+    { "role": "hot",     "channel": "OAxis_20", "label": "热风",   "color": "#FB923C", "group": "环境特效", "value_type": "bool", "neutral": 0 },
+    { "role": "vibrate", "channel": "OAxis_22", "label": "震动",   "color": "#FB7185", "group": "环境特效", "value_type": "bool", "neutral": 0 },
+    { "role": "scent",   "channel": "OAxis_24", "label": "香味",   "color": "#C084FC", "group": "环境特效", "value_type": "bool", "neutral": 0 },
+    { "role": "shoot",   "channel": "OAxis_48", "label": "射击",   "color": "#F87171", "group": "游戏动作", "value_type": "bool", "neutral": 0 },
+    { "role": "action",  "channel": "OAxis_49", "label": "动作",   "color": "#A3E635", "group": "游戏动作", "value_type": "bool", "neutral": 0 }
+  ],
+  "presets": [
+    {
+      "id": "ydl_boot",
+      "name": "开场升起",
+      "category": "开场",
+      "description": "电缸由最低升起并稳定到中位, 用于游戏开场",
+      "duration_ms": 3000,
+      "channels": [
+        { "role": "heave", "keyframes": [
+          { "time_ms": 0, "value": 0.02, "interpolation": "ease_in_out" },
+          { "time_ms": 1200, "value": 0.82, "interpolation": "ease_in_out" },
+          { "time_ms": 2200, "value": 0.55, "interpolation": "ease_in_out" },
+          { "time_ms": 3000, "value": 0.5, "interpolation": "ease_in_out" }
+        ] }
+      ]
+    },
+    {
+      "id": "ydl_chase",
+      "name": "追击起伏",
+      "category": "行进",
+      "description": "长周期低幅起伏, 模拟载具行进",
+      "duration_ms": 8000,
+      "channels": [
+        { "role": "heave", "keyframes": [
+          { "time_ms": 0, "value": 0.5, "interpolation": "ease_in_out" },
+          { "time_ms": 1500, "value": 0.68, "interpolation": "ease_in_out" },
+          { "time_ms": 3000, "value": 0.45, "interpolation": "ease_in_out" },
+          { "time_ms": 4500, "value": 0.62, "interpolation": "ease_in_out" },
+          { "time_ms": 6000, "value": 0.42, "interpolation": "ease_in_out" },
+          { "time_ms": 8000, "value": 0.5, "interpolation": "ease_in_out" }
+        ] }
+      ]
+    },
+    {
+      "id": "ydl_hit",
+      "name": "受击下坠",
+      "category": "受击",
+      "description": "电缸急降到低位并回弹, 配合震动/热风",
+      "duration_ms": 2000,
+      "channels": [
+        { "role": "heave", "keyframes": [
+          { "time_ms": 0, "value": 0.5, "interpolation": "ease_in_out" },
+          { "time_ms": 400, "value": 0.05, "interpolation": "ease_in_out" },
+          { "time_ms": 1100, "value": 0.72, "interpolation": "ease_in_out" },
+          { "time_ms": 2000, "value": 0.3, "interpolation": "ease_in_out" }
+        ] }
+      ]
+    },
+    {
+      "id": "ydl_splash",
+      "name": "水幕低伏",
+      "category": "特效",
+      "description": "低位缓沉, 配合喷水与风扇",
+      "duration_ms": 6000,
+      "channels": [
+        { "role": "heave", "keyframes": [
+          { "time_ms": 0, "value": 0.3, "interpolation": "ease_in_out" },
+          { "time_ms": 1500, "value": 0.12, "interpolation": "ease_in_out" },
+          { "time_ms": 3500, "value": 0.22, "interpolation": "ease_in_out" },
+          { "time_ms": 6000, "value": 0.18, "interpolation": "ease_in_out" }
+        ] }
+      ]
+    },
+    {
+      "id": "ydl_boost",
+      "name": "冲刺弹射",
+      "category": "行进",
+      "description": "两次大幅上顶, 模拟加速冲刺",
+      "duration_ms": 5000,
+      "channels": [
+        { "role": "heave", "keyframes": [
+          { "time_ms": 0, "value": 0.2, "interpolation": "ease_in_out" },
+          { "time_ms": 900, "value": 0.95, "interpolation": "ease_in_out" },
+          { "time_ms": 1900, "value": 0.25, "interpolation": "ease_in_out" },
+          { "time_ms": 2900, "value": 0.9, "interpolation": "ease_in_out" },
+          { "time_ms": 3900, "value": 0.3, "interpolation": "ease_in_out" },
+          { "time_ms": 5000, "value": 0.4, "interpolation": "ease_in_out" }
+        ] }
+      ]
+    },
+    {
+      "id": "ydl_settle",
+      "name": "结算回落",
+      "category": "结算",
+      "description": "缓慢回落到最低位, 准备关机/换人",
+      "duration_ms": 6000,
+      "channels": [
+        { "role": "heave", "keyframes": [
+          { "time_ms": 0, "value": 0.4, "interpolation": "ease_in_out" },
+          { "time_ms": 2500, "value": 0.15, "interpolation": "ease_in_out" },
+          { "time_ms": 6000, "value": 0.02, "interpolation": "ease_in_out" }
+        ] }
+      ]
+    }
+  ],
+  "cues": [
+    { "time_ms": 6000, "preset": "ydl_boot", "intensity": 1.0 },
+    { "time_ms": 16000, "preset": "ydl_chase", "intensity": 0.9 },
+    { "time_ms": 30000, "preset": "ydl_hit", "intensity": 1.0 },
+    { "time_ms": 34000, "preset": "ydl_chase", "intensity": 0.7 },
+    { "time_ms": 42000, "preset": "ydl_splash", "intensity": 0.9 },
+    { "time_ms": 54000, "preset": "ydl_boost", "intensity": 1.0 },
+    { "time_ms": 64000, "preset": "ydl_settle", "intensity": 1.0 }
+  ],
+  "gates": [
+    { "role": "vibrate", "start_ms": 6000,  "end_ms": 9000,  "fade_ms": 0, "level": 1 },
+    { "role": "action",  "start_ms": 6000,  "end_ms": 9000,  "fade_ms": 0, "level": 1 },
+    { "role": "wind",    "start_ms": 16000, "end_ms": 30000, "fade_ms": 0, "level": 1 },
+    { "role": "shoot",   "start_ms": 17000, "end_ms": 17600, "fade_ms": 0, "level": 1 },
+    { "role": "shoot",   "start_ms": 19500, "end_ms": 20100, "fade_ms": 0, "level": 1 },
+    { "role": "shoot",   "start_ms": 22000, "end_ms": 22600, "fade_ms": 0, "level": 1 },
+    { "role": "shoot",   "start_ms": 25000, "end_ms": 25600, "fade_ms": 0, "level": 1 },
+    { "role": "vibrate", "start_ms": 30000, "end_ms": 34000, "fade_ms": 0, "level": 1 },
+    { "role": "hot",     "start_ms": 30000, "end_ms": 40000, "fade_ms": 0, "level": 1 },
+    { "role": "water",   "start_ms": 42000, "end_ms": 50000, "fade_ms": 0, "level": 1 },
+    { "role": "wind",    "start_ms": 42000, "end_ms": 50000, "fade_ms": 0, "level": 1 },
+    { "role": "action",  "start_ms": 44000, "end_ms": 48000, "fade_ms": 0, "level": 1 },
+    { "role": "wind",    "start_ms": 54000, "end_ms": 64000, "fade_ms": 0, "level": 1 },
+    { "role": "vibrate", "start_ms": 54000, "end_ms": 64000, "fade_ms": 0, "level": 1 },
+    { "role": "scent",   "start_ms": 64000, "end_ms": 72000, "fade_ms": 0, "level": 1 }
+  ],
+  "chapters": [
+    { "time_ms": 0,     "name": "待机待命", "note": "电缸微幅呼吸, 等待游戏端 Ready" },
+    { "time_ms": 6000,  "name": "开场升起", "note": "电缸升起 + 震动/动作, 游戏进入 Playing" },
+    { "time_ms": 16000, "name": "追击行进", "note": "风扇常开 + 射击脉冲" },
+    { "time_ms": 30000, "name": "受击",     "note": "电缸急降回弹 + 震动 + 热风" },
+    { "time_ms": 42000, "name": "水幕",     "note": "喷水 + 风扇 + 动作" },
+    { "time_ms": 54000, "name": "冲刺",     "note": "电缸两次上顶 + 风扇 + 震动" },
+    { "time_ms": 64000, "name": "结算回落", "note": "电缸回落 + 香味, 游戏进入 GameOver" }
+  ],
+  "events": [
+    { "time_ms": 6000,  "name": "ydl.gameState", "data": "{\"GameState\":\"Playing\"}", "lane": "游戏状态", "color": "#22c55e", "data_type": "json" },
+    { "time_ms": 30000, "name": "ydl.gameState", "data": "{\"GameState\":\"Pause\"}",   "lane": "游戏状态", "color": "#f59e0b", "data_type": "json" },
+    { "time_ms": 34000, "name": "ydl.gameState", "data": "{\"GameState\":\"Playing\"}", "lane": "游戏状态", "color": "#22c55e", "data_type": "json" },
+    { "time_ms": 64000, "name": "ydl.gameState", "data": "{\"GameState\":\"GameOver\"}","lane": "游戏状态", "color": "#ef4444", "data_type": "json" }
+  ]
+}

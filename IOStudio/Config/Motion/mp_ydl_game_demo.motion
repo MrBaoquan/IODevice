@@ -1,0 +1,1584 @@
+{
+  "version": "3.0",
+  "name": "\u5F71\u52A8\u529B MP-YDL \u4F53\u611F\u6E38\u620F\u52A8\u4F5C\u7F16\u6392 (72s)",
+  "duration_ms": 72000,
+  "fps": 60,
+  "tracks": [
+    {
+      "id": "trk_heave",
+      "device": "YDL-0",
+      "oaction": "",
+      "output_type": "oaxis",
+      "oaxis_channel": "OAxis_6",
+      "axis_name": "",
+      "label": "\u7535\u7F38\u5347\u964D",
+      "color": "#4FC3F7",
+      "value_type": "float",
+      "neutral_value": 0,
+      "muted": false,
+      "enabled": true,
+      "locked": false,
+      "group": "\u5E73\u53F0\u673A\u6784",
+      "role": "heave",
+      "show_in_curve": true,
+      "idle": {
+        "enabled": true,
+        "period_ms": 4000,
+        "blend_ms": 500,
+        "phase_mode": "continuous",
+        "keyframes": [
+          {
+            "time_ms": 0,
+            "value": 0.04,
+            "interpolation": "ease_in_out"
+          },
+          {
+            "time_ms": 1000,
+            "value": 0.08,
+            "interpolation": "ease_in_out"
+          },
+          {
+            "time_ms": 2000,
+            "value": 0.04,
+            "interpolation": "ease_in_out"
+          },
+          {
+            "time_ms": 3000,
+            "value": 0.01,
+            "interpolation": "ease_in_out"
+          },
+          {
+            "time_ms": 4000,
+            "value": 0.04,
+            "interpolation": "ease_in_out"
+          }
+        ]
+      },
+      "engineering_range": 1000,
+      "clips": [
+        {
+          "id": "clip_01_heave",
+          "start_ms": 6000,
+          "end_ms": 9000,
+          "keyframes": [
+            {
+              "time_ms": 0,
+              "value": 0.02,
+              "interpolation": "ease_in_out"
+            },
+            {
+              "time_ms": 1200,
+              "value": 0.82,
+              "interpolation": "ease_in_out"
+            },
+            {
+              "time_ms": 2200,
+              "value": 0.55,
+              "interpolation": "ease_in_out"
+            },
+            {
+              "time_ms": 3000,
+              "value": 0.5,
+              "interpolation": "ease_in_out"
+            }
+          ],
+          "action_instance_id": "act_01_ydl_boot",
+          "source_definition_id": "ydl_boot",
+          "source_role": "heave",
+          "source_action_name": "\u5F00\u573A\u5347\u8D77"
+        },
+        {
+          "id": "clip_02_heave",
+          "start_ms": 16000,
+          "end_ms": 24000,
+          "keyframes": [
+            {
+              "time_ms": 0,
+              "value": 0.45,
+              "interpolation": "ease_in_out"
+            },
+            {
+              "time_ms": 1500,
+              "value": 0.612,
+              "interpolation": "ease_in_out"
+            },
+            {
+              "time_ms": 3000,
+              "value": 0.405,
+              "interpolation": "ease_in_out"
+            },
+            {
+              "time_ms": 4500,
+              "value": 0.558,
+              "interpolation": "ease_in_out"
+            },
+            {
+              "time_ms": 6000,
+              "value": 0.378,
+              "interpolation": "ease_in_out"
+            },
+            {
+              "time_ms": 8000,
+              "value": 0.45,
+              "interpolation": "ease_in_out"
+            }
+          ],
+          "action_instance_id": "act_02_ydl_chase",
+          "source_definition_id": "ydl_chase",
+          "source_role": "heave",
+          "source_action_name": "\u8FFD\u51FB\u8D77\u4F0F"
+        },
+        {
+          "id": "clip_03_heave",
+          "start_ms": 30000,
+          "end_ms": 32000,
+          "keyframes": [
+            {
+              "time_ms": 0,
+              "value": 0.5,
+              "interpolation": "ease_in_out"
+            },
+            {
+              "time_ms": 400,
+              "value": 0.05,
+              "interpolation": "ease_in_out"
+            },
+            {
+              "time_ms": 1100,
+              "value": 0.72,
+              "interpolation": "ease_in_out"
+            },
+            {
+              "time_ms": 2000,
+              "value": 0.3,
+              "interpolation": "ease_in_out"
+            }
+          ],
+          "action_instance_id": "act_03_ydl_hit",
+          "source_definition_id": "ydl_hit",
+          "source_role": "heave",
+          "source_action_name": "\u53D7\u51FB\u4E0B\u5760"
+        },
+        {
+          "id": "clip_04_heave",
+          "start_ms": 34000,
+          "end_ms": 42000,
+          "keyframes": [
+            {
+              "time_ms": 0,
+              "value": 0.35,
+              "interpolation": "ease_in_out"
+            },
+            {
+              "time_ms": 1500,
+              "value": 0.476,
+              "interpolation": "ease_in_out"
+            },
+            {
+              "time_ms": 3000,
+              "value": 0.315,
+              "interpolation": "ease_in_out"
+            },
+            {
+              "time_ms": 4500,
+              "value": 0.434,
+              "interpolation": "ease_in_out"
+            },
+            {
+              "time_ms": 6000,
+              "value": 0.294,
+              "interpolation": "ease_in_out"
+            },
+            {
+              "time_ms": 8000,
+              "value": 0.35,
+              "interpolation": "ease_in_out"
+            }
+          ],
+          "action_instance_id": "act_04_ydl_chase",
+          "source_definition_id": "ydl_chase",
+          "source_role": "heave",
+          "source_action_name": "\u8FFD\u51FB\u8D77\u4F0F"
+        },
+        {
+          "id": "clip_05_heave",
+          "start_ms": 42000,
+          "end_ms": 48000,
+          "keyframes": [
+            {
+              "time_ms": 0,
+              "value": 0.27,
+              "interpolation": "ease_in_out"
+            },
+            {
+              "time_ms": 1500,
+              "value": 0.108,
+              "interpolation": "ease_in_out"
+            },
+            {
+              "time_ms": 3500,
+              "value": 0.198,
+              "interpolation": "ease_in_out"
+            },
+            {
+              "time_ms": 6000,
+              "value": 0.162,
+              "interpolation": "ease_in_out"
+            }
+          ],
+          "action_instance_id": "act_05_ydl_splash",
+          "source_definition_id": "ydl_splash",
+          "source_role": "heave",
+          "source_action_name": "\u6C34\u5E55\u4F4E\u4F0F"
+        },
+        {
+          "id": "clip_06_heave",
+          "start_ms": 54000,
+          "end_ms": 59000,
+          "keyframes": [
+            {
+              "time_ms": 0,
+              "value": 0.2,
+              "interpolation": "ease_in_out"
+            },
+            {
+              "time_ms": 900,
+              "value": 0.95,
+              "interpolation": "ease_in_out"
+            },
+            {
+              "time_ms": 1900,
+              "value": 0.25,
+              "interpolation": "ease_in_out"
+            },
+            {
+              "time_ms": 2900,
+              "value": 0.9,
+              "interpolation": "ease_in_out"
+            },
+            {
+              "time_ms": 3900,
+              "value": 0.3,
+              "interpolation": "ease_in_out"
+            },
+            {
+              "time_ms": 5000,
+              "value": 0.4,
+              "interpolation": "ease_in_out"
+            }
+          ],
+          "action_instance_id": "act_06_ydl_boost",
+          "source_definition_id": "ydl_boost",
+          "source_role": "heave",
+          "source_action_name": "\u51B2\u523A\u5F39\u5C04"
+        },
+        {
+          "id": "clip_07_heave",
+          "start_ms": 64000,
+          "end_ms": 70000,
+          "keyframes": [
+            {
+              "time_ms": 0,
+              "value": 0.4,
+              "interpolation": "ease_in_out"
+            },
+            {
+              "time_ms": 2500,
+              "value": 0.15,
+              "interpolation": "ease_in_out"
+            },
+            {
+              "time_ms": 6000,
+              "value": 0.02,
+              "interpolation": "ease_in_out"
+            }
+          ],
+          "action_instance_id": "act_07_ydl_settle",
+          "source_definition_id": "ydl_settle",
+          "source_role": "heave",
+          "source_action_name": "\u7ED3\u7B97\u56DE\u843D"
+        }
+      ]
+    },
+    {
+      "id": "trk_water",
+      "device": "YDL-0",
+      "oaction": "",
+      "output_type": "oaxis",
+      "oaxis_channel": "OAxis_16",
+      "axis_name": "",
+      "label": "\u55B7\u6C34",
+      "color": "#38BDF8",
+      "value_type": "bool",
+      "neutral_value": 0,
+      "muted": false,
+      "enabled": true,
+      "locked": false,
+      "group": "\u73AF\u5883\u7279\u6548",
+      "role": "water",
+      "show_in_curve": true,
+      "clips": [
+        {
+          "id": "clip_gate_10_water",
+          "start_ms": 42000,
+          "end_ms": 50000,
+          "keyframes": [
+            {
+              "time_ms": 0,
+              "value": 1,
+              "interpolation": "step"
+            },
+            {
+              "time_ms": 8000,
+              "value": 1,
+              "interpolation": "step"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "trk_wind",
+      "device": "YDL-0",
+      "oaction": "",
+      "output_type": "oaxis",
+      "oaxis_channel": "OAxis_18",
+      "axis_name": "",
+      "label": "\u98CE\u6247",
+      "color": "#7DD3FC",
+      "value_type": "bool",
+      "neutral_value": 0,
+      "muted": false,
+      "enabled": true,
+      "locked": false,
+      "group": "\u73AF\u5883\u7279\u6548",
+      "role": "wind",
+      "show_in_curve": true,
+      "clips": [
+        {
+          "id": "clip_gate_03_wind",
+          "start_ms": 16000,
+          "end_ms": 30000,
+          "keyframes": [
+            {
+              "time_ms": 0,
+              "value": 1,
+              "interpolation": "step"
+            },
+            {
+              "time_ms": 14000,
+              "value": 1,
+              "interpolation": "step"
+            }
+          ]
+        },
+        {
+          "id": "clip_gate_11_wind",
+          "start_ms": 42000,
+          "end_ms": 50000,
+          "keyframes": [
+            {
+              "time_ms": 0,
+              "value": 1,
+              "interpolation": "step"
+            },
+            {
+              "time_ms": 8000,
+              "value": 1,
+              "interpolation": "step"
+            }
+          ]
+        },
+        {
+          "id": "clip_gate_13_wind",
+          "start_ms": 54000,
+          "end_ms": 64000,
+          "keyframes": [
+            {
+              "time_ms": 0,
+              "value": 1,
+              "interpolation": "step"
+            },
+            {
+              "time_ms": 10000,
+              "value": 1,
+              "interpolation": "step"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "trk_hot",
+      "device": "YDL-0",
+      "oaction": "",
+      "output_type": "oaxis",
+      "oaxis_channel": "OAxis_20",
+      "axis_name": "",
+      "label": "\u70ED\u98CE",
+      "color": "#FB923C",
+      "value_type": "bool",
+      "neutral_value": 0,
+      "muted": false,
+      "enabled": true,
+      "locked": false,
+      "group": "\u73AF\u5883\u7279\u6548",
+      "role": "hot",
+      "show_in_curve": true,
+      "clips": [
+        {
+          "id": "clip_gate_09_hot",
+          "start_ms": 30000,
+          "end_ms": 40000,
+          "keyframes": [
+            {
+              "time_ms": 0,
+              "value": 1,
+              "interpolation": "step"
+            },
+            {
+              "time_ms": 10000,
+              "value": 1,
+              "interpolation": "step"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "trk_vibrate",
+      "device": "YDL-0",
+      "oaction": "",
+      "output_type": "oaxis",
+      "oaxis_channel": "OAxis_22",
+      "axis_name": "",
+      "label": "\u9707\u52A8",
+      "color": "#FB7185",
+      "value_type": "bool",
+      "neutral_value": 0,
+      "muted": false,
+      "enabled": true,
+      "locked": false,
+      "group": "\u73AF\u5883\u7279\u6548",
+      "role": "vibrate",
+      "show_in_curve": true,
+      "clips": [
+        {
+          "id": "clip_gate_01_vibrate",
+          "start_ms": 6000,
+          "end_ms": 9000,
+          "keyframes": [
+            {
+              "time_ms": 0,
+              "value": 1,
+              "interpolation": "step"
+            },
+            {
+              "time_ms": 3000,
+              "value": 1,
+              "interpolation": "step"
+            }
+          ]
+        },
+        {
+          "id": "clip_gate_08_vibrate",
+          "start_ms": 30000,
+          "end_ms": 34000,
+          "keyframes": [
+            {
+              "time_ms": 0,
+              "value": 1,
+              "interpolation": "step"
+            },
+            {
+              "time_ms": 4000,
+              "value": 1,
+              "interpolation": "step"
+            }
+          ]
+        },
+        {
+          "id": "clip_gate_14_vibrate",
+          "start_ms": 54000,
+          "end_ms": 64000,
+          "keyframes": [
+            {
+              "time_ms": 0,
+              "value": 1,
+              "interpolation": "step"
+            },
+            {
+              "time_ms": 10000,
+              "value": 1,
+              "interpolation": "step"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "trk_scent",
+      "device": "YDL-0",
+      "oaction": "",
+      "output_type": "oaxis",
+      "oaxis_channel": "OAxis_24",
+      "axis_name": "",
+      "label": "\u9999\u5473",
+      "color": "#C084FC",
+      "value_type": "bool",
+      "neutral_value": 0,
+      "muted": false,
+      "enabled": true,
+      "locked": false,
+      "group": "\u73AF\u5883\u7279\u6548",
+      "role": "scent",
+      "show_in_curve": true,
+      "clips": [
+        {
+          "id": "clip_gate_15_scent",
+          "start_ms": 64000,
+          "end_ms": 72000,
+          "keyframes": [
+            {
+              "time_ms": 0,
+              "value": 1,
+              "interpolation": "step"
+            },
+            {
+              "time_ms": 8000,
+              "value": 1,
+              "interpolation": "step"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "trk_shoot",
+      "device": "YDL-0",
+      "oaction": "",
+      "output_type": "oaxis",
+      "oaxis_channel": "OAxis_48",
+      "axis_name": "",
+      "label": "\u5C04\u51FB",
+      "color": "#F87171",
+      "value_type": "bool",
+      "neutral_value": 0,
+      "muted": false,
+      "enabled": true,
+      "locked": false,
+      "group": "\u6E38\u620F\u52A8\u4F5C",
+      "role": "shoot",
+      "show_in_curve": true,
+      "clips": [
+        {
+          "id": "clip_gate_04_shoot",
+          "start_ms": 17000,
+          "end_ms": 17600,
+          "keyframes": [
+            {
+              "time_ms": 0,
+              "value": 1,
+              "interpolation": "step"
+            },
+            {
+              "time_ms": 600,
+              "value": 1,
+              "interpolation": "step"
+            }
+          ]
+        },
+        {
+          "id": "clip_gate_05_shoot",
+          "start_ms": 19500,
+          "end_ms": 20100,
+          "keyframes": [
+            {
+              "time_ms": 0,
+              "value": 1,
+              "interpolation": "step"
+            },
+            {
+              "time_ms": 600,
+              "value": 1,
+              "interpolation": "step"
+            }
+          ]
+        },
+        {
+          "id": "clip_gate_06_shoot",
+          "start_ms": 22000,
+          "end_ms": 22600,
+          "keyframes": [
+            {
+              "time_ms": 0,
+              "value": 1,
+              "interpolation": "step"
+            },
+            {
+              "time_ms": 600,
+              "value": 1,
+              "interpolation": "step"
+            }
+          ]
+        },
+        {
+          "id": "clip_gate_07_shoot",
+          "start_ms": 25000,
+          "end_ms": 25600,
+          "keyframes": [
+            {
+              "time_ms": 0,
+              "value": 1,
+              "interpolation": "step"
+            },
+            {
+              "time_ms": 600,
+              "value": 1,
+              "interpolation": "step"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "trk_action",
+      "device": "YDL-0",
+      "oaction": "",
+      "output_type": "oaxis",
+      "oaxis_channel": "OAxis_49",
+      "axis_name": "",
+      "label": "\u52A8\u4F5C",
+      "color": "#A3E635",
+      "value_type": "bool",
+      "neutral_value": 0,
+      "muted": false,
+      "enabled": true,
+      "locked": false,
+      "group": "\u6E38\u620F\u52A8\u4F5C",
+      "role": "action",
+      "show_in_curve": true,
+      "clips": [
+        {
+          "id": "clip_gate_02_action",
+          "start_ms": 6000,
+          "end_ms": 9000,
+          "keyframes": [
+            {
+              "time_ms": 0,
+              "value": 1,
+              "interpolation": "step"
+            },
+            {
+              "time_ms": 3000,
+              "value": 1,
+              "interpolation": "step"
+            }
+          ]
+        },
+        {
+          "id": "clip_gate_12_action",
+          "start_ms": 44000,
+          "end_ms": 48000,
+          "keyframes": [
+            {
+              "time_ms": 0,
+              "value": 1,
+              "interpolation": "step"
+            },
+            {
+              "time_ms": 4000,
+              "value": 1,
+              "interpolation": "step"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "action_instances": [
+    {
+      "id": "act_01_ydl_boot",
+      "definition_id": "ydl_boot",
+      "definition_revision": 1,
+      "name": "\u5F00\u573A\u5347\u8D77",
+      "start_ms": 6000,
+      "duration_ms": 3000,
+      "intensity": 1,
+      "playback_rate": 1,
+      "loop_count": 1,
+      "enabled": true,
+      "role_track_ids": {
+        "heave": "trk_heave"
+      }
+    },
+    {
+      "id": "act_02_ydl_chase",
+      "definition_id": "ydl_chase",
+      "definition_revision": 1,
+      "name": "\u8FFD\u51FB\u8D77\u4F0F",
+      "start_ms": 16000,
+      "duration_ms": 8000,
+      "intensity": 0.9,
+      "playback_rate": 1,
+      "loop_count": 1,
+      "enabled": true,
+      "role_track_ids": {
+        "heave": "trk_heave"
+      }
+    },
+    {
+      "id": "act_03_ydl_hit",
+      "definition_id": "ydl_hit",
+      "definition_revision": 1,
+      "name": "\u53D7\u51FB\u4E0B\u5760",
+      "start_ms": 30000,
+      "duration_ms": 2000,
+      "intensity": 1,
+      "playback_rate": 1,
+      "loop_count": 1,
+      "enabled": true,
+      "role_track_ids": {
+        "heave": "trk_heave"
+      }
+    },
+    {
+      "id": "act_04_ydl_chase",
+      "definition_id": "ydl_chase",
+      "definition_revision": 1,
+      "name": "\u8FFD\u51FB\u8D77\u4F0F",
+      "start_ms": 34000,
+      "duration_ms": 8000,
+      "intensity": 0.7,
+      "playback_rate": 1,
+      "loop_count": 1,
+      "enabled": true,
+      "role_track_ids": {
+        "heave": "trk_heave"
+      }
+    },
+    {
+      "id": "act_05_ydl_splash",
+      "definition_id": "ydl_splash",
+      "definition_revision": 1,
+      "name": "\u6C34\u5E55\u4F4E\u4F0F",
+      "start_ms": 42000,
+      "duration_ms": 6000,
+      "intensity": 0.9,
+      "playback_rate": 1,
+      "loop_count": 1,
+      "enabled": true,
+      "role_track_ids": {
+        "heave": "trk_heave"
+      }
+    },
+    {
+      "id": "act_06_ydl_boost",
+      "definition_id": "ydl_boost",
+      "definition_revision": 1,
+      "name": "\u51B2\u523A\u5F39\u5C04",
+      "start_ms": 54000,
+      "duration_ms": 5000,
+      "intensity": 1,
+      "playback_rate": 1,
+      "loop_count": 1,
+      "enabled": true,
+      "role_track_ids": {
+        "heave": "trk_heave"
+      }
+    },
+    {
+      "id": "act_07_ydl_settle",
+      "definition_id": "ydl_settle",
+      "definition_revision": 1,
+      "name": "\u7ED3\u7B97\u56DE\u843D",
+      "start_ms": 64000,
+      "duration_ms": 6000,
+      "intensity": 1,
+      "playback_rate": 1,
+      "loop_count": 1,
+      "enabled": true,
+      "role_track_ids": {
+        "heave": "trk_heave"
+      }
+    }
+  ],
+  "role_track_bindings": {
+    "heave": "trk_heave",
+    "water": "trk_water",
+    "wind": "trk_wind",
+    "hot": "trk_hot",
+    "vibrate": "trk_vibrate",
+    "scent": "trk_scent",
+    "shoot": "trk_shoot",
+    "action": "trk_action"
+  },
+  "embedded_presets": [
+    {
+      "id": "ydl_boot",
+      "revision": 1,
+      "name": "\u5F00\u573A\u5347\u8D77",
+      "category": "\u5F00\u573A",
+      "description": "\u7535\u7F38\u7531\u6700\u4F4E\u5347\u8D77\u5E76\u7A33\u5B9A\u5230\u4E2D\u4F4D, \u7528\u4E8E\u6E38\u620F\u5F00\u573A",
+      "duration_ms": 3000,
+      "default_intensity": 0.8,
+      "min_intensity": 0.2,
+      "max_intensity": 1.2,
+      "channels": [
+        {
+          "role": "heave",
+          "scale": 1,
+          "keyframes": [
+            {
+              "time_ms": 0,
+              "value": 0.02,
+              "interpolation": "ease_in_out"
+            },
+            {
+              "time_ms": 1200,
+              "value": 0.82,
+              "interpolation": "ease_in_out"
+            },
+            {
+              "time_ms": 2200,
+              "value": 0.55,
+              "interpolation": "ease_in_out"
+            },
+            {
+              "time_ms": 3000,
+              "value": 0.5,
+              "interpolation": "ease_in_out"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ydl_chase",
+      "revision": 1,
+      "name": "\u8FFD\u51FB\u8D77\u4F0F",
+      "category": "\u884C\u8FDB",
+      "description": "\u957F\u5468\u671F\u4F4E\u5E45\u8D77\u4F0F, \u6A21\u62DF\u8F7D\u5177\u884C\u8FDB",
+      "duration_ms": 8000,
+      "default_intensity": 0.8,
+      "min_intensity": 0.2,
+      "max_intensity": 1.2,
+      "channels": [
+        {
+          "role": "heave",
+          "scale": 1,
+          "keyframes": [
+            {
+              "time_ms": 0,
+              "value": 0.5,
+              "interpolation": "ease_in_out"
+            },
+            {
+              "time_ms": 1500,
+              "value": 0.68,
+              "interpolation": "ease_in_out"
+            },
+            {
+              "time_ms": 3000,
+              "value": 0.45,
+              "interpolation": "ease_in_out"
+            },
+            {
+              "time_ms": 4500,
+              "value": 0.62,
+              "interpolation": "ease_in_out"
+            },
+            {
+              "time_ms": 6000,
+              "value": 0.42,
+              "interpolation": "ease_in_out"
+            },
+            {
+              "time_ms": 8000,
+              "value": 0.5,
+              "interpolation": "ease_in_out"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ydl_hit",
+      "revision": 1,
+      "name": "\u53D7\u51FB\u4E0B\u5760",
+      "category": "\u53D7\u51FB",
+      "description": "\u7535\u7F38\u6025\u964D\u5230\u4F4E\u4F4D\u5E76\u56DE\u5F39, \u914D\u5408\u9707\u52A8/\u70ED\u98CE",
+      "duration_ms": 2000,
+      "default_intensity": 0.8,
+      "min_intensity": 0.2,
+      "max_intensity": 1.2,
+      "channels": [
+        {
+          "role": "heave",
+          "scale": 1,
+          "keyframes": [
+            {
+              "time_ms": 0,
+              "value": 0.5,
+              "interpolation": "ease_in_out"
+            },
+            {
+              "time_ms": 400,
+              "value": 0.05,
+              "interpolation": "ease_in_out"
+            },
+            {
+              "time_ms": 1100,
+              "value": 0.72,
+              "interpolation": "ease_in_out"
+            },
+            {
+              "time_ms": 2000,
+              "value": 0.3,
+              "interpolation": "ease_in_out"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ydl_splash",
+      "revision": 1,
+      "name": "\u6C34\u5E55\u4F4E\u4F0F",
+      "category": "\u7279\u6548",
+      "description": "\u4F4E\u4F4D\u7F13\u6C89, \u914D\u5408\u55B7\u6C34\u4E0E\u98CE\u6247",
+      "duration_ms": 6000,
+      "default_intensity": 0.8,
+      "min_intensity": 0.2,
+      "max_intensity": 1.2,
+      "channels": [
+        {
+          "role": "heave",
+          "scale": 1,
+          "keyframes": [
+            {
+              "time_ms": 0,
+              "value": 0.3,
+              "interpolation": "ease_in_out"
+            },
+            {
+              "time_ms": 1500,
+              "value": 0.12,
+              "interpolation": "ease_in_out"
+            },
+            {
+              "time_ms": 3500,
+              "value": 0.22,
+              "interpolation": "ease_in_out"
+            },
+            {
+              "time_ms": 6000,
+              "value": 0.18,
+              "interpolation": "ease_in_out"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ydl_boost",
+      "revision": 1,
+      "name": "\u51B2\u523A\u5F39\u5C04",
+      "category": "\u884C\u8FDB",
+      "description": "\u4E24\u6B21\u5927\u5E45\u4E0A\u9876, \u6A21\u62DF\u52A0\u901F\u51B2\u523A",
+      "duration_ms": 5000,
+      "default_intensity": 0.8,
+      "min_intensity": 0.2,
+      "max_intensity": 1.2,
+      "channels": [
+        {
+          "role": "heave",
+          "scale": 1,
+          "keyframes": [
+            {
+              "time_ms": 0,
+              "value": 0.2,
+              "interpolation": "ease_in_out"
+            },
+            {
+              "time_ms": 900,
+              "value": 0.95,
+              "interpolation": "ease_in_out"
+            },
+            {
+              "time_ms": 1900,
+              "value": 0.25,
+              "interpolation": "ease_in_out"
+            },
+            {
+              "time_ms": 2900,
+              "value": 0.9,
+              "interpolation": "ease_in_out"
+            },
+            {
+              "time_ms": 3900,
+              "value": 0.3,
+              "interpolation": "ease_in_out"
+            },
+            {
+              "time_ms": 5000,
+              "value": 0.4,
+              "interpolation": "ease_in_out"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ydl_settle",
+      "revision": 1,
+      "name": "\u7ED3\u7B97\u56DE\u843D",
+      "category": "\u7ED3\u7B97",
+      "description": "\u7F13\u6162\u56DE\u843D\u5230\u6700\u4F4E\u4F4D, \u51C6\u5907\u5173\u673A/\u6362\u4EBA",
+      "duration_ms": 6000,
+      "default_intensity": 0.8,
+      "min_intensity": 0.2,
+      "max_intensity": 1.2,
+      "channels": [
+        {
+          "role": "heave",
+          "scale": 1,
+          "keyframes": [
+            {
+              "time_ms": 0,
+              "value": 0.4,
+              "interpolation": "ease_in_out"
+            },
+            {
+              "time_ms": 2500,
+              "value": 0.15,
+              "interpolation": "ease_in_out"
+            },
+            {
+              "time_ms": 6000,
+              "value": 0.02,
+              "interpolation": "ease_in_out"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "groups": [
+    {
+      "name": "\u5E73\u53F0\u673A\u6784",
+      "color": "#64748B",
+      "collapsed": false
+    },
+    {
+      "name": "\u73AF\u5883\u7279\u6548",
+      "color": "#F97316",
+      "collapsed": false
+    },
+    {
+      "name": "\u6E38\u620F\u52A8\u4F5C",
+      "color": "#22C55E",
+      "collapsed": false
+    }
+  ],
+  "events": [
+    {
+      "time_ms": 0,
+      "event_name": "scene.chapter",
+      "event_data": "{\u0022chapter\u0022:\u0022\\u5F85\\u673A\\u5F85\\u547D\u0022}",
+      "color": "#38BDF8",
+      "data_type": "json",
+      "lane": "scene"
+    },
+    {
+      "time_ms": 6000,
+      "event_name": "scene.chapter",
+      "event_data": "{\u0022chapter\u0022:\u0022\\u5F00\\u573A\\u5347\\u8D77\u0022}",
+      "color": "#38BDF8",
+      "data_type": "json",
+      "lane": "scene"
+    },
+    {
+      "time_ms": 16000,
+      "event_name": "scene.chapter",
+      "event_data": "{\u0022chapter\u0022:\u0022\\u8FFD\\u51FB\\u884C\\u8FDB\u0022}",
+      "color": "#38BDF8",
+      "data_type": "json",
+      "lane": "scene"
+    },
+    {
+      "time_ms": 30000,
+      "event_name": "scene.chapter",
+      "event_data": "{\u0022chapter\u0022:\u0022\\u53D7\\u51FB\u0022}",
+      "color": "#38BDF8",
+      "data_type": "json",
+      "lane": "scene"
+    },
+    {
+      "time_ms": 42000,
+      "event_name": "scene.chapter",
+      "event_data": "{\u0022chapter\u0022:\u0022\\u6C34\\u5E55\u0022}",
+      "color": "#38BDF8",
+      "data_type": "json",
+      "lane": "scene"
+    },
+    {
+      "time_ms": 54000,
+      "event_name": "scene.chapter",
+      "event_data": "{\u0022chapter\u0022:\u0022\\u51B2\\u523A\u0022}",
+      "color": "#38BDF8",
+      "data_type": "json",
+      "lane": "scene"
+    },
+    {
+      "time_ms": 64000,
+      "event_name": "scene.chapter",
+      "event_data": "{\u0022chapter\u0022:\u0022\\u7ED3\\u7B97\\u56DE\\u843D\u0022}",
+      "color": "#38BDF8",
+      "data_type": "json",
+      "lane": "scene"
+    },
+    {
+      "time_ms": 6000,
+      "event_name": "fx.ydl_boot",
+      "event_data": "{\u0022intensity\u0022:1}",
+      "color": "#FB7185",
+      "data_type": "json",
+      "lane": "effects"
+    },
+    {
+      "time_ms": 16000,
+      "event_name": "fx.ydl_chase",
+      "event_data": "{\u0022intensity\u0022:0.9}",
+      "color": "#FB7185",
+      "data_type": "json",
+      "lane": "effects"
+    },
+    {
+      "time_ms": 30000,
+      "event_name": "fx.ydl_hit",
+      "event_data": "{\u0022intensity\u0022:1}",
+      "color": "#FB7185",
+      "data_type": "json",
+      "lane": "effects"
+    },
+    {
+      "time_ms": 34000,
+      "event_name": "fx.ydl_chase",
+      "event_data": "{\u0022intensity\u0022:0.7}",
+      "color": "#FB7185",
+      "data_type": "json",
+      "lane": "effects"
+    },
+    {
+      "time_ms": 42000,
+      "event_name": "fx.ydl_splash",
+      "event_data": "{\u0022intensity\u0022:0.9}",
+      "color": "#FB7185",
+      "data_type": "json",
+      "lane": "effects"
+    },
+    {
+      "time_ms": 54000,
+      "event_name": "fx.ydl_boost",
+      "event_data": "{\u0022intensity\u0022:1}",
+      "color": "#FB7185",
+      "data_type": "json",
+      "lane": "effects"
+    },
+    {
+      "time_ms": 64000,
+      "event_name": "fx.ydl_settle",
+      "event_data": "{\u0022intensity\u0022:1}",
+      "color": "#FB7185",
+      "data_type": "json",
+      "lane": "effects"
+    },
+    {
+      "time_ms": 6000,
+      "event_name": "env.vibrate.on",
+      "event_data": "{\u0022until_ms\u0022:9000}",
+      "color": "#38BDF8",
+      "data_type": "json",
+      "lane": "effects"
+    },
+    {
+      "time_ms": 6000,
+      "event_name": "env.action.on",
+      "event_data": "{\u0022until_ms\u0022:9000}",
+      "color": "#38BDF8",
+      "data_type": "json",
+      "lane": "effects"
+    },
+    {
+      "time_ms": 16000,
+      "event_name": "env.wind.on",
+      "event_data": "{\u0022until_ms\u0022:30000}",
+      "color": "#38BDF8",
+      "data_type": "json",
+      "lane": "effects"
+    },
+    {
+      "time_ms": 17000,
+      "event_name": "env.shoot.on",
+      "event_data": "{\u0022until_ms\u0022:17600}",
+      "color": "#38BDF8",
+      "data_type": "json",
+      "lane": "effects"
+    },
+    {
+      "time_ms": 19500,
+      "event_name": "env.shoot.on",
+      "event_data": "{\u0022until_ms\u0022:20100}",
+      "color": "#38BDF8",
+      "data_type": "json",
+      "lane": "effects"
+    },
+    {
+      "time_ms": 22000,
+      "event_name": "env.shoot.on",
+      "event_data": "{\u0022until_ms\u0022:22600}",
+      "color": "#38BDF8",
+      "data_type": "json",
+      "lane": "effects"
+    },
+    {
+      "time_ms": 25000,
+      "event_name": "env.shoot.on",
+      "event_data": "{\u0022until_ms\u0022:25600}",
+      "color": "#38BDF8",
+      "data_type": "json",
+      "lane": "effects"
+    },
+    {
+      "time_ms": 30000,
+      "event_name": "env.vibrate.on",
+      "event_data": "{\u0022until_ms\u0022:34000}",
+      "color": "#38BDF8",
+      "data_type": "json",
+      "lane": "effects"
+    },
+    {
+      "time_ms": 30000,
+      "event_name": "env.hot.on",
+      "event_data": "{\u0022until_ms\u0022:40000}",
+      "color": "#38BDF8",
+      "data_type": "json",
+      "lane": "effects"
+    },
+    {
+      "time_ms": 42000,
+      "event_name": "env.water.on",
+      "event_data": "{\u0022until_ms\u0022:50000}",
+      "color": "#38BDF8",
+      "data_type": "json",
+      "lane": "effects"
+    },
+    {
+      "time_ms": 42000,
+      "event_name": "env.wind.on",
+      "event_data": "{\u0022until_ms\u0022:50000}",
+      "color": "#38BDF8",
+      "data_type": "json",
+      "lane": "effects"
+    },
+    {
+      "time_ms": 44000,
+      "event_name": "env.action.on",
+      "event_data": "{\u0022until_ms\u0022:48000}",
+      "color": "#38BDF8",
+      "data_type": "json",
+      "lane": "effects"
+    },
+    {
+      "time_ms": 54000,
+      "event_name": "env.wind.on",
+      "event_data": "{\u0022until_ms\u0022:64000}",
+      "color": "#38BDF8",
+      "data_type": "json",
+      "lane": "effects"
+    },
+    {
+      "time_ms": 54000,
+      "event_name": "env.vibrate.on",
+      "event_data": "{\u0022until_ms\u0022:64000}",
+      "color": "#38BDF8",
+      "data_type": "json",
+      "lane": "effects"
+    },
+    {
+      "time_ms": 64000,
+      "event_name": "env.scent.on",
+      "event_data": "{\u0022until_ms\u0022:72000}",
+      "color": "#38BDF8",
+      "data_type": "json",
+      "lane": "effects"
+    },
+    {
+      "time_ms": 6000,
+      "event_name": "ydl.gameState",
+      "event_data": "{\u0022GameState\u0022:\u0022Playing\u0022}",
+      "color": "#22c55e",
+      "data_type": "json",
+      "lane": "\u6E38\u620F\u72B6\u6001"
+    },
+    {
+      "time_ms": 30000,
+      "event_name": "ydl.gameState",
+      "event_data": "{\u0022GameState\u0022:\u0022Pause\u0022}",
+      "color": "#f59e0b",
+      "data_type": "json",
+      "lane": "\u6E38\u620F\u72B6\u6001"
+    },
+    {
+      "time_ms": 34000,
+      "event_name": "ydl.gameState",
+      "event_data": "{\u0022GameState\u0022:\u0022Playing\u0022}",
+      "color": "#22c55e",
+      "data_type": "json",
+      "lane": "\u6E38\u620F\u72B6\u6001"
+    },
+    {
+      "time_ms": 64000,
+      "event_name": "ydl.gameState",
+      "event_data": "{\u0022GameState\u0022:\u0022GameOver\u0022}",
+      "color": "#ef4444",
+      "data_type": "json",
+      "lane": "\u6E38\u620F\u72B6\u6001"
+    }
+  ],
+  "markers": [
+    {
+      "time_ms": 0,
+      "name": "\u5F85\u673A\u5F85\u547D",
+      "color": "#94A3B8",
+      "note": "\u7535\u7F38\u5FAE\u5E45\u547C\u5438, \u7B49\u5F85\u6E38\u620F\u7AEF Ready",
+      "lane": "chapters"
+    },
+    {
+      "time_ms": 6000,
+      "name": "\u5F00\u573A\u5347\u8D77",
+      "color": "#94A3B8",
+      "note": "\u7535\u7F38\u5347\u8D77 \u002B \u9707\u52A8/\u52A8\u4F5C, \u6E38\u620F\u8FDB\u5165 Playing",
+      "lane": "chapters"
+    },
+    {
+      "time_ms": 16000,
+      "name": "\u8FFD\u51FB\u884C\u8FDB",
+      "color": "#94A3B8",
+      "note": "\u98CE\u6247\u5E38\u5F00 \u002B \u5C04\u51FB\u8109\u51B2",
+      "lane": "chapters"
+    },
+    {
+      "time_ms": 30000,
+      "name": "\u53D7\u51FB",
+      "color": "#94A3B8",
+      "note": "\u7535\u7F38\u6025\u964D\u56DE\u5F39 \u002B \u9707\u52A8 \u002B \u70ED\u98CE",
+      "lane": "chapters"
+    },
+    {
+      "time_ms": 42000,
+      "name": "\u6C34\u5E55",
+      "color": "#94A3B8",
+      "note": "\u55B7\u6C34 \u002B \u98CE\u6247 \u002B \u52A8\u4F5C",
+      "lane": "chapters"
+    },
+    {
+      "time_ms": 54000,
+      "name": "\u51B2\u523A",
+      "color": "#94A3B8",
+      "note": "\u7535\u7F38\u4E24\u6B21\u4E0A\u9876 \u002B \u98CE\u6247 \u002B \u9707\u52A8",
+      "lane": "chapters"
+    },
+    {
+      "time_ms": 64000,
+      "name": "\u7ED3\u7B97\u56DE\u843D",
+      "color": "#94A3B8",
+      "note": "\u7535\u7F38\u56DE\u843D \u002B \u9999\u5473, \u6E38\u620F\u8FDB\u5165 GameOver",
+      "lane": "chapters"
+    },
+    {
+      "time_ms": 6000,
+      "name": "\u5F00\u573A\u5347\u8D77",
+      "color": "#C084FC",
+      "note": "\u9884\u8BBE \u00B7 \u5F3A\u5EA6 1.00",
+      "lane": "cues"
+    },
+    {
+      "time_ms": 16000,
+      "name": "\u8FFD\u51FB\u8D77\u4F0F",
+      "color": "#C084FC",
+      "note": "\u9884\u8BBE \u00B7 \u5F3A\u5EA6 0.90",
+      "lane": "cues"
+    },
+    {
+      "time_ms": 30000,
+      "name": "\u53D7\u51FB\u4E0B\u5760",
+      "color": "#C084FC",
+      "note": "\u9884\u8BBE \u00B7 \u5F3A\u5EA6 1.00",
+      "lane": "cues"
+    },
+    {
+      "time_ms": 34000,
+      "name": "\u8FFD\u51FB\u8D77\u4F0F",
+      "color": "#C084FC",
+      "note": "\u9884\u8BBE \u00B7 \u5F3A\u5EA6 0.70",
+      "lane": "cues"
+    },
+    {
+      "time_ms": 42000,
+      "name": "\u6C34\u5E55\u4F4E\u4F0F",
+      "color": "#C084FC",
+      "note": "\u9884\u8BBE \u00B7 \u5F3A\u5EA6 0.90",
+      "lane": "cues"
+    },
+    {
+      "time_ms": 54000,
+      "name": "\u51B2\u523A\u5F39\u5C04",
+      "color": "#C084FC",
+      "note": "\u9884\u8BBE \u00B7 \u5F3A\u5EA6 1.00",
+      "lane": "cues"
+    },
+    {
+      "time_ms": 64000,
+      "name": "\u7ED3\u7B97\u56DE\u843D",
+      "color": "#C084FC",
+      "note": "\u9884\u8BBE \u00B7 \u5F3A\u5EA6 1.00",
+      "lane": "cues"
+    },
+    {
+      "time_ms": 6000,
+      "name": "\u73AF\u5883 \u00B7 vibrate",
+      "color": "#7DD3FC",
+      "note": "\u95E8\u63A7\u5F00\u542F",
+      "lane": "cues"
+    },
+    {
+      "time_ms": 6000,
+      "name": "\u73AF\u5883 \u00B7 action",
+      "color": "#7DD3FC",
+      "note": "\u95E8\u63A7\u5F00\u542F",
+      "lane": "cues"
+    },
+    {
+      "time_ms": 16000,
+      "name": "\u73AF\u5883 \u00B7 wind",
+      "color": "#7DD3FC",
+      "note": "\u95E8\u63A7\u5F00\u542F",
+      "lane": "cues"
+    },
+    {
+      "time_ms": 17000,
+      "name": "\u73AF\u5883 \u00B7 shoot",
+      "color": "#7DD3FC",
+      "note": "\u95E8\u63A7\u5F00\u542F",
+      "lane": "cues"
+    },
+    {
+      "time_ms": 19500,
+      "name": "\u73AF\u5883 \u00B7 shoot",
+      "color": "#7DD3FC",
+      "note": "\u95E8\u63A7\u5F00\u542F",
+      "lane": "cues"
+    },
+    {
+      "time_ms": 22000,
+      "name": "\u73AF\u5883 \u00B7 shoot",
+      "color": "#7DD3FC",
+      "note": "\u95E8\u63A7\u5F00\u542F",
+      "lane": "cues"
+    },
+    {
+      "time_ms": 25000,
+      "name": "\u73AF\u5883 \u00B7 shoot",
+      "color": "#7DD3FC",
+      "note": "\u95E8\u63A7\u5F00\u542F",
+      "lane": "cues"
+    },
+    {
+      "time_ms": 30000,
+      "name": "\u73AF\u5883 \u00B7 vibrate",
+      "color": "#7DD3FC",
+      "note": "\u95E8\u63A7\u5F00\u542F",
+      "lane": "cues"
+    },
+    {
+      "time_ms": 30000,
+      "name": "\u73AF\u5883 \u00B7 hot",
+      "color": "#7DD3FC",
+      "note": "\u95E8\u63A7\u5F00\u542F",
+      "lane": "cues"
+    },
+    {
+      "time_ms": 42000,
+      "name": "\u73AF\u5883 \u00B7 water",
+      "color": "#7DD3FC",
+      "note": "\u95E8\u63A7\u5F00\u542F",
+      "lane": "cues"
+    },
+    {
+      "time_ms": 42000,
+      "name": "\u73AF\u5883 \u00B7 wind",
+      "color": "#7DD3FC",
+      "note": "\u95E8\u63A7\u5F00\u542F",
+      "lane": "cues"
+    },
+    {
+      "time_ms": 44000,
+      "name": "\u73AF\u5883 \u00B7 action",
+      "color": "#7DD3FC",
+      "note": "\u95E8\u63A7\u5F00\u542F",
+      "lane": "cues"
+    },
+    {
+      "time_ms": 54000,
+      "name": "\u73AF\u5883 \u00B7 wind",
+      "color": "#7DD3FC",
+      "note": "\u95E8\u63A7\u5F00\u542F",
+      "lane": "cues"
+    },
+    {
+      "time_ms": 54000,
+      "name": "\u73AF\u5883 \u00B7 vibrate",
+      "color": "#7DD3FC",
+      "note": "\u95E8\u63A7\u5F00\u542F",
+      "lane": "cues"
+    },
+    {
+      "time_ms": 64000,
+      "name": "\u73AF\u5883 \u00B7 scent",
+      "color": "#7DD3FC",
+      "note": "\u95E8\u63A7\u5F00\u542F",
+      "lane": "cues"
+    }
+  ],
+  "event_lanes": [
+    {
+      "id": "scene",
+      "name": "scene",
+      "color": "#38BDF8"
+    },
+    {
+      "id": "effects",
+      "name": "effects",
+      "color": "#38BDF8"
+    },
+    {
+      "id": "\u6E38\u620F\u72B6\u6001",
+      "name": "\u6E38\u620F\u72B6\u6001",
+      "color": "#38BDF8"
+    }
+  ],
+  "marker_lanes": [
+    {
+      "id": "chapters",
+      "name": "\u7AE0\u8282",
+      "color": "#94A3B8"
+    },
+    {
+      "id": "cues",
+      "name": "\u9884\u8BBE\u70B9",
+      "color": "#94A3B8"
+    }
+  ]
+}

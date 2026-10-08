@@ -99,23 +99,6 @@ namespace IOStudio.ViewModels
             };
         }
 
-        private static string SafeText(byte[] data)
-        {
-            // 二进制内容按 UTF-8 解出来会是乱码; 只在"看起来是文本"时给文本, 否则留空让 Hex 说话
-            try
-            {
-                var s = Encoding.UTF8.GetString(data);
-                foreach (var ch in s)
-                {
-                    if (ch == '\uFFFD' || (char.IsControl(ch) && ch != '\r' && ch != '\n' && ch != '\t'))
-                        return "";
-                }
-                return s;
-            }
-            catch
-            {
-                return "";
-            }
-        }
+        private static string SafeText(byte[] data) => ProtocolEncoding.DecodeForDisplay(data);
     }
 }

@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using IOStudio.Services.ProtocolTest;
 
 namespace IOStudio.ViewModels
 {
@@ -37,7 +38,19 @@ namespace IOStudio.ViewModels
                 new ProtocolFrameOption("定长", "fixed"),
             };
 
-        public static IReadOnlyList<string> SendEncodings { get; } = new[] { "UTF-8", "HEX" };
+        public static IReadOnlyList<string> SendEncodings { get; } = ProtocolEncoding.Names;
+
+        /// <summary>发送新行选项 (主流工具都有; 很多设备协议以 \r\n 结尾)。</summary>
+        public static IReadOnlyList<string> NewLineOptions { get; } = new[] { "无", "\\r\\n", "\\n" };
+
+        /// <summary>把"新行"选项转成实际后缀。</summary>
+        public static string NewLineToText(string option) =>
+            option switch
+            {
+                "\\r\\n" => "\r\n",
+                "\\n" => "\n",
+                _ => "",
+            };
 
         /// <summary>匹配方式 (自动应答规则用)。</summary>
         public static IReadOnlyList<string> MatchTypes { get; } =

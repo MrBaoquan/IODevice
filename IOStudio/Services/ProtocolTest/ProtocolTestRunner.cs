@@ -24,7 +24,11 @@ namespace IOStudio.Services.ProtocolTest
             RegexOptions.Compiled
         );
 
-        public static async Task<ProtocolTestReport> RunFileAsync(string scenarioPath, CancellationToken ct = default)
+        public static async Task<ProtocolTestReport> RunFileAsync(
+            string scenarioPath,
+            IProtocolTestObserver? observer = null,
+            CancellationToken ct = default
+        )
         {
             var json = await File.ReadAllTextAsync(scenarioPath, ct).ConfigureAwait(false);
             // 环境变量替换: 让同一份场景可直接指向不同对端 (现场联调不必改 JSON)。
@@ -39,11 +43,12 @@ namespace IOStudio.Services.ProtocolTest
             );
             if (scenario is null)
                 throw new InvalidOperationException($"场景解析失败: {scenarioPath}");
-            return await RunAsync(scenario, ct).ConfigureAwait(false);
+            return await RunAsync(scenario, observer, ct).ConfigureAwait(false);
         }
 
         public static async Task<ProtocolTestReport> RunAsync(
             ProtocolTestScenario scenario,
+            IProtocolTestObserver? observer = null,
             CancellationToken ct = default
         )
         {
@@ -65,7 +70,8 @@ namespace IOStudio.Services.ProtocolTest
                     var sw = Stopwatch.StartNew();
                     try
                     {
-                        var transfer = await ExecuteAsync(step, endpoints, scenario, ct).ConfigureAwait(false);
+                        var transfer = await ExecuteAsync(step, endpoints, scenario, observer, ct)
+                            .ConfigureAwait(false);
                         result.Ok = true;
                         result.SentBytes = transfer.SentBytes;
                         result.SentHex = transfer.SentHex;
@@ -82,6 +88,7 @@ namespace IOStudio.Services.ProtocolTest
                     }
                     result.ElapsedMs = sw.ElapsedMilliseconds;
                     report.Steps.Add(result);
+                    observer?.OnStepResult(result);
                 }
             }
             finally
@@ -105,6 +112,7 @@ namespace IOStudio.Services.ProtocolTest
             ProtocolTestStep step,
             Dictionary<string, IProtocolEndpoint> endpoints,
             ProtocolTestScenario scenario,
+            IProtocolTestObserver? observer,
             CancellationToken ct
         )
         {
@@ -119,7 +127,14 @@ namespace IOStudio.Services.ProtocolTest
                     if (endpoints.ContainsKey(step.Alias))
                         throw new InvalidOperationException($"别名 '{step.Alias}' 重复");
 
-                    var endpoint = CreateEndpoint(step, op == "listen");
+                    var endpoint = ProtocolEndpointFactory.Create(
+                        step.Transport,
+                        op == "listen",
+                        ProtocolEndpointFactory.BuildCodec(step.Frame),
+                        step.Device,
+                        step.Baud,
+                        step.Path
+                    );
                     int port = ResolvePort(step, endpoints);
                     await endpoint.OpenAsync(step.Host, port, ct).ConfigureAwait(false);
                     endpoints[step.Alias] = endpoint;
@@ -130,11 +145,13 @@ namespace IOStudio.Services.ProtocolTest
                     var endpoint = Resolve(step, endpoints);
                     var bytes = Encode(step);
                     await endpoint.SendAsync(bytes, ct).ConfigureAwait(false);
+                    observer?.OnSent(ChannelKey(step), bytes);
                     return new Transfer(bytes.Length, Convert.ToHexString(bytes), null);
                 }
                 case "expect":
                 {
                     var endpoint = Resolve(step, endpoints);
+                    var via = ChannelKey(step);
                     var timeout = TimeSpan.FromMilliseconds(
                         step.TimeoutMs > 0 ? step.TimeoutMs : scenario.TimeoutMs
                     );
@@ -159,6 +176,8 @@ namespace IOStudio.Services.ProtocolTest
                         scanned++;
                         var text = Encoding.UTF8.GetString(data);
                         var (ok, why) = Match(data, text, step.Match);
+                        // 不匹配的帧也要抛给观察者 —— 人排查时正是靠看它们定位问题
+                        observer?.OnReceived(via, data, ok);
                         if (ok)
                         {
                             matched = data;
@@ -194,52 +213,8 @@ namespace IOStudio.Services.ProtocolTest
             }
         }
 
-        private static IProtocolEndpoint CreateEndpoint(ProtocolTestStep step, bool isListener)
-        {
-            var t = (step.Transport ?? "").Trim().ToLowerInvariant();
-            var codec = BuildCodec(step.Frame);
-            return t switch
-            {
-                "udp" => new UdpEndpoint(isListener, codec),
-                "tcp-client" => new TcpClientEndpoint(codec),
-                "tcp-server" => new TcpServerEndpoint(codec),
-                "websocket-client" => new WebSocketClientEndpoint(step.Path),
-                "websocket-server" => new WebSocketServerEndpoint(),
-                "serial" => new SerialEndpoint(codec, step.Device, step.Baud),
-                _ => throw new InvalidOperationException($"未知 transport: {step.Transport}"),
-            };
-        }
-
-        private static FrameCodec BuildCodec(FrameSpec? spec)
-        {
-            if (spec is null)
-                return FrameCodec.None;
-
-            var mode = (spec.Mode ?? "none").Trim().ToLowerInvariant();
-            return mode switch
-            {
-                "" or "none" => FrameCodec.None,
-                "delimiter" => new FrameCodec
-                {
-                    Mode = FrameMode.Delimiter,
-                    Delimiter = (spec.DelimiterEncoding ?? "utf8").Trim().ToLowerInvariant() == "hex"
-                        ? Convert.FromHexString(spec.Delimiter.Replace(" ", ""))
-                        : Encoding.UTF8.GetBytes(spec.Delimiter),
-                },
-                "length-prefix" => new FrameCodec
-                {
-                    Mode = FrameMode.LengthPrefix,
-                    PrefixBytes = spec.PrefixBytes,
-                    LittleEndian = (spec.Endian ?? "big").Trim().ToLowerInvariant() == "little",
-                },
-                "fixed" => new FrameCodec
-                {
-                    Mode = FrameMode.Fixed,
-                    FixedSize = spec.Size,
-                },
-                _ => throw new InvalidOperationException($"未知 frame.mode: {spec.Mode}"),
-            };
-        }
+        private static string ChannelKey(ProtocolTestStep step) =>
+            string.IsNullOrEmpty(step.Via) ? step.Alias : step.Via;
 
         private static int ResolvePort(
             ProtocolTestStep step,
@@ -260,22 +235,14 @@ namespace IOStudio.Services.ProtocolTest
             Dictionary<string, IProtocolEndpoint> endpoints
         )
         {
-            var key = string.IsNullOrEmpty(step.Via) ? step.Alias : step.Via;
+            var key = ChannelKey(step);
             if (!endpoints.TryGetValue(key, out var e))
                 throw new InvalidOperationException($"通道 '{key}' 不存在 (先 listen/connect)");
             return e;
         }
 
-        private static byte[] Encode(ProtocolTestStep step)
-        {
-            var enc = (step.Encoding ?? "utf8").Trim().ToLowerInvariant();
-            return enc switch
-            {
-                "hex" => Convert.FromHexString(step.Data.Replace(" ", "")),
-                "gbk" => Encoding.GetEncoding("GBK").GetBytes(step.Data),
-                _ => Encoding.UTF8.GetBytes(step.Data),
-            };
-        }
+        private static byte[] Encode(ProtocolTestStep step) =>
+            ProtocolEncoding.Encode(step.Data, step.Encoding);
 
         /// <summary>断言收到的数据。match.type 见设计文档。</summary>
         private static (bool Ok, string Why) Match(byte[] data, string text, ProtocolTestMatch m)

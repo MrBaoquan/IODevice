@@ -49,10 +49,40 @@ namespace IOStudio.ViewModels
                 RunScenarioAsync,
                 this.WhenAnyValue(x => x.SelectedScenario, (string? s) => !string.IsNullOrWhiteSpace(s))
             );
+            SaveWorkspaceCommand = ReactiveCommand.Create(() =>
+            {
+                SaveWorkspace();
+                StatusText = "配置已保存";
+            });
 
-            // 开箱即用: 默认给一路 UDP 监听, 打开窗口就能收
-            var first = CreateSession(Transports[0]);
-            SelectedSession = first;
+            // 恢复上次的工作区; 没有配置就开一路 UDP 监听 (开箱即用)
+            RestoreWorkspace();
+            if (Sessions.Count == 0)
+                CreateSession(Transports[0]);
+            SelectedSession = Sessions.FirstOrDefault();
+        }
+
+        private void RestoreWorkspace()
+        {
+            var ws = ProtocolWorkspace.Load();
+            foreach (var st in ws.Sessions)
+            {
+                var t = Transports.FirstOrDefault(x =>
+                    x.Transport == st.Transport && x.IsListener == st.IsListener) ?? Transports[0];
+                _sessionCounter++;
+                var s = new ProtocolSessionViewModel($"s{_sessionCounter}", t);
+                s.Restore(st);
+                Sessions.Add(s);
+            }
+        }
+
+        /// <summary>把当前会话配置落盘 (不含日志/统计)。</summary>
+        public void SaveWorkspace()
+        {
+            var ws = new ProtocolWorkspace();
+            foreach (var s in Sessions.Where(x => !x.IsVirtual))
+                ws.Sessions.Add(s.Snapshot());
+            ws.Save();
         }
 
         private ProtocolTransportOption _newTransport;
@@ -93,6 +123,7 @@ namespace IOStudio.ViewModels
         public ReactiveCommand<Unit, Unit> RemoveSessionCommand { get; }
         public ReactiveCommand<Unit, Unit> ExportCommand { get; }
         public ReactiveCommand<Unit, Unit> RunScenarioCommand { get; }
+        public ReactiveCommand<Unit, Unit> SaveWorkspaceCommand { get; }
 
         private int _sessionCounter;
 
@@ -123,6 +154,7 @@ namespace IOStudio.ViewModels
             SelectedSession = session;
             // 直接启动: 调试台的高频用法就是"开一路马上开始看"
             session.StartCommand.Execute().Subscribe();
+            SaveWorkspace();
             await Task.CompletedTask;
         }
 
@@ -141,6 +173,7 @@ namespace IOStudio.ViewModels
             }
             Sessions.Remove(s);
             SelectedSession = Sessions.FirstOrDefault();
+            SaveWorkspace();
         }
 
         /// <summary>
@@ -255,6 +288,7 @@ namespace IOStudio.ViewModels
 
         public void Dispose()
         {
+            SaveWorkspace();
             foreach (var s in Sessions)
             {
                 try

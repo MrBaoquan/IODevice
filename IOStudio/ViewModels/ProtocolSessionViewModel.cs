@@ -15,12 +15,18 @@ using ReactiveUI;
 namespace IOStudio.ViewModels
 {
     /// <summary>
-    /// 一个独立的协议会话 (一路连接)。
+    /// 一个独立的协议会话 (一路连接) —— 通用调试台的基本单位。
     ///
-    /// <para>通用调试台的基本单位: 多路会话并行, 每路独立配置/收发/统计/规则。
-    /// 对标 SSCOM / Hercules 这类工具, 但支持 TCP/UDP/WebSocket/串口 且可脚本化。</para>
+    /// <para>对标主流同类工具 (NetAssist / SSCOM / Hercules) 的核心工作面:</para>
+    /// <list type="bullet">
+    /// <item>多客户端服务端的**对端列表** + 定向/广播发送;</item>
+    /// <item>**快捷指令列表** (多条预设, 点即发), 每条可**独立定时循环**;</item>
+    /// <item>编码 UTF-8/GBK/ASCII/HEX + **发送新行** (\r\n / \n / 无);</item>
+    /// <item>自动应答 (模拟对端) / 循环发送 / 日志过滤与导出 / 收发统计;</item>
+    /// <item>配置可持久化 (见 <see cref="ProtocolWorkspace"/>)。</item>
+    /// </list>
     ///
-    /// <para>线程模型: 收帧在线程池上跑, 每条日志与统计都 Post 回 UI 线程再改集合 ——
+    /// <para>线程模型: 收帧与调度在线程池上跑, 每条日志与统计都 Post 回 UI 线程再改集合 ——
     /// 后台线程直接改 ObservableCollection 会崩。</para>
     /// </summary>
     public sealed class ProtocolSessionViewModel : ViewModelBase, IDisposable
@@ -31,25 +37,10 @@ namespace IOStudio.ViewModels
         /// <summary>自动应答限速: 防止两端互相应答形成无限回声。</summary>
         private const int MaxAutoRepliesPerSecond = 20;
 
+        /// <summary>调度 tick: 定时发送与对端刷新的粒度。</summary>
+        private const int TickMs = 100;
+
         public string Id { get; }
-
-        /// <summary>虚拟会话 (如"场景运行"): 没有真实端点, 只承载日志, 不显示启停/发送控件。</summary>
-        private bool _isVirtual;
-        public bool IsVirtual
-        {
-            get => _isVirtual;
-            set
-            {
-                this.RaiseAndSetIfChanged(ref _isVirtual, value);
-                this.RaisePropertyChanged(nameof(ShowControls));
-            }
-        }
-
-        public bool ShowControls => !IsVirtual;
-
-        /// <summary>从任意线程追加一条日志 (内部会切回 UI 线程)。</summary>
-        public void AppendEntry(ProtocolLogEntry entry) =>
-            Dispatcher.UIThread.Post(() => AddEntry(entry));
 
         public ProtocolSessionViewModel(string id, ProtocolTransportOption transport)
         {
@@ -71,8 +62,10 @@ namespace IOStudio.ViewModels
             );
             AddRuleCommand = ReactiveCommand.Create(() =>
                 Rules.Add(new AutoReplyRuleViewModel(r => Rules.Remove(r))));
-            RemoveRuleCommand = ReactiveCommand.Create<AutoReplyRuleViewModel>(r => Rules.Remove(r));
+            AddQuickCommandCommand = ReactiveCommand.Create(() =>
+                QuickCommands.Add(new QuickCommandViewModel(this, r => QuickCommands.Remove(r))));
             ClearLogCommand = ReactiveCommand.Create(ClearLog);
+            ResetStatsCommand = ReactiveCommand.Create(ResetStats);
         }
 
         // ───────────── 标识与配置 ─────────────
@@ -83,6 +76,24 @@ namespace IOStudio.ViewModels
             get => _label;
             set => this.RaiseAndSetIfChanged(ref _label, value);
         }
+
+        /// <summary>虚拟会话 (如"场景运行"): 没有真实端点, 只承载日志。</summary>
+        private bool _isVirtual;
+        public bool IsVirtual
+        {
+            get => _isVirtual;
+            set
+            {
+                this.RaiseAndSetIfChanged(ref _isVirtual, value);
+                this.RaisePropertyChanged(nameof(ShowControls));
+            }
+        }
+
+        public bool ShowControls => !IsVirtual;
+
+        /// <summary>从任意线程追加一条日志 (内部会切回 UI 线程)。</summary>
+        public void AppendEntry(ProtocolLogEntry entry) =>
+            Dispatcher.UIThread.Post(() => AddEntry(entry));
 
         private ProtocolTransportOption _transport;
         public ProtocolTransportOption Transport
@@ -162,6 +173,9 @@ namespace IOStudio.ViewModels
         public bool ShowPrefixBytes => FrameMode.Mode == "length-prefix";
         public bool ShowFixedSize => FrameMode.Mode == "fixed";
 
+        /// <summary>只有多客户端服务端才会出现对端列表。</summary>
+        public bool ShowPeers => Transport.Transport == "tcp-server";
+
         private void RaiseFieldVisibility()
         {
             this.RaisePropertyChanged(nameof(ShowHost));
@@ -170,6 +184,7 @@ namespace IOStudio.ViewModels
             this.RaisePropertyChanged(nameof(ShowDelimiter));
             this.RaisePropertyChanged(nameof(ShowPrefixBytes));
             this.RaisePropertyChanged(nameof(ShowFixedSize));
+            this.RaisePropertyChanged(nameof(ShowPeers));
         }
 
         // ───────────── 运行态与统计 ─────────────
@@ -200,6 +215,32 @@ namespace IOStudio.ViewModels
 
         private void RaiseStats() => this.RaisePropertyChanged(nameof(StatsText));
 
+        /// <summary>统计清零 (主流工具都有; 观察某一段流量时必用)。</summary>
+        public void ResetStats()
+        {
+            _rxCount = _txCount = _rxBytes = _txBytes = 0;
+            RaiseStats();
+        }
+
+        // ───────────── 对端 (多客户端服务端) ─────────────
+
+        public ObservableCollection<string> Peers { get; } = new();
+
+        private string? _selectedPeer;
+        public string? SelectedPeer
+        {
+            get => _selectedPeer;
+            set
+            {
+                this.RaiseAndSetIfChanged(ref _selectedPeer, value);
+                if (_endpoint is not null)
+                    _endpoint.SelectedPeer = value;
+            }
+        }
+
+        public string PeerSummary =>
+            Peers.Count == 0 ? "无对端" : $"对端 {Peers.Count}";
+
         // ───────────── 日志 (带过滤) ─────────────
 
         private readonly List<ProtocolLogEntry> _all = new();
@@ -218,11 +259,34 @@ namespace IOStudio.ViewModels
             }
         }
 
+        /// <summary>暂停显示: 仍在收/仍在记, 只是不往界面刷 (高速流下保住可读性)。</summary>
+        private bool _pauseDisplay;
+        public bool PauseDisplay
+        {
+            get => _pauseDisplay;
+            set => this.RaiseAndSetIfChanged(ref _pauseDisplay, value);
+        }
+
+        private bool _showTimestamp = true;
+        public bool ShowTimestamp
+        {
+            get => _showTimestamp;
+            set => this.RaiseAndSetIfChanged(ref _showTimestamp, value);
+        }
+
+        private bool _autoScroll = true;
+        public bool AutoScroll
+        {
+            get => _autoScroll;
+            set => this.RaiseAndSetIfChanged(ref _autoScroll, value);
+        }
+
         private bool MatchesFilter(ProtocolLogEntry e) =>
             string.IsNullOrWhiteSpace(_filterText)
             || (e.Text?.Contains(_filterText, StringComparison.OrdinalIgnoreCase) ?? false)
             || (e.Hex?.Contains(_filterText, StringComparison.OrdinalIgnoreCase) ?? false)
-            || (e.Direction?.Contains(_filterText, StringComparison.OrdinalIgnoreCase) ?? false);
+            || (e.Direction?.Contains(_filterText, StringComparison.OrdinalIgnoreCase) ?? false)
+            || (e.Channel?.Contains(_filterText, StringComparison.OrdinalIgnoreCase) ?? false);
 
         private void AddEntry(ProtocolLogEntry entry)
         {
@@ -230,13 +294,12 @@ namespace IOStudio.ViewModels
             if (_all.Count > MaxLogEntries)
                 _all.RemoveRange(0, _all.Count - MaxLogEntries);
 
-            if (MatchesFilter(entry))
-            {
-                Messages.Add(entry);
-                // 可见集合同样封顶 (过滤为空时两者等长)
-                if (Messages.Count > MaxLogEntries)
-                    Messages.RemoveAt(0);
-            }
+            if (PauseDisplay || !MatchesFilter(entry))
+                return;
+
+            Messages.Add(entry);
+            if (Messages.Count > MaxLogEntries)
+                Messages.RemoveAt(0);
         }
 
         private void RebuildVisible()
@@ -261,9 +324,9 @@ namespace IOStudio.ViewModels
             var sb = new StringBuilder();
             sb.AppendLine($"# 协议会话 {Label} ({Transport.Label})  导出 {DateTime.Now:yyyy-MM-dd HH:mm:ss}");
             sb.AppendLine($"# {StatsText}");
-            sb.AppendLine("# 时间\t方向\t字节\t内容\tHEX");
+            sb.AppendLine("# 时间\t方向\t对端\t字节\t内容\tHEX");
             foreach (var e in Messages)
-                sb.AppendLine($"{e.Time}\t{e.Direction}\t{e.Size}\t{e.Text}\t{e.Hex}");
+                sb.AppendLine($"{e.Time}\t{e.Direction}\t{e.Channel}\t{e.Size}\t{e.Text}\t{e.Hex}");
             return sb.ToString();
         }
 
@@ -283,28 +346,39 @@ namespace IOStudio.ViewModels
             set => this.RaiseAndSetIfChanged(ref _sendEncoding, value);
         }
 
-        // ───────────── 定时发送 ─────────────
-
-        private bool _periodicEnabled;
-        public bool PeriodicEnabled
+        private string _sendNewLine = "无";
+        public string SendNewLine
         {
-            get => _periodicEnabled;
-            set => this.RaiseAndSetIfChanged(ref _periodicEnabled, value);
+            get => _sendNewLine;
+            set => this.RaiseAndSetIfChanged(ref _sendNewLine, value);
         }
 
-        private int _periodicIntervalMs = 1000;
-        public int PeriodicIntervalMs
+        /// <summary>循环发送 (对发送框里的内容)。</summary>
+        private bool _loopSend;
+        public bool LoopSend
         {
-            get => _periodicIntervalMs;
-            set => this.RaiseAndSetIfChanged(ref _periodicIntervalMs, value);
+            get => _loopSend;
+            set => this.RaiseAndSetIfChanged(ref _loopSend, value);
         }
+
+        private int _loopIntervalMs = 1000;
+        public int LoopIntervalMs
+        {
+            get => _loopIntervalMs;
+            set => this.RaiseAndSetIfChanged(ref _loopIntervalMs, value);
+        }
+
+        // ───────────── 快捷指令 ─────────────
+
+        public ObservableCollection<QuickCommandViewModel> QuickCommands { get; } = new();
+
+        public ReactiveCommand<Unit, Unit> AddQuickCommandCommand { get; }
 
         // ───────────── 自动应答 ─────────────
 
         public ObservableCollection<AutoReplyRuleViewModel> Rules { get; } = new();
 
         public ReactiveCommand<Unit, Unit> AddRuleCommand { get; }
-        public ReactiveCommand<AutoReplyRuleViewModel, Unit> RemoveRuleCommand { get; }
 
         // ───────────── 命令 ─────────────
 
@@ -312,9 +386,12 @@ namespace IOStudio.ViewModels
         public ReactiveCommand<Unit, Unit> StopCommand { get; }
         public ReactiveCommand<Unit, Unit> SendCommand { get; }
         public ReactiveCommand<Unit, Unit> ClearLogCommand { get; }
+        public ReactiveCommand<Unit, Unit> ResetStatsCommand { get; }
 
         private IProtocolEndpoint? _endpoint;
         private CancellationTokenSource? _cts;
+        private Task? _receiveLoop;
+        private Task? _schedulerLoop;
 
         private FrameCodec BuildCodec()
         {
@@ -354,6 +431,7 @@ namespace IOStudio.ViewModels
                     SerialDevice,
                     Baud
                 );
+                _endpoint.SelectedPeer = SelectedPeer;
                 await _endpoint.OpenAsync(Host, Port, _cts.Token).ConfigureAwait(true);
 
                 IsRunning = true;
@@ -363,9 +441,9 @@ namespace IOStudio.ViewModels
                 StatusText = $"已启动 · {actual}";
                 AddEntry(ProtocolLogEntry.Info($"已启动 {Transport.Label} @ {actual}"));
 
-                _ = ReceiveLoopAsync(_endpoint, _cts.Token);
-                if (PeriodicEnabled)
-                    _ = PeriodicLoopAsync(_cts.Token);
+                var ct = _cts.Token;
+                _receiveLoop = ReceiveLoopAsync(_endpoint, ct);
+                _schedulerLoop = SchedulerLoopAsync(ct);
             }
             catch (Exception ex)
             {
@@ -375,19 +453,45 @@ namespace IOStudio.ViewModels
             }
         }
 
+        /// <summary>
+        /// 停止: 先取消, **等两个循环真正退出**, 再释放端点与 CTS。
+        ///
+        /// <para>不能"取消完立刻 Dispose": 在途的 Task.Delay(ct)/Socket.ReceiveAsync(ct)
+        /// 会撞上已释放的 CTS/端点, 冒出 ObjectDisposedException 这类无意义报错,
+        /// 且紧接着重启会与旧循环抢同一个端点字段。</para>
+        /// </summary>
         private async Task StopAsync()
         {
+            var cts = _cts;
+            var ep = _endpoint;
+            _cts = null;
+            _endpoint = null;
+
             try
             {
-                _cts?.Cancel();
+                cts?.Cancel();
             }
             catch
             {
                 /* ignore */
             }
 
-            var ep = _endpoint;
-            _endpoint = null;
+            foreach (var loop in new[] { _receiveLoop, _schedulerLoop })
+            {
+                if (loop is null)
+                    continue;
+                try
+                {
+                    await loop.ConfigureAwait(true);
+                }
+                catch
+                {
+                    /* 循环内的异常已在循环里处理 */
+                }
+            }
+            _receiveLoop = null;
+            _schedulerLoop = null;
+
             try
             {
                 ep?.Dispose();
@@ -396,13 +500,23 @@ namespace IOStudio.ViewModels
             {
                 /* ignore */
             }
+            try
+            {
+                cts?.Dispose();
+            }
+            catch
+            {
+                /* ignore */
+            }
 
-            _cts?.Dispose();
-            _cts = null;
             IsRunning = false;
             StatusText = "已停止";
+            Peers.Clear();
+            RaisePeerSummary();
             AddEntry(ProtocolLogEntry.Info("已停止"));
         }
+
+        private void RaisePeerSummary() => this.RaisePropertyChanged(nameof(PeerSummary));
 
         private async Task ReceiveLoopAsync(IProtocolEndpoint ep, CancellationToken ct)
         {
@@ -416,6 +530,10 @@ namespace IOStudio.ViewModels
                 catch (OperationCanceledException)
                 {
                     break;
+                }
+                catch (ObjectDisposedException)
+                {
+                    break; // 正常停止
                 }
                 catch (Exception ex)
                 {
@@ -433,76 +551,129 @@ namespace IOStudio.ViewModels
                     continue;
 
                 var frame = data;
+                var peer = ep.LastReceivedPeer ?? "";
                 Dispatcher.UIThread.Post(() =>
                 {
                     _rxCount++;
                     _rxBytes += frame.Length;
                     RaiseStats();
-                    AddEntry(ProtocolLogEntry.Frame("收", "", frame, null));
+                    AddEntry(ProtocolLogEntry.Frame("收", peer, frame, null));
                 });
 
                 await TryAutoReplyAsync(frame, ct).ConfigureAwait(false);
             }
         }
 
-        private async Task PeriodicLoopAsync(CancellationToken ct)
+        /// <summary>一个 tick 循环同时管: 发送框循环 / 各快捷指令循环 / 对端列表刷新。</summary>
+        private async Task SchedulerLoopAsync(CancellationToken ct)
         {
+            var nextSend = Environment.TickCount64 + Math.Max(50, LoopIntervalMs);
+            var nextTick = Environment.TickCount64 + 500;
+            var cmdNext = new Dictionary<QuickCommandViewModel, long>();
+
             while (!ct.IsCancellationRequested)
             {
                 try
                 {
-                    await Task.Delay(Math.Max(50, PeriodicIntervalMs), ct).ConfigureAwait(false);
+                    await Task.Delay(TickMs, ct).ConfigureAwait(false);
                 }
                 catch (OperationCanceledException)
                 {
                     break;
                 }
 
-                if (!PeriodicEnabled)
-                    continue;
+                var now = Environment.TickCount64;
 
-                var ep = _endpoint;
-                if (ep is null)
-                    continue;
-
-                try
+                if (LoopSend && now >= nextSend)
                 {
-                    var bytes = EncodeSend(SendText, SendEncoding);
-                    await ep.SendAsync(bytes, ct).ConfigureAwait(false);
-                    Dispatcher.UIThread.Post(() =>
+                    nextSend = now + Math.Max(50, LoopIntervalMs);
+                    await SendPayloadAsync(SendText, SendEncoding, SendNewLine, "定时", ct).ConfigureAwait(false);
+                }
+
+                foreach (var cmd in QuickCommands.ToList())
+                {
+                    if (!cmd.PeriodicEnabled)
                     {
-                        _txCount++;
-                        _txBytes += bytes.Length;
-                        RaiseStats();
-                        AddEntry(ProtocolLogEntry.Frame("发", "定时", bytes, null));
-                    });
+                        cmdNext.Remove(cmd);
+                        continue;
+                    }
+                    if (!cmdNext.TryGetValue(cmd, out var due))
+                    {
+                        due = now + Math.Max(50, cmd.IntervalMs);
+                        cmdNext[cmd] = due;
+                        continue;
+                    }
+                    if (now < due)
+                        continue;
+                    cmdNext[cmd] = now + Math.Max(50, cmd.IntervalMs);
+                    await SendPayloadAsync(cmd.Text, cmd.Encoding, cmd.NewLine, "定时", ct).ConfigureAwait(false);
                 }
-                catch (OperationCanceledException)
+
+                if (now >= nextTick)
                 {
-                    break;
-                }
-                catch (Exception ex)
-                {
-                    var msg = ex.Message;
-                    Dispatcher.UIThread.Post(() => AddEntry(ProtocolLogEntry.Info("定时发送失败: " + msg)));
-                    break;
+                    nextTick = now + 500;
+                    RefreshPeers();
                 }
             }
         }
 
-        private async Task SendAsync()
+        private void RefreshPeers()
         {
             var ep = _endpoint;
             if (ep is null)
                 return;
+
+            IReadOnlyList<string> current;
             try
             {
-                var bytes = EncodeSend(SendText, SendEncoding);
-                await ep.SendAsync(bytes, _cts?.Token ?? CancellationToken.None).ConfigureAwait(true);
+                current = ep.Peers;
+            }
+            catch
+            {
+                return;
+            }
+
+            Dispatcher.UIThread.Post(() =>
+            {
+                if (current.Count == Peers.Count && current.All(Peers.Contains))
+                    return;
+
+                Peers.Clear();
+                foreach (var p in current)
+                    Peers.Add(p);
+                if (SelectedPeer is not null && !Peers.Contains(SelectedPeer))
+                    SelectedPeer = null; // 目标已断开 → 回到广播
+                RaisePeerSummary();
+            });
+        }
+
+        private async Task SendAsync()
+        {
+            await SendPayloadAsync(SendText, SendEncoding, SendNewLine, "", CancellationToken.None)
+                .ConfigureAwait(true);
+        }
+
+        /// <summary>统一的发送入口 (手动/循环/快捷指令共用, 保证编码与换行行为一致)。</summary>
+        internal async Task SendPayloadAsync(
+            string text,
+            string encoding,
+            string newLine,
+            string channel,
+            CancellationToken ct
+        )
+        {
+            var ep = _endpoint;
+            if (ep is null)
+                return;
+
+            try
+            {
+                var bytes = ProtocolEncoding.Encode(text + ProtocolUiOptions.NewLineToText(newLine), encoding);
+                await ep.SendAsync(bytes, ct).ConfigureAwait(true);
                 _txCount++;
                 _txBytes += bytes.Length;
                 RaiseStats();
-                AddEntry(ProtocolLogEntry.Frame("发", "", bytes, null));
+                AddEntry(ProtocolLogEntry.Frame("发", channel, bytes, null));
             }
             catch (Exception ex)
             {
@@ -520,12 +691,11 @@ namespace IOStudio.ViewModels
             if (Rules.Count == 0)
                 return;
 
-            var text = Encoding.UTF8.GetString(frame);
             foreach (var rule in Rules.ToList())
             {
                 if (!rule.Enabled)
                     continue;
-                if (!rule.Matches(text))
+                if (!rule.Matches(frame))
                     continue;
 
                 // 限速: 两端都开自动应答时, 否则会无限互相回声把链路打满
@@ -548,7 +718,10 @@ namespace IOStudio.ViewModels
                     return;
                 try
                 {
-                    var bytes = EncodeSend(rule.ReplyText, rule.ReplyEncoding);
+                    var bytes = ProtocolEncoding.Encode(
+                        rule.ReplyText + ProtocolUiOptions.NewLineToText(rule.ReplyNewLine),
+                        rule.ReplyEncoding
+                    );
                     await ep.SendAsync(bytes, ct).ConfigureAwait(false);
                     Dispatcher.UIThread.Post(() =>
                     {
@@ -567,28 +740,183 @@ namespace IOStudio.ViewModels
             }
         }
 
-        public static byte[] EncodeSend(string text, string encoding)
+        // ───────────── 持久化 ─────────────
+
+        public ProtocolSessionState Snapshot() => new()
         {
-            if (string.Equals(encoding, "HEX", StringComparison.OrdinalIgnoreCase))
+            Label = Label,
+            Transport = Transport.Transport,
+            IsListener = Transport.IsListener,
+            Host = Host,
+            Port = Port,
+            SerialDevice = SerialDevice,
+            Baud = Baud,
+            FrameMode = FrameMode.Mode,
+            Delimiter = Delimiter,
+            PrefixBytes = PrefixBytes,
+            FixedSize = FixedSize,
+            SendText = SendText,
+            SendEncoding = SendEncoding,
+            SendNewLine = SendNewLine,
+            LoopSend = LoopSend,
+            LoopIntervalMs = LoopIntervalMs,
+            ShowTimestamp = ShowTimestamp,
+            AutoScroll = AutoScroll,
+            Rules = Rules.Select(r => new AutoReplyRuleState
             {
-                var cleaned = (text ?? "").Replace(" ", "").Replace("-", "").Replace("\r", "").Replace("\n", "");
-                return cleaned.Length == 0 ? Array.Empty<byte>() : Convert.FromHexString(cleaned);
+                Enabled = r.Enabled,
+                MatchType = r.MatchType,
+                MatchValue = r.MatchValue,
+                ReplyText = r.ReplyText,
+                ReplyEncoding = r.ReplyEncoding,
+            }).ToList(),
+            QuickCommands = QuickCommands.Select(q => new QuickCommandState
+            {
+                Text = q.Text,
+                Encoding = q.Encoding,
+                NewLine = q.NewLine,
+                Periodic = q.PeriodicEnabled,
+                IntervalMs = q.IntervalMs,
+            }).ToList(),
+        };
+
+        public void Restore(ProtocolSessionState s)
+        {
+            var t = ProtocolUiOptions.Transports.FirstOrDefault(x =>
+                x.Transport == s.Transport && x.IsListener == s.IsListener);
+            if (t is not null)
+                Transport = t;
+
+            var f = ProtocolUiOptions.FrameModes.FirstOrDefault(x => x.Mode == s.FrameMode);
+            if (f is not null)
+                FrameMode = f;
+
+            Label = string.IsNullOrWhiteSpace(s.Label) ? Label : s.Label;
+            Host = s.Host;
+            Port = s.Port;
+            SerialDevice = s.SerialDevice;
+            Baud = s.Baud;
+            Delimiter = s.Delimiter;
+            PrefixBytes = s.PrefixBytes;
+            FixedSize = s.FixedSize;
+            SendText = s.SendText;
+            SendEncoding = s.SendEncoding;
+            SendNewLine = s.SendNewLine;
+            LoopSend = s.LoopSend;
+            LoopIntervalMs = s.LoopIntervalMs;
+            ShowTimestamp = s.ShowTimestamp;
+            AutoScroll = s.AutoScroll;
+
+            Rules.Clear();
+            foreach (var r in s.Rules)
+            {
+                Rules.Add(new AutoReplyRuleViewModel(x => Rules.Remove(x))
+                {
+                    Enabled = r.Enabled,
+                    MatchType = r.MatchType,
+                    MatchValue = r.MatchValue,
+                    ReplyText = r.ReplyText,
+                    ReplyEncoding = r.ReplyEncoding,
+                });
             }
-            return Encoding.UTF8.GetBytes(text ?? "");
+
+            QuickCommands.Clear();
+            foreach (var q in s.QuickCommands)
+            {
+                QuickCommands.Add(new QuickCommandViewModel(this, x => QuickCommands.Remove(x))
+                {
+                    Text = q.Text,
+                    Encoding = q.Encoding,
+                    NewLine = q.NewLine,
+                    PeriodicEnabled = q.Periodic,
+                    IntervalMs = q.IntervalMs,
+                });
+            }
         }
 
         public void Dispose()
         {
+            // 只取消 + 释放端点, **不** Dispose CTS:
+            // 循环里在途的 Task.Delay(..., ct) 若撞上已释放的 CTS 会抛 ObjectDisposedException,
+            // 冒出无意义的报错。CTS 不含定时器, 留给 GC 即可 (Endpoint 一释放, 在途读即失败, 循环随即退出)。
             try
             {
                 _cts?.Cancel();
-                _endpoint?.Dispose();
-                _cts?.Dispose();
             }
             catch
             {
-                /* 关闭窗口时的清理不应抛 */
+                /* ignore */
             }
+            _cts = null;
+
+            var ep = _endpoint;
+            _endpoint = null;
+            try
+            {
+                ep?.Dispose();
+            }
+            catch
+            {
+                /* ignore */
+            }
+        }
+    }
+
+    /// <summary>
+    /// 快捷指令: 一条预设报文, 点即发, 可独立定时循环。
+    ///
+    /// <para>主流调试台 (SSCOM / NetAssist) 的标志性功能 —— 现场往往要反复发同一组指令,
+    /// 每条都手打一遍既不专业也容易打错。</para>
+    /// </summary>
+    public sealed class QuickCommandViewModel : ViewModelBase
+    {
+        private readonly ProtocolSessionViewModel _session;
+
+        public QuickCommandViewModel(ProtocolSessionViewModel session, Action<QuickCommandViewModel>? remove = null)
+        {
+            _session = session;
+            SendCommand = ReactiveCommand.CreateFromTask(() =>
+                _session.SendPayloadAsync(Text, Encoding, NewLine, "快捷", CancellationToken.None)
+            );
+            RemoveCommand = ReactiveCommand.Create(() => remove?.Invoke(this));
+        }
+
+        public ReactiveCommand<Unit, Unit> SendCommand { get; }
+        public ReactiveCommand<Unit, Unit> RemoveCommand { get; }
+
+        private string _text = "";
+        public string Text
+        {
+            get => _text;
+            set => this.RaiseAndSetIfChanged(ref _text, value);
+        }
+
+        private string _encoding = "UTF-8";
+        public string Encoding
+        {
+            get => _encoding;
+            set => this.RaiseAndSetIfChanged(ref _encoding, value);
+        }
+
+        private string _newLine = "无";
+        public string NewLine
+        {
+            get => _newLine;
+            set => this.RaiseAndSetIfChanged(ref _newLine, value);
+        }
+
+        private bool _periodicEnabled;
+        public bool PeriodicEnabled
+        {
+            get => _periodicEnabled;
+            set => this.RaiseAndSetIfChanged(ref _periodicEnabled, value);
+        }
+
+        private int _intervalMs = 1000;
+        public int IntervalMs
+        {
+            get => _intervalMs;
+            set => this.RaiseAndSetIfChanged(ref _intervalMs, value);
         }
     }
 
@@ -643,18 +971,45 @@ namespace IOStudio.ViewModels
             set => this.RaiseAndSetIfChanged(ref _replyEncoding, value);
         }
 
-        public bool Matches(string text)
+        private string _replyNewLine = "无";
+        public string ReplyNewLine
+        {
+            get => _replyNewLine;
+            set => this.RaiseAndSetIfChanged(ref _replyNewLine, value);
+        }
+
+        /// <summary>
+        /// 匹配一帧。**文本与十六进制都能匹配** —— 二进制协议 (无 ASCII 文本)
+        /// 用文本匹配是匹配不上的, 主流工具都允许按字节匹配。
+        /// </summary>
+        public bool Matches(byte[] frame)
         {
             var mode = ProtocolUiOptions.MatchTypeToMode(MatchType);
+            var text = ProtocolEncoding.DecodeForDisplay(frame);
+            var hex = Convert.ToHexString(frame);
+            var needle = MatchValue ?? "";
+
+            // HEX 形式 (形如 "AA BB" / "AABB") 优先按字节比
+            var needleHex = needle.Replace(" ", "").Replace("-", "");
+            bool looksHex = needleHex.Length >= 2
+                && needleHex.Length % 2 == 0
+                && needleHex.All(Uri.IsHexDigit);
+
             try
             {
+                if (looksHex)
+                {
+                    var hit = hex.Contains(needleHex, StringComparison.OrdinalIgnoreCase);
+                    return mode == "equals" ? hex.Equals(needleHex, StringComparison.OrdinalIgnoreCase) : hit;
+                }
+
                 return mode switch
                 {
-                    "regex" => Regex.IsMatch(text, MatchValue),
-                    "equals" => text == MatchValue,
-                    "startsWith" => text.StartsWith(MatchValue, StringComparison.Ordinal),
-                    "endsWith" => text.EndsWith(MatchValue, StringComparison.Ordinal),
-                    _ => text.Contains(MatchValue, StringComparison.Ordinal),
+                    "regex" => Regex.IsMatch(text, needle),
+                    "equals" => text == needle,
+                    "startsWith" => text.StartsWith(needle, StringComparison.Ordinal),
+                    "endsWith" => text.EndsWith(needle, StringComparison.Ordinal),
+                    _ => text.Contains(needle, StringComparison.Ordinal),
                 };
             }
             catch

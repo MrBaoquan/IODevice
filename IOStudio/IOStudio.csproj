@@ -59,6 +59,9 @@
     <PackageReference Include="NLog" Version="6.0.0" />
     <PackageReference Include="ReactiveUI.Avalonia" Version="11.3.8" />
     <PackageReference Include="System.IO.Ports" Version="10.0.1" />
+    <!-- GBK/GB2312 编解码: .NET Core 默认不带代码页, 必须显式注册 provider。
+         国产设备/厂家软件大量使用 GBK 文本, 缺它就无法与真实对端互通。 -->
+    <PackageReference Include="System.Text.Encoding.CodePages" Version="8.0.0" />
     <PackageReference Include="LibVLCSharp" Version="3.9.3" />
     <PackageReference Include="VideoLAN.LibVLC.Windows" Version="3.0.21" />
     <!-- HiMind 软件分发客户端（检查自更新能力） -->

@@ -95,6 +95,19 @@ namespace IOStudio.Tests.E2E
         }
 
         [Fact]
+        public void Peers_Panel_Only_For_MultiClient_Server()
+        {
+            var s = NewSession("tcp-server");
+            Assert.True(s.ShowPeers);
+
+            s.Transport = ProtocolUiOptions.Transports.First(t => t.Transport == "tcp-client");
+            Assert.False(s.ShowPeers);
+
+            s.Transport = ProtocolUiOptions.Transports.First(t => t.Transport == "udp" && t.IsListener);
+            Assert.False(s.ShowPeers);
+        }
+
+        [Fact]
         public void Virtual_Session_Hides_Connection_Controls()
         {
             var s = NewSession();
@@ -158,34 +171,175 @@ namespace IOStudio.Tests.E2E
         // ─────────── 自由收发: 编解码 ───────────
 
         [Fact]
-        public void EncodeSend_Handles_Text_And_Hex()
+        public void EncodeSend_Handles_Text_Hex_And_Gbk()
         {
-            Assert.Equal(new byte[] { 0x50, 0x49 }, ProtocolSessionViewModel.EncodeSend("PI", "UTF-8"));
-            Assert.Equal(new byte[] { 0x00, 0xFF, 0x10 }, ProtocolSessionViewModel.EncodeSend("00 FF 10", "HEX"));
-            Assert.Equal(new byte[] { 0xAB, 0xCD }, ProtocolSessionViewModel.EncodeSend("AB-CD", "HEX"));
-            Assert.Empty(ProtocolSessionViewModel.EncodeSend("", "HEX"));
+            Assert.Equal(new byte[] { 0x50, 0x49 }, ProtocolEncoding.Encode("PI", "UTF-8"));
+            Assert.Equal(new byte[] { 0x00, 0xFF, 0x10 }, ProtocolEncoding.Encode("00 FF 10", "HEX"));
+            Assert.Equal(new byte[] { 0xAB, 0xCD }, ProtocolEncoding.Encode("AB-CD", "HEX"));
+            Assert.Empty(ProtocolEncoding.Encode("", "HEX"));
+            Assert.Equal(new byte[] { 0x41 }, ProtocolEncoding.Encode("A", "ASCII"));
+
+            // GBK: 国产设备刚需。中文字节数必须与 UTF-8 不同, 否则说明没走 GBK。
+            var gbk = ProtocolEncoding.Encode("中文", "GBK");
+            var utf8 = ProtocolEncoding.Encode("中文", "UTF-8");
+            Assert.Equal(4, gbk.Length);       // GBK: 每汉字 2 字节
+            Assert.Equal(6, utf8.Length);      // UTF-8: 每汉字 3 字节
+            Assert.Equal("中文", ProtocolEncoding.Get("GBK").GetString(gbk));
+        }
+
+        [Fact]
+        public void NewLine_Option_Maps_To_Expected_Suffix()
+        {
+            Assert.Equal("", ProtocolUiOptions.NewLineToText("无"));
+            Assert.Equal("\r\n", ProtocolUiOptions.NewLineToText("\\r\\n"));
+            Assert.Equal("\n", ProtocolUiOptions.NewLineToText("\\n"));
         }
 
         // ─────────── 自动应答规则 ───────────
 
         [Fact]
-        public void AutoReplyRule_Matches_By_Mode()
+        public void AutoReplyRule_Matches_Text_And_Hex()
         {
             var contains = new AutoReplyRuleViewModel { MatchType = "包含", MatchValue = "AT" };
-            Assert.True(contains.Matches("AT+GMR"));
-            Assert.False(contains.Matches("OK"));
+            Assert.True(contains.Matches(Encoding.UTF8.GetBytes("AT+GMR")));
+            Assert.False(contains.Matches(Encoding.UTF8.GetBytes("OK")));
 
             var regex = new AutoReplyRuleViewModel { MatchType = "正则", MatchValue = "^PING\\d+$" };
-            Assert.True(regex.Matches("PING42"));
-            Assert.False(regex.Matches("PINGx"));
+            Assert.True(regex.Matches(Encoding.UTF8.GetBytes("PING42")));
+            Assert.False(regex.Matches(Encoding.UTF8.GetBytes("PINGx")));
 
             var starts = new AutoReplyRuleViewModel { MatchType = "开头是", MatchValue = "GET" };
-            Assert.True(starts.Matches("GET /x"));
-            Assert.False(starts.Matches("POST"));
+            Assert.True(starts.Matches(Encoding.UTF8.GetBytes("GET /x")));
+            Assert.False(starts.Matches(Encoding.UTF8.GetBytes("POST")));
+
+            // 二进制协议: 没有可读文本, 必须能按 HEX 匹配
+            var hexRule = new AutoReplyRuleViewModel { MatchType = "包含", MatchValue = "AA BB" };
+            Assert.True(hexRule.Matches(new byte[] { 0x01, 0xAA, 0xBB, 0x02 }));
+            Assert.False(hexRule.Matches(new byte[] { 0x01, 0xAA, 0xCC, 0x02 }));
 
             // 正则写错不能把接收循环搞崩
             var broken = new AutoReplyRuleViewModel { MatchType = "正则", MatchValue = "([" };
-            Assert.False(broken.Matches("anything"));
+            Assert.False(broken.Matches(Encoding.UTF8.GetBytes("anything")));
+        }
+
+        [Fact]
+        public async Task QuickCommand_Sends_Configured_Payload()
+        {
+            var s = NewSession();
+            var port = await _session.Dispatch(
+                () =>
+                {
+                    using var probe = new UdpClient(new IPEndPoint(IPAddress.Loopback, 0));
+                    return ((IPEndPoint)probe.Client.LocalEndPoint!).Port;
+                },
+                CancellationToken.None
+            );
+
+            await _session.Dispatch(
+                () =>
+                {
+                    s.Port = port;
+                    s.FrameMode = ProtocolUiOptions.FrameModes.First(f => f.Mode == "none");
+                    s.QuickCommands.Add(new QuickCommandViewModel(s)
+                    {
+                        Text = "AT",
+                        Encoding = "UTF-8",
+                        NewLine = "\\r\\n", // 现场指令常以 CRLF 结尾
+                    });
+                    s.StartCommand.Execute().Subscribe();
+                    return true;
+                },
+                CancellationToken.None
+            );
+
+            var started = false;
+            for (int i = 0; i < 60 && !started; i++)
+            {
+                started = await _session.Dispatch(() => s.IsRunning, CancellationToken.None);
+                if (!started)
+                    await Task.Delay(50);
+            }
+            Assert.True(started, "UDP 监听未启动");
+
+            using var client = new UdpClient(new IPEndPoint(IPAddress.Loopback, 0));
+            var target = new IPEndPoint(IPAddress.Loopback, port);
+
+            // 先让监听端知道"回给谁" (UDP 监听端未收到过数据时无法确定目的地址)
+            await client.SendAsync(Encoding.UTF8.GetBytes("HELLO"), target);
+
+            // 触发快捷指令, 直到客户端收到 (避免时序竞争)
+            byte[]? got = null;
+            for (int i = 0; i < 20 && got is null; i++)
+            {
+                await _session.Dispatch(
+                    () =>
+                    {
+                        s.QuickCommands[0].SendCommand.Execute().Subscribe();
+                        return true;
+                    },
+                    CancellationToken.None
+                );
+
+                var recv = client.ReceiveAsync();
+                var done = await Task.WhenAny(recv, Task.Delay(300));
+                if (done == recv)
+                    got = (await recv).Buffer;
+            }
+
+            Assert.NotNull(got);
+            Assert.Equal("AT\r\n", Encoding.UTF8.GetString(got!)); // 新行必须被带上
+
+            await _session.Dispatch(
+                () =>
+                {
+                    s.StopCommand.Execute().Subscribe();
+                    return true;
+                },
+                CancellationToken.None
+            );
+        }
+
+        [Fact]
+        public void Workspace_RoundTrips_Session_Config()
+        {
+            var path = Path.Combine(Path.GetTempPath(), $"ptws-{Guid.NewGuid():N}.json");
+            try
+            {
+                var s = NewSession("tcp-server");
+                s.Label = "服务端A";
+                s.Port = 12345;
+                s.SendNewLine = "\\r\\n";
+                s.SendEncoding = "GBK";
+                s.LoopSend = true;
+                s.LoopIntervalMs = 250;
+                s.Rules.Add(new AutoReplyRuleViewModel { MatchType = "包含", MatchValue = "PING", ReplyText = "PONG" });
+                s.QuickCommands.Add(new QuickCommandViewModel(s) { Text = "AT", NewLine = "\\n", PeriodicEnabled = true });
+
+                var ws = new ProtocolWorkspace();
+                ws.Sessions.Add(s.Snapshot());
+                ws.Save(path);
+
+                var loaded = ProtocolWorkspace.Load(path);
+                Assert.Single(loaded.Sessions);
+
+                var restored = NewSession("udp");
+                restored.Restore(loaded.Sessions[0]);
+                Assert.Equal("服务端A", restored.Label);
+                Assert.Equal("tcp-server", restored.Transport.Transport);
+                Assert.Equal(12345, restored.Port);
+                Assert.Equal("\\r\\n", restored.SendNewLine);
+                Assert.Equal("GBK", restored.SendEncoding);
+                Assert.True(restored.LoopSend);
+                Assert.Equal(250, restored.LoopIntervalMs);
+                Assert.Single(restored.Rules);
+                Assert.Equal("PONG", restored.Rules[0].ReplyText);
+                Assert.Single(restored.QuickCommands);
+                Assert.True(restored.QuickCommands[0].PeriodicEnabled);
+            }
+            finally
+            {
+                try { File.Delete(path); } catch { /* ignore */ }
+            }
         }
 
         // ─────────── 日志过滤 / 导出 ───────────
@@ -263,14 +417,23 @@ namespace IOStudio.Tests.E2E
             );
             Assert.True(started, "UDP 监听未启动");
 
-            var stopped = await _session.Dispatch(
+            // 停止现在是"取消 → 等循环真正退出 → 释放", 异步完成, 必须轮询而非同步读
+            await _session.Dispatch(
                 () =>
                 {
                     s.StopCommand.Execute().Subscribe();
-                    return !s.IsRunning;
+                    return true;
                 },
                 CancellationToken.None
             );
+
+            var stopped = false;
+            for (int i = 0; i < 60 && !stopped; i++)
+            {
+                stopped = await _session.Dispatch(() => !s.IsRunning, CancellationToken.None);
+                if (!stopped)
+                    await Task.Delay(50);
+            }
             Assert.True(stopped, "UDP 监听未停止 (端口会被一直占着)");
         }
 

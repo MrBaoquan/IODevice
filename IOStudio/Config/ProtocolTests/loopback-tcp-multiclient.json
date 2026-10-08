@@ -1,0 +1,23 @@
+{
+  "name": "TCP 服务端多客户端 (并行接入 + 广播)",
+  "timeout_ms": 3000,
+  "steps": [
+    { "op": "listen",  "as": "srv", "transport": "tcp-server", "port": 0 },
+    { "op": "connect", "as": "c1", "transport": "tcp-client", "host": "127.0.0.1", "port_from": "srv" },
+    { "op": "connect", "as": "c2", "transport": "tcp-client", "host": "127.0.0.1", "port_from": "srv" },
+
+    { "op": "send",    "via": "c1", "encoding": "utf8", "data": "FROM-C1" },
+    { "op": "send",    "via": "c2", "encoding": "utf8", "data": "FROM-C2" },
+
+    { "op": "expect",  "via": "srv", "match": { "type": "equals", "value": "FROM-C1" } },
+    { "op": "expect",  "via": "srv", "match": { "type": "equals", "value": "FROM-C2" } },
+
+    { "op": "send",    "via": "srv", "encoding": "utf8", "data": "BROADCAST" },
+    { "op": "expect",  "via": "c1", "match": { "type": "equals", "value": "BROADCAST" } },
+    { "op": "expect",  "via": "c2", "match": { "type": "equals", "value": "BROADCAST" } },
+
+    { "op": "close",   "via": "c1" },
+    { "op": "close",   "via": "c2" },
+    { "op": "close",   "via": "srv" }
+  ]
+}

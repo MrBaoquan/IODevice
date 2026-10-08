@@ -150,6 +150,13 @@ def app():
     if not EXE.exists():
         pytest.skip(f"未找到 {EXE}")
 
+    # 清掉上次保存的工作区: 否则"默认会话"会带着上次的传输/端口, 断言不再确定
+    ws = DEPLOY / "Config" / "ProtocolTestWorkspace.json"
+    try:
+        ws.unlink()
+    except OSError:
+        pass
+
     proc = subprocess.Popen([str(EXE)], cwd=str(DEPLOY))
     main = find_window(MAIN_KEYWORD, timeout=WINDOW_TIMEOUT)
     if main is None:

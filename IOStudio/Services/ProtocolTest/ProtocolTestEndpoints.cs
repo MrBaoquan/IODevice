@@ -26,6 +26,18 @@ namespace IOStudio.Services.ProtocolTest
         /// <summary>实际端口 (listen 使用 0 自动分配时, 这里是分配到的真实端口)。</summary>
         int Port { get; }
 
+        /// <summary>
+        /// 已连接的远端列表 —— 只有多客户端服务端才有; 其它传输为空。
+        /// 主流调试台都会把"谁连进来了"列出来并允许定向发送。
+        /// </summary>
+        IReadOnlyList<string> Peers => Array.Empty<string>();
+
+        /// <summary>定向发送目标; null = 广播(服务端) 或唯一对端。</summary>
+        string? SelectedPeer { get => null; set { } }
+
+        /// <summary>最近一次收帧的来源 (UDP / 多客户端服务端)。</summary>
+        string? LastReceivedPeer => null;
+
         Task OpenAsync(string host, int port, CancellationToken ct);
 
         Task SendAsync(byte[] data, CancellationToken ct);
@@ -152,6 +164,11 @@ namespace IOStudio.Services.ProtocolTest
 
         public int Port { get; private set; }
 
+        /// <summary>定向发送目标 "ip:port"; null = 回给最近一次收到的来源。</summary>
+        public string? SelectedPeer { get; set; }
+
+        public string? LastReceivedPeer => _lastSender?.ToString();
+
         public Task OpenAsync(string host, int port, CancellationToken ct)
         {
             if (_isListener)
@@ -174,18 +191,44 @@ namespace IOStudio.Services.ProtocolTest
             if (_client is null)
                 throw new InvalidOperationException("UDP 端未打开");
             var framed = _codec.Encode(data);
+
             if (_isListener)
             {
                 // 监听端是"未连接"的 socket, 必须显式给目的地址 ——
-                // 回包给最近一次收到的来源 (自测里就是那个 connect 端)。
-                if (_lastSender is null)
-                    throw new InvalidOperationException("UDP 监听端尚未收到过数据, 无法确定回包地址");
-                await _client.SendAsync(framed, _lastSender, ct).ConfigureAwait(false);
+                // 优先用户指定, 否则回给最近一次收到的来源。
+                var target = ParsePeer(SelectedPeer) ?? _lastSender;
+                if (target is null)
+                    throw new InvalidOperationException(
+                        "UDP 监听端尚未收到过数据, 无法确定目的地址 (可先填目标对端)"
+                    );
+                await _client.SendAsync(framed, target, ct).ConfigureAwait(false);
+                return;
             }
-            else
-            {
-                await _client.SendAsync(framed, ct).ConfigureAwait(false);
-            }
+
+            // 已连接模式: UdpClient **不允许**在 SendAsync 里再指定地址
+            // (否则抛 "Cannot send packets to an arbitrary host while connected")。
+            // 若用户显式换了目标, 必须重新 Connect。
+            var peer = ParsePeer(SelectedPeer);
+            if (peer is not null)
+                _client.Connect(peer);
+
+            await _client.SendAsync(framed, ct).ConfigureAwait(false);
+        }
+
+        /// <summary>解析 "ip:port" (填错返回 null, 让上层回退到默认行为)。</summary>
+        private static IPEndPoint? ParsePeer(string? peer)
+        {
+            if (string.IsNullOrWhiteSpace(peer))
+                return null;
+            var s = peer.Trim();
+            int i = s.LastIndexOf(':');
+            if (i <= 0 || i == s.Length - 1)
+                return null;
+            return IPAddress.TryParse(s[..i], out var ip)
+                && int.TryParse(s[(i + 1)..], out var port)
+                && port is > 0 and <= 65535
+                ? new IPEndPoint(ip, port)
+                : null;
         }
 
         public async Task<byte[]?> ReceiveAsync(TimeSpan timeout, CancellationToken ct)
@@ -259,65 +302,291 @@ namespace IOStudio.Services.ProtocolTest
         }
     }
 
-    /// <summary>TCP 服务端: 监听并在首次收发时接受一个连接 (单连接, 够自测用)。</summary>
-    internal sealed class TcpServerEndpoint : StreamEndpointBase
+    /// <summary>
+    /// TCP 服务端: **多客户端**。
+    ///
+    /// <para>为什么必须多客户端: 主流调试台 (NetAssist / Hercules) 的服务端都能同时接多个客户端、
+    /// 列出"谁连进来了", 并支持定向发送与广播。单连接服务端无法验证"多端并发"这类真实场景
+    /// —— 而多端并发恰恰是服务端最常见的排错对象。</para>
+    ///
+    /// <para>每个客户端各自持有组帧缓冲: 粘包/拆包是**按连接**独立的, 共用一份缓冲会串帧。</para>
+    /// </summary>
+    internal sealed class TcpServerEndpoint : IProtocolEndpoint
     {
+        private sealed class Client
+        {
+            public Client(string id, TcpClient tcp, FrameCodec codec)
+            {
+                Id = id;
+                Tcp = tcp;
+                Stream = tcp.GetStream();
+                Receiver = new FramedReceiver(codec);
+            }
+
+            public string Id { get; }
+            public TcpClient Tcp { get; }
+            public NetworkStream Stream { get; }
+            public FramedReceiver Receiver { get; }
+            public Task<int>? ReadTask { get; set; }
+            public byte[] Buf { get; } = new byte[8192];
+        }
+
+        private readonly FrameCodec _codec;
+        private readonly object _lock = new();
+        private readonly List<Client> _clients = new();
         private TcpListener? _listener;
-        private TcpClient? _accepted;
-        private NetworkStream? _stream;
-        private Task<bool>? _acceptTask;
+        private string? _selected;
+        private string? _lastReceived;
 
-        public TcpServerEndpoint(FrameCodec codec) : base(codec) { }
+        public TcpServerEndpoint(FrameCodec codec) => _codec = codec;
 
-        public override string Kind => "tcp-server";
+        public string Kind => "tcp-server";
+        public int Port { get; private set; }
 
-        public override Task OpenAsync(string host, int port, CancellationToken ct)
+        public IReadOnlyList<string> Peers
+        {
+            get
+            {
+                lock (_lock)
+                    return _clients.Select(c => c.Id).ToArray();
+            }
+        }
+
+        /// <summary>null = 广播给所有客户端。</summary>
+        public string? SelectedPeer
+        {
+            get => _selected;
+            set => _selected = value;
+        }
+
+        public string? LastReceivedPeer => _lastReceived;
+
+        public Task OpenAsync(string host, int port, CancellationToken ct)
         {
             _listener = new TcpListener(IPAddress.Any, port);
             _listener.Start();
             Port = ((IPEndPoint)_listener.LocalEndpoint).Port;
+            // 主动 accept: 客户端要能立刻连上并出现在列表里 (否则"连上了却看不到"很反直觉)
+            _ = AcceptLoopAsync(ct);
             return Task.CompletedTask;
         }
 
-        private Task<bool> EnsureAcceptedAsync(CancellationToken ct)
+        private async Task AcceptLoopAsync(CancellationToken ct)
         {
-            if (_stream is not null)
-                return Task.FromResult(true);
-            // 保留在途 accept: 超时后重复调用不能开第二个 accept
-            _acceptTask ??= DoAcceptAsync(ct);
-            return _acceptTask;
+            while (!ct.IsCancellationRequested)
+            {
+                try
+                {
+                    var tcp = await _listener!.AcceptTcpClientAsync(ct).ConfigureAwait(false);
+                    tcp.NoDelay = true;
+                    var ep = (IPEndPoint)tcp.Client.RemoteEndPoint!;
+                    lock (_lock)
+                        _clients.Add(new Client($"{ep.Address}:{ep.Port}", tcp, _codec));
+                }
+                catch (OperationCanceledException)
+                {
+                    break;
+                }
+                catch (ObjectDisposedException)
+                {
+                    break; // 正常停止
+                }
+                catch
+                {
+                    break;
+                }
+            }
         }
 
-        private async Task<bool> DoAcceptAsync(CancellationToken ct)
+        public async Task<byte[]?> ReceiveAsync(TimeSpan timeout, CancellationToken ct)
         {
-            if (_listener is null)
-                return false;
-            _accepted = await _listener.AcceptTcpClientAsync(ct).ConfigureAwait(false);
-            _accepted.NoDelay = true;
-            _stream = _accepted.GetStream();
-            return true;
+            var deadline = DateTime.UtcNow + timeout;
+            while (true)
+            {
+                if (ct.IsCancellationRequested)
+                    return null;
+
+                if (TryTakeBuffered(out var frame, out var from))
+                {
+                    _lastReceived = from;
+                    return frame;
+                }
+
+                var remaining = deadline - DateTime.UtcNow;
+                if (remaining <= TimeSpan.Zero)
+                    return null;
+
+                await PumpOnceAsync(remaining, ct).ConfigureAwait(false);
+            }
         }
 
-        protected override async Task<int> ReadRawAsync(byte[] buffer, CancellationToken ct)
+        private bool TryTakeBuffered(out byte[] frame, out string? from)
         {
-            if (!await EnsureAcceptedAsync(ct).ConfigureAwait(false) || _stream is null)
-                return 0;
-            return await _stream.ReadAsync(buffer, ct).ConfigureAwait(false);
+            lock (_lock)
+            {
+                foreach (var c in _clients)
+                {
+                    if (c.Receiver.TryTake(out var f))
+                    {
+                        frame = f;
+                        from = c.Id;
+                        return true;
+                    }
+                }
+            }
+            frame = Array.Empty<byte>();
+            from = null;
+            return false;
         }
 
-        protected override async Task WriteRawAsync(byte[] data, CancellationToken ct)
+        /// <summary>等任一客户端来数据, 收一批进它自己的组帧缓冲。</summary>
+        private async Task PumpOnceAsync(TimeSpan remaining, CancellationToken ct)
         {
-            if (!await EnsureAcceptedAsync(ct).ConfigureAwait(false) || _stream is null)
-                throw new InvalidOperationException("TCP 服务端未被连接");
-            await _stream.WriteAsync(data, ct).ConfigureAwait(false);
-            await _stream.FlushAsync(ct).ConfigureAwait(false);
+            Client[] snapshot;
+            lock (_lock)
+            {
+                snapshot = _clients.ToArray();
+                foreach (var c in snapshot)
+                    c.ReadTask ??= c.Stream.ReadAsync(c.Buf, ct).AsTask();
+            }
+
+            if (snapshot.Length == 0)
+            {
+                try
+                {
+                    await Task.Delay(remaining, ct).ConfigureAwait(false);
+                }
+                catch (OperationCanceledException)
+                {
+                    /* 停止中 */
+                }
+                return;
+            }
+
+            var reads = snapshot.Select(c => (Task)c.ReadTask!).ToList();
+            reads.Add(Task.Delay(remaining, ct));
+            var done = await Task.WhenAny(reads).ConfigureAwait(false);
+
+            var idx = Array.FindIndex(snapshot, c => ReferenceEquals(c.ReadTask, done));
+            if (idx < 0)
+                return; // 超时 (或停止)
+
+            var client = snapshot[idx];
+            int n;
+            try
+            {
+                n = await client.ReadTask!.ConfigureAwait(false);
+            }
+            catch
+            {
+                RemoveClient(client);
+                return;
+            }
+
+            lock (_lock)
+            {
+                client.ReadTask = null;
+                if (n > 0)
+                    client.Receiver.Append(client.Buf.AsSpan(0, n));
+            }
+
+            if (n <= 0)
+                RemoveClient(client); // 对端关闭
         }
 
-        public override void Dispose()
+        public async Task SendAsync(byte[] data, CancellationToken ct)
         {
-            _stream?.Dispose();
-            _accepted?.Dispose();
-            _listener?.Stop();
+            var framed = _codec.Encode(data);
+
+            Client[] targets;
+            string? sel;
+            lock (_lock)
+            {
+                sel = _selected;
+                targets = sel is null
+                    ? _clients.ToArray()
+                    : _clients.Where(c => c.Id == sel).ToArray();
+            }
+
+            if (targets.Length == 0)
+                throw new InvalidOperationException(
+                    sel is null ? "TCP 服务端尚无客户端连接" : $"目标客户端 {sel} 已断开"
+                );
+
+            foreach (var c in targets)
+            {
+                try
+                {
+                    await c.Stream.WriteAsync(framed, ct).ConfigureAwait(false);
+                    await c.Stream.FlushAsync(ct).ConfigureAwait(false);
+                }
+                catch
+                {
+                    RemoveClient(c);
+                }
+            }
+        }
+
+        private void RemoveClient(Client c)
+        {
+            lock (_lock)
+            {
+                if (!_clients.Remove(c))
+                    return;
+            }
+            try
+            {
+                c.Stream.Dispose();
+            }
+            catch
+            {
+                /* ignore */
+            }
+            try
+            {
+                c.Tcp.Dispose();
+            }
+            catch
+            {
+                /* ignore */
+            }
+        }
+
+        public void Dispose()
+        {
+            Client[] snapshot;
+            lock (_lock)
+            {
+                snapshot = _clients.ToArray();
+                _clients.Clear();
+            }
+            foreach (var c in snapshot)
+            {
+                try
+                {
+                    c.Stream.Dispose();
+                }
+                catch
+                {
+                    /* ignore */
+                }
+                try
+                {
+                    c.Tcp.Dispose();
+                }
+                catch
+                {
+                    /* ignore */
+                }
+            }
+            try
+            {
+                _listener?.Stop();
+            }
+            catch
+            {
+                /* ignore */
+            }
         }
     }
 

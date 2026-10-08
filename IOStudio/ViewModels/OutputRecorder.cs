@@ -9,10 +9,12 @@ namespace IOStudio.ViewModels;
 
 /// <summary>
 /// 录波器：录制采样帧序列，保存/加载 CSV（列 = 时间戳 ms + 各通道）。
+/// 每帧记录真实采样时间戳，保存时原样写回，保证导出的时间轴与采集节拍一致。
 /// </summary>
 public class OutputRecorder
 {
     private readonly object _lock = new();
+    private readonly List<double> _timestamps = new();
     private readonly List<double[]> _frames = new();
     private List<string> _channelNames = new();
 
@@ -32,16 +34,19 @@ public class OutputRecorder
         lock (_lock)
         {
             _frames.Clear();
+            _timestamps.Clear();
             _channelNames = channelNames.ToList();
         }
     }
 
-    public void Append(double[] values)
+    /// <summary>追加一帧。timestampMs 为该帧的实际采样时刻（毫秒，相对录制起点）。</summary>
+    public void Append(double timestampMs, double[] values)
     {
         if (values == null || values.Length == 0)
             return;
         lock (_lock)
         {
+            _timestamps.Add(timestampMs);
             _frames.Add((double[])values.Clone());
         }
     }
@@ -51,11 +56,12 @@ public class OutputRecorder
         lock (_lock)
         {
             _frames.Clear();
+            _timestamps.Clear();
             _channelNames.Clear();
         }
     }
 
-    public void Save(string path, double sampleIntervalMs)
+    public void Save(string path)
     {
         lock (_lock)
         {
@@ -74,7 +80,7 @@ public class OutputRecorder
             var inv = CultureInfo.InvariantCulture;
             for (int i = 0; i < _frames.Count; i++)
             {
-                sb.Append((i * sampleIntervalMs).ToString("0.###", inv));
+                sb.Append(_timestamps[i].ToString("0.###", inv));
                 for (int c = 0; c < _frames[i].Length; c++)
                     sb.Append(',').Append(_frames[i][c].ToString("0.###", inv));
                 sb.AppendLine();

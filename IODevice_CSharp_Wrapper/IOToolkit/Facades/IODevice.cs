@@ -581,7 +581,7 @@ namespace IOToolkit
         /// </summary>
         /// <param name="oactionName">OAction 名称</param>
         /// <param name="keyName">Key 名称</param>
-        /// <param name="scale">缩放系数</param>
+        /// <param name="scale">���放系数</param>
         /// <param name="invertEvent">是否反转事件</param>
         /// <returns>成功返回1 失败返回0</returns>
         public int SetOKProps(string oactionName, string keyName, float scale, bool invertEvent)
@@ -781,12 +781,7 @@ namespace IOToolkit
                 }
                 catch { }
             };
-            int slot = NativeCallbackBridge.RegisterChannel(
-                this.ID,
-                channelName,
-                proxy,
-                null
-            );
+            int slot = NativeCallbackBridge.RegisterChannel(this.ID, channelName, proxy, null);
             int nativeId = IONativeWrapper.BindPluginChannel(
                 this.ID,
                 channelName,

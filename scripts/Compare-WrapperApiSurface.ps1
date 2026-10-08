@@ -7,9 +7,9 @@ param(
 function Get-ApiSurface([string]$path) {
     $asm = [System.Reflection.Assembly]::Load([System.IO.File]::ReadAllBytes($path))
     $flags = [System.Reflection.BindingFlags]::Public -bor `
-             [System.Reflection.BindingFlags]::Instance -bor `
-             [System.Reflection.BindingFlags]::Static -bor `
-             [System.Reflection.BindingFlags]::DeclaredOnly
+        [System.Reflection.BindingFlags]::Instance -bor `
+        [System.Reflection.BindingFlags]::Static -bor `
+        [System.Reflection.BindingFlags]::DeclaredOnly
     $items = New-Object System.Collections.Generic.List[string]
     foreach ($t in $asm.GetTypes()) {
         if (-not ($t.IsPublic -or $t.IsNestedPublic)) { continue }
@@ -25,8 +25,8 @@ function Get-DllImportModules([string]$path) {
     $mods = New-Object System.Collections.Generic.List[string]
     foreach ($t in $asm.GetTypes()) {
         $flags = [System.Reflection.BindingFlags]::Static -bor `
-                 [System.Reflection.BindingFlags]::Public -bor `
-                 [System.Reflection.BindingFlags]::NonPublic
+            [System.Reflection.BindingFlags]::Public -bor `
+            [System.Reflection.BindingFlags]::NonPublic
         foreach ($m in $t.GetMethods($flags)) {
             $a = $m.GetCustomAttributes([System.Runtime.InteropServices.DllImportAttribute], $false)
             if ($a.Count -gt 0) { $mods.Add($a[0].Value) }

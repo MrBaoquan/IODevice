@@ -18,6 +18,73 @@ namespace IOStudio.Services.Motion
         /// <summary>轮询累计耗时 (毫秒)</summary>
         public static long TotalUpdateMs;
 
+        // ── 看门狗: 找出"哪个调用长期阻塞" ──────────────────
+        //
+        // 动机: 某些池线程会被同步阻塞调用长时间占用 (例如派发链路里宿主↔插件的往返),
+        // 线程池只有 3 个线程, 堵一个就足以饿死 Rx 的定时通知 —— 表现为"两个定时器同时瘫",
+        // 而单看每个调用点的耗时又都正常 (因为被堵的那个根本没返回, 统计不到)。
+        //
+        // 用法: 在候选调用点 Enter/Exit, 看门狗线程会报出超过 500ms 未返回的调用名。
+
+        private static readonly System.Collections.Concurrent.ConcurrentDictionary<
+            int,
+            (string Name, long SinceMs)
+        > Active = new();
+
+        private static int _nextId;
+        private static int _watcherStarted;
+
+        /// <summary>看门狗最近发现的长期阻塞调用名; null = 无。</summary>
+        public static string? StuckSite;
+
+        /// <summary>记录一个调用开始, 返回一个句柄给 Exit。</summary>
+        public static int Enter(string name)
+        {
+            int id = System.Threading.Interlocked.Increment(ref _nextId);
+            Active[id] = (name, System.Environment.TickCount64);
+            EnsureWatcher();
+            return id;
+        }
+
+        /// <summary>记录调用返回。</summary>
+        public static void Exit(int id)
+        {
+            Active.TryRemove(id, out _);
+        }
+
+        private static void EnsureWatcher()
+        {
+            if (System.Threading.Interlocked.Exchange(ref _watcherStarted, 1) == 1)
+                return;
+            var t = new System.Threading.Thread(WatchLoop)
+            {
+                IsBackground = true,
+                Name = "PollDiagnostics.Watch",
+            };
+            t.Start();
+        }
+
+        private static void WatchLoop()
+        {
+            while (true)
+            {
+                System.Threading.Thread.Sleep(200);
+                long now = System.Environment.TickCount64;
+                string? stuck = null;
+                long stuckMs = 0;
+                foreach (var kv in Active)
+                {
+                    long busyMs = now - kv.Value.SinceMs;
+                    if (busyMs > 500 && busyMs > stuckMs)
+                    {
+                        stuckMs = busyMs;
+                        stuck = kv.Value.Name;
+                    }
+                }
+                StuckSite = stuck == null ? null : $"{stuck} 已阻塞 {stuckMs}ms";
+            }
+        }
+
         // ── 进程调度压力 (区分"线程耗尽"与"CPU 忙") ──
 
         /// <summary>采样次数</summary>

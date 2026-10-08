@@ -42,14 +42,16 @@ VALUE_SLIDER_ID = "ValueSlider"
 PANEL_ID = "KfPropertyPanel"
 
 # 影片路径: 用于从文件里**推导**首片段时间, 避免把常量写死后随文件/编辑漂移。
+#
+# 注意: 必须指向**已跟踪的源文件**, 不能用部署目录的副本 ——
+# 部署副本会被应用"自动保存"改写 (例如双击加帧会扩展片段范围),
+# 一旦指向它, 派生常量就会随测试自身的副作用漂移, 断言忽真忽假。
 MOTION_PATH = Path(
     os.environ.get(
         "IOSTUDIO_MOTION",
         str(
             Path(__file__).resolve().parents[2]
-            / "Binaries"
-            / "Win64"
-            / "Debug"
+            / "IOStudio"
             / "Config"
             / "Motion"
             / "showcase_10min.motion"
@@ -92,16 +94,10 @@ MID_CLIP_MS = (FIRST_CLIP_MS + CLIP_END_MS) / 2.0
 # ─────────────────────────── 基础设施 ───────────────────────────
 
 def _find_window(keyword=WINDOW_KEYWORD, timeout=WINDOW_TIMEOUT):
-    deadline = time.time() + timeout
-    while time.time() < deadline:
-        for w in Desktop(backend="uia").windows():
-            try:
-                if keyword.lower() in w.window_text().lower() and w.is_visible():
-                    return w
-            except Exception:
-                continue
-        time.sleep(0.5)
-    return None
+    # 用 Win32 按标题找句柄, 避免枚举整个桌面 (某些环境下极慢, 实测 212s)
+    from uia_win import find_window as _fw
+
+    return _fw(keyword, timeout)
 
 
 def _by_id(win, auto_id):

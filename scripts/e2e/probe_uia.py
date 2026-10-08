@@ -66,16 +66,11 @@ KNOWN_BLIND_SPOTS = [
 
 
 def _find_window(keyword=WINDOW_KEYWORD, timeout=WINDOW_TIMEOUT):
-    deadline = time.time() + timeout
-    while time.time() < deadline:
-        for w in Desktop(backend="uia").windows():
-            try:
-                if keyword.lower() in w.window_text().lower() and w.is_visible():
-                    return w
-            except Exception:
-                continue
-        time.sleep(0.5)
-    return None
+    # 用 Win32 按标题找句柄, 避免枚举整个桌面
+    # (某些环境存在巨型 UIA 窗口, 实测 Desktop().windows() 需 212 秒)
+    from uia_win import find_window as _fw
+
+    return _fw(keyword, timeout)
 
 
 @pytest.fixture(scope="module")

@@ -418,7 +418,7 @@ namespace IOStudio.Cli
             {
                 // 场景内部一律 ConfigureAwait(false), 不会回到 UI 线程, 可安全同步等待
                 report = ProtocolTestRunner
-                    .RunFileAsync(scenarioPath, CancellationToken.None)
+                    .RunFileAsync(scenarioPath, observer: null, CancellationToken.None)
                     .GetAwaiter()
                     .GetResult();
             }

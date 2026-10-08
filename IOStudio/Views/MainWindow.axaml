@@ -137,6 +137,11 @@
 						<CheckBox IsChecked="{Binding IsInterfaceDebugOpen}" IsHitTestVisible="False" />
 					</MenuItem.Icon>
 				</MenuItem>
+				<MenuItem Header="协议测试台" Command="{Binding OpenProtocolTestCommand}">
+					<MenuItem.Icon>
+						<CheckBox IsChecked="{Binding IsProtocolTestOpen}" IsHitTestVisible="False" />
+					</MenuItem.Icon>
+				</MenuItem>
 			</MenuItem>
 				<MenuItem Header="视图(_V)">
 					<MenuItem Header="{Binding EditModeMenuText}" Command="{Binding ToggleEditModeCommand}">

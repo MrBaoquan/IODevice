@@ -127,6 +127,9 @@ namespace IOStudio.ViewModels
         public ReactiveCommand<Device, Unit> DeleteDeviceCommand { get; }
         public ReactiveCommand<Unit, Unit> OpenTimelineEditorCommand { get; }
         public ReactiveCommand<Unit, Unit> OpenInterfaceDebugCommand { get; }
+
+        /// <summary>打开协议测试台 (TCP/UDP/WebSocket/串口 收发观察 + 场景运行)。</summary>
+        public ReactiveCommand<Unit, Unit> OpenProtocolTestCommand { get; }
         public ReactiveCommand<Unit, Unit> CheckUpdateCommand { get; }
         public ReactiveCommand<Device, Unit> DetachDeviceCommand { get; }
 
@@ -143,6 +146,13 @@ namespace IOStudio.ViewModels
         {
             get => _isInterfaceDebugOpen;
             private set => this.RaiseAndSetIfChanged(ref _isInterfaceDebugOpen, value);
+        }
+
+        private bool _isProtocolTestOpen;
+        public bool IsProtocolTestOpen
+        {
+            get => _isProtocolTestOpen;
+            private set => this.RaiseAndSetIfChanged(ref _isProtocolTestOpen, value);
         }
 
         private bool _isEventForwardOpen;
@@ -626,6 +636,13 @@ namespace IOStudio.ViewModels
                 );
             });
 
+            OpenProtocolTestCommand = ReactiveCommand.Create(() =>
+            {
+                windowManager.ShowOrActivate<ProtocolTestWindow>(
+                    () => new ProtocolTestWindow()
+                );
+            });
+
             ToggleEditModeCommand = ReactiveCommand.Create(() =>
             {
                 IsEditMode = !IsEditMode;
@@ -656,6 +673,8 @@ namespace IOStudio.ViewModels
                     IsTimelineOpen = isOpen;
                 else if (type == typeof(InterfaceDebugWindow))
                     IsInterfaceDebugOpen = isOpen;
+                else if (type == typeof(ProtocolTestWindow))
+                    IsProtocolTestOpen = isOpen;
                 else if (type == typeof(EventForwardConfigWindow))
                     IsEventForwardOpen = isOpen;
             };

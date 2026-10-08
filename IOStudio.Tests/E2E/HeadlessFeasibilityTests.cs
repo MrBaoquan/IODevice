@@ -32,7 +32,13 @@ namespace IOStudio.Tests.E2E
     /// <b>fire-and-forget</b> —— 立即返回, 不等待 lambda 执行完; 断言会先于被测代码运行,
     /// 产生"永远通过"的假绿(本次就因此误判过一次)。必须用<b>会 await 的泛型重载</b>
     /// <c>Dispatch&lt;T&gt;(Func&lt;T&gt;, CancellationToken)</c>。</para>
+    ///
+    /// <para><b>并发限制</b>: 每个类都会创建自己的 <c>HeadlessUnitTestSession</c>, 而
+    /// <c>Dispatcher.UIThread</c> 是进程级的 —— 两个会话类并行跑会互相把回调派发到对方的
+    /// 线程上 (表现为 "Call from invalid thread")。所以凡是用 headless 会话的测试类,
+    /// 必须放在同一个 xunit collection 里串行执行。</para>
     /// </summary>
+    [Collection("AvaloniaHeadless")]
     public class HeadlessFeasibilityTests : IDisposable
     {
         private readonly HeadlessUnitTestSession _session;

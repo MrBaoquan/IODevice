@@ -1,4 +1,5 @@
 using Avalonia;
+using Avalonia.Threading;
 using DynamicData;
 using HiMind.Distribution;
 using IOStudio.Models;
@@ -860,8 +861,15 @@ namespace IOStudio.ViewModels
                                 if (IsStared == false)
                                     return;
 
-                                // 只在 UI 更新时切换到主线程
-                                RxApp.MainThreadScheduler.Schedule(() =>
+                                // 只在 UI 更新时切换到主线程。
+                                // 这里显式用 Avalonia 的 Dispatcher, 而不是 RxApp.MainThreadScheduler:
+                                // Schedule 在"当前线程已被判定为可执行"时会**内联执行**,
+                                // 结果 Device.Update() 在后台线程改了 IsValid 等绑定属性,
+                                // 触发 ReactiveCommand.CanExecuteChanged 在后台线程发布,
+                                // 绑定该命令的 Avalonia Button 随即抛
+                                // "InvalidOperationException: Call from invalid thread",
+                                // 并且该异常会沿调用栈弄死订阅它的设备轮询。
+                                Dispatcher.UIThread.Post(() =>
                                 {
                                     SelectedIODevcie?.Update();
                                     RefreshStatusDerived();

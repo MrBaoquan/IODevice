@@ -16,16 +16,6 @@ using ReactiveUI;
 namespace IOStudio.ViewModels;
 
 /// <summary>
-/// 输出测试模式
-/// </summary>
-public enum OutputTestMode
-{
-    Analog, // 模拟量输出
-    Pulse, // 脉冲测试
-    Sequence // 跑马灯测试
-}
-
-/// <summary>
 /// 跑马灯方向
 /// </summary>
 public enum SequenceDirection
@@ -130,12 +120,12 @@ public class OutputTestViewModel : ViewModelBase
     private readonly Device _device;
     private IODevice? _ioDevice;
     private CancellationTokenSource? _sequenceCts;
-    private CancellationTokenSource? _pulseCts;
 
     // 高级调试工作台服务
     private readonly ScopeSampler _scopeSampler;
     private readonly SignalGenerator _generator;
     private readonly OutputRecorder _recorder = new();
+    private readonly System.Diagnostics.Stopwatch _recClock = System.Diagnostics.Stopwatch.StartNew();
     private CancellationTokenSource? _genCts;
     private CancellationTokenSource? _armCts;
     private bool _disposed;
@@ -156,56 +146,12 @@ public class OutputTestViewModel : ViewModelBase
         set => this.RaiseAndSetIfChanged(ref _dataSourceType, value);
     }
 
-    private OutputTestMode _testMode = OutputTestMode.Analog;
-    public OutputTestMode TestMode
-    {
-        get => _testMode;
-        set => this.RaiseAndSetIfChanged(ref _testMode, value);
-    }
-
-    // 模拟量参数
-    private float _analogValue = 0.5f;
-    public float AnalogValue
-    {
-        get => _analogValue;
-        set => this.RaiseAndSetIfChanged(ref _analogValue, value);
-    }
-
     // 批量设值（0~100%，作用于选中通道）
     private double _batchValuePercent = 0.0;
     public double BatchValuePercent
     {
         get => _batchValuePercent;
         set => this.RaiseAndSetIfChanged(ref _batchValuePercent, value);
-    }
-
-    private float _analogMin = 0f;
-    public float AnalogMin
-    {
-        get => _analogMin;
-        set => this.RaiseAndSetIfChanged(ref _analogMin, value);
-    }
-
-    private float _analogMax = 1f;
-    public float AnalogMax
-    {
-        get => _analogMax;
-        set => this.RaiseAndSetIfChanged(ref _analogMax, value);
-    }
-
-    // 脉冲参数
-    private int _pulseDuration = 500;
-    public int PulseDuration
-    {
-        get => _pulseDuration;
-        set => this.RaiseAndSetIfChanged(ref _pulseDuration, value);
-    }
-
-    private bool _isContinuousPulse = false;
-    public bool IsContinuousPulse
-    {
-        get => _isContinuousPulse;
-        set => this.RaiseAndSetIfChanged(ref _isContinuousPulse, value);
     }
 
     // 跑马灯参数
@@ -252,13 +198,6 @@ public class OutputTestViewModel : ViewModelBase
     {
         get => _isSequenceRunning;
         set => this.RaiseAndSetIfChanged(ref _isSequenceRunning, value);
-    }
-
-    private bool _isPulseRunning = false;
-    public bool IsPulseRunning
-    {
-        get => _isPulseRunning;
-        set => this.RaiseAndSetIfChanged(ref _isPulseRunning, value);
     }
 
     private string _currentSequenceKey = string.Empty;
@@ -545,11 +484,6 @@ public class OutputTestViewModel : ViewModelBase
 
     #region 命令
 
-    public ReactiveCommand<Unit, Unit> SendAnalogCommand { get; }
-    public ReactiveCommand<Unit, Unit> SendAnalogToAllCommand { get; }
-    public ReactiveCommand<Unit, Unit> SendPulseCommand { get; }
-    public ReactiveCommand<Unit, Unit> StartContinuousPulseCommand { get; }
-    public ReactiveCommand<Unit, Unit> StopContinuousPulseCommand { get; }
     public ReactiveCommand<Unit, Unit> StartSequenceCommand { get; }
     public ReactiveCommand<Unit, Unit> StopSequenceCommand { get; }
     public ReactiveCommand<Unit, Unit> SelectAllCommand { get; }
@@ -601,28 +535,19 @@ public class OutputTestViewModel : ViewModelBase
         LoadKeys(keys);
 
         // 监听选中数量变化
+        // 必须切回 UI 线程: _testKeysSource 由设备状态驱动 (后台轮询线程),
+        // 若在这里直接更新 SelectedCount, 会引发:
+        //   SelectedCount(后台变更) → hasSelection → 命令 CanExecuteChanged 也在后台线程发布
+        //   → 绑定该命令的 Avalonia Button 触碰 StyledProperty → "Call from invalid thread"
+        //   → 异常还会沿调用栈弄死订阅它的后台轮询 (见 MainWindowViewModel 设备轮询)。
         _testKeysSource
             .Connect()
             .AutoRefresh(x => x.IsSelected)
+            .ObserveOn(RxApp.MainThreadScheduler)
             .Subscribe(_ => UpdateSelectedCount());
 
         // 创建命令
         var hasSelection = this.WhenAnyValue(x => x.SelectedCount).Select(c => c > 0);
-
-        SendAnalogCommand = ReactiveCommand.Create(ExecuteSendAnalog, hasSelection);
-        SendAnalogToAllCommand = ReactiveCommand.Create(ExecuteSendAnalogToAll);
-        SendPulseCommand = ReactiveCommand.Create(ExecuteSendPulse, hasSelection);
-
-        var canStartPulse = this.WhenAnyValue(x => x.IsPulseRunning).Select(r => !r);
-        var canStopPulse = this.WhenAnyValue(x => x.IsPulseRunning);
-        StartContinuousPulseCommand = ReactiveCommand.Create(
-            ExecuteStartContinuousPulse,
-            canStartPulse.CombineLatest(hasSelection, (a, b) => a && b)
-        );
-        StopContinuousPulseCommand = ReactiveCommand.Create(
-            ExecuteStopContinuousPulse,
-            canStopPulse
-        );
 
         var canStartSequence = this.WhenAnyValue(x => x.IsSequenceRunning).Select(r => !r);
         var canStopSequence = this.WhenAnyValue(x => x.IsSequenceRunning);
@@ -652,9 +577,11 @@ public class OutputTestViewModel : ViewModelBase
         _generator.AttachPreview(_scopeSampler);
 
         // 选中通道变化 → 重建示波器通道/预览
+        // 同 UpdateSelectedCount: 该源由设备状态驱动, 必须在 UI 线程重建 (会触碰 UI 绑定集合)。
         _testKeysSource
             .Connect()
             .AutoRefresh(x => x.IsSelected)
+            .ObserveOn(RxApp.MainThreadScheduler)
             .Subscribe(_ => RebuildScopeChannels());
 
         // 输出使能 = ARM && !急停
@@ -879,117 +806,16 @@ public class OutputTestViewModel : ViewModelBase
             }
         }
 
-        // 录制采集：把选中通道值按轮询周期写入录波器
+        // 录制采集：把选中通道值按轮询周期写入录波器（记录真实采样时刻）
         if (IsRecording)
         {
             var selected = TestKeys.Where(k => k.IsSelected).Select(k => (double)k.Value).ToArray();
             if (selected.Length > 0)
             {
-                _recorder.Append(selected);
+                _recorder.Append(_recClock.Elapsed.TotalMilliseconds, selected);
                 RecordFrameCount = _recorder.FrameCount;
             }
         }
-    }
-
-    private void ExecuteSendAnalog()
-    {
-        foreach (var key in TestKeys.Where(k => k.IsSelected))
-        {
-            SafeSetDO((IOToolkit.Key)key.Name, AnalogValue);
-        }
-    }
-
-    private void ExecuteSendAnalogToAll()
-    {
-        foreach (var key in TestKeys)
-        {
-            SafeSetDO((IOToolkit.Key)key.Name, AnalogValue);
-        }
-    }
-
-    private void ExecuteSendPulse()
-    {
-        _ = SendPulseAsync();
-    }
-
-    private async Task SendPulseAsync()
-    {
-        var selectedKeys = TestKeys.Where(k => k.IsSelected).ToList();
-        if (!IsOutputEnabled)
-            return;
-
-        foreach (var key in selectedKeys)
-        {
-            key.IsHighlighted = true;
-            SafeSetDO((IOToolkit.Key)key.Name, 1f);
-        }
-
-        await Task.Delay(PulseDuration);
-
-        foreach (var key in selectedKeys)
-        {
-            key.IsHighlighted = false;
-            SafeSetDO((IOToolkit.Key)key.Name, 0f);
-        }
-    }
-
-    private void ExecuteStartContinuousPulse()
-    {
-        _pulseCts?.Cancel();
-        _pulseCts = new CancellationTokenSource();
-        IsPulseRunning = true;
-        _ = ContinuousPulseAsync(_pulseCts.Token);
-    }
-
-    private async Task ContinuousPulseAsync(CancellationToken ct)
-    {
-        var device = GetIODevice();
-        if (device == null)
-            return;
-
-        try
-        {
-            while (!ct.IsCancellationRequested)
-            {
-                var selectedKeys = TestKeys.Where(k => k.IsSelected).ToList();
-
-                // 开启
-                                foreach (var key in selectedKeys)
-                                {
-                                    key.IsHighlighted = true;
-                                    if (!SafeSetDO((IOToolkit.Key)key.Name, 1f))
-                                        break;
-                                }
-
-                                await Task.Delay(PulseDuration, ct);
-
-                                // 关闭
-                                foreach (var key in selectedKeys)
-                                {
-                                    key.IsHighlighted = false;
-                                    SafeSetDO((IOToolkit.Key)key.Name, 0f);
-                                }
-
-                                await Task.Delay(PulseDuration, ct);
-            }
-        }
-        catch (OperationCanceledException)
-        {
-            // 正常取消
-        }
-        finally
-        {
-            IsPulseRunning = false;
-            foreach (var key in TestKeys)
-            {
-                key.IsHighlighted = false;
-            }
-        }
-    }
-
-    private void ExecuteStopContinuousPulse()
-    {
-        _pulseCts?.Cancel();
     }
 
     private void ExecuteStartSequence()
@@ -1243,7 +1069,6 @@ public class OutputTestViewModel : ViewModelBase
             StopGenerator();
             StopRecording();
             _sequenceCts?.Cancel();
-            _pulseCts?.Cancel();
 
             var device = GetIODevice();
             if (device != null)
@@ -1339,6 +1164,7 @@ public class OutputTestViewModel : ViewModelBase
                 return;
             }
             _recorder.Begin(names, 0);
+            _recClock.Restart();
             IsRecording = true;
             RecordFrameCount = 0;
             RecordStatusText = $"录制中 {names.Count} 通道…";
@@ -1364,7 +1190,7 @@ public class OutputTestViewModel : ViewModelBase
             {
                 var dir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Config", "OutputLogs");
                 var path = Path.Combine(dir, $"DOLog_{DateTime.Now:yyyyMMdd_HHmmss}.csv");
-                _recorder.Save(path, 1000.0 / GetSampleRateHz());
+                _recorder.Save(path);
                 RecordFilePath = path;
                 RecordStatusText = $"已保存 {Path.GetFileName(path)}";
             }
@@ -1416,7 +1242,6 @@ public class OutputTestViewModel : ViewModelBase
         public void StopAllTests()
         {
             _sequenceCts?.Cancel();
-            _pulseCts?.Cancel();
             StopGenerator();
             StopRecording();
         }

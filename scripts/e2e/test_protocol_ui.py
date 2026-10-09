@@ -13,6 +13,7 @@
     2) 跑断言:    C:\\Python311\\python.exe -m pytest scripts\\e2e\\test_protocol_ui.py -v
     未启动时本用例会自动拉起应用。
 """
+import ctypes
 import os
 import socket
 import subprocess
@@ -23,8 +24,8 @@ from pathlib import Path
 import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from uia_win import find_window  # noqa: E402
-from pywinauto import Desktop  # noqa: E402
+from uia_win import find_window, find_handles  # noqa: E402
+from pywinauto import Desktop, mouse  # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[2]
 DEPLOY = Path(
@@ -327,3 +328,55 @@ def test_protocol_batch_a_affordances(app):
     status = _by_id(win, "ProtocolSendStatus")
     text = (status.element_info.name or "") if status is not None else ""
     assert "字节" in text, f"字节预览未更新, 当前: {text!r}"
+
+
+def test_protocol_send_splitter_resizes(app):
+    """发送区可拖拽: 日志与发送之间有一根分隔条, 拖动即改变发送框高度。
+
+    "发送框能自由拉伸"是通用调试台的基本手感 (长 JSON / 批量 AT 指令要写得下)。
+    只断言控件存在不够 —— 必须证明真拖了、真会变, 所以这里走真实鼠标拖拽。
+    """
+    win = find_window(TEST_WINDOW_TITLE, timeout=10)
+    if win is None:
+        pytest.skip("协议测试台窗口未打开 (依赖前面的用例)")
+
+    assert _by_id(win, "ProtocolSendSplitter") is not None, (
+        "缺少发送区分隔条 (ProtocolSendSplitter)"
+    )
+
+    # 固定窗口尺寸, 让"向上拖 N 像素"有确定的空间可用 (日志行另有 MinHeight 兜底)
+    hs = find_handles(TEST_WINDOW_TITLE)
+    if hs:
+        ctypes.windll.user32.ShowWindow(hs[0], 9)
+        ctypes.windll.user32.SetWindowPos(hs[0], 0, 40, 40, 1180, 820, 0x0044)
+        ctypes.windll.user32.SetForegroundWindow(hs[0])
+        time.sleep(0.8)
+
+    def box_height():
+        b = _by_id(win, "ProtocolSendText")
+        r = b.rectangle()
+        return r.bottom - r.top
+
+    def drag(cy_offset):
+        s = _by_id(win, "ProtocolSendSplitter").rectangle()
+        cx = (s.left + s.right) // 2
+        cy = (s.top + s.bottom) // 2
+        mouse.move(coords=(cx, cy))
+        time.sleep(0.2)
+        mouse.press(coords=(cx, cy))
+        time.sleep(0.2)
+        step = 10 if cy_offset >= 0 else -10
+        for dy in range(step, cy_offset + step, step):
+            mouse.move(coords=(cx, cy + dy))
+            time.sleep(0.03)
+        mouse.release(coords=(cx, cy + cy_offset))
+        time.sleep(0.8)
+
+    before = box_height()
+    drag(-150)  # 向上拖 → 发送区变高 (分隔条上方是日志, 下方是发送)
+    after = box_height()
+    assert after >= before + 60, (
+        f"向上拖动分隔条后发送框未变高: before={before} after={after}"
+    )
+
+    drag(150)  # 还原, 避免影响后续/重复运行

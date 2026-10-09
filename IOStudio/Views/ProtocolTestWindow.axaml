@@ -40,11 +40,11 @@
         <Style Selector="TextBox.inline">
             <Setter Property="MinHeight" Value="28"/>
         </Style>
-        <!-- 发送框: 全宽多行 —— 默认就留够 3 行, 写 JSON / AT 指令不再局促 -->
+        <!-- 发送框: 全宽多行 —— 默认就留够 3 行, 写 JSON / AT 指令不再局促;
+             上方的可拖拽分隔条拉高发送区时, 框随高度自由伸缩 (故不设 MaxHeight) -->
         <Style Selector="TextBox.send-box">
             <Setter Property="VerticalContentAlignment" Value="Top"/>
             <Setter Property="MinHeight" Value="76"/>
-            <Setter Property="MaxHeight" Value="220"/>
         </Style>
 
         <Style Selector="ComboBox">
@@ -566,8 +566,16 @@
             <ContentControl x:DataType="vm:ProtocolTestViewModel"
                             DataContext="{Binding SelectedSession}"
                             IsVisible="{Binding HasSelection}">
-                <Grid x:DataType="vm:ProtocolSessionViewModel"
-                      RowDefinitions="Auto,Auto,Auto,*,Auto,Auto">
+                <Grid x:DataType="vm:ProtocolSessionViewModel">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>            <!-- ① 连接 -->
+                        <RowDefinition Height="Auto"/>            <!-- ② 日志条 -->
+                        <RowDefinition Height="Auto"/>            <!-- ③ 表头 -->
+                        <RowDefinition Height="*" MinHeight="90"/> <!-- ④ 日志正文 -->
+                        <RowDefinition Height="Auto"/>            <!-- 分隔条 -->
+                        <RowDefinition Height="Auto" MinHeight="172"/> <!-- ⑤ 发送 -->
+                        <RowDefinition Height="Auto"/>            <!-- ⑥ 工具 -->
+                    </Grid.RowDefinitions>
 
                     <!-- ─────────── ① 连接 (参数 + 状态 + 启停) ─────────── -->
                     <Border Grid.Row="0"
@@ -931,17 +939,28 @@
                         </Border>
                     </Grid>
 
+                    <!-- ─────────── 可拖拽分隔条: 上下拉伸 日志 / 发送区 ─────────── -->
+                    <GridSplitter Grid.Row="4"
+                                  Height="6"
+                                  ResizeDirection="Rows"
+                                  HorizontalAlignment="Stretch"
+                                  Background="{DynamicResource TlBorderBrush}"
+                                  AutomationProperties.AutomationId="ProtocolSendSplitter"
+                                  AutomationProperties.Name="调整发送区高度"
+                                  Cursor="SizeNorthSouth"
+                                  ToolTip.Tip="拖动调整日志与发送区的高度"/>
+
                     <!-- ─────────── ⑤ 发送 ─────────── -->
-                    <Border Grid.Row="4"
+                    <Border Grid.Row="5"
                             Background="{DynamicResource TlPanelBg}"
                             Padding="12,6"
                             BorderBrush="{DynamicResource TlBorderBrush}"
                             BorderThickness="0,1,0,0"
                             IsVisible="{Binding ShowControls}">
-                        <StackPanel Spacing="6">
+                        <Grid RowDefinitions="Auto,*,Auto,Auto" RowSpacing="6">
 
                             <!-- 快捷指令 chip: 贴在发送框上方, 单击即发 (增删改仍在下方「工具」区) -->
-                            <ItemsControl ItemsSource="{Binding QuickCommands}"
+                            <ItemsControl Grid.Row="0" ItemsSource="{Binding QuickCommands}"
                                           IsVisible="{Binding HasQuickCommands}"
                                           Margin="50,0,0,0">
                                 <ItemsControl.ItemsPanel>
@@ -963,7 +982,7 @@
                             </ItemsControl>
 
                             <!-- 发送框行: 标题 + 全宽多行框 (常用 JSON / AT 指令要写得下) -->
-                            <Grid ColumnDefinitions="Auto,*">
+                            <Grid Grid.Row="1" ColumnDefinitions="Auto,*">
                                 <TextBlock Grid.Column="0" Text="发送" Classes="band-cap"
                                            VerticalAlignment="Top" Margin="0,7,10,0"/>
                                 <TextBox Grid.Column="1" Classes="send-box"
@@ -978,7 +997,7 @@
                             </Grid>
 
                             <!-- 选项行: 编码 / 新行 / 发送给 / 循环 | 字节预览 / 清空 / 发送 -->
-                            <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10" Margin="50,0,0,0">
+                            <Grid Grid.Row="2" ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10" Margin="50,0,0,0">
                                 <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="12"
                                             VerticalAlignment="Center">
                                     <StackPanel Orientation="Horizontal">
@@ -1055,7 +1074,7 @@
                             </Grid>
 
                             <!-- 文件行: 文件 / 分块 / 校验和 (左对齐到发送框同一竖线) -->
-                            <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto,Auto"
+                            <Grid Grid.Row="3" ColumnDefinitions="Auto,*,Auto,Auto,Auto,Auto"
                                   ColumnSpacing="8" Margin="50,0,0,0" VerticalAlignment="Center">
                                 <TextBlock Grid.Column="0" Text="文件" Classes="inline-cap"/>
                                 <TextBox Grid.Column="1" Classes="inline"
@@ -1111,11 +1130,11 @@
                                                AutomationProperties.AutomationId="ProtocolChecksumPreview"/>
                                 </StackPanel>
                             </Grid>
-                        </StackPanel>
+                        </Grid>
                     </Border>
 
                     <!-- ─────────── ⑥ 工具 (快捷指令 / 自动应答, 默认收起) ─────────── -->
-                    <Border Grid.Row="5"
+                    <Border Grid.Row="6"
                             Background="{DynamicResource TlPanelBg}"
                             Padding="12,6"
                             BorderBrush="{DynamicResource TlBorderBrush}"

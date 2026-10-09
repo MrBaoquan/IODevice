@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Globalization;
 using System.IO;
+using System.IO.Ports;
 using System.Linq;
 using System.Reactive;
 using System.Text;
@@ -69,6 +70,9 @@ namespace IOStudio.ViewModels
             // 发送框上方的快捷指令 chip 行随集合增减显示/隐藏
             QuickCommands.CollectionChanged += (_, _) =>
                 this.RaisePropertyChanged(nameof(HasQuickCommands));
+            RefreshSerialPortsCommand = ReactiveCommand.Create(RefreshSerialPorts);
+            RefreshSerialPorts(); // 开箱即出可用串口 (对齐 UART Assistant)
+            Modbus = new ModbusComposerViewModel(this);
             ClearLogCommand = ReactiveCommand.Create(ClearLog);
             ResetStatsCommand = ReactiveCommand.Create(ResetStats);
             SendBreakCommand = ReactiveCommand.Create(
@@ -135,6 +139,9 @@ namespace IOStudio.ViewModels
             {
                 this.RaiseAndSetIfChanged(ref _transport, value);
                 RaiseFieldVisibility();
+                // 切到串口就立刻列举一次, 不用等窗口的定时刷新
+                if (value.Transport == "serial")
+                    RefreshSerialPorts();
             }
         }
 
@@ -598,10 +605,63 @@ namespace IOStudio.ViewModels
             get => _sendEncoding;
             set
             {
+                var old = _sendEncoding;
+                if (string.Equals(old, value, StringComparison.Ordinal))
+                    return;
+
+                // 文本 ↔ HEX 切换时自动转换发送框内容 (对齐 UART Assistant 的手感);
+                // 恢复工作区时用 _suppressSendConvert 关掉, 否则会把已存的 HEX 串再转一遍。
+                var converted = _suppressSendConvert ? null : ConvertSendTextForEncoding(old, value);
                 this.RaiseAndSetIfChanged(ref _sendEncoding, value);
+                if (converted is not null)
+                    SendText = converted;
                 RaiseSendDerived();
             }
         }
+
+        /// <summary>恢复工作区期间的"静默"开关: 只灌值, 不触发文本自动转换。</summary>
+        private bool _suppressSendConvert;
+
+        /// <summary>
+        /// 发送框内容的编码换算。返回 null = 不需要/无法转换 (保持原文)。
+        ///
+        /// <para>文本 → HEX: 按**原编码**编成字节, 再写成 "AA BB" 形式;
+        /// HEX → 文本: 解析十六进制为字节, 再按**新编码**解码。
+        /// 两个文本编码之间 (如 UTF-8 ↔ GBK) 不转换 —— 显示的字符本来就一样。</para>
+        /// </summary>
+        private string? ConvertSendTextForEncoding(string oldEncoding, string newEncoding)
+        {
+            if (string.IsNullOrEmpty(_sendText))
+                return null;
+
+            var oldHex = IsHexEncoding(oldEncoding);
+            var newHex = IsHexEncoding(newEncoding);
+            if (oldHex == newHex)
+                return null;
+
+            try
+            {
+                if (newHex)
+                {
+                    var bytes = ProtocolEncoding.Encode(_sendText, oldEncoding);
+                    return FormatHex(bytes);
+                }
+
+                var parsed = ProtocolEncoding.Encode(_sendText, "HEX");
+                return ProtocolEncoding.Get(newEncoding).GetString(parsed);
+            }
+            catch
+            {
+                // 例如切到文本时内容不是合法 HEX: 保留原文, 让内联校验去提示
+                return null;
+            }
+        }
+
+        private static bool IsHexEncoding(string encoding) =>
+            string.Equals(encoding, "HEX", StringComparison.OrdinalIgnoreCase);
+
+        private static string FormatHex(byte[] bytes) =>
+            string.Join(" ", bytes.Select(b => b.ToString("X2")));
 
         private string _sendNewLine = "无";
         public string SendNewLine
@@ -900,6 +960,54 @@ namespace IOStudio.ViewModels
             }
         }
 
+        // ───────────── 串口端口列表 (自动刷新) ─────────────
+
+        /// <summary>
+        /// 本机可用串口 —— 由窗口定时刷新 (见 ProtocolTestWindow), 也可手动刷新。
+        /// 对齐 UART Assistant / SSCOM: 串口不能靠用户手打 COM 号, 插拔后要能自己冒出来。
+        /// </summary>
+        public ObservableCollection<string> SerialPorts { get; } = new();
+
+        public ReactiveCommand<Unit, Unit> RefreshSerialPortsCommand { get; }
+
+        /// <summary>
+        /// 重新枚举本机串口。只在列表**确有变化**时才改动集合 ——
+        /// 否则每 2 秒清空重填会抖掉用户正在展开的下拉框 / 已选中的项。
+        /// </summary>
+        public void RefreshSerialPorts()
+        {
+            string[] names;
+            try
+            {
+                names = SerialPort.GetPortNames()
+                    .OrderBy(n => n, StringComparer.OrdinalIgnoreCase)
+                    .ToArray();
+            }
+            catch
+            {
+                return; // 枚举失败不应影响其它功能
+            }
+
+            if (names.Length == SerialPorts.Count)
+            {
+                var same = true;
+                for (var i = 0; i < names.Length; i++)
+                {
+                    if (!string.Equals(names[i], SerialPorts[i], StringComparison.OrdinalIgnoreCase))
+                    {
+                        same = false;
+                        break;
+                    }
+                }
+                if (same)
+                    return;
+            }
+
+            SerialPorts.Clear();
+            foreach (var n in names)
+                SerialPorts.Add(n);
+        }
+
         // ───────────── 串口控制线 ─────────────
 
         public bool ShowSerialControls => Transport.Transport == "serial";
@@ -1152,6 +1260,13 @@ namespace IOStudio.ViewModels
                     AddEntry(ProtocolLogEntry.Frame("收", peer, frame, null));
                 });
 
+                // Modbus 应答解析: 认得出才补一行"解析", 普通二进制帧静默跳过
+                if (DecodeModbus && IOStudio.Services.ProtocolTest.Modbus.TryDecode(frame, out var decoded))
+                {
+                    var line = decoded.Summary;
+                    Dispatcher.UIThread.Post(() => AddEntry(ProtocolLogEntry.Decoded(line)));
+                }
+
                 await TryAutoReplyAsync(frame, ct).ConfigureAwait(false);
             }
         }
@@ -1238,6 +1353,44 @@ namespace IOStudio.ViewModels
                 RaisePeerSummary();
             });
         }
+
+        /// <summary>统一发送入口的十六进制写入: 不触发编码自动转换 (供 Modbus 等生成器用)。</summary>
+        public void SetSendHex(byte[] bytes)
+        {
+            _suppressSendConvert = true;
+            try
+            {
+                SendEncoding = "HEX";
+                SendText = string.Join(" ", bytes.Select(b => b.ToString("X2")));
+                SendNewLine = "无";
+                AppendChecksum = false;
+            }
+            finally
+            {
+                _suppressSendConvert = false;
+            }
+        }
+
+        // ── 高级选项抽屉 (中等收敛: 文件 / 校验和 / 循环 默认收起, 把空间让给收发) ──
+
+        private bool _advancedExpanded;
+        public bool AdvancedExpanded
+        {
+            get => _advancedExpanded;
+            set => this.RaiseAndSetIfChanged(ref _advancedExpanded, value);
+        }
+
+        private bool _decodeModbus = true;
+
+        /// <summary>收到帧时自动尝试按 Modbus 解析并在日志里给出一行"解析" (不匹配则静默)。</summary>
+        public bool DecodeModbus
+        {
+            get => _decodeModbus;
+            set => this.RaiseAndSetIfChanged(ref _decodeModbus, value);
+        }
+
+        /// <summary>Modbus 报文生成器 (发送区里的一段)。</summary>
+        public ModbusComposerViewModel Modbus { get; }
 
         private async Task SendAsync()
         {
@@ -1442,8 +1595,17 @@ namespace IOStudio.ViewModels
             Delimiter = s.Delimiter;
             PrefixBytes = s.PrefixBytes;
             FixedSize = s.FixedSize;
-            SendText = s.SendText;
-            SendEncoding = s.SendEncoding;
+            // 灌入已存的发送内容与编码时关掉自动转换 —— 存的是什么就是什么
+            _suppressSendConvert = true;
+            try
+            {
+                SendText = s.SendText;
+                SendEncoding = s.SendEncoding;
+            }
+            finally
+            {
+                _suppressSendConvert = false;
+            }
             SendNewLine = s.SendNewLine;
             LoopSend = s.LoopSend;
             LoopIntervalMs = s.LoopIntervalMs;

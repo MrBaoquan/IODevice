@@ -54,6 +54,9 @@ namespace IOStudio.ViewModels
         /// <summary>自动应答发出的帧 (与手动发送区分, 便于看清"是谁发的")。</summary>
         public bool IsAuto { get; private init; }
 
+        /// <summary>协议解析行 (如 Modbus 应答), 与普通收发/系统行区分着色。</summary>
+        public bool IsDecoded { get; private init; }
+
         /// <summary>成功的步骤结论行 (用于绿色着色)。</summary>
         public bool IsPass => IsStep && !IsBad;
 
@@ -175,6 +178,17 @@ namespace IOStudio.ViewModels
                 Direction = "系统",
                 _plainText = message,
                 IsStep = true,
+            };
+
+        /// <summary>协议解析行 (如 Modbus 应答的功能码 / 寄存器 / 异常码)。</summary>
+        public static ProtocolLogEntry Decoded(string message) =>
+            new()
+            {
+                Time = DateTime.Now.ToString("HH:mm:ss.fff"),
+                Direction = "解析",
+                _plainText = message,
+                IsStep = true,
+                IsDecoded = true,
             };
     }
 }

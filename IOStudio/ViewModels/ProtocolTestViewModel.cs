@@ -157,6 +157,16 @@ namespace IOStudio.ViewModels
         public ReactiveCommand<Unit, Unit> RunScenarioCommand { get; }
         public ReactiveCommand<Unit, Unit> SaveWorkspaceCommand { get; }
 
+        /// <summary>
+        /// 让每个会话重新枚举串口。由窗口的 DispatcherTimer 定时调用 ——
+        /// 插入/拔出串口设备后下拉列表要能自己更新, 这是串口调试台的基准体验。
+        /// </summary>
+        public void RefreshAllSerialPorts()
+        {
+            foreach (var s in Sessions)
+                s.RefreshSerialPorts();
+        }
+
         private int _sessionCounter;
 
         private ProtocolSessionViewModel CreateSession(ProtocolTransportOption transport)

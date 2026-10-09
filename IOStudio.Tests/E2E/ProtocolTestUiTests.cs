@@ -805,6 +805,143 @@ namespace IOStudio.Tests.E2E
         }
 
         [Fact]
+        public async Task Switching_Send_Encoding_To_And_From_Hex_Converts_Text()
+        {
+            var s = NewSession();
+            var r = await _session.Dispatch(
+                () =>
+                {
+                    s.SendEncoding = "UTF-8";
+                    s.SendText = "AB";
+                    s.SendEncoding = "HEX";     // 文本 → HEX
+                    var toHex = s.SendText;
+
+                    s.SendEncoding = "UTF-8";   // HEX → 文本
+                    var backToText = s.SendText;
+
+                    s.SendEncoding = "HEX";     // 再转回 HEX (往返一致)
+                    var againHex = s.SendText;
+
+                    s.SendText = "ZZ";          // 非法 HEX
+                    s.SendEncoding = "UTF-8";   // 解析失败 → 保留原文, 不崩
+                    var fallback = s.SendText;
+
+                    // 两个文本编码之间不转换 (字符没变)
+                    s.SendEncoding = "UTF-8";
+                    s.SendText = "数据";
+                    s.SendEncoding = "GBK";
+                    var textToText = s.SendText;
+
+                    return (toHex, backToText, againHex, fallback, textToText);
+                },
+                CancellationToken.None
+            );
+
+            Assert.Equal("41 42", r.toHex);
+            Assert.Equal("AB", r.backToText);
+            Assert.Equal("41 42", r.againHex);
+            Assert.Equal("ZZ", r.fallback);
+            Assert.Equal("数据", r.textToText);
+        }
+
+        [Fact]
+        public async Task Serial_Port_List_Can_Be_Refreshed()
+        {
+            var s = NewSession("serial");
+            var r = await _session.Dispatch(
+                () =>
+                {
+                    s.RefreshSerialPorts();
+                    var count = s.SerialPorts.Count;
+                    s.RefreshSerialPortsCommand.Execute().Subscribe();
+                    return count;
+                },
+                CancellationToken.None
+            );
+
+            // 具体端口依机器而定, 只要求枚举安全 (空列表也不报错) 且命令可用
+            Assert.True(r >= 0);
+            Assert.NotNull(s.SerialPorts);
+        }
+
+        // ─────────── Modbus 组帧 / 解析 ───────────
+
+        [Fact]
+        public void Modbus_Rtu_Request_Matches_Known_Vector()
+        {
+            // 经典读保持寄存器: 从站1 功能03 起始0 数量10 → 末尾 CRC = C5 CD
+            var frame = Modbus.BuildRequest("RTU", 1, Modbus.ReadHoldingRegisters, 0, 10, "");
+            Assert.Equal("01 03 00 00 00 0A C5 CD", string.Join(" ", frame.Select(b => b.ToString("X2"))));
+        }
+
+        [Fact]
+        public void Modbus_Tcp_Request_Adds_Mbap_Header()
+        {
+            // MBAP: 事务1 协议0 长度6 单元1 + PDU(03 00 00 00 0A)
+            var frame = Modbus.BuildRequest("TCP", 1, Modbus.ReadHoldingRegisters, 0, 10, "");
+            Assert.Equal("00 01 00 00 00 06 01 03 00 00 00 0A",
+                string.Join(" ", frame.Select(b => b.ToString("X2"))));
+        }
+
+        [Fact]
+        public void Modbus_Decodes_Tcp_Response_Registers()
+        {
+            var frame = new byte[]
+            {
+                0x00, 0x01, 0x00, 0x00, 0x00, 0x07, 0x01, 0x03, 0x04, 0x00, 0x0A, 0x00, 0x0B,
+            };
+            Assert.True(Modbus.TryDecode(frame, out var d));
+            Assert.Equal("TCP", d.Mode);
+            Assert.Equal(0x03, d.Function);
+            Assert.Equal(new ushort[] { 10, 11 }, d.Registers);
+        }
+
+        [Fact]
+        public void Modbus_Decodes_Rtu_Exception()
+        {
+            // 01 83 02 = 从站1 功能03 异常, 码 02 (非法数据地址)
+            var body = new byte[] { 0x01, 0x83, 0x02 };
+            var crc = Checksums.Crc16Modbus(body);
+            var frame = body.Concat(new[] { (byte)(crc & 0xFF), (byte)(crc >> 8) }).ToArray();
+
+            Assert.True(Modbus.TryDecode(frame, out var d));
+            Assert.Equal("RTU", d.Mode);
+            Assert.True(d.IsException);
+            Assert.Equal(0x02, d.ExceptionCode);
+            Assert.Contains("非法数据地址", d.Summary);
+        }
+
+        [Fact]
+        public void Modbus_Does_Not_Claim_Arbitrary_Binary()
+        {
+            Assert.False(Modbus.TryDecode(new byte[] { 0xDE, 0xAD, 0xBE, 0xEF, 0x00, 0x11, 0x22 }, out _));
+        }
+
+        [Fact]
+        public async Task Modbus_Composer_Writes_Hex_To_SendBox()
+        {
+            var s = NewSession();
+            var r = await _session.Dispatch(
+                () =>
+                {
+                    s.Modbus.Mode = "RTU";
+                    s.Modbus.SlaveId = 1;
+                    s.Modbus.Function = s.Modbus.Functions.First(f => f.Code == 0x03);
+                    s.Modbus.StartAddress = 0;
+                    s.Modbus.Quantity = 10;
+                    s.Modbus.ApplyCommand.Execute().Subscribe();
+                    return (s.SendEncoding, s.SendText, s.SendNewLine, s.Modbus.Preview);
+                },
+                CancellationToken.None
+            );
+
+            Assert.Equal("HEX", r.SendEncoding);
+            Assert.Equal("01 03 00 00 00 0A C5 CD", r.SendText);
+            Assert.Equal("无", r.SendNewLine);
+            Assert.Equal("01 03 00 00 00 0A C5 CD", r.Preview);
+        }
+
+        [Fact]
         public async Task Send_Preview_Counts_Bytes_Including_NewLine()
         {
             var s = NewSession();

@@ -23,6 +23,9 @@ namespace IOStudio.Views
         private readonly IDisposable _selectionSub;
         private ProtocolSessionViewModel? _watched;
 
+        /// <summary>串口列表自动刷新 (插拔设备后下拉能自己更新)。窗口关闭即停。</summary>
+        private readonly Avalonia.Threading.DispatcherTimer _serialPortTimer;
+
         public ProtocolTestWindow()
         {
             InitializeComponent();
@@ -40,9 +43,18 @@ namespace IOStudio.Views
             // 「自动滚动」得真的滚才有意义: 跟着选中会话的消息集合走
             _selectionSub = ViewModel.WhenAnyValue(x => x.SelectedSession).Subscribe(WatchSession);
 
+            // 串口热插拔: 每 2 秒重扫一次可用端口
+            _serialPortTimer = new Avalonia.Threading.DispatcherTimer
+            {
+                Interval = TimeSpan.FromSeconds(2),
+            };
+            _serialPortTimer.Tick += (_, _) => ViewModel?.RefreshAllSerialPorts();
+            _serialPortTimer.Start();
+
             // 关窗必须释放监听端口/取消接收循环, 否则端口会被窗口"占着"到进程退出
             Closed += (_, _) =>
             {
+                _serialPortTimer.Stop();
                 WatchSession(null);
                 _selectionSub.Dispose();
                 ViewModel?.Dispose();

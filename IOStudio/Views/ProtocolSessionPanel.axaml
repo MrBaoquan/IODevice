@@ -1,0 +1,843 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:IOStudio.ViewModels"
+             xmlns:iconPacks="https://github.com/MahApps/IconPacks.Avalonia"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d" d:DesignWidth="1200" d:DesignHeight="600"
+             x:Class="IOStudio.Views.ProtocolSessionPanel"
+             x:DataType="vm:ProtocolSessionViewModel">
+                <Grid x:DataType="vm:ProtocolSessionViewModel">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>            <!-- ① 连接 -->
+                        <RowDefinition Height="Auto"/>            <!-- ② 日志条 -->
+                        <RowDefinition Height="Auto"/>            <!-- ③ 表头 -->
+                        <RowDefinition Height="*" MinHeight="90"/> <!-- ④ 日志正文 -->
+                        <RowDefinition Height="Auto"/>            <!-- 分隔条 -->
+                        <RowDefinition Height="Auto" MinHeight="172"/> <!-- ⑤ 发送 -->
+                        <RowDefinition Height="Auto"/>            <!-- ⑥ 工具 -->
+                    </Grid.RowDefinitions>
+
+                    <!-- ─────────── ① 连接 (参数 + 状态 + 启停) ─────────── -->
+                    <Border Grid.Row="0"
+                            Background="{DynamicResource TlPanelBg}"
+                            Padding="12,6"
+                            BorderBrush="{DynamicResource TlBorderBrush}"
+                            BorderThickness="0,0,0,1"
+                            IsVisible="{Binding ShowControls}">
+                        <Grid ColumnDefinitions="Auto,*,Auto">
+
+                            <!-- 字段区: 内联标签, 不留大空隙 -->
+                            <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="10"
+                                        VerticalAlignment="Center">
+                                <TextBlock Text="连接" Classes="band-cap"/>
+
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="传输" Classes="inline-cap"/>
+                                    <ComboBox Width="132"
+                                              ItemsSource="{x:Static vm:ProtocolUiOptions.Transports}"
+                                              SelectedItem="{Binding Transport}"
+                                              AutomationProperties.AutomationId="ProtocolTransport"
+                                              AutomationProperties.Name="传输">
+                                        <ComboBox.ItemTemplate>
+                                            <DataTemplate x:DataType="vm:ProtocolTransportOption">
+                                                <TextBlock Text="{Binding Label}"/>
+                                            </DataTemplate>
+                                        </ComboBox.ItemTemplate>
+                                    </ComboBox>
+                                </StackPanel>
+
+                                <StackPanel Orientation="Horizontal" IsVisible="{Binding ShowHost}">
+                                    <TextBlock Text="主机" Classes="inline-cap"/>
+                                    <TextBox Width="126" Text="{Binding Host, Mode=TwoWay}"
+                                             Watermark="127.0.0.1"
+                                             AutomationProperties.AutomationId="ProtocolHost"
+                                             AutomationProperties.Name="目标主机"/>
+                                </StackPanel>
+
+                                <StackPanel Orientation="Horizontal" IsVisible="{Binding ShowPort}">
+                                    <TextBlock Text="端口" Classes="inline-cap"/>
+                                    <!-- TextBox 而非 NumericUpDown: 后者不创建自动化 peer, UIA/读屏不可识别 -->
+                                    <TextBox Width="80" Text="{Binding Port, Mode=TwoWay}"
+                                             Watermark="9000"
+                                             AutomationProperties.AutomationId="ProtocolPort"
+                                             AutomationProperties.Name="端口"/>
+                                </StackPanel>
+
+                                <StackPanel Orientation="Horizontal" Spacing="6" IsVisible="{Binding ShowSerial}">
+                                    <TextBlock Text="串口" Classes="inline-cap"/>
+                                    <!-- 可编辑下拉: 列表由窗口定时自动刷新, 也可手打未枚举到的口 -->
+                                    <ComboBox Width="118" IsEditable="True"
+                                              PlaceholderText="COM3"
+                                              ItemsSource="{Binding SerialPorts}"
+                                              Text="{Binding SerialDevice, Mode=TwoWay}"
+                                              AutomationProperties.AutomationId="ProtocolSerialDevice"
+                                              AutomationProperties.Name="串口"
+                                              ToolTip.Tip="自动枚举本机串口 (插拔后自动更新); 也可直接手打"/>
+                                    <Button Classes="tool" Height="26" Padding="6,2"
+                                            Command="{Binding RefreshSerialPortsCommand}"
+                                            AutomationProperties.AutomationId="ProtocolRefreshSerial"
+                                            ToolTip.Tip="立即刷新串口列表">
+                                        <iconPacks:PackIconIonicons Kind="RefreshiOS" Width="13" Height="13"
+                                                                    VerticalAlignment="Center"
+                                                                    Foreground="{DynamicResource TlTextSecondary}"/>
+                                    </Button>
+                                </StackPanel>
+
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="组帧" Classes="inline-cap"/>
+                                    <ComboBox Width="110"
+                                              ItemsSource="{x:Static vm:ProtocolUiOptions.FrameModes}"
+                                              SelectedItem="{Binding FrameMode}"
+                                              AutomationProperties.AutomationId="ProtocolFrameMode"
+                                              AutomationProperties.Name="组帧">
+                                        <ComboBox.ItemTemplate>
+                                            <DataTemplate x:DataType="vm:ProtocolFrameOption">
+                                                <TextBlock Text="{Binding Label}"/>
+                                            </DataTemplate>
+                                        </ComboBox.ItemTemplate>
+                                    </ComboBox>
+                                </StackPanel>
+
+                                <StackPanel Orientation="Horizontal" IsVisible="{Binding ShowDelimiter}">
+                                    <TextBlock Text="分隔符" Classes="inline-cap"/>
+                                    <TextBox Width="74" Text="{Binding Delimiter, Mode=TwoWay}"
+                                             Watermark="\r\n"
+                                             AutomationProperties.AutomationId="ProtocolDelimiter"/>
+                                </StackPanel>
+                                <StackPanel Orientation="Horizontal" IsVisible="{Binding ShowPrefixBytes}">
+                                    <TextBlock Text="前缀" Classes="inline-cap"/>
+                                    <TextBox Width="64" Text="{Binding PrefixBytes, Mode=TwoWay}"
+                                             AutomationProperties.AutomationId="ProtocolPrefixBytes"/>
+                                </StackPanel>
+                                <StackPanel Orientation="Horizontal" IsVisible="{Binding ShowFixedSize}">
+                                    <TextBlock Text="定长" Classes="inline-cap"/>
+                                    <TextBox Width="64" Text="{Binding FixedSize, Mode=TwoWay}"
+                                             AutomationProperties.AutomationId="ProtocolFixedSize"/>
+                                </StackPanel>
+
+                                <!-- 串口控制线: 属于"端口"的语义, 不塞进发送区 -->
+                                <StackPanel Orientation="Horizontal" Spacing="10"
+                                            VerticalAlignment="Center"
+                                            IsVisible="{Binding ShowSerialControls}">
+                                    <Border Classes="vsep" Height="18"/>
+                                    <TextBlock Text="控制线" Classes="inline-cap"/>
+                                    <CheckBox Content="DTR" VerticalAlignment="Center"
+                                              IsChecked="{Binding Dtr}"
+                                              AutomationProperties.AutomationId="ProtocolDtr"/>
+                                    <CheckBox Content="RTS" VerticalAlignment="Center"
+                                              IsChecked="{Binding Rts}"
+                                              AutomationProperties.AutomationId="ProtocolRts"/>
+                                    <Button Classes="tool" Content="Break" Height="26" Padding="9,2"
+                                            Command="{Binding SendBreakCommand}"
+                                            AutomationProperties.AutomationId="ProtocolBreak"/>
+                                </StackPanel>
+                            </StackPanel>
+
+                            <!-- 状态 + 统计 + 启停 (靠右) -->
+                            <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="10"
+                                        HorizontalAlignment="Right" VerticalAlignment="Center">
+                                <Border Classes="chip" Classes.online="{Binding IsRunning}">
+                                    <StackPanel Orientation="Horizontal" Spacing="6">
+                                        <Ellipse/>
+                                        <TextBlock Text="{Binding StatusText}"/>
+                                    </StackPanel>
+                                </Border>
+                                <TextBlock Text="{Binding PeerSummary}" VerticalAlignment="Center"
+                                           IsVisible="{Binding ShowPeers}"
+                                           FontSize="{DynamicResource TlFontXs}"
+                                           Foreground="{DynamicResource TlTextMuted}"
+                                           TextTrimming="CharacterEllipsis"/>
+                                <Button Classes="primary" Command="{Binding StartCommand}"
+                                        AutomationProperties.AutomationId="ProtocolStart">
+                                    <StackPanel Orientation="Horizontal" Spacing="5">
+                                        <iconPacks:PackIconIonicons Kind="PlayiOS" Width="14" Height="14"
+                                                                    VerticalAlignment="Center"
+                                                                    Foreground="{DynamicResource TlAccentFg}"/>
+                                        <TextBlock Text="开始" VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                </Button>
+                                <Button Classes="tool" Command="{Binding StopCommand}"
+                                        AutomationProperties.AutomationId="ProtocolStop">
+                                    <StackPanel Orientation="Horizontal" Spacing="5">
+                                        <iconPacks:PackIconIonicons Kind="SquareiOS" Width="12" Height="12"
+                                                                    VerticalAlignment="Center"
+                                                                    Foreground="{DynamicResource TlTextSecondary}"/>
+                                        <TextBlock Text="停止" VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                </Button>
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+
+                    <!-- ─────────── ② 日志工具条 (日志专属控件全在这里) ─────────── -->
+                    <Border Grid.Row="1"
+                            Background="{DynamicResource TlPanelBg}"
+                            Padding="12,5"
+                            BorderBrush="{DynamicResource TlBorderBrush}"
+                            BorderThickness="0,0,0,1">
+                        <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
+                            <TextBlock Grid.Column="0" Text="日志" Classes="band-cap"/>
+
+                            <Grid Grid.Column="1" ColumnDefinitions="Auto,*" ColumnSpacing="8">
+                                <ComboBox Grid.Column="0" Width="86"
+                                          ItemsSource="{Binding FilterDirections}"
+                                          SelectedItem="{Binding FilterDirection}"
+                                          AutomationProperties.AutomationId="ProtocolFilterDirection"
+                                          AutomationProperties.Name="方向过滤"
+                                          ToolTip.Tip="只看收 / 只看发 / 只看异常 / 只看系统提示"/>
+                                <Grid Grid.Column="1" VerticalAlignment="Center">
+                                    <TextBox Text="{Binding FilterText, Mode=TwoWay}"
+                                             Padding="28,4,8,4"
+                                             Watermark="过滤 (内容 / HEX / 方向 / 对端)"
+                                             AutomationProperties.AutomationId="ProtocolFilter"
+                                             AutomationProperties.Name="日志过滤"/>
+                                    <iconPacks:PackIconIonicons Kind="SearchiOS"
+                                                                Width="14" Height="14"
+                                                                Margin="9,0,0,0"
+                                                                HorizontalAlignment="Left"
+                                                                VerticalAlignment="Center"
+                                                                IsHitTestVisible="False"
+                                                                Foreground="{DynamicResource TlTextMuted}"/>
+                                </Grid>
+                            </Grid>
+
+                            <StackPanel Grid.Column="2" Orientation="Horizontal"
+                                        Spacing="10" VerticalAlignment="Center">
+                                <ComboBox Width="112"
+                                          ItemsSource="{Binding ContentModes}"
+                                          SelectedItem="{Binding ContentModeLabel}"
+                                          AutomationProperties.AutomationId="ProtocolViewMode"
+                                          AutomationProperties.Name="日志显示方式"
+                                          ToolTip.Tip="文本 / 文本+HEX / 仅HEX / HEX 转储, 切换即时改写已显示的行"/>
+
+                                <Border Classes="vsep"/>
+
+                                <CheckBox Content="时间" IsChecked="{Binding ShowTimestamp}"
+                                          AutomationProperties.AutomationId="ProtocolShowTimestamp"/>
+                                <CheckBox Content="暂停" IsChecked="{Binding PauseDisplay}"
+                                          AutomationProperties.AutomationId="ProtocolPause"
+                                          ToolTip.Tip="仍在收、仍在记, 只是不往界面刷"/>
+                                <CheckBox Content="自动滚动" IsChecked="{Binding AutoScroll}"
+                                          AutomationProperties.AutomationId="ProtocolAutoScroll"/>
+
+                                <Border Classes="vsep"/>
+
+                                <Button Classes="tool" Height="26" Padding="9,2"
+                                        Command="{Binding ResetStatsCommand}"
+                                        AutomationProperties.AutomationId="ProtocolResetStats"
+                                        ToolTip.Tip="只清收发统计, 保留日志">
+                                    <StackPanel Orientation="Horizontal" Spacing="5">
+                                        <iconPacks:PackIconIonicons Kind="RefreshiOS" Width="13" Height="13"
+                                                                    VerticalAlignment="Center"
+                                                                    Foreground="{DynamicResource TlTextSecondary}"/>
+                                        <TextBlock Text="统计清零" VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                </Button>
+                                <Button Classes="tool" Height="26" Padding="9,2"
+                                        Command="{Binding ClearLogCommand}"
+                                        AutomationProperties.AutomationId="ProtocolClear"
+                                        ToolTip.Tip="清空日志区 (不影响统计)">
+                                    <StackPanel Orientation="Horizontal" Spacing="5">
+                                        <iconPacks:PackIconIonicons Kind="TrashiOS" Width="13" Height="13"
+                                                                    VerticalAlignment="Center"
+                                                                    Foreground="{DynamicResource TlTextSecondary}"/>
+                                        <TextBlock Text="清空" VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                </Button>
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+
+                    <!-- ─────────── ③ 表头 ─────────── -->
+                    <Border Grid.Row="2"
+                            Background="{DynamicResource TlSurfaceSubtle}"
+                            Padding="18,5"
+                            BorderBrush="{DynamicResource TlBorderBrush}"
+                            BorderThickness="0,0,0,1">
+                        <Grid ColumnDefinitions="96,54,140,52,92,*,1.15*" ColumnSpacing="8">
+                            <TextBlock Grid.Column="0" Text="时间" Classes="col-head"
+                                       IsVisible="{Binding ShowTimestamp}"/>
+                            <TextBlock Grid.Column="1" Text="方向" Classes="col-head"/>
+                            <TextBlock Grid.Column="2" Text="对端" Classes="col-head"/>
+                            <TextBlock Grid.Column="3" Text="字节" Classes="col-head"/>
+                            <TextBlock Grid.Column="4" Text="Δt / RTT" Classes="col-head"/>
+                            <TextBlock Grid.Column="5" Text="内容" Classes="col-head"/>
+                            <TextBlock Grid.Column="6" Text="HEX" Classes="col-head"/>
+                        </Grid>
+                    </Border>
+
+                    <!-- ─────────── ④ 日志正文 (终端面) + 选中行详情 ─────────── -->
+                    <Grid Grid.Row="3" RowDefinitions="*,Auto">
+                        <ListBox Grid.Row="0"
+                                 x:Name="MessageList"
+                                 Classes="plain log"
+                                 Background="{DynamicResource TlInputBg}"
+                                 BorderThickness="0"
+                                 AutomationProperties.AutomationId="ProtocolMessages"
+                                 AutomationProperties.Name="实时消息"
+                                 ItemsSource="{Binding Messages}"
+                                 SelectedItem="{Binding SelectedEntry}">
+                            <ListBox.ItemTemplate>
+                                <DataTemplate x:DataType="vm:ProtocolLogEntry">
+                                    <Border Classes="row" Padding="18,4">
+                                        <!-- 行内右键: 复制 / 重发 (协议调试最高频的两个动作) -->
+                                        <Border.ContextMenu>
+                                            <ContextMenu>
+                                                <MenuItem Header="复制文本"
+                                                          Command="{Binding Owner.CopyEntryTextCommand}"
+                                                          CommandParameter="{Binding}"/>
+                                                <MenuItem Header="复制 HEX"
+                                                          Command="{Binding Owner.CopyEntryHexCommand}"
+                                                          CommandParameter="{Binding}"/>
+                                                <Separator/>
+                                                <MenuItem Header="重发这一帧"
+                                                          Command="{Binding Owner.ResendEntryCommand}"
+                                                          CommandParameter="{Binding}"
+                                                          IsEnabled="{Binding CanResend}"/>
+                                            </ContextMenu>
+                                        </Border.ContextMenu>
+                                        <Grid ColumnDefinitions="96,54,140,52,92,*,1.15*" ColumnSpacing="8">
+                                            <TextBlock Grid.Column="0" Text="{Binding Time}"
+                                                       Classes="cell mono"
+                                                       Foreground="{DynamicResource TlTextMuted}"
+                                                       IsVisible="{Binding $parent[ListBox].((vm:ProtocolSessionViewModel)DataContext).ShowTimestamp}"/>
+                                            <TextBlock Grid.Column="1" Text="{Binding Direction}" Classes="cell"
+                                                       Classes.received="{Binding IsReceived}"
+                                                       Classes.sent="{Binding IsSent}"
+                                                       Classes.auto="{Binding IsAuto}"
+                                                       Classes.pass="{Binding IsPass}"
+                                                       Classes.bad="{Binding IsBad}"/>
+                                            <TextBlock Grid.Column="2" Text="{Binding Channel}" Classes="cell mono"/>
+                                            <TextBlock Grid.Column="3" Text="{Binding Size}" Classes="cell mono"
+                                                       Foreground="{DynamicResource TlTextMuted}"/>
+                                            <TextBlock Grid.Column="4" Text="{Binding TimingText}" Classes="cell mono"
+                                                       Foreground="{DynamicResource TlTextMuted}"/>
+                                            <TextBlock Grid.Column="5" Text="{Binding ContentText}"
+                                                       Classes="cell mono" TextTrimming="CharacterEllipsis"/>
+                                            <TextBlock Grid.Column="6" Text="{Binding HexColumn}"
+                                                       Classes="cell mono"
+                                                       Foreground="{DynamicResource TlTextMuted}"
+                                                       TextTrimming="CharacterEllipsis"/>
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
+
+                        <!-- 选中行详情 (此前选中一行没有任何用途) -->
+                        <Border Grid.Row="1"
+                                Background="{DynamicResource TlSurfaceSubtle}"
+                                BorderBrush="{DynamicResource TlBorderBrush}"
+                                BorderThickness="0,1,0,0"
+                                Padding="12,6"
+                                IsVisible="{Binding HasSelectedEntry}">
+                            <Grid RowDefinitions="Auto,Auto" RowSpacing="5">
+                                <Grid Grid.Row="0" ColumnDefinitions="Auto,Auto,Auto,Auto,*,Auto,Auto,Auto,Auto"
+                                      ColumnSpacing="10">
+                                    <TextBlock Grid.Column="0" Text="详情" Classes="inline-cap"
+                                               VerticalAlignment="Center"/>
+                                    <TextBlock Grid.Column="1" Text="{Binding SelectedEntry.Direction}"
+                                               FontSize="{DynamicResource TlFontS}" FontWeight="SemiBold"
+                                               Foreground="{DynamicResource TlTextPrimary}"
+                                               VerticalAlignment="Center"/>
+                                    <TextBlock Grid.Column="2" Text="{Binding SelectedEntry.Channel}"
+                                               Classes="mono" FontSize="{DynamicResource TlFontXs}"
+                                               Foreground="{DynamicResource TlTextMuted}"
+                                               VerticalAlignment="Center"/>
+                                    <TextBlock Grid.Column="3" Text="{Binding SelectedEntry.Time}"
+                                               Classes="mono" FontSize="{DynamicResource TlFontXs}"
+                                               Foreground="{DynamicResource TlTextMuted}"
+                                               VerticalAlignment="Center"/>
+                                    <TextBlock Grid.Column="4" Text="{Binding SelectedEntry.SizeText}"
+                                               Classes="mono" FontSize="{DynamicResource TlFontXs}"
+                                               Foreground="{DynamicResource TlTextMuted}"
+                                               VerticalAlignment="Center"/>
+                                    <Button Grid.Column="5" Classes="tool" Height="26" Padding="9,2"
+                                            Content="复制文本"
+                                            Command="{Binding CopyEntryTextCommand}"
+                                            CommandParameter="{Binding SelectedEntry}"
+                                            AutomationProperties.AutomationId="ProtocolCopyText"/>
+                                    <Button Grid.Column="6" Classes="tool" Height="26" Padding="9,2"
+                                            Content="复制 HEX"
+                                            Command="{Binding CopyEntryHexCommand}"
+                                            CommandParameter="{Binding SelectedEntry}"
+                                            AutomationProperties.AutomationId="ProtocolCopyHex"/>
+                                    <Button Grid.Column="7" Classes="tool" Height="26" Padding="9,2"
+                                            Content="重发"
+                                            Command="{Binding ResendEntryCommand}"
+                                            CommandParameter="{Binding SelectedEntry}"
+                                            AutomationProperties.AutomationId="ProtocolResend"/>
+                                    <Button Grid.Column="8" Classes="iconbtn" Width="26" Height="26"
+                                            Command="{Binding ClearSelectionCommand}"
+                                            ToolTip.Tip="关闭详情">
+                                        <iconPacks:PackIconIonicons Kind="CloseiOS" Width="13" Height="13"/>
+                                    </Button>
+                                </Grid>
+
+                                <Grid Grid.Row="1" ColumnDefinitions="*,*" ColumnSpacing="12">
+                                    <StackPanel Grid.Column="0" Spacing="2">
+                                        <TextBlock Text="文本" Classes="inline-cap"/>
+                                        <ScrollViewer MaxHeight="94" VerticalScrollBarVisibility="Auto">
+                                            <SelectableTextBlock Text="{Binding SelectedEntry.PlainText}"
+                                                                 FontFamily="Consolas,Menlo,monospace"
+                                                                 FontSize="{DynamicResource TlFontXs}"
+                                                                 Foreground="{DynamicResource TlTextSecondary}"
+                                                                 TextWrapping="Wrap"/>
+                                        </ScrollViewer>
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="1" Spacing="2">
+                                        <TextBlock Text="HEX 转储 (offset / hex / ASCII)" Classes="inline-cap"/>
+                                        <ScrollViewer MaxHeight="94" VerticalScrollBarVisibility="Auto">
+                                            <SelectableTextBlock Text="{Binding SelectedEntry.HexDumpText}"
+                                                                 FontFamily="Consolas,Menlo,monospace"
+                                                                 FontSize="{DynamicResource TlFontXs}"
+                                                                 Foreground="{DynamicResource TlTextMuted}"/>
+                                        </ScrollViewer>
+                                    </StackPanel>
+                                </Grid>
+                            </Grid>
+                        </Border>
+                    </Grid>
+
+                    <!-- ─────────── 可拖拽分隔条: 上下拉伸 日志 / 发送区 ─────────── -->
+                    <GridSplitter Grid.Row="4"
+                                  Height="6"
+                                  ResizeDirection="Rows"
+                                  HorizontalAlignment="Stretch"
+                                  Background="{DynamicResource TlBorderBrush}"
+                                  AutomationProperties.AutomationId="ProtocolSendSplitter"
+                                  AutomationProperties.Name="调整发送区高度"
+                                  Cursor="SizeNorthSouth"
+                                  ToolTip.Tip="拖动调整日志与发送区的高度"/>
+
+                    <!-- ─────────── ⑤ 发送 ─────────── -->
+                    <Border Grid.Row="5"
+                            Background="{DynamicResource TlPanelBg}"
+                            Padding="12,6"
+                            BorderBrush="{DynamicResource TlBorderBrush}"
+                            BorderThickness="0,1,0,0"
+                            IsVisible="{Binding ShowControls}">
+                        <Grid RowDefinitions="Auto,*,Auto,Auto,Auto" RowSpacing="6">
+
+                            <!-- 快捷指令 chip: 贴在发送框上方, 单击即发 (增删改仍在下方「工具」区) -->
+                            <ItemsControl Grid.Row="0" ItemsSource="{Binding QuickCommands}"
+                                          IsVisible="{Binding HasQuickCommands}"
+                                          Margin="50,0,0,0">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <WrapPanel/>
+                                    </ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate x:DataType="vm:QuickCommandViewModel">
+                                        <Button Classes="chip-send" Margin="0,0,6,4"
+                                                Command="{Binding SendCommand}"
+                                                ToolTip.Tip="{Binding ChipTip}">
+                                            <TextBlock Text="{Binding ChipText}"
+                                                       MaxWidth="200"
+                                                       TextTrimming="CharacterEllipsis"/>
+                                        </Button>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+
+                            <!-- 发送框行: 标题 + 全宽多行框 (常用 JSON / AT 指令要写得下) -->
+                            <Grid Grid.Row="1" ColumnDefinitions="Auto,*">
+                                <TextBlock Grid.Column="0" Text="发送" Classes="band-cap"
+                                           VerticalAlignment="Top" Margin="0,7,10,0"/>
+                                <TextBox Grid.Column="1" Classes="send-box"
+                                         x:Name="SendBox"
+                                         Text="{Binding SendText, Mode=TwoWay}"
+                                         Classes.invalid="{Binding HasSendTextError}"
+                                         AutomationProperties.AutomationId="ProtocolSendText"
+                                         AutomationProperties.Name="发送内容"
+                                         AcceptsReturn="True" TextWrapping="Wrap"
+                                         Watermark="发送内容 (HEX 编码时填十六进制, 空格/换行会自动忽略)"
+                                         FontFamily="Consolas,Menlo,monospace"/>
+                            </Grid>
+
+                            <!-- 选项行: 编码 / 新行 / 发送给 / 循环 | 字节预览 / 清空 / 发送 -->
+                            <Grid Grid.Row="2" ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10" Margin="50,0,0,0">
+                                <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="12"
+                                            VerticalAlignment="Center">
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="编码" Classes="inline-cap"/>
+                                        <ComboBox Width="100"
+                                                  ItemsSource="{x:Static vm:ProtocolUiOptions.SendEncodings}"
+                                                  SelectedItem="{Binding SendEncoding}"
+                                                  AutomationProperties.AutomationId="ProtocolSendEncoding"
+                                                  AutomationProperties.Name="发送编码"
+                                                  ToolTip.Tip="文本按 UTF-8/GBK/ASCII 编码; 选 HEX 时按十六进制串解析"/>
+                                    </StackPanel>
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="新行" Classes="inline-cap"/>
+                                        <ComboBox Width="94"
+                                                  ItemsSource="{x:Static vm:ProtocolUiOptions.NewLineOptions}"
+                                                  SelectedItem="{Binding SendNewLine}"
+                                                  AutomationProperties.AutomationId="ProtocolSendNewLine"
+                                                  AutomationProperties.Name="发送新行"
+                                                  ToolTip.Tip="末尾追加换行 (\r\n / \n), 很多设备协议以此断帧"/>
+                                    </StackPanel>
+                                    <StackPanel Orientation="Horizontal"
+                                                IsVisible="{Binding ShowPeers}">
+                                        <TextBlock Text="发送给" Classes="inline-cap"/>
+                                        <ComboBox Width="140"
+                                                  ItemsSource="{Binding Peers}"
+                                                  SelectedItem="{Binding SelectedPeer}"
+                                                  PlaceholderText="广播"
+                                                  AutomationProperties.AutomationId="ProtocolPeer"
+                                                  AutomationProperties.Name="发送目标对端"/>
+                                    </StackPanel>
+                                </StackPanel>
+
+                                <!-- 发送前预览 / 就地报错 (HEX 写错不再静默失败) -->
+                                <TextBlock Grid.Column="1" Text="{Binding SendStatusText}"
+                                           Classes="send-status"
+                                           Classes.error="{Binding HasSendTextError}"
+                                           HorizontalAlignment="Right" VerticalAlignment="Center"
+                                           Margin="0,0,4,0"
+                                           TextTrimming="CharacterEllipsis"
+                                           AutomationProperties.AutomationId="ProtocolSendStatus"/>
+
+                                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="10"
+                                            VerticalAlignment="Center">
+                                    <ToggleButton Classes="chip-toggle"
+                                                  IsChecked="{Binding Modbus.Expanded, Mode=TwoWay}"
+                                                  AutomationProperties.AutomationId="ProtocolModbusToggle"
+                                                  ToolTip.Tip="Modbus RTU/TCP 请求组帧 + 应答解析">
+                                        <StackPanel Orientation="Horizontal" Spacing="6">
+                                            <TextBlock Text="Modbus" VerticalAlignment="Center"/>
+                                            <Panel VerticalAlignment="Center">
+                                                <iconPacks:PackIconIonicons Kind="ArrowDowniOS" Width="12" Height="12"
+                                                                            IsVisible="{Binding Modbus.Expanded}"
+                                                                            Foreground="{DynamicResource TlTextMuted}"/>
+                                                <iconPacks:PackIconIonicons Kind="ArrowForwardiOS" Width="12" Height="12"
+                                                                            IsVisible="{Binding !Modbus.Expanded}"
+                                                                            Foreground="{DynamicResource TlTextMuted}"/>
+                                            </Panel>
+                                        </StackPanel>
+                                    </ToggleButton>
+                                    <ToggleButton Classes="chip-toggle"
+                                                  IsChecked="{Binding AdvancedExpanded, Mode=TwoWay}"
+                                                  AutomationProperties.AutomationId="ProtocolAdvancedToggle"
+                                                  ToolTip.Tip="文件发送 / 校验和 / 循环发送">
+                                        <StackPanel Orientation="Horizontal" Spacing="6">
+                                            <TextBlock Text="高级" VerticalAlignment="Center"/>
+                                            <Panel VerticalAlignment="Center">
+                                                <iconPacks:PackIconIonicons Kind="ArrowDowniOS" Width="12" Height="12"
+                                                                            IsVisible="{Binding AdvancedExpanded}"
+                                                                            Foreground="{DynamicResource TlTextMuted}"/>
+                                                <iconPacks:PackIconIonicons Kind="ArrowForwardiOS" Width="12" Height="12"
+                                                                            IsVisible="{Binding !AdvancedExpanded}"
+                                                                            Foreground="{DynamicResource TlTextMuted}"/>
+                                            </Panel>
+                                        </StackPanel>
+                                    </ToggleButton>
+                                    <Border Classes="vsep" Height="18"/>
+                                    <Button Classes="iconbtn"
+                                            Command="{Binding ClearSendCommand}"
+                                            AutomationProperties.AutomationId="ProtocolClearSend"
+                                            ToolTip.Tip="清空发送内容">
+                                        <iconPacks:PackIconIonicons Kind="CloseiOS" Width="14" Height="14"/>
+                                    </Button>
+                                    <Button Classes="primary" MinWidth="96"
+                                            Command="{Binding SendCommand}"
+                                            AutomationProperties.AutomationId="ProtocolSend"
+                                            ToolTip.Tip="Ctrl+Enter 发送; ↑/↓ 调回历史">
+                                        <StackPanel Orientation="Horizontal" Spacing="5">
+                                            <iconPacks:PackIconIonicons Kind="ArrowForwardiOS" Width="14" Height="14"
+                                                                        VerticalAlignment="Center"
+                                                                        Foreground="{DynamicResource TlAccentFg}"/>
+                                            <TextBlock Text="发送" VerticalAlignment="Center"/>
+                                        </StackPanel>
+                                    </Button>
+                                </StackPanel>
+                            </Grid>
+
+                            <!-- Modbus 组帧 (默认收起; 生成整帧写入发送框, 应答由日志"解析"行呈现) -->
+                            <Border Grid.Row="3"
+                                    IsVisible="{Binding Modbus.Expanded}"
+                                    Background="{DynamicResource TlSurfaceSubtle}"
+                                    BorderBrush="{DynamicResource TlBorderBrush}"
+                                    BorderThickness="1"
+                                    CornerRadius="4"
+                                    Padding="10,8"
+                                    Margin="0,2,0,0">
+                                <StackPanel Spacing="6">
+                                    <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+                                        <TextBlock Text="MODBUS" Classes="band-cap"/>
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Text="模式" Classes="inline-cap"/>
+                                            <ComboBox Width="86"
+                                                      ItemsSource="{Binding Modbus.Modes}"
+                                                      SelectedItem="{Binding Modbus.Mode}"
+                                                      AutomationProperties.AutomationId="ProtocolModbusMode"
+                                                      AutomationProperties.Name="Modbus 模式"/>
+                                        </StackPanel>
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Text="从站" Classes="inline-cap"/>
+                                            <TextBox Width="52" Text="{Binding Modbus.SlaveId, Mode=TwoWay}"
+                                                     AutomationProperties.AutomationId="ProtocolModbusSlave"/>
+                                        </StackPanel>
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Text="功能" Classes="inline-cap"/>
+                                            <ComboBox Width="150"
+                                                      ItemsSource="{Binding Modbus.Functions}"
+                                                      SelectedItem="{Binding Modbus.Function}"
+                                                      AutomationProperties.AutomationId="ProtocolModbusFunction"
+                                                      AutomationProperties.Name="Modbus 功能码"/>
+                                        </StackPanel>
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Text="地址" Classes="inline-cap"/>
+                                            <TextBox Width="62" Text="{Binding Modbus.StartAddress, Mode=TwoWay}"
+                                                     AutomationProperties.AutomationId="ProtocolModbusAddress"
+                                                     ToolTip.Tip="十进制或 0x..; Modbus 从 0 计地址"/>
+                                        </StackPanel>
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Text="数量" Classes="inline-cap"/>
+                                            <TextBox Width="56" Text="{Binding Modbus.Quantity, Mode=TwoWay}"
+                                                     AutomationProperties.AutomationId="ProtocolModbusQuantity"/>
+                                        </StackPanel>
+                                    </StackPanel>
+                                    <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+                                        <StackPanel Orientation="Horizontal"
+                                                    IsVisible="{Binding Modbus.NeedsValues}">
+                                            <TextBlock Text="值" Classes="inline-cap"/>
+                                            <TextBox Width="240" Classes="inline"
+                                                     Text="{Binding Modbus.Values, Mode=TwoWay}"
+                                                     Watermark="{Binding Modbus.ValuesHint}"
+                                                     AutomationProperties.AutomationId="ProtocolModbusValues"
+                                                     FontFamily="Consolas,Menlo,monospace"/>
+                                        </StackPanel>
+                                        <Button Classes="tool" Height="28" Padding="10,2" Content="生成到发送框"
+                                                Command="{Binding Modbus.ApplyCommand}"
+                                                AutomationProperties.AutomationId="ProtocolModbusGenerate"/>
+                                        <CheckBox Content="解析应答" VerticalAlignment="Center"
+                                                  IsChecked="{Binding DecodeModbus}"
+                                                  AutomationProperties.AutomationId="ProtocolDecodeModbus"
+                                                  ToolTip.Tip="收到 Modbus 应答时在日志里解析出功能码 / 寄存器 / 异常码"/>
+                                        <TextBlock Text="{Binding Modbus.StatusText}" Classes="hint"
+                                                   VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+                                    </StackPanel>
+                                    <TextBlock Text="{Binding Modbus.Preview}" Classes="mono"
+                                               FontSize="{DynamicResource TlFontXs}"
+                                               Foreground="{DynamicResource TlTextSecondary}"
+                                               TextWrapping="Wrap" MaxHeight="34"
+                                               AutomationProperties.AutomationId="ProtocolModbusPreview"/>
+                                </StackPanel>
+                            </Border>
+
+                            <!-- 高级 (默认收起: 校验和 / 循环发送 / 文件发送 —— 不常用, 收敛于此) -->
+                            <Border Grid.Row="4"
+                                    IsVisible="{Binding AdvancedExpanded}"
+                                    Background="{DynamicResource TlSurfaceSubtle}"
+                                    BorderBrush="{DynamicResource TlBorderBrush}"
+                                    BorderThickness="1"
+                                    CornerRadius="4"
+                                    Padding="10,8"
+                                    Margin="0,2,0,0">
+                                <StackPanel Spacing="8">
+                                    <StackPanel Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
+                                        <TextBlock Text="高级" Classes="band-cap"/>
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Text="校验和" Classes="inline-cap"/>
+                                            <ComboBox Width="140"
+                                                      ItemsSource="{Binding ChecksumModes}"
+                                                      SelectedItem="{Binding ChecksumMode}"
+                                                      AutomationProperties.AutomationId="ProtocolChecksum"
+                                                      AutomationProperties.Name="校验和方式"/>
+                                            <CheckBox Content="追加" VerticalAlignment="Center" Margin="6,0,0,0"
+                                                      IsChecked="{Binding AppendChecksum}"
+                                                      AutomationProperties.AutomationId="ProtocolAppendChecksum"/>
+                                            <TextBlock Text="{Binding ChecksumPreview}" VerticalAlignment="Center"
+                                                       Classes="mono" Margin="8,0,0,0"
+                                                       FontSize="{DynamicResource TlFontXs}"
+                                                       Foreground="{DynamicResource TlTextSecondary}"
+                                                       TextTrimming="CharacterEllipsis" MaxWidth="190"
+                                                       AutomationProperties.AutomationId="ProtocolChecksumPreview"/>
+                                        </StackPanel>
+                                        <Border Classes="vsep" Height="18"/>
+                                        <StackPanel Orientation="Horizontal">
+                                            <CheckBox Content="循环发送" VerticalAlignment="Center"
+                                                      IsChecked="{Binding LoopSend}"
+                                                      AutomationProperties.AutomationId="ProtocolLoopSend"
+                                                      ToolTip.Tip="按间隔循环发送框内容 (心跳 / 压测)"/>
+                                            <TextBox Width="64" Classes="inline" Margin="6,0,0,0"
+                                                     Text="{Binding LoopIntervalMs, Mode=TwoWay}"
+                                                     AutomationProperties.AutomationId="ProtocolLoopMs"
+                                                     ToolTip.Tip="循环发送间隔 (ms)"/>
+                                            <TextBlock Text="ms" Classes="inline-cap" Margin="5,0,0,0"/>
+                                        </StackPanel>
+                                    </StackPanel>
+                                    <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto,Auto"
+                                          ColumnSpacing="8" VerticalAlignment="Center">
+                                        <TextBlock Grid.Column="0" Text="文件" Classes="inline-cap"/>
+                                        <TextBox Grid.Column="1" Classes="inline"
+                                                 Text="{Binding FilePath, Mode=TwoWay}"
+                                                 Watermark="文件路径 (可直接填, 便于脚本)"
+                                                 AutomationProperties.AutomationId="ProtocolFilePath"
+                                                 AutomationProperties.Name="发送文件路径"
+                                                 FontFamily="Consolas,Menlo,monospace"/>
+                                        <Button Grid.Column="2" Classes="tool" VerticalAlignment="Center"
+                                                Height="28" Padding="9,2" Content="浏览…"
+                                                Command="{Binding BrowseFileCommand}"
+                                                AutomationProperties.AutomationId="ProtocolBrowseFile"/>
+                                        <Button Grid.Column="3" Classes="tool" VerticalAlignment="Center"
+                                                Height="28" Padding="9,2" Content="发送文件"
+                                                Command="{Binding SendFileCommand}"
+                                                AutomationProperties.AutomationId="ProtocolSendFile"
+                                                ToolTip.Tip="按原始字节发送, 不走编码 / 新行 / 校验; 可配分块与块间隔"/>
+                                        <StackPanel Grid.Column="4" Orientation="Horizontal" Spacing="6"
+                                                    VerticalAlignment="Center">
+                                            <Border Classes="vsep" Height="18"/>
+                                            <TextBlock Text="分块" Classes="inline-cap"/>
+                                            <TextBox Width="56" Classes="inline"
+                                                     Text="{Binding FileChunkSize, Mode=TwoWay}"
+                                                     AutomationProperties.AutomationId="ProtocolFileChunkSize"
+                                                     ToolTip.Tip="分块大小 (字节), 0 = 整份发出"/>
+                                            <TextBlock Text="间隔" Classes="inline-cap"/>
+                                            <TextBox Width="56" Classes="inline"
+                                                     Text="{Binding FileChunkIntervalMs, Mode=TwoWay}"
+                                                     AutomationProperties.AutomationId="ProtocolFileChunkInterval"
+                                                     ToolTip.Tip="块间隔 (ms)"/>
+                                            <TextBlock Text="ms" Classes="inline-cap"/>
+                                        </StackPanel>
+                                    </Grid>
+                                </StackPanel>
+                            </Border>
+                        </Grid>
+                    </Border>
+
+                    <!-- ─────────── ⑥ 工具 (快捷指令 / 自动应答, 默认收起) ─────────── -->
+                    <Border Grid.Row="6"
+                            Background="{DynamicResource TlPanelBg}"
+                            Padding="12,6"
+                            BorderBrush="{DynamicResource TlBorderBrush}"
+                            BorderThickness="0,1,0,0"
+                            IsVisible="{Binding ShowControls}">
+                        <Grid ColumnDefinitions="Auto,*" >
+                            <TextBlock Grid.Column="0" Text="工具" Classes="band-cap"
+                                       VerticalAlignment="Top" Margin="0,7,10,0"/>
+
+                            <StackPanel Grid.Column="1" Spacing="8">
+                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                    <ToggleButton Classes="chip-toggle"
+                                                  IsChecked="{Binding QuickCommandsExpanded, Mode=TwoWay}">
+                                        <StackPanel Orientation="Horizontal" Spacing="6">
+                                            <TextBlock Text="快捷指令" VerticalAlignment="Center"/>
+                                            <Panel VerticalAlignment="Center">
+                                                <iconPacks:PackIconIonicons Kind="ArrowDowniOS" Width="12" Height="12"
+                                                                            IsVisible="{Binding QuickCommandsExpanded}"
+                                                                            Foreground="{DynamicResource TlTextMuted}"/>
+                                                <iconPacks:PackIconIonicons Kind="ArrowForwardiOS" Width="12" Height="12"
+                                                                            IsVisible="{Binding !QuickCommandsExpanded}"
+                                                                            Foreground="{DynamicResource TlTextMuted}"/>
+                                            </Panel>
+                                        </StackPanel>
+                                    </ToggleButton>
+
+                                    <ToggleButton Classes="chip-toggle"
+                                                  IsChecked="{Binding AutoReplyExpanded, Mode=TwoWay}">
+                                        <StackPanel Orientation="Horizontal" Spacing="6">
+                                            <TextBlock Text="自动应答" VerticalAlignment="Center"/>
+                                            <Panel VerticalAlignment="Center">
+                                                <iconPacks:PackIconIonicons Kind="ArrowDowniOS" Width="12" Height="12"
+                                                                            IsVisible="{Binding AutoReplyExpanded}"
+                                                                            Foreground="{DynamicResource TlTextMuted}"/>
+                                                <iconPacks:PackIconIonicons Kind="ArrowForwardiOS" Width="12" Height="12"
+                                                                            IsVisible="{Binding !AutoReplyExpanded}"
+                                                                            Foreground="{DynamicResource TlTextMuted}"/>
+                                            </Panel>
+                                        </StackPanel>
+                                    </ToggleButton>
+                                </StackPanel>
+
+                                <!-- 快捷指令 -->
+                                <StackPanel Spacing="6" IsVisible="{Binding QuickCommandsExpanded}">
+                                    <TextBlock Classes="hint"
+                                               Text="现场常要反复发同一组指令; 每条可独立定时循环, 不必手打。"/>
+                                    <ItemsControl ItemsSource="{Binding QuickCommands}">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate x:DataType="vm:QuickCommandViewModel">
+                                                <Grid ColumnDefinitions="Auto,92,88,*,Auto,74,Auto"
+                                                      ColumnSpacing="6" Margin="0,2">
+                                                    <Button Grid.Column="0" Classes="tool" MinWidth="42"
+                                                            Height="28" Padding="8,2" Content="发"
+                                                            Command="{Binding SendCommand}"/>
+                                                    <ComboBox Grid.Column="1"
+                                                              ItemsSource="{x:Static vm:ProtocolUiOptions.SendEncodings}"
+                                                              SelectedItem="{Binding Encoding}"/>
+                                                    <ComboBox Grid.Column="2"
+                                                              ItemsSource="{x:Static vm:ProtocolUiOptions.NewLineOptions}"
+                                                              SelectedItem="{Binding NewLine}"/>
+                                                    <TextBox Grid.Column="3"
+                                                             Text="{Binding Text, Mode=TwoWay}"
+                                                             Watermark="指令内容 (HEX 编码时填十六进制)"
+                                                             FontFamily="Consolas,Menlo,monospace"/>
+                                                    <CheckBox Grid.Column="4" Content="定时" VerticalAlignment="Center"
+                                                              IsChecked="{Binding PeriodicEnabled}"/>
+                                                    <TextBox Grid.Column="5"
+                                                             Text="{Binding IntervalMs, Mode=TwoWay}"/>
+                                                    <Button Grid.Column="6" Classes="iconbtn" Width="28" Height="28"
+                                                            Command="{Binding RemoveCommand}"
+                                                            ToolTip.Tip="删除">
+                                                        <iconPacks:PackIconIonicons Kind="TrashiOS" Width="14" Height="14"/>
+                                                    </Button>
+                                                </Grid>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                    <Button Classes="tool" HorizontalAlignment="Left" Height="28" Padding="9,2"
+                                            Content="＋ 添加快捷指令"
+                                            Command="{Binding AddQuickCommandCommand}"
+                                            AutomationProperties.AutomationId="ProtocolAddQuickCommand"/>
+                                </StackPanel>
+
+                                <!-- 自动应答 -->
+                                <StackPanel Spacing="6" IsVisible="{Binding AutoReplyExpanded}">
+                                    <TextBlock Classes="hint"
+                                               Text="收到匹配的报文时自动回一条 —— 没有真实设备也能把链路跑通。匹配值支持文本, 也支持十六进制 (如 AA BB)。两端都开时已限速, 不会无限回声。"/>
+                                    <ItemsControl ItemsSource="{Binding Rules}">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate x:DataType="vm:AutoReplyRuleViewModel">
+                                                <Grid ColumnDefinitions="Auto,96,*,Auto,88,*,88,Auto"
+                                                      ColumnSpacing="6" Margin="0,2">
+                                                    <CheckBox Grid.Column="0" VerticalAlignment="Center"
+                                                              IsChecked="{Binding Enabled}"/>
+                                                    <ComboBox Grid.Column="1"
+                                                              ItemsSource="{x:Static vm:ProtocolUiOptions.MatchTypes}"
+                                                              SelectedItem="{Binding MatchType}"/>
+                                                    <TextBox Grid.Column="2"
+                                                             Text="{Binding MatchValue, Mode=TwoWay}"
+                                                             Watermark="匹配内容 / HEX"/>
+                                                    <TextBlock Grid.Column="3" Text="→ 回复" Classes="inline-cap"/>
+                                                    <ComboBox Grid.Column="4"
+                                                              ItemsSource="{x:Static vm:ProtocolUiOptions.SendEncodings}"
+                                                              SelectedItem="{Binding ReplyEncoding}"/>
+                                                    <TextBox Grid.Column="5"
+                                                             Text="{Binding ReplyText, Mode=TwoWay}"
+                                                             Watermark="OK"/>
+                                                    <ComboBox Grid.Column="6"
+                                                              ItemsSource="{x:Static vm:ProtocolUiOptions.NewLineOptions}"
+                                                              SelectedItem="{Binding ReplyNewLine}"/>
+                                                    <Button Grid.Column="7" Classes="iconbtn" Width="28" Height="28"
+                                                            Command="{Binding RemoveCommand}"
+                                                            ToolTip.Tip="删除">
+                                                        <iconPacks:PackIconIonicons Kind="TrashiOS" Width="14" Height="14"/>
+                                                    </Button>
+                                                </Grid>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                    <Button Classes="tool" HorizontalAlignment="Left" Height="28" Padding="9,2"
+                                            Content="＋ 添加规则"
+                                            Command="{Binding AddRuleCommand}"
+                                            AutomationProperties.AutomationId="ProtocolAddRule"/>
+                                </StackPanel>
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+                </Grid>
+</UserControl>
+

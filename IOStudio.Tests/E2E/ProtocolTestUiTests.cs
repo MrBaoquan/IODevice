@@ -42,6 +42,41 @@ namespace IOStudio.Tests.E2E
                 ProtocolUiOptions.Transports.First(t => t.Transport == transport && t.IsListener == listener)
             );
 
+        /// <summary>
+        /// 造一个"干净"的测试台 VM: 先把测试目录里的工作区文件挪走, 用例结束后还原。
+        /// 否则 `new ProtocolTestViewModel()` 会读/写上一条用例留下的真实工作区, 断言随运行次序漂移。
+        /// </summary>
+        private static IDisposable IsolatedViewModel(out ProtocolTestViewModel vm)
+        {
+            var wsPath = ProtocolWorkspace.DefaultPath;
+            var backup = System.IO.File.Exists(wsPath) ? System.IO.File.ReadAllText(wsPath) : null;
+            System.IO.File.Delete(wsPath);
+            vm = new ProtocolTestViewModel();
+            return new WorkspaceGuard(vm, wsPath, backup);
+        }
+
+        private sealed class WorkspaceGuard : IDisposable
+        {
+            private readonly ProtocolTestViewModel _vm;
+            private readonly string _path;
+            private readonly string? _backup;
+
+            public WorkspaceGuard(ProtocolTestViewModel vm, string path, string? backup)
+            {
+                _vm = vm;
+                _path = path;
+                _backup = backup;
+            }
+
+            public void Dispose()
+            {
+                try { _vm.Dispose(); } catch { /* ignore */ }
+                try { System.IO.File.Delete(_path); } catch { /* ignore */ }
+                if (_backup is not null)
+                    System.IO.File.WriteAllText(_path, _backup);
+            }
+        }
+
         /// <summary>在 UI 线程上追加日志 (AppendEntry 会 Post, 需再泵一次才会落地)。</summary>
         private async Task AppendAsync(ProtocolSessionViewModel s, ProtocolLogEntry e)
         {
@@ -1240,6 +1275,130 @@ namespace IOStudio.Tests.E2E
                 if (backup is not null)
                     System.IO.File.WriteAllText(wsPath, backup);
             }
+        }
+
+        // ─────────── 标签 × / 独立窗口 (本轮 UI 审查) ───────────
+
+        /// <summary>
+        /// 标签上的 × (CloseCommand) 应**精确关掉那一路会话**, 并在关掉当前选中时
+        /// 把选中挪到相邻会话 —— 这是"每标签各自关闭"替代"统一移除"的核心语义。
+        /// </summary>
+        [Fact]
+        public async Task Session_Close_Command_Removes_That_Session_And_Reselects()
+        {
+            using var iso = IsolatedViewModel(out var vm);
+
+            var first = vm.SelectedSession!;
+            await _session.Dispatch(
+                () =>
+                {
+                    vm.NewSessionCommand.Execute().Subscribe();
+                    return true;
+                },
+                CancellationToken.None
+            );
+            await Task.Delay(120);
+            Assert.Equal(2, vm.Sessions.Count);
+
+            var second = vm.SelectedSession!;
+            Assert.NotSame(first, second);
+
+            // 关掉当前选中的第二路 → 应落回第一路, 且第二路被移出
+            await _session.Dispatch(
+                () =>
+                {
+                    second.CloseCommand.Execute().Subscribe();
+                    return true;
+                },
+                CancellationToken.None
+            );
+            await Task.Delay(60);
+
+            Assert.Single(vm.Sessions);
+            Assert.DoesNotContain(second, vm.Sessions);
+            Assert.Same(first, vm.SelectedSession);
+
+            // 关掉最后一路 → 回到"未选择"空态, 不抛异常
+            await _session.Dispatch(
+                () =>
+                {
+                    first.CloseCommand.Execute().Subscribe();
+                    return true;
+                },
+                CancellationToken.None
+            );
+            await Task.Delay(60);
+
+            Assert.Empty(vm.Sessions);
+            Assert.Null(vm.SelectedSession);
+            Assert.False(vm.HasSelection);
+        }
+
+        /// <summary>
+        /// 独立窗口的 VM 侧语义: 弹出 = 移出标签但**不销毁**, 关窗再放回; 弹出期间
+        /// 会话照样参与配置落盘 (否则"弹出去看一下"会悄悄丢配置)。
+        /// </summary>
+        [Fact]
+        public async Task Detach_Then_Attach_RoundTrips_And_Keeps_Workspace()
+        {
+            using var iso = IsolatedViewModel(out var vm);
+
+            var target = vm.SelectedSession!;
+            var before = vm.Sessions.Count;
+            Assert.Equal(1, before);
+
+            var index = -1;
+            await _session.Dispatch(
+                () =>
+                {
+                    index = vm.DetachSession(target);
+                    return true;
+                },
+                CancellationToken.None
+            );
+
+            Assert.Equal(0, index);
+            Assert.Empty(vm.Sessions);
+            Assert.Null(vm.SelectedSession);
+
+            // 弹出期间仍落盘: 工作区会话数 = 主窗 + 已弹出
+            var ws = ProtocolWorkspace.Load();
+            Assert.Equal(before, ws.Sessions.Count);
+
+            await _session.Dispatch(
+                () =>
+                {
+                    vm.AttachSession(target, index);
+                    return true;
+                },
+                CancellationToken.None
+            );
+
+            Assert.Single(vm.Sessions);
+            Assert.Same(target, vm.Sessions[0]);
+            Assert.Same(target, vm.SelectedSession);
+
+            // 放回后再关 = 真正释放
+            await _session.Dispatch(
+                () =>
+                {
+                    target.CloseCommand.Execute().Subscribe();
+                    return true;
+                },
+                CancellationToken.None
+            );
+            Assert.Empty(vm.Sessions);
+        }
+
+        /// <summary>虚拟 (场景运行) 会话只有日志、没有真实连接, 不允许弹独立窗口。</summary>
+        [Fact]
+        public void Virtual_Session_Cannot_Detach()
+        {
+            var real = NewSession();
+            Assert.True(((System.Windows.Input.ICommand)real.DetachCommand).CanExecute(null));
+
+            real.IsVirtual = true;
+            Assert.False(((System.Windows.Input.ICommand)real.DetachCommand).CanExecute(null));
         }
     }
 }

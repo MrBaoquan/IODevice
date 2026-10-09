@@ -1,0 +1,48 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:IOStudio.ViewModels"
+        xmlns:views="using:IOStudio.Views"
+        xmlns:iconPacks="https://github.com/MahApps/IconPacks.Avalonia"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d" d:DesignWidth="1100" d:DesignHeight="640"
+        x:Class="IOStudio.Views.ProtocolSessionWindow"
+        x:DataType="vm:ProtocolSessionViewModel"
+        Title="{Binding Label}"
+        Width="1100" Height="640"
+        MinWidth="820" MinHeight="460"
+        WindowStartupLocation="CenterOwner"
+        Background="{DynamicResource TlWindowBg}"
+        Icon="/Assets/avalonia-logo.ico">
+
+    <!-- 与主窗口共用同一套面板样式: 面板抽成 ProtocolSessionPanel 后, 两个宿主都能用 -->
+    <Window.Styles>
+        <StyleInclude Source="avares://IOStudio/Views/ProtocolPanelStyles.axaml"/>
+    </Window.Styles>
+
+    <DockPanel>
+        <!-- 状态栏: 会话实时状态 + 收发统计 (与主窗一致的读数) -->
+        <Border DockPanel.Dock="Bottom"
+                Background="{DynamicResource TlToolbarBg}"
+                BorderBrush="{DynamicResource TlBorderBrush}"
+                BorderThickness="0,1,0,0"
+                Padding="12,0"
+                Height="24">
+            <Grid ColumnDefinitions="*,Auto" VerticalAlignment="Center">
+                <TextBlock Grid.Column="0" Text="{Binding StatusText}"
+                           FontSize="{DynamicResource TlFontXs}"
+                           Foreground="{DynamicResource TlTextSecondary}"
+                           TextTrimming="CharacterEllipsis"
+                           VerticalAlignment="Center"/>
+                <TextBlock Grid.Column="1" Text="{Binding StatsText}"
+                           FontSize="{DynamicResource TlFontXs}"
+                           Foreground="{DynamicResource TlTextMuted}"
+                           TextTrimming="CharacterEllipsis"
+                           VerticalAlignment="Center"/>
+            </Grid>
+        </Border>
+
+        <!-- 会话工作面 (与主窗口里显示的完全是同一个控件) -->
+        <views:ProtocolSessionPanel/>
+    </DockPanel>
+</Window>

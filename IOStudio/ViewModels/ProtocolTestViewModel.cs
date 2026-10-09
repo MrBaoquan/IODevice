@@ -36,7 +36,7 @@ namespace IOStudio.ViewModels
 
             NewSessionCommand = ReactiveCommand.CreateFromTask(NewSessionAsync);
             RemoveSessionCommand = ReactiveCommand.Create(
-                RemoveSelectedSession,
+                () => RemoveSession(SelectedSession),
                 this.WhenAnyValue(x => x.SelectedSession, (ProtocolSessionViewModel? s) => s is not null)
             );
             ExportCommand = ReactiveCommand.Create(
@@ -71,6 +71,7 @@ namespace IOStudio.ViewModels
                 var s = new ProtocolSessionViewModel($"s{_sessionCounter}", t);
                 s.Restore(st);
                 s.FilePicker = _filePicker;
+                WireSession(s);
                 Sessions.Add(s);
             }
         }
@@ -79,7 +80,7 @@ namespace IOStudio.ViewModels
         public void SaveWorkspace()
         {
             var ws = new ProtocolWorkspace();
-            foreach (var s in Sessions.Where(x => !x.IsVirtual))
+            foreach (var s in Sessions.Concat(_detached).Where(x => !x.IsVirtual))
                 ws.Sessions.Add(s.Snapshot());
             ws.Save();
         }
@@ -137,6 +138,12 @@ namespace IOStudio.ViewModels
             }
         }
 
+        /// <summary>已弹出到独立窗口的会话 (不在 <see cref="Sessions"/> 里, 但仍参与配置落盘)。</summary>
+        private readonly List<ProtocolSessionViewModel> _detached = new();
+
+        /// <summary>由窗口注入: 把会话弹到独立窗口 (VM 不 new 窗口, 才能脱离桌面做确定性测试)。</summary>
+        public Action<ProtocolSessionViewModel>? DetachRequested { get; set; }
+
         private string? _selectedScenario;
         public string? SelectedScenario
         {
@@ -179,6 +186,7 @@ namespace IOStudio.ViewModels
                 ClipboardWriter = _clipboardWriter,
             };
             session.Port = SuggestPort(transport);
+            WireSession(session);
             Sessions.Add(session);
             return session;
         }
@@ -206,11 +214,16 @@ namespace IOStudio.ViewModels
             await Task.CompletedTask;
         }
 
-        private void RemoveSelectedSession()
+        /// <summary>关闭一路会话 (标签 ×)。释放端点并落盘; 虚拟(场景)会话下次运行会重建。</summary>
+        public void RemoveSession(ProtocolSessionViewModel? s)
         {
-            var s = SelectedSession;
             if (s is null)
                 return;
+            var idx = Sessions.IndexOf(s);
+            if (idx < 0 && !ReferenceEquals(_scenarioSession, s))
+                return;
+
+            var wasSelected = ReferenceEquals(SelectedSession, s);
             try
             {
                 s.Dispose();
@@ -220,8 +233,52 @@ namespace IOStudio.ViewModels
                 /* ignore */
             }
             Sessions.Remove(s);
-            SelectedSession = Sessions.FirstOrDefault();
+            _detached.Remove(s);
+            if (ReferenceEquals(_scenarioSession, s))
+                _scenarioSession = null;
+            if (wasSelected)
+                SelectedSession = Sessions.Count == 0
+                    ? null
+                    : Sessions[Math.Min(Math.Max(idx, 0), Sessions.Count - 1)];
             SaveWorkspace();
+        }
+
+        /// <summary>
+        /// 把一路会话弹到独立窗口: 从主窗标签移出 (会话对象**不**销毁), 返回它原来的位置,
+        /// 供关窗时放回。窗口由 View 层创建 (见 ProtocolTestWindow.DetachSession)。
+        /// </summary>
+        public int DetachSession(ProtocolSessionViewModel s)
+        {
+            var idx = Sessions.IndexOf(s);
+            if (idx < 0)
+                return -1;
+
+            var wasSelected = ReferenceEquals(SelectedSession, s);
+            Sessions.Remove(s);
+            _detached.Add(s);
+            if (wasSelected)
+                SelectedSession = Sessions.Count == 0 ? null : Sessions[Math.Min(idx, Sessions.Count - 1)];
+            SaveWorkspace();
+            return idx;
+        }
+
+        /// <summary>独立窗口关闭: 把会话放回主窗标签 (原位置)。</summary>
+        public void AttachSession(ProtocolSessionViewModel s, int index)
+        {
+            _detached.Remove(s);
+            if (Sessions.Contains(s))
+                return;
+            var at = index < 0 || index > Sessions.Count ? Sessions.Count : index;
+            Sessions.Insert(at, s);
+            SelectedSession = s;
+            SaveWorkspace();
+        }
+
+        /// <summary>给会话接上"关闭 / 弹窗"回调 (创建、恢复、场景三条路径都要接)。</summary>
+        private void WireSession(ProtocolSessionViewModel s)
+        {
+            s.CloseAction = RemoveSession;
+            s.DetachAction = session => DetachRequested?.Invoke(session);
         }
 
         /// <summary>导出格式 (按选中会话导出; 主流工具都是"另存为")。</summary>
@@ -302,6 +359,7 @@ namespace IOStudio.ViewModels
                     Label = "场景运行",
                     IsVirtual = true,
                 };
+                WireSession(_scenarioSession);
                 Sessions.Add(_scenarioSession);
             }
             return _scenarioSession;
@@ -354,7 +412,7 @@ namespace IOStudio.ViewModels
         public void Dispose()
         {
             SaveWorkspace();
-            foreach (var s in Sessions)
+            foreach (var s in Sessions.Concat(_detached))
             {
                 try
                 {
@@ -366,6 +424,7 @@ namespace IOStudio.ViewModels
                 }
             }
             Sessions.Clear();
+            _detached.Clear();
         }
     }
 }

@@ -1,0 +1,384 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+        <!-- ═══════════════ 基础控件: 统一 30 高 / 6 圆角 / 12 号字 ═══════════════ -->
+        <Style Selector="TextBox">
+            <Setter Property="MinHeight" Value="30"/>
+            <Setter Property="Padding" Value="8,4"/>
+            <Setter Property="FontSize" Value="{DynamicResource TlFontS}"/>
+            <Setter Property="CornerRadius" Value="6"/>
+            <Setter Property="Background" Value="{DynamicResource TlInputBg}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource TlBorderLight}"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+        </Style>
+        <Style Selector="TextBox:focus-visible">
+            <Setter Property="BorderBrush" Value="{DynamicResource TlFocusRing}"/>
+        </Style>
+        <Style Selector="TextBox.multiline">
+            <Setter Property="VerticalContentAlignment" Value="Top"/>
+            <Setter Property="MaxHeight" Value="70"/>
+        </Style>
+        <Style Selector="TextBox.inline">
+            <Setter Property="MinHeight" Value="28"/>
+        </Style>
+        <!-- 发送框: 全宽多行 —— 默认就留够 3 行, 写 JSON / AT 指令不再局促;
+             上方的可拖拽分隔条拉高发送区时, 框随高度自由伸缩 (故不设 MaxHeight) -->
+        <Style Selector="TextBox.send-box">
+            <Setter Property="VerticalContentAlignment" Value="Top"/>
+            <Setter Property="MinHeight" Value="76"/>
+        </Style>
+
+        <Style Selector="ComboBox">
+            <Setter Property="MinHeight" Value="30"/>
+            <Setter Property="Padding" Value="8,1"/>
+            <Setter Property="FontSize" Value="{DynamicResource TlFontS}"/>
+            <Setter Property="CornerRadius" Value="6"/>
+            <Setter Property="Background" Value="{DynamicResource TlInputBg}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource TlBorderLight}"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+        </Style>
+        <Style Selector="ComboBox:focus-visible">
+            <Setter Property="BorderBrush" Value="{DynamicResource TlFocusRing}"/>
+        </Style>
+
+        <Style Selector="CheckBox">
+            <Setter Property="FontSize" Value="{DynamicResource TlFontS}"/>
+            <Setter Property="MinHeight" Value="0"/>
+            <Setter Property="Foreground" Value="{DynamicResource TlTextSecondary}"/>
+        </Style>
+
+        <!-- ═══════════════ 按钮: 主 / 次 / 纯图标 三类 ═══════════════ -->
+        <Style Selector="Button">
+            <Setter Property="MinHeight" Value="30"/>
+            <Setter Property="Padding" Value="12,4"/>
+            <Setter Property="FontSize" Value="{DynamicResource TlFontS}"/>
+            <Setter Property="CornerRadius" Value="6"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+        </Style>
+
+        <Style Selector="Button.primary">
+            <Setter Property="Foreground" Value="{DynamicResource TlAccentFg}"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+        </Style>
+        <Style Selector="Button.primary /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="{DynamicResource TlAccent}"/>
+            <Setter Property="CornerRadius" Value="6"/>
+        </Style>
+        <Style Selector="Button.primary:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="{DynamicResource TlAccentHover}"/>
+        </Style>
+        <Style Selector="Button.primary:pressed /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="{DynamicResource TlAccentHover}"/>
+        </Style>
+        <Style Selector="Button.primary:disabled /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="{DynamicResource TlSurfaceRaised}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource TlBorderLight}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+        </Style>
+        <Style Selector="Button.primary:disabled">
+            <Setter Property="Foreground" Value="{DynamicResource TlTextMuted}"/>
+            <Setter Property="Opacity" Value="0.5"/>
+        </Style>
+
+        <Style Selector="Button.tool">
+            <Setter Property="Foreground" Value="{DynamicResource TlTextPrimary}"/>
+        </Style>
+        <Style Selector="Button.tool /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="{DynamicResource TlSurfaceRaised}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource TlBorderLight}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="6"/>
+        </Style>
+        <Style Selector="Button.tool:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="{DynamicResource TlHoverBg}"/>
+        </Style>
+        <Style Selector="Button.tool:pressed /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="{DynamicResource TlBtnHover}"/>
+        </Style>
+        <Style Selector="Button.tool:disabled">
+            <Setter Property="Foreground" Value="{DynamicResource TlTextMuted}"/>
+            <Setter Property="Opacity" Value="0.5"/>
+        </Style>
+
+        <Style Selector="Button.iconbtn">
+            <Setter Property="Width" Value="30"/>
+            <Setter Property="Height" Value="30"/>
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="Foreground" Value="{DynamicResource TlTextSecondary}"/>
+        </Style>
+        <Style Selector="Button.iconbtn /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="CornerRadius" Value="6"/>
+        </Style>
+        <Style Selector="Button.iconbtn:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="{DynamicResource TlHoverBg}"/>
+        </Style>
+        <Style Selector="Button.iconbtn:pointerover">
+            <Setter Property="Foreground" Value="{DynamicResource TlTextPrimary}"/>
+        </Style>
+
+        <!-- ═══════════════ 会话标签上的小按钮 (⧉ 弹窗 / × 关闭) ═══════════════ -->
+        <Style Selector="Button.tabbtn">
+            <Setter Property="Width" Value="18"/>
+            <Setter Property="Height" Value="18"/>
+            <Setter Property="MinHeight" Value="0"/>
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="CornerRadius" Value="4"/>
+            <Setter Property="Foreground" Value="{DynamicResource TlTextMuted}"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+        <Style Selector="Button.tabbtn /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="CornerRadius" Value="4"/>
+        </Style>
+        <Style Selector="Button.tabbtn:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="{DynamicResource TlHoverBg}"/>
+        </Style>
+        <Style Selector="Button.tabbtn:pointerover">
+            <Setter Property="Foreground" Value="{DynamicResource TlTextPrimary}"/>
+        </Style>
+
+        <!-- ═══════════════ 快捷指令 chip (贴在发送框上方, 单击即发) ═══════════════ -->
+        <Style Selector="Button.chip-send">
+            <Setter Property="MinHeight" Value="24"/>
+            <Setter Property="Padding" Value="10,2"/>
+            <Setter Property="FontSize" Value="{DynamicResource TlFontXs}"/>
+            <Setter Property="Foreground" Value="{DynamicResource TlTextPrimary}"/>
+        </Style>
+        <Style Selector="Button.chip-send /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="{DynamicResource TlSurfaceRaised}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource TlBorderLight}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="12"/>
+        </Style>
+        <Style Selector="Button.chip-send:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="{DynamicResource TlHoverBg}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource TlAccent}"/>
+        </Style>
+
+        <!-- ═══════════════ 文本语义 ═══════════════ -->
+        <!-- 分段标题: 每个功能带最左侧一列固定宽度, 让视线能沿一条竖线扫下来 -->
+        <Style Selector="TextBlock.band-cap">
+            <Setter Property="Width" Value="40"/>
+            <Setter Property="FontSize" Value="{DynamicResource TlFontXs}"/>
+            <Setter Property="Foreground" Value="{DynamicResource TlTextMuted}"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="Margin" Value="0,0,10,0"/>
+        </Style>
+        <Style Selector="TextBlock.inline-cap">
+            <Setter Property="FontSize" Value="{DynamicResource TlFontXs}"/>
+            <Setter Property="Foreground" Value="{DynamicResource TlTextMuted}"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="Margin" Value="0,0,5,0"/>
+        </Style>
+        <Style Selector="TextBlock.col-head">
+            <Setter Property="FontSize" Value="{DynamicResource TlFontXs}"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Foreground" Value="{DynamicResource TlTextMuted}"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+        <Style Selector="TextBlock.hint">
+            <Setter Property="FontSize" Value="{DynamicResource TlFontXs}"/>
+            <Setter Property="Foreground" Value="{DynamicResource TlTextMuted}"/>
+            <Setter Property="TextWrapping" Value="Wrap"/>
+        </Style>
+        <Style Selector="TextBlock.mono">
+            <Setter Property="FontFamily" Value="Consolas,Menlo,monospace"/>
+        </Style>
+
+        <!-- 发送前预览 / 就地报错 -->
+        <Style Selector="TextBlock.send-status">
+            <Setter Property="FontSize" Value="{DynamicResource TlFontXs}"/>
+            <Setter Property="Foreground" Value="{DynamicResource TlTextMuted}"/>
+            <Setter Property="VerticalAlignment" Value="Bottom"/>
+        </Style>
+        <Style Selector="TextBlock.send-status.error">
+            <Setter Property="Foreground" Value="{DynamicResource TlDanger}"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+        </Style>
+        <Style Selector="TextBox.invalid">
+            <Setter Property="BorderBrush" Value="{DynamicResource TlDanger}"/>
+        </Style>
+        <Style Selector="TextBox.invalid:focus-visible">
+            <Setter Property="BorderBrush" Value="{DynamicResource TlDanger}"/>
+        </Style>
+
+        <!-- ═══════════════ 日志单元格 ═══════════════ -->
+        <Style Selector="TextBlock.cell">
+            <Setter Property="FontSize" Value="{DynamicResource TlFontXs}"/>
+            <Setter Property="Foreground" Value="{DynamicResource TlTextSecondary}"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
+        </Style>
+        <Style Selector="TextBlock.cell.received">
+            <Setter Property="Foreground" Value="{DynamicResource TlAccent}"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+        </Style>
+        <Style Selector="TextBlock.cell.sent">
+            <Setter Property="Foreground" Value="{DynamicResource TlSuccess}"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+        </Style>
+        <Style Selector="TextBlock.cell.auto">
+            <Setter Property="Foreground" Value="{DynamicResource TlWarning}"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+        </Style>
+        <Style Selector="TextBlock.cell.pass">
+            <Setter Property="Foreground" Value="{DynamicResource TlSuccess}"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+        </Style>
+        <Style Selector="TextBlock.cell.bad">
+            <Setter Property="Foreground" Value="{DynamicResource TlDanger}"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+        </Style>
+        <Style Selector="Border.row">
+            <Setter Property="BorderBrush" Value="{DynamicResource TlGridLine}"/>
+            <Setter Property="BorderThickness" Value="0,0,0,1"/>
+        </Style>
+
+        <!-- ═══════════════ 分隔线 ═══════════════ -->
+        <Style Selector="Border.vsep">
+            <Setter Property="Width" Value="1"/>
+            <Setter Property="Background" Value="{DynamicResource TlBorderLight}"/>
+            <Setter Property="Margin" Value="3,4"/>
+            <Setter Property="VerticalAlignment" Value="Stretch"/>
+        </Style>
+
+        <!-- ═══════════════ 状态胶囊 ═══════════════ -->
+        <Style Selector="Border.chip">
+            <Setter Property="CornerRadius" Value="10"/>
+            <Setter Property="Padding" Value="9,3"/>
+            <Setter Property="Background" Value="{DynamicResource TlStatusNeutralBg}"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+        <Style Selector="Border.chip > StackPanel > TextBlock">
+            <Setter Property="FontSize" Value="{DynamicResource TlFontXs}"/>
+            <Setter Property="Foreground" Value="{DynamicResource TlStatusNeutralFg}"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+        <Style Selector="Border.chip > StackPanel > Ellipse">
+            <Setter Property="Width" Value="6"/>
+            <Setter Property="Height" Value="6"/>
+            <Setter Property="Fill" Value="{DynamicResource TlStatusNeutralFg}"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+        <Style Selector="Border.chip.online">
+            <Setter Property="Background" Value="{DynamicResource TlStatusOnlineBg}"/>
+        </Style>
+        <Style Selector="Border.chip.online > StackPanel > TextBlock">
+            <Setter Property="Foreground" Value="{DynamicResource TlStatusOnlineFg}"/>
+        </Style>
+        <Style Selector="Border.chip.online > StackPanel > Ellipse">
+            <Setter Property="Fill" Value="{DynamicResource TlStatusOnlineFg}"/>
+        </Style>
+
+        <!-- ═══════════════ 会话标签条 ═══════════════ -->
+        <Style Selector="ListBox.plain">
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+        </Style>
+        <Style Selector="ListBox.plain ListBoxItem">
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="Margin" Value="0"/>
+            <Setter Property="MinHeight" Value="0"/>
+            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+        </Style>
+        <Style Selector="ListBox.plain ListBoxItem /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="CornerRadius" Value="0"/>
+        </Style>
+        <Style Selector="ListBox.tabs ListBoxItem:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="{DynamicResource TlHoverBg}"/>
+        </Style>
+
+        <Style Selector="Border.tab">
+            <Setter Property="Padding" Value="11,5"/>
+            <Setter Property="BorderThickness" Value="0,0,0,2"/>
+            <Setter Property="BorderBrush" Value="Transparent"/>
+            <Setter Property="Cursor" Value="Hand"/>
+        </Style>
+        <Style Selector="Border.tab.selected">
+            <Setter Property="BorderBrush" Value="{DynamicResource TlAccent}"/>
+            <Setter Property="Background" Value="{DynamicResource TlSurfaceSubtle}"/>
+        </Style>
+        <Style Selector="Border.tab TextBlock.tab-name">
+            <Setter Property="FontSize" Value="{DynamicResource TlFontS}"/>
+            <Setter Property="Foreground" Value="{DynamicResource TlTextSecondary}"/>
+        </Style>
+        <Style Selector="Border.tab.selected TextBlock.tab-name">
+            <Setter Property="Foreground" Value="{DynamicResource TlTextPrimary}"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+        </Style>
+        <Style Selector="Border.tab TextBlock.tab-sub">
+            <Setter Property="FontSize" Value="{DynamicResource TlFontXs}"/>
+            <Setter Property="Foreground" Value="{DynamicResource TlTextMuted}"/>
+        </Style>
+
+        <Style Selector="Ellipse.dot">
+            <Setter Property="Width" Value="7"/>
+            <Setter Property="Height" Value="7"/>
+            <Setter Property="Fill" Value="{DynamicResource TlTextMuted}"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+        <Style Selector="Ellipse.dot.running">
+            <Setter Property="Fill" Value="{DynamicResource TlSuccess}"/>
+        </Style>
+
+        <!-- 会话标签角标: 非当前会话的未读数 / 异常 -->
+        <Style Selector="Border.tab-badge">
+            <Setter Property="CornerRadius" Value="8"/>
+            <Setter Property="MinWidth" Value="16"/>
+            <Setter Property="Padding" Value="5,0"/>
+            <Setter Property="Background" Value="{DynamicResource TlBadgeBg}"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+        <Style Selector="Border.tab-badge > TextBlock">
+            <Setter Property="FontSize" Value="10"/>
+            <Setter Property="Foreground" Value="{DynamicResource TlTextMuted}"/>
+            <Setter Property="HorizontalAlignment" Value="Center"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+        <Style Selector="Border.tab-badge.error">
+            <Setter Property="Background" Value="{DynamicResource TlDanger}"/>
+        </Style>
+        <Style Selector="Border.tab-badge.error > TextBlock">
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+        </Style>
+
+        <!-- ═══════════════ 日志列表: 行即表格行 ═══════════════ -->
+        <Style Selector="ListBox.log ListBoxItem:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="{DynamicResource TlHoverBg}"/>
+        </Style>
+        <Style Selector="ListBox.log ListBoxItem:selected /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="{DynamicResource TlAccentSoftBg}"/>
+        </Style>
+
+        <!-- ═══════════════ 工具区段的开合胶囊 ═══════════════ -->
+        <Style Selector="ToggleButton.chip-toggle">
+            <Setter Property="Padding" Value="10,4"/>
+            <Setter Property="MinHeight" Value="28"/>
+            <Setter Property="CornerRadius" Value="6"/>
+            <Setter Property="FontSize" Value="{DynamicResource TlFontS}"/>
+            <Setter Property="Foreground" Value="{DynamicResource TlTextSecondary}"/>
+            <Setter Property="Cursor" Value="Hand"/>
+        </Style>
+        <Style Selector="ToggleButton.chip-toggle /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="{DynamicResource TlSurfaceRaised}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource TlBorderLight}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="6"/>
+        </Style>
+        <Style Selector="ToggleButton.chip-toggle:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="{DynamicResource TlHoverBg}"/>
+        </Style>
+        <Style Selector="ToggleButton.chip-toggle:checked /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="{DynamicResource TlAccentSoftBg}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource TlAccent}"/>
+        </Style>
+        <Style Selector="ToggleButton.chip-toggle:checked">
+            <Setter Property="Foreground" Value="{DynamicResource TlAccentSoftFg}"/>
+        </Style>
+</Styles>
+

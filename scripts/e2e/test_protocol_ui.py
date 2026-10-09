@@ -380,3 +380,143 @@ def test_protocol_send_splitter_resizes(app):
     )
 
     drag(150)  # 还原, 避免影响后续/重复运行
+
+
+from ctypes import wintypes  # noqa: E402
+
+user32 = ctypes.windll.user32
+user32.EnumWindows.argtypes = [
+    ctypes.WINFUNCTYPE(wintypes.BOOL, wintypes.HWND, wintypes.LPARAM),
+    wintypes.LPARAM,
+]
+user32.EnumWindows.restype = wintypes.BOOL
+user32.GetWindowThreadProcessId.argtypes = [wintypes.HWND, ctypes.POINTER(wintypes.DWORD)]
+user32.IsWindowVisible.argtypes = [wintypes.HWND]
+
+
+def _pid_windows(pid):
+    """同一进程的所有可见顶层窗口句柄 (用来发现"弹出来的独立窗口")。"""
+    found = []
+
+    @ctypes.WINFUNCTYPE(wintypes.BOOL, wintypes.HWND, wintypes.LPARAM)
+    def _cb(hwnd, _lparam):
+        wpid = wintypes.DWORD()
+        user32.GetWindowThreadProcessId(hwnd, ctypes.byref(wpid))
+        if wpid.value == pid and user32.IsWindowVisible(hwnd):
+            found.append(hwnd)
+        return True
+
+    user32.EnumWindows(_cb, 0)
+    return found
+
+
+def test_protocol_session_tabs_have_close_and_detach(app):
+    """每路会话的标签自带 ⧉(独立窗口) 与 ×(关闭), 取代之前统一的「移除」按钮。
+
+    统一移除的毛病: 想关哪一路得先选中, 再跑去右边点「移除」—— 与
+    "标签上直接关" 的通用心智 (浏览器/终端) 不符。这里锁死标签内按钮存在,
+    同时确认旧的统一按钮已下线。
+    """
+    win = find_window(TEST_WINDOW_TITLE, timeout=10)
+    if win is None:
+        pytest.skip("协议测试台窗口未打开 (依赖前面的用例)")
+
+    lst = _by_id(win, "ProtocolSessionList")
+    assert lst is not None, "未找到会话标签条 (ProtocolSessionList)"
+
+    auto_ids = [
+        getattr(d.element_info, "automation_id", "") or "" for d in lst.descendants()
+    ]
+    assert auto_ids.count("ProtocolSessionClose") >= 1, (
+        "会话标签上没有关闭按钮 (ProtocolSessionClose)"
+    )
+    assert auto_ids.count("ProtocolSessionDetach") >= 1, (
+        "会话标签上没有独立窗口按钮 (ProtocolSessionDetach)"
+    )
+
+    assert _by_id(win, "ProtocolNewTab") is not None, "标签条缺少新建会话 (+) 按钮"
+    assert _by_id(win, "ProtocolRemoveSession") is None, "旧的统一「移除」按钮应已下线"
+
+
+def test_protocol_tab_close_button_closes_that_session(app):
+    """点标签上的 × 应精确关掉那一路 (会话数 -1), 而不是"先选中再移除"。"""
+    win = find_window(TEST_WINDOW_TITLE, timeout=10)
+    if win is None:
+        pytest.skip("协议测试台窗口未打开 (依赖前面的用例)")
+
+    # 保证至少两路, 免得关掉最后一路退化成空态
+    new_btn = _by_id(win, "ProtocolNewTab")
+    before = _session_count(win)
+    if new_btn is not None and before < 2:
+        new_btn.click_input()
+        _wait_until(lambda: _session_count(win) == before + 1, timeout=6.0)
+        before = _session_count(win)
+    assert before >= 2, f"会话数不足, 无法验证关闭: {before}"
+
+    lst = _by_id(win, "ProtocolSessionList")
+    closes = [
+        d
+        for d in lst.descendants()
+        if (getattr(d.element_info, "automation_id", "") or "") == "ProtocolSessionClose"
+    ]
+    assert len(closes) >= 1, "未找到标签关闭按钮"
+
+    closes[-1].click_input()
+    assert _wait_until(lambda: _session_count(win) == before - 1, timeout=6.0), (
+        f"点标签 × 后会话数未减少: before={before} after={_session_count(win)}"
+    )
+
+
+def test_protocol_detach_opens_independent_window_and_returns(app):
+    """点标签 ⧉ 把会话弹到独立窗口: 主窗该会话移出; 关掉独立窗口后放回。"""
+    win = find_window(TEST_WINDOW_TITLE, timeout=10)
+    if win is None:
+        pytest.skip("协议测试台窗口未打开 (依赖前面的用例)")
+
+    pid = app["proc"].pid
+    lst = _by_id(win, "ProtocolSessionList")
+    detaches = [
+        d
+        for d in lst.descendants()
+        if (getattr(d.element_info, "automation_id", "") or "") == "ProtocolSessionDetach"
+    ]
+    assert len(detaches) >= 1, "未找到独立窗口按钮"
+
+    before = _session_count(win)
+    wins_before = set(_pid_windows(pid))
+
+    detaches[-1].click_input()
+    assert _wait_until(lambda: _session_count(win) == before - 1, timeout=8.0), (
+        f"弹出后主窗会话数未减少: before={before} after={_session_count(win)}"
+    )
+
+    new_handles = set(_pid_windows(pid)) - wins_before
+    assert new_handles, "未出现独立窗口"
+
+    # 独立窗口里应包含会话工作面 (日志/发送)
+    from pywinauto import Desktop
+
+    detached = None
+    for _ in range(10):
+        for h in new_handles:
+            try:
+                w = Desktop(backend="uia").window(handle=h)
+                if w.rectangle().width() > 500:
+                    detached = w
+                    break
+            except Exception:
+                continue
+        if detached is not None:
+            break
+        time.sleep(0.4)
+
+    assert detached is not None, "独立窗口未就绪"
+    assert _by_id(detached, "ProtocolMessages") is not None, "独立窗口缺少日志面板"
+    assert _by_id(detached, "ProtocolSendText") is not None, "独立窗口缺少发送框"
+
+    # 关掉独立窗口 → 会话放回主窗
+    user32.PostMessageW(detached.handle, 0x0010, 0, 0)  # WM_CLOSE
+    assert _wait_until(lambda: _session_count(win) == before, timeout=8.0), (
+        f"关闭独立窗口后会话未放回: expected={before} got={_session_count(win)}"
+    )
+

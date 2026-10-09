@@ -1,13 +1,11 @@
 using System;
-using System.Collections.Specialized;
+using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using Avalonia.Controls;
-using Avalonia.Input;
 using Avalonia.Platform.Storage;
 using IOStudio.ViewModels;
-using ReactiveUI;
 using ReactiveUI.Avalonia;
-using Key = Avalonia.Input.Key;
 
 namespace IOStudio.Views
 {
@@ -17,14 +15,20 @@ namespace IOStudio.Views
     /// <para>用途: 用 UI 观察 TCP/UDP/WebSocket/串口 收发到的每一帧, 并可直接运行
     /// 内置场景 (与 CLI <c>--protocol-test</c> 共用同一套执行器, 结论一致)。
     /// 适合"CLI 跑门禁、人在 UI 侧核对收到的报文"这种分工。</para>
+    ///
+    /// <para>本窗口只负责**外壳**: 工具条、会话标签条、状态栏, 以及把选中的会话交给
+    /// <see cref="ProtocolSessionPanel"/> 承载。会话也可以被"弹"到独立窗口
+    /// (<see cref="ProtocolSessionWindow"/>), 两处复用同一个面板控件。</para>
     /// </summary>
     public partial class ProtocolTestWindow : ReactiveWindow<ProtocolTestViewModel>
     {
-        private readonly IDisposable _selectionSub;
-        private ProtocolSessionViewModel? _watched;
-
         /// <summary>串口列表自动刷新 (插拔设备后下拉能自己更新)。窗口关闭即停。</summary>
         private readonly Avalonia.Threading.DispatcherTimer _serialPortTimer;
+
+        /// <summary>已弹出的独立窗口 (会话 → 窗口), 用于回收入主窗与关窗时统一关闭。</summary>
+        private readonly Dictionary<ProtocolSessionViewModel, ProtocolSessionWindow> _detached = new();
+
+        private bool _closing;
 
         public ProtocolTestWindow()
         {
@@ -37,11 +41,8 @@ namespace IOStudio.Views
             // 剪贴板同样由窗口注入 (行内"复制"要能落到系统剪贴板)
             ViewModel.ClipboardWriter = CopyToClipboardAsync;
 
-            // 发送框的人机习惯: Ctrl+Enter 发送, ↑/↓ 调历史 (终端级肌肉记忆)
-            SendBox.KeyDown += OnSendBoxKeyDown;
-
-            // 「自动滚动」得真的滚才有意义: 跟着选中会话的消息集合走
-            _selectionSub = ViewModel.WhenAnyValue(x => x.SelectedSession).Subscribe(WatchSession);
+            // "弹到独立窗口"由窗口实现 (VM 不 new 窗口, 才不依赖 UI)
+            ViewModel.DetachRequested = DetachSession;
 
             // 串口热插拔: 每 2 秒重扫一次可用端口
             _serialPortTimer = new Avalonia.Threading.DispatcherTimer
@@ -54,68 +55,61 @@ namespace IOStudio.Views
             // 关窗必须释放监听端口/取消接收循环, 否则端口会被窗口"占着"到进程退出
             Closed += (_, _) =>
             {
+                _closing = true;
                 _serialPortTimer.Stop();
-                WatchSession(null);
-                _selectionSub.Dispose();
+
+                // 先关独立窗口, 再释放会话 (此时不必把它们放回主窗)
+                foreach (var w in _detached.Values.ToList())
+                {
+                    try
+                    {
+                        w.Close();
+                    }
+                    catch
+                    {
+                        /* ignore */
+                    }
+                }
+                _detached.Clear();
+
                 ViewModel?.Dispose();
             };
         }
 
-        private void OnSendBoxKeyDown(object? sender, KeyEventArgs e)
+        /// <summary>
+        /// 把一路会话弹到独立窗口: 从主窗标签移出 (会话对象不销毁), 关窗后再放回。
+        /// </summary>
+        private void DetachSession(ProtocolSessionViewModel session)
         {
-            var vm = ViewModel?.SelectedSession;
-            if (vm is null)
-                return;
-
-            if (e.Key == Key.Enter && e.KeyModifiers.HasFlag(KeyModifiers.Control))
+            if (_detached.TryGetValue(session, out var existing))
             {
-                e.Handled = true;
-                if (vm.IsRunning && !vm.HasSendTextError)
-                    vm.SendCommand.Execute().Subscribe();
+                existing.Activate();
                 return;
             }
 
-            // 只有无修饰键的上下键才当历史翻页 (留给将来的多行编辑)
-            if (e.KeyModifiers == KeyModifiers.None && e.Key == Key.Up && vm.HistoryPrev())
-                e.Handled = true;
-            else if (e.KeyModifiers == KeyModifiers.None && e.Key == Key.Down && vm.HistoryNext())
-                e.Handled = true;
+            var index = ViewModel?.DetachSession(session) ?? -1;
+            var window = new ProtocolSessionWindow(session);
+            _detached[session] = window;
+
+            window.Closed += (_, _) =>
+            {
+                _detached.Remove(session);
+                // 主窗还开着 → 把会话放回原位置; 主窗正在关 → 交给 Dispose
+                if (!_closing)
+                    ViewModel?.AttachSession(session, index);
+            };
+
+            window.Show(this);
         }
 
-        private async System.Threading.Tasks.Task CopyToClipboardAsync(string text)
+        private async Task CopyToClipboardAsync(string text)
         {
-            var clipboard = Avalonia.Controls.TopLevel.GetTopLevel(this)?.Clipboard;
+            var clipboard = TopLevel.GetTopLevel(this)?.Clipboard;
             if (clipboard is not null)
                 await clipboard.SetTextAsync(text ?? "");
         }
 
-        private void WatchSession(ProtocolSessionViewModel? session)
-        {
-            if (_watched is not null)
-                _watched.Messages.CollectionChanged -= OnMessagesChanged;
-
-            _watched = session;
-
-            if (_watched is not null)
-                _watched.Messages.CollectionChanged += OnMessagesChanged;
-        }
-
-        private void OnMessagesChanged(object? sender, NotifyCollectionChangedEventArgs e)
-        {
-            // 集合只在 UI 线程被改动 (会话 VM 内部 Post 回 UI 线程), 故这里可直接操作控件
-            if (e.Action != NotifyCollectionChangedAction.Add)
-                return;
-
-            var session = _watched;
-            if (session is null || !session.AutoScroll)
-                return;
-
-            var last = session.Messages.Count - 1;
-            if (last >= 0)
-                MessageList.ScrollIntoView(last);
-        }
-
-        private async System.Threading.Tasks.Task<string?> PickFileAsync()
+        private async Task<string?> PickFileAsync()
         {
             var files = await StorageProvider.OpenFilePickerAsync(
                 new FilePickerOpenOptions

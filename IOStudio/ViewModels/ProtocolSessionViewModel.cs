@@ -92,6 +92,13 @@ namespace IOStudio.ViewModels
             {
                 SelectedEntry = null;
             });
+            // 标签上的 × / ⧉: 关闭本会话 / 弹到独立窗口。
+            // 具体动作由窗口注入 (VM 不 new 窗口), 才能脱离桌面做确定性测试。
+            CloseCommand = ReactiveCommand.Create(() => CloseAction?.Invoke(this));
+            DetachCommand = ReactiveCommand.Create(
+                () => DetachAction?.Invoke(this),
+                this.WhenAnyValue(x => x.IsVirtual, v => !v) // 虚拟(场景)会话不弹窗
+            );
             CopyEntryTextCommand = ReactiveCommand.CreateFromTask<ProtocolLogEntry?>(
                 e => CopyEntryAsync(e, hex: false)
             );
@@ -1082,6 +1089,14 @@ namespace IOStudio.ViewModels
         public ReactiveCommand<ProtocolLogEntry?, Unit> CopyEntryTextCommand { get; }
         public ReactiveCommand<ProtocolLogEntry?, Unit> CopyEntryHexCommand { get; }
         public ReactiveCommand<ProtocolLogEntry?, Unit> ResendEntryCommand { get; }
+        public ReactiveCommand<Unit, Unit> CloseCommand { get; }
+        public ReactiveCommand<Unit, Unit> DetachCommand { get; }
+
+        /// <summary>由窗口注入: 关闭本会话 (标签上的 ×)。</summary>
+        public Action<ProtocolSessionViewModel>? CloseAction { get; set; }
+
+        /// <summary>由窗口注入: 把本会话弹到独立窗口 (标签上的 ⧉)。</summary>
+        public Action<ProtocolSessionViewModel>? DetachAction { get; set; }
 
         /// <summary>由窗口注入的剪贴板写入器 (VM 不依赖 UI, 便于 headless 测试用假实现断言复制内容)。</summary>
         public Func<string, Task>? ClipboardWriter { get; set; }

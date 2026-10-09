@@ -40,6 +40,12 @@
         <Style Selector="TextBox.inline">
             <Setter Property="MinHeight" Value="28"/>
         </Style>
+        <!-- 发送框: 全宽多行 —— 默认就留够 3 行, 写 JSON / AT 指令不再局促 -->
+        <Style Selector="TextBox.send-box">
+            <Setter Property="VerticalContentAlignment" Value="Top"/>
+            <Setter Property="MinHeight" Value="76"/>
+            <Setter Property="MaxHeight" Value="220"/>
+        </Style>
 
         <Style Selector="ComboBox">
             <Setter Property="MinHeight" Value="30"/>
@@ -937,7 +943,7 @@
                             <!-- 快捷指令 chip: 贴在发送框上方, 单击即发 (增删改仍在下方「工具」区) -->
                             <ItemsControl ItemsSource="{Binding QuickCommands}"
                                           IsVisible="{Binding HasQuickCommands}"
-                                          Margin="48,0,0,0">
+                                          Margin="50,0,0,0">
                                 <ItemsControl.ItemsPanel>
                                     <ItemsPanelTemplate>
                                         <WrapPanel/>
@@ -956,100 +962,101 @@
                                 </ItemsControl.ItemTemplate>
                             </ItemsControl>
 
-                            <!-- 主发送行 -->
-                            <Grid ColumnDefinitions="Auto,Auto,Auto,Auto,*,Auto,Auto,Auto,64,Auto,Auto,Auto"
-                                  ColumnSpacing="8">
+                            <!-- 发送框行: 标题 + 全宽多行框 (常用 JSON / AT 指令要写得下) -->
+                            <Grid ColumnDefinitions="Auto,*">
                                 <TextBlock Grid.Column="0" Text="发送" Classes="band-cap"
-                                           VerticalAlignment="Bottom" Margin="0,0,10,6"/>
-
-                                <StackPanel Grid.Column="1" Orientation="Horizontal"
-                                            VerticalAlignment="Bottom">
-                                    <TextBlock Text="编码" Classes="inline-cap"/>
-                                    <ComboBox Width="92"
-                                              ItemsSource="{x:Static vm:ProtocolUiOptions.SendEncodings}"
-                                              SelectedItem="{Binding SendEncoding}"
-                                              AutomationProperties.AutomationId="ProtocolSendEncoding"
-                                              AutomationProperties.Name="发送编码"/>
-                                </StackPanel>
-
-                                <StackPanel Grid.Column="2" Orientation="Horizontal"
-                                            VerticalAlignment="Bottom">
-                                    <TextBlock Text="新行" Classes="inline-cap"/>
-                                    <ComboBox Width="84"
-                                              ItemsSource="{x:Static vm:ProtocolUiOptions.NewLineOptions}"
-                                              SelectedItem="{Binding SendNewLine}"
-                                              AutomationProperties.AutomationId="ProtocolSendNewLine"
-                                              AutomationProperties.Name="发送新行"/>
-                                </StackPanel>
-
-                                <StackPanel Grid.Column="3" Orientation="Horizontal"
-                                            VerticalAlignment="Bottom"
-                                            IsVisible="{Binding ShowPeers}">
-                                    <TextBlock Text="发送给" Classes="inline-cap"/>
-                                    <ComboBox Width="126"
-                                              ItemsSource="{Binding Peers}"
-                                              SelectedItem="{Binding SelectedPeer}"
-                                              PlaceholderText="广播"
-                                              AutomationProperties.AutomationId="ProtocolPeer"
-                                              AutomationProperties.Name="发送目标对端"/>
-                                </StackPanel>
-
-                                <TextBox Grid.Column="4" Classes="multiline"
+                                           VerticalAlignment="Top" Margin="0,7,10,0"/>
+                                <TextBox Grid.Column="1" Classes="send-box"
                                          x:Name="SendBox"
                                          Text="{Binding SendText, Mode=TwoWay}"
                                          Classes.invalid="{Binding HasSendTextError}"
                                          AutomationProperties.AutomationId="ProtocolSendText"
                                          AutomationProperties.Name="发送内容"
                                          AcceptsReturn="True" TextWrapping="Wrap"
-                                         Watermark="发送内容 (HEX 编码时填十六进制)"
+                                         Watermark="发送内容 (HEX 编码时填十六进制, 空格/换行会自动忽略)"
                                          FontFamily="Consolas,Menlo,monospace"/>
-
-                                <Button Grid.Column="5" Classes="iconbtn" VerticalAlignment="Bottom"
-                                        Command="{Binding ClearSendCommand}"
-                                        AutomationProperties.AutomationId="ProtocolClearSend"
-                                        ToolTip.Tip="清空发送内容">
-                                    <iconPacks:PackIconIonicons Kind="CloseiOS" Width="14" Height="14"/>
-                                </Button>
-
-                                <Button Grid.Column="6" Classes="primary" MinWidth="92"
-                                        Command="{Binding SendCommand}"
-                                        AutomationProperties.AutomationId="ProtocolSend"
-                                        VerticalAlignment="Bottom"
-                                        ToolTip.Tip="Ctrl+Enter 发送; ↑/↓ 调回历史">
-                                    <StackPanel Orientation="Horizontal" Spacing="5">
-                                        <iconPacks:PackIconIonicons Kind="ArrowForwardiOS" Width="14" Height="14"
-                                                                    VerticalAlignment="Center"
-                                                                    Foreground="{DynamicResource TlAccentFg}"/>
-                                        <TextBlock Text="发送" VerticalAlignment="Center"/>
-                                    </StackPanel>
-                                </Button>
-
-                                <CheckBox Grid.Column="7" Content="循环" VerticalAlignment="Bottom"
-                                          Margin="4,0,0,6"
-                                          IsChecked="{Binding LoopSend}"
-                                          AutomationProperties.AutomationId="ProtocolLoopSend"/>
-
-                                <TextBox Grid.Column="8" Classes="inline" VerticalAlignment="Bottom"
-                                         Text="{Binding LoopIntervalMs, Mode=TwoWay}"
-                                         AutomationProperties.AutomationId="ProtocolLoopMs"/>
-
-                                <TextBlock Grid.Column="9" Text="ms" Classes="inline-cap"
-                                           VerticalAlignment="Bottom" Margin="0,0,0,6"/>
-
-                                <Border Grid.Column="10" Classes="vsep" Height="18"
-                                        VerticalAlignment="Bottom" Margin="3,0,3,6"/>
-
-                                <!-- 发送前预览 / 就地报错 (HEX 写错不再静默失败) -->
-                                <TextBlock Grid.Column="11" Text="{Binding SendStatusText}"
-                                           Classes="send-status"
-                                           Classes.error="{Binding HasSendTextError}"
-                                           VerticalAlignment="Bottom" Margin="0,0,0,6"
-                                           AutomationProperties.AutomationId="ProtocolSendStatus"/>
                             </Grid>
 
-                            <!-- 次发送行: 文件 / 分块 / 校验和 (与主行左对齐到同一竖线) -->
+                            <!-- 选项行: 编码 / 新行 / 发送给 / 循环 | 字节预览 / 清空 / 发送 -->
+                            <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10" Margin="50,0,0,0">
+                                <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="12"
+                                            VerticalAlignment="Center">
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="编码" Classes="inline-cap"/>
+                                        <ComboBox Width="100"
+                                                  ItemsSource="{x:Static vm:ProtocolUiOptions.SendEncodings}"
+                                                  SelectedItem="{Binding SendEncoding}"
+                                                  AutomationProperties.AutomationId="ProtocolSendEncoding"
+                                                  AutomationProperties.Name="发送编码"
+                                                  ToolTip.Tip="文本按 UTF-8/GBK/ASCII 编码; 选 HEX 时按十六进制串解析"/>
+                                    </StackPanel>
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="新行" Classes="inline-cap"/>
+                                        <ComboBox Width="94"
+                                                  ItemsSource="{x:Static vm:ProtocolUiOptions.NewLineOptions}"
+                                                  SelectedItem="{Binding SendNewLine}"
+                                                  AutomationProperties.AutomationId="ProtocolSendNewLine"
+                                                  AutomationProperties.Name="发送新行"
+                                                  ToolTip.Tip="末尾追加换行 (\r\n / \n), 很多设备协议以此断帧"/>
+                                    </StackPanel>
+                                    <StackPanel Orientation="Horizontal"
+                                                IsVisible="{Binding ShowPeers}">
+                                        <TextBlock Text="发送给" Classes="inline-cap"/>
+                                        <ComboBox Width="140"
+                                                  ItemsSource="{Binding Peers}"
+                                                  SelectedItem="{Binding SelectedPeer}"
+                                                  PlaceholderText="广播"
+                                                  AutomationProperties.AutomationId="ProtocolPeer"
+                                                  AutomationProperties.Name="发送目标对端"/>
+                                    </StackPanel>
+                                </StackPanel>
+
+                                <!-- 发送前预览 / 就地报错 (HEX 写错不再静默失败) -->
+                                <TextBlock Grid.Column="1" Text="{Binding SendStatusText}"
+                                           Classes="send-status"
+                                           Classes.error="{Binding HasSendTextError}"
+                                           HorizontalAlignment="Right" VerticalAlignment="Center"
+                                           Margin="0,0,4,0"
+                                           TextTrimming="CharacterEllipsis"
+                                           AutomationProperties.AutomationId="ProtocolSendStatus"/>
+
+                                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="10"
+                                            VerticalAlignment="Center">
+                                    <StackPanel Orientation="Horizontal">
+                                        <CheckBox Content="循环" VerticalAlignment="Center"
+                                                  IsChecked="{Binding LoopSend}"
+                                                  AutomationProperties.AutomationId="ProtocolLoopSend"
+                                                  ToolTip.Tip="按间隔循环发送框内容 (心跳 / 压测)"/>
+                                        <TextBox Width="64" Classes="inline" Margin="6,0,0,0"
+                                                 Text="{Binding LoopIntervalMs, Mode=TwoWay}"
+                                                 AutomationProperties.AutomationId="ProtocolLoopMs"
+                                                 ToolTip.Tip="循环发送间隔 (ms)"/>
+                                        <TextBlock Text="ms" Classes="inline-cap" Margin="5,0,0,0"/>
+                                    </StackPanel>
+                                    <Border Classes="vsep" Height="18"/>
+                                    <Button Classes="iconbtn"
+                                            Command="{Binding ClearSendCommand}"
+                                            AutomationProperties.AutomationId="ProtocolClearSend"
+                                            ToolTip.Tip="清空发送内容">
+                                        <iconPacks:PackIconIonicons Kind="CloseiOS" Width="14" Height="14"/>
+                                    </Button>
+                                    <Button Classes="primary" MinWidth="96"
+                                            Command="{Binding SendCommand}"
+                                            AutomationProperties.AutomationId="ProtocolSend"
+                                            ToolTip.Tip="Ctrl+Enter 发送; ↑/↓ 调回历史">
+                                        <StackPanel Orientation="Horizontal" Spacing="5">
+                                            <iconPacks:PackIconIonicons Kind="ArrowForwardiOS" Width="14" Height="14"
+                                                                        VerticalAlignment="Center"
+                                                                        Foreground="{DynamicResource TlAccentFg}"/>
+                                            <TextBlock Text="发送" VerticalAlignment="Center"/>
+                                        </StackPanel>
+                                    </Button>
+                                </StackPanel>
+                            </Grid>
+
+                            <!-- 文件行: 文件 / 分块 / 校验和 (左对齐到发送框同一竖线) -->
                             <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto,Auto"
-                                  ColumnSpacing="8" Margin="48,0,0,0" VerticalAlignment="Center">
+                                  ColumnSpacing="8" Margin="50,0,0,0" VerticalAlignment="Center">
                                 <TextBlock Grid.Column="0" Text="文件" Classes="inline-cap"/>
                                 <TextBox Grid.Column="1" Classes="inline"
                                          Text="{Binding FilePath, Mode=TwoWay}"

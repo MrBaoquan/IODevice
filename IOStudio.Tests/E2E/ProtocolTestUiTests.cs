@@ -1059,33 +1059,49 @@ namespace IOStudio.Tests.E2E
         [Fact]
         public async Task NewSession_Clones_Current_Transport()
         {
-            var vm = new ProtocolTestViewModel();
+            // 这个 VM 会读/写真实的 Config/ProtocolTestWorkspace.json —— 先把测试目录里的
+            // 那份隔离掉: 否则上一条用例存下的会话会让断言随运行次序漂移 (非确定性)。
+            var wsPath = ProtocolWorkspace.DefaultPath;
+            var backup = System.IO.File.Exists(wsPath) ? System.IO.File.ReadAllText(wsPath) : null;
             try
             {
-                var first = vm.SelectedSession!;
-                Assert.Equal("udp", first.Transport.Transport);
+                System.IO.File.Delete(wsPath);
 
-                // 改成 TCP 服务端 (尚未启动, 传输可改) 后新建 → 新会话应沿用该类型。
-                var tcpServer = ProtocolUiOptions.Transports.First(t => t.Transport == "tcp-server");
-                var before = vm.Sessions.Count;
-                await _session.Dispatch(
-                    () =>
-                    {
-                        first.Transport = tcpServer;
-                        vm.NewSessionCommand.Execute().Subscribe();
-                        return true;
-                    },
-                    CancellationToken.None
-                );
-                await Task.Delay(150);
+                var vm = new ProtocolTestViewModel();
+                try
+                {
+                    var first = vm.SelectedSession!;
+                    Assert.Equal("udp", first.Transport.Transport);
 
-                Assert.Equal(before + 1, vm.Sessions.Count);
-                Assert.Equal("tcp-server", vm.SelectedSession!.Transport.Transport);
-                Assert.NotSame(first, vm.SelectedSession);
+                    // 改成 TCP 服务端 (尚未启动, 传输可改) 后新建 → 新会话应沿用该类型。
+                    var tcpServer = ProtocolUiOptions.Transports.First(t => t.Transport == "tcp-server");
+                    var before = vm.Sessions.Count;
+                    await _session.Dispatch(
+                        () =>
+                        {
+                            first.Transport = tcpServer;
+                            vm.NewSessionCommand.Execute().Subscribe();
+                            return true;
+                        },
+                        CancellationToken.None
+                    );
+                    await Task.Delay(150);
+
+                    Assert.Equal(before + 1, vm.Sessions.Count);
+                    Assert.Equal("tcp-server", vm.SelectedSession!.Transport.Transport);
+                    Assert.NotSame(first, vm.SelectedSession);
+                }
+                finally
+                {
+                    vm.Dispose();
+                }
             }
             finally
             {
-                vm.Dispose();
+                // 不把这次写下的工作区留给后续用例
+                System.IO.File.Delete(wsPath);
+                if (backup is not null)
+                    System.IO.File.WriteAllText(wsPath, backup);
             }
         }
     }

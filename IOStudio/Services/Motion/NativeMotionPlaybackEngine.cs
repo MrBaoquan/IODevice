@@ -34,10 +34,9 @@ namespace IOStudio.Services.Motion
         private bool _loop;
         private double _speed = 1.0;
 
-        // ---- 帧循环下发节流: 运行时覆盖 (毫秒; 0=不节流, <0=清除覆盖回到 .motion 配置) ----
-        // 默认值来自 .motion 的 dispatch_interval_ms, 由 native 帧循环派发直接使用;
-        // 这里只承载**运行时覆盖**, 不改变 .motion 配置。
-        private int _dispatchIntervalMs;
+        // ---- 帧循环下发节流: 运行时覆盖 (毫秒; 0=不节流, <0=跟随 .motion 的 dispatch_interval_ms) ----
+        // 默认 -1 = 跟随动作文件; 由动作编辑的「设备下发节流」设置写入, 不改变 .motion 配置。
+        private int _dispatchIntervalMs = -1;
 
         // ---- 批量 LiveValue 缓冲 ----
         private readonly List<(string deviceName, string channelName, float value)> _batchBuffer =
@@ -100,9 +99,9 @@ namespace IOStudio.Services.Motion
         /// <summary>
         /// 帧循环下发节流的**运行时覆盖** (毫秒)。<see cref="IPlaybackEngine.DispatchIntervalMs"/>。
         ///
-        /// <para>默认值来自所加载 .motion 的 dispatch_interval_ms (native 帧循环默认使用);
+        /// <para>默认 -1 = 跟随动作文件 (.motion 的 dispatch_interval_ms, native 帧循环默认使用);
         /// 此属性提供显式运行时覆盖, 即刻作用于已加载的 native Slot, <b>不改变</b> .motion 配置。
-        /// &lt;0 = 清除覆盖, 回到 .motion 配置。</para>
+        /// 0 = 不节流; 其它 &lt;0 值一并视为清除覆盖, 回到文件配置。</para>
         /// </summary>
         public int DispatchIntervalMs
         {
@@ -158,8 +157,7 @@ namespace IOStudio.Services.Motion
             _slot = newSlot;
             _currentTimeline = timeline;
 
-            // 加载即以 .motion 配置同步运行时节流 (保持编辑器与文件一致; 由 native 帧循环使用)
-            _dispatchIntervalMs = timeline.DispatchIntervalMs;
+            // 重放当前运行时覆盖到新 Slot; 默认 -1 = 跟随文件, 不减损本次 .motion 自带的配置。
             ApplyDispatchIntervalToSlot();
 
             TimelineLoaded?.Invoke(timeline);

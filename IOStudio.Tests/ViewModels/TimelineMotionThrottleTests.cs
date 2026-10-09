@@ -6,11 +6,12 @@ using IOStudio.ViewModels.Timeline;
 namespace IOStudio.Tests.ViewModels
 {
     /// <summary>
-    /// 设备下发节流 (随 .motion 走)。
+    /// 设备下发节流 (动作编辑运行时的输出设置)。
     ///
-    /// <para>节流间隔是**每部影片的配置** (dispatch_interval_ms): native MotionPlayer 的帧循环
-    /// 默认使用它, 编排端与放映端因此共用同一节流语义。编排端菜单编辑该配置, 并即时作为运行时
-    /// 覆盖推给已加载的 Slot (不改变 .motion 配置)。</para>
+    /// <para>节流语义分两层: .motion 的 dispatch_interval_ms 是**动作文件自带的默认值**
+    /// (native MotionPlayer 帧循环使用, 使编排端与放映端共用同一节流语义); 编辑器的「设备下发节流」
+    /// 是**应用级运行时覆盖**, 只推给 native、**不写回** .motion。这里验证: 文件字段往返 + 应用级
+    /// 设置只作用于运行时覆盖。</para>
     /// </summary>
     public class TimelineMotionThrottleTests
     {
@@ -46,25 +47,30 @@ namespace IOStudio.Tests.ViewModels
         }
 
         [Fact]
-        public void Throttle_Command_Writes_Timeline_And_Engine()
+        public void Throttle_Setting_Is_App_Level_And_Drives_Engine()
         {
-            var vm = new TimelineEditorViewModel(null);
+            var settings = IOStudio.Models.IOStudioSettings.Instance;
+            int original = settings.MotionDispatchIntervalMs;
+            try
+            {
+                var vm = new TimelineEditorViewModel(null);
+                int baseTimelineMs = vm.Timeline!.DispatchIntervalMs; // 文件自带配置, 应保持不变
 
-            Assert.Equal(0, vm.MotionDispatchIntervalMs); // 新项目默认不节流
-            Assert.True(vm.MotionThrottleNone);
+                vm.MotionThrottleIndex = 3; // 20 Hz
+                Assert.Equal(50, vm.MotionDispatchIntervalMs);
+                Assert.Equal(50, vm.EffectiveDispatchIntervalMs); // 已同步到引擎 (运行时覆盖)
+                Assert.Equal(50, settings.MotionDispatchIntervalMs); // 已持久化到应用设置
+                Assert.Equal(baseTimelineMs, vm.Timeline!.DispatchIntervalMs); // 不写回 .motion
 
-            vm.SetMotionThrottleCommand.Execute("50").Subscribe(); // 20 Hz
-            Assert.Equal(50, vm.MotionDispatchIntervalMs);
-            Assert.Equal("20 Hz", vm.MotionThrottleText);
-            Assert.True(vm.MotionThrottle20);
-            Assert.False(vm.MotionThrottleNone);
-            Assert.Equal(50, vm.Timeline!.DispatchIntervalMs); // 已写入 .motion 模型
-            Assert.Equal(50, vm.EffectiveDispatchIntervalMs);  // 已同步到引擎 (运行时覆盖)
-
-            vm.SetMotionThrottleCommand.Execute("0").Subscribe();
-            Assert.True(vm.MotionThrottleNone);
-            Assert.Equal(0, vm.Timeline!.DispatchIntervalMs);
-            Assert.Equal(0, vm.EffectiveDispatchIntervalMs);
+                vm.MotionThrottleIndex = 0; // 跟随动作文件 (清除覆盖)
+                Assert.Equal(-1, vm.MotionDispatchIntervalMs);
+                Assert.Equal(-1, vm.EffectiveDispatchIntervalMs);
+                Assert.Equal(baseTimelineMs, vm.Timeline!.DispatchIntervalMs); // 仍不写回 .motion
+            }
+            finally
+            {
+                settings.MotionDispatchIntervalMs = original;
+            }
         }
 
         /// <summary>

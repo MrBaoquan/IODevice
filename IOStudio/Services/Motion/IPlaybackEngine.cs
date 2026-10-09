@@ -23,7 +23,7 @@ namespace IOStudio.Services.Motion
         bool LiveOutputToDevice { get; set; }
 
         /// <summary>
-        /// 帧循环下发节流的**运行时覆盖** (毫秒)。0 = 不节流; &lt;0 = 清除覆盖。
+        /// 帧循环下发节流的**运行时覆盖** (毫秒)。0 = 不节流; &lt;0 = 跟随动作文件配置 (清除覆盖)。
         ///
         /// <para>.motion 的 dispatch_interval_ms 是默认值, native MotionPlayer 的帧循环派发默认
         /// 使用它 (使编排端与放映端共用同一节流语义); 此属性提供显式运行时覆盖, 即刻作用于当前

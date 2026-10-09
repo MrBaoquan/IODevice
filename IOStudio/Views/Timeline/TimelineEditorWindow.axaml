@@ -295,22 +295,6 @@
                 <Separator/>
                 <MenuItem Header="循环播放" Command="{Binding ToggleLoopCommand}"
                           ToolTip.Tip="切换循环播放" />
-                <Separator/>
-                <MenuItem Header="{Binding MotionThrottleHeader}"
-                          ToolTip.Tip="联调时降低动作下发频率 (只在「设备输出」开启时生效); SafetyGuard 限速不受影响">
-                    <MenuItem Header="不节流 (60 Hz)" ToggleType="Radio"
-                              IsChecked="{Binding MotionThrottleNone, Mode=OneWay}"
-                              Command="{Binding SetMotionThrottleCommand}" CommandParameter="0"/>
-                    <MenuItem Header="30 Hz" ToggleType="Radio"
-                              IsChecked="{Binding MotionThrottle30, Mode=OneWay}"
-                              Command="{Binding SetMotionThrottleCommand}" CommandParameter="33"/>
-                    <MenuItem Header="20 Hz" ToggleType="Radio"
-                              IsChecked="{Binding MotionThrottle20, Mode=OneWay}"
-                              Command="{Binding SetMotionThrottleCommand}" CommandParameter="50"/>
-                    <MenuItem Header="10 Hz" ToggleType="Radio"
-                              IsChecked="{Binding MotionThrottle10, Mode=OneWay}"
-                              Command="{Binding SetMotionThrottleCommand}" CommandParameter="100"/>
-                </MenuItem>
             </MenuItem>
         </Menu>
 
@@ -533,6 +517,16 @@
                                        VerticalAlignment="Center"
                                        Foreground="{DynamicResource TlTransportBtn}"
                                        ToolTip.Tip="设备实时输出 (预览时将值发送到物理设备)"/>
+                            <Border Width="1" Background="{DynamicResource TlTransportSeparator}" Margin="4,5"/>
+                            <!-- 设备下发节流: 动作编辑（联调）输出设置; 只在「设备输出」开启时生效 -->
+                            <ComboBox Name="MotionThrottleCombo" FontSize="11" Padding="4,1" MinWidth="108"
+                                      VerticalAlignment="Center"
+                                      Background="{DynamicResource TlTransportInputBg}" Foreground="{DynamicResource TlTransportBtn}" BorderBrush="{DynamicResource TlTransportSeparator}"
+                                      ItemsSource="{Binding MotionThrottleOptions}"
+                                      SelectedIndex="{Binding MotionThrottleIndex, Mode=TwoWay}"
+                                      AutomationProperties.AutomationId="TransportMotionThrottle"
+                                      AutomationProperties.Name="设备下发节流"
+                                      ToolTip.Tip="设备下发节流: 降低动作下发频率 (只在「设备输出」开启时生效); SafetyGuard 限速不受影响"/>
                             <!-- 下一关键帧 -->
                             <Button Classes="transport-btn" Click="OnNextKeyframe"
                                     AutomationProperties.AutomationId="TransportNextKeyframe"

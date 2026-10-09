@@ -40,6 +40,17 @@ namespace IOStudio.Models
         [XmlAttribute("TimelineLiveOutputHintShown")]
         public bool TimelineLiveOutputHintShown { get; set; } = false;
 
+        /// <summary>
+        /// 动作编辑（联调）的「设备下发节流」运行时覆盖（毫秒）。
+        /// -1 = 跟随动作文件（.motion 的 dispatch_interval_ms）；0 = 不节流；&gt;0 = 覆盖为指定间隔。
+        /// <para>
+        /// 这是**动作编辑环节的输出设置**，和影片/媒体无关：仅作为运行时覆盖推给 native，
+        /// **不写回** .motion 配置（同一动作文件到放映端仍按文件自带的值派发）。
+        /// </para>
+        /// </summary>
+        [XmlAttribute("MotionDispatchIntervalMs")]
+        public int MotionDispatchIntervalMs { get; set; } = -1;
+
         /// <summary>检查器「待机循环」区段是否展开 (默认收起)。</summary>
         [XmlAttribute("InspectorIdleExpanded")]
         public bool InspectorIdleExpanded { get; set; } = false;
@@ -68,6 +79,12 @@ namespace IOStudio.Models
                 AnalogProcessorIntervalMs = 50;
             else if (AnalogProcessorIntervalMs > 500)
                 AnalogProcessorIntervalMs = 500;
+
+            // 下发节流: -1 = 跟随动作文件, 0 = 不节流, >0 = 覆盖 (上限 1000ms)
+            if (MotionDispatchIntervalMs < -1)
+                MotionDispatchIntervalMs = -1;
+            else if (MotionDispatchIntervalMs > 1000)
+                MotionDispatchIntervalMs = 1000;
         }
 
         /// <summary>

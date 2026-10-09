@@ -103,7 +103,6 @@ namespace IOStudio.ViewModels.Timeline
             RedoCommand = ReactiveCommand.Create(Redo);
             ToggleThemeCommand = ReactiveCommand.Create(ToggleTheme);
             DismissLiveOutputHintCommand = ReactiveCommand.Create(DismissLiveOutputHint);
-            SetMotionThrottleCommand = ReactiveCommand.Create<string?>(SetMotionThrottle);
             SelectedSnapGrid = SnapGridOptions[0];
 
             // 恢复上次的「设备输出」开关状态 (默认关闭: 编排默认仅预览, 避免误驱动设备)。
@@ -112,8 +111,10 @@ namespace IOStudio.ViewModels.Timeline
             _engine.LiveOutputToDevice = _isLiveOutputEnabled;
             _showLiveOutputHint = !IOStudio.Models.IOStudioSettings.Instance.TimelineLiveOutputHintShown;
 
-            // 设备下发节流是**随 .motion 走的每部影片配置**, 不在这里的全局设置里; 
-            // 它在 Timeline 装载时经 SyncMotionThrottleFromTimeline 同步 (见 Timeline setter)。
+            // 设备下发节流是**动作编辑（联调）的输出设置**, 和影片/媒体无关:
+            // 作为运行时覆盖推给 native, -1 = 跟随动作文件 (.motion 自带配置), 不写回文件。
+            _motionDispatchIntervalMs = IOStudio.Models.IOStudioSettings.Instance.MotionDispatchIntervalMs;
+            _engine.DispatchIntervalMs = _motionDispatchIntervalMs;
 
             _undoRedo.StateChanged += () =>
             {
@@ -143,11 +144,8 @@ namespace IOStudio.ViewModels.Timeline
         public MotionTimeline? Timeline
         {
             get => _timeline;
-            set
-            {
-                if (this.RaiseAndSetIfChanged(ref _timeline, value) == value)
-                    SyncMotionThrottleFromTimeline();
-            }
+            // 下发节流是应用级（动作编辑）设置, 与具体 Timeline 无关, 故此处不同步节流。
+            set => this.RaiseAndSetIfChanged(ref _timeline, value);
         }
 
         private ObservableCollection<TrackViewModel> _tracks = new();
@@ -332,75 +330,83 @@ namespace IOStudio.ViewModels.Timeline
             }
         }
 
-        // ── 设备下发节流 (随 .motion 走) ──
+        // ── 设备下发节流 (动作编辑 / 联调输出设置) ──
         //
-        // 节流间隔是**每部影片的配置** (dispatch_interval_ms): native MotionPlayer 的帧循环
-        // 默认使用它, 编排端与放映端因此共用同一节流语义。这里的菜单直接编辑该配置并即时生效 ——
-        // 写回 Timeline (随文件保存), 同时作为运行时覆盖推给已加载的 native Slot。
+        // 这是**动作编辑环节的应用级设置**, 和影片/媒体无关, 也不随动作文件保存:
+        //   -1 = 跟随动作文件 (.motion 的 dispatch_interval_ms, native 帧循环默认使用);
+        //    0 = 不节流; >0 = 覆盖为指定间隔 (ms)。
+        // 它只作为**运行时覆盖**推给 native, 不写回 .motion —— 同一动作文件到放映端仍按
+        // 文件自带的配置派发, 因此编辑器与放映端的节流语义不因这里的选择而分叉。
 
-        private int _motionDispatchIntervalMs;
+        private int _motionDispatchIntervalMs; // 运行时覆盖; <0 = 跟随动作文件
 
-        /// <summary>
-        /// 当前 .motion 的设备下发节流间隔 (毫秒)。0 = 不节流 (帧循环每个 tick 都下发)。
-        /// </summary>
-        public int MotionDispatchIntervalMs
+        /// <summary>下发节流下拉档位 (索引 0 = 跟随动作文件)。</summary>
+        public IReadOnlyList<string> MotionThrottleOptions { get; } =
+            new[] { "跟随动作文件", "不节流", "30 Hz", "20 Hz", "10 Hz" };
+
+        /// <summary>下发节流档位 (供传输栏下拉双向绑定); 写入即持久化并即时生效。</summary>
+        public int MotionThrottleIndex
         {
-            get => _motionDispatchIntervalMs;
-            private set
-            {
-                this.RaiseAndSetIfChanged(ref _motionDispatchIntervalMs, value);
-                this.RaisePropertyChanged(nameof(MotionThrottleText));
-                this.RaisePropertyChanged(nameof(MotionThrottleHeader));
-                this.RaisePropertyChanged(nameof(MotionThrottleNone));
-                this.RaisePropertyChanged(nameof(MotionThrottle30));
-                this.RaisePropertyChanged(nameof(MotionThrottle20));
-                this.RaisePropertyChanged(nameof(MotionThrottle10));
-                this.RaisePropertyChanged(nameof(EffectiveDispatchIntervalMs));
-            }
+            get => DispatchMsToIndex(_motionDispatchIntervalMs);
+            set => ApplyMotionThrottle(IndexToDispatchMs(value));
         }
 
-        /// <summary>节流状态短文案 (0 → 不节流, 否则折算成 Hz)。</summary>
-        public string MotionThrottleText =>
-            _motionDispatchIntervalMs <= 0
-                ? "不节流"
-                : $"{Math.Round(1000.0 / _motionDispatchIntervalMs)} Hz";
+        /// <summary>当前运行时覆盖的节流间隔 (毫秒; &lt;0 = 跟随动作文件, 0 = 不节流)。</summary>
+        public int MotionDispatchIntervalMs => _motionDispatchIntervalMs;
 
-        /// <summary>节流子菜单标题 (含当前值, 让当前档位一眼可见)。</summary>
-        public string MotionThrottleHeader => $"设备下发节流 · {MotionThrottleText}";
-
-        /// <summary>引擎侧实际生效的节流间隔 (毫秒, 0=不节流); 只读诊断 (UI/测试核对已同步到引擎)。</summary>
+        /// <summary>引擎侧实际生效的节流间隔 (毫秒); 只读诊断。</summary>
         public int EffectiveDispatchIntervalMs => _engine.DispatchIntervalMs;
 
-        public bool MotionThrottleNone => _motionDispatchIntervalMs <= 0;
-        public bool MotionThrottle30 => _motionDispatchIntervalMs == 33;
-        public bool MotionThrottle20 => _motionDispatchIntervalMs == 50;
-        public bool MotionThrottle10 => _motionDispatchIntervalMs == 100;
-
-        /// <summary>设置设备下发节流 (参数为毫秒字符串, "0"=不节流); 写入 .motion 并即时生效。</summary>
-        public ReactiveCommand<string?, Unit> SetMotionThrottleCommand { get; }
-
-        /// <summary>从当前 .motion 同步节流配置到 UI 与引擎 (装载/新建/撤销恢复后调用)。</summary>
-        private void SyncMotionThrottleFromTimeline()
+        private void ApplyMotionThrottle(int ms)
         {
-            int ms = Timeline?.DispatchIntervalMs ?? 0;
-            _engine.DispatchIntervalMs = ms;
-            MotionDispatchIntervalMs = ms;
-        }
+            if (ms < -1)
+                ms = -1;
+            if (ms > 1000)
+                ms = 1000;
 
-        private void SetMotionThrottle(string? arg)
-        {
-            if (!int.TryParse(arg, out int ms) || ms < 0)
-                ms = 0;
-
+            _motionDispatchIntervalMs = ms;
             _engine.DispatchIntervalMs = ms; // 运行时可立即生效 (不重建 Slot)
-            MotionDispatchIntervalMs = ms;
 
-            if (Timeline != null && Timeline.DispatchIntervalMs != ms)
+            try
             {
-                Timeline.DispatchIntervalMs = ms; // 落到 .motion, 随文件保存
-                IsDirty = true;
+                IOStudio.Models.IOStudioSettings.Instance.MotionDispatchIntervalMs = ms;
+                IOStudio.Models.IOStudioSettings.Instance.Save();
             }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[Timeline] 保存「设备下发节流」失败: {ex.Message}");
+            }
+
+            this.RaisePropertyChanged(nameof(MotionThrottleIndex));
+            this.RaisePropertyChanged(nameof(MotionDispatchIntervalMs));
+            this.RaisePropertyChanged(nameof(EffectiveDispatchIntervalMs));
+
+            PushStatus(
+                ms < 0
+                    ? "下发节流: 跟随动作文件"
+                    : $"下发节流: {MotionThrottleOptions[DispatchMsToIndex(ms)]}"
+            );
         }
+
+        private static int IndexToDispatchMs(int index) =>
+            index switch
+            {
+                1 => 0,
+                2 => 33,
+                3 => 50,
+                4 => 100,
+                _ => -1,
+            };
+
+        private static int DispatchMsToIndex(int ms) =>
+            ms switch
+            {
+                < 0 => 0,
+                0 => 1,
+                <= 33 => 2,
+                <= 50 => 3,
+                _ => 4,
+            };
 
         /// <summary>引擎最近一次内部错误 (供 CLI/UI 暴露, 避免 tick 异常被静默吞掉)。</summary>
         public string? LastError => _engine.LastError;

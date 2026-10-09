@@ -8,7 +8,7 @@
       "match": { "type": "json", "path": "Cmd", "value": "GamePlatform_Cylinder" } },
 
     { "op": "expect", "via": "platform", "timeout_ms": 12000,
-      "match": { "type": "contains", "value": "\"Para\":\"{\\\"HeightRatioList\\\":" } },
+      "match": { "type": "contains", "value": "\"Para\":{\"HeightRatioList\":" } },
 
     { "op": "expect", "via": "platform", "timeout_ms": 25000,
       "match": { "type": "json", "path": "Cmd", "value": "GamePlatform_PlatformEffect" } }

@@ -28,7 +28,7 @@
                 BorderThickness="0,1,0,0"
                 Padding="12,0"
                 Height="24">
-            <Grid ColumnDefinitions="*,Auto" VerticalAlignment="Center">
+            <Grid ColumnDefinitions="*,Auto,Auto" VerticalAlignment="Center">
                 <TextBlock Grid.Column="0" Text="{Binding StatusText}"
                            FontSize="{DynamicResource TlFontXs}"
                            Foreground="{DynamicResource TlTextSecondary}"
@@ -39,6 +39,20 @@
                            Foreground="{DynamicResource TlTextMuted}"
                            TextTrimming="CharacterEllipsis"
                            VerticalAlignment="Center"/>
+                <!-- 独立窗口的两个去向: 最小化(保留独立窗口) / 收回标签栏(同关闭) -->
+                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="4"
+                            Margin="12,0,0,0" VerticalAlignment="Center">
+                    <Button Classes="statusbtn"
+                            Content="最小化"
+                            Click="OnMinimizeClick"
+                            AutomationProperties.AutomationId="ProtocolSessionMinimize"
+                            ToolTip.Tip="最小化窗口 (会话仍留在独立窗口)"/>
+                    <Button Classes="statusbtn"
+                            Content="收回标签"
+                            Click="OnReturnToTabsClick"
+                            AutomationProperties.AutomationId="ProtocolSessionReturn"
+                            ToolTip.Tip="收回主窗标签栏 (等同于关闭本窗口)"/>
+                </StackPanel>
             </Grid>
         </Border>
 

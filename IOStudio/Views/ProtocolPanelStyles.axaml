@@ -380,5 +380,26 @@
         <Style Selector="ToggleButton.chip-toggle:checked">
             <Setter Property="Foreground" Value="{DynamicResource TlAccentSoftFg}"/>
         </Style>
+
+        <!-- ═══════════════ 独立窗口状态栏的文字动作按钮 (自适宽) ═══════════════ -->
+        <Style Selector="Button.statusbtn">
+            <Setter Property="Height" Value="18"/>
+            <Setter Property="MinHeight" Value="0"/>
+            <Setter Property="Padding" Value="7,0"/>
+            <Setter Property="CornerRadius" Value="4"/>
+            <Setter Property="FontSize" Value="{DynamicResource TlFontXs}"/>
+            <Setter Property="Foreground" Value="{DynamicResource TlTextSecondary}"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+        <Style Selector="Button.statusbtn /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="CornerRadius" Value="4"/>
+        </Style>
+        <Style Selector="Button.statusbtn:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="{DynamicResource TlHoverBg}"/>
+        </Style>
+        <Style Selector="Button.statusbtn:pointerover">
+            <Setter Property="Foreground" Value="{DynamicResource TlTextPrimary}"/>
+        </Style>
 </Styles>
 

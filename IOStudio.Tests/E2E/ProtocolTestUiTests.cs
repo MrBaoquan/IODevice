@@ -223,6 +223,20 @@ namespace IOStudio.Tests.E2E
         }
 
         [Fact]
+        public void Hex_Input_Tolerates_Separators_And_Prefixes()
+        {
+            // 空白 / 逗号 / 分号 / 冒号 / 短横线 / 下划线 以及 0x 前缀都被忽略
+            Assert.Equal(new byte[] { 0x0A, 0x1B }, ProtocolEncoding.ParseHex("0x0A, 0x1B"));
+            Assert.Equal(new byte[] { 0xDE, 0xAD, 0xBE, 0xEF }, ProtocolEncoding.ParseHex("DE:AD-BE_EF"));
+            Assert.Equal(new byte[] { 0x01, 0x02 }, ProtocolEncoding.ParseHex("01\n02"));
+            Assert.Empty(ProtocolEncoding.ParseHex("  ,  "));
+
+            // 仍然严格: 奇数位与非十六进制字符必须报错, 不能瞎猜
+            Assert.Throws<FormatException>(() => ProtocolEncoding.ParseHex("ABC"));
+            Assert.Throws<FormatException>(() => ProtocolEncoding.ParseHex("ZZ"));
+        }
+
+        [Fact]
         public void NewLine_Option_Maps_To_Expected_Suffix()
         {
             Assert.Equal("", ProtocolUiOptions.NewLineToText("无"));
@@ -1001,6 +1015,133 @@ namespace IOStudio.Tests.E2E
             Assert.Equal("01 03 00 00 00 0A C5 CD", r.SendText);
             Assert.Equal("无", r.SendNewLine);
             Assert.Equal("01 03 00 00 00 0A C5 CD", r.Preview);
+        }
+
+        [Fact]
+        public async Task Modbus_SendNow_Without_Running_Falls_Back_To_SendBox()
+        {
+            var s = NewSession();
+            var r = await _session.Dispatch(
+                () =>
+                {
+                    s.Modbus.Mode = "RTU";
+                    s.Modbus.SlaveId = 1;
+                    s.Modbus.Function = s.Modbus.Functions.First(f => f.Code == 0x03);
+                    s.Modbus.StartAddress = 0;
+                    s.Modbus.Quantity = 10;
+                    s.Modbus.SendNowCommand.Execute().Subscribe();
+                    return (s.IsRunning, s.SendEncoding, s.SendText, s.Modbus.StatusText);
+                },
+                CancellationToken.None
+            );
+
+            Assert.False(r.IsRunning); // 未启动 → 退化为"生成到发送框"
+            Assert.Equal("HEX", r.SendEncoding);
+            Assert.Equal("01 03 00 00 00 0A C5 CD", r.SendText);
+            Assert.Contains("生成", r.StatusText);
+        }
+
+        [Fact]
+        public async Task Modbus_Tcp_BuildNextFrame_Advances_TransactionId()
+        {
+            var s = NewSession();
+            var r = await _session.Dispatch(
+                () =>
+                {
+                    s.Modbus.Mode = "TCP";
+                    s.Modbus.Function = s.Modbus.Functions.First(f => f.Code == 0x03);
+                    var a = s.Modbus.BuildNextFrame();
+                    var b = s.Modbus.BuildNextFrame();
+                    return ((a[0] << 8) | a[1], (b[0] << 8) | b[1]);
+                },
+                CancellationToken.None
+            );
+
+            Assert.Equal(1, r.Item1);
+            Assert.Equal(2, r.Item2);
+        }
+
+        [Fact]
+        public async Task Modbus_Poll_Repeats_Request_On_Interval()
+        {
+            var s = NewSession();
+            var port = await _session.Dispatch(
+                () =>
+                {
+                    using var probe = new UdpClient(new IPEndPoint(IPAddress.Loopback, 0));
+                    return ((IPEndPoint)probe.Client.LocalEndPoint!).Port;
+                },
+                CancellationToken.None
+            );
+
+            await _session.Dispatch(
+                () =>
+                {
+                    s.Port = port;
+                    s.FrameMode = ProtocolUiOptions.FrameModes.First(f => f.Mode == "none");
+                    s.StartCommand.Execute().Subscribe();
+                    return true;
+                },
+                CancellationToken.None
+            );
+
+            var started = false;
+            for (int i = 0; i < 60 && !started; i++)
+            {
+                started = await _session.Dispatch(() => s.IsRunning, CancellationToken.None);
+                if (!started)
+                    await Task.Delay(50);
+            }
+            Assert.True(started, "UDP 监听未启动");
+
+            using var peer = new UdpClient(new IPEndPoint(IPAddress.Loopback, 0));
+            // 先让监听端学到"发给谁" (UDP 监听端默认要收到首帧才记对端)
+            await peer.SendAsync(Encoding.UTF8.GetBytes("HELLO"), new IPEndPoint(IPAddress.Loopback, port));
+            await Task.Delay(200);
+            await _session.Dispatch(() => true, CancellationToken.None);
+
+            await _session.Dispatch(
+                () =>
+                {
+                    s.Modbus.Function = s.Modbus.Functions.First(f => f.Code == 0x03);
+                    s.Modbus.StartAddress = 0;
+                    s.Modbus.Quantity = 10;
+                    s.Modbus.PollIntervalMs = 100;
+                    s.Modbus.PollEnabled = true;
+                    return true;
+                },
+                CancellationToken.None
+            );
+
+            var frames = new List<byte[]>();
+            using (var cts = new System.Threading.CancellationTokenSource(TimeSpan.FromSeconds(1.5)))
+            {
+                try
+                {
+                    while (frames.Count < 3)
+                        frames.Add((await peer.ReceiveAsync(cts.Token)).Buffer);
+                }
+                catch (OperationCanceledException)
+                {
+                    /* 到点收摊 */
+                }
+            }
+
+            await _session.Dispatch(
+                () =>
+                {
+                    s.Modbus.PollEnabled = false;
+                    s.StopCommand.Execute().Subscribe();
+                    return true;
+                },
+                CancellationToken.None
+            );
+
+            Assert.True(frames.Count >= 2, $"轮询未重复发送: {frames.Count}");
+            foreach (var f in frames)
+            {
+                Assert.True(f.Length >= 4 && f[1] == 0x03, "轮询帧不是 Modbus 读保持寄存器请求");
+            }
         }
 
         [Fact]

@@ -554,9 +554,85 @@ def test_protocol_detach_opens_independent_window_and_returns(app):
     assert _by_id(detached, "ProtocolMessages") is not None, "独立窗口缺少日志面板"
     assert _by_id(detached, "ProtocolSendText") is not None, "独立窗口缺少发送框"
 
-    # 关掉独立窗口 → 会话放回主窗
-    user32.PostMessageW(detached.handle, 0x0010, 0, 0)  # WM_CLOSE
+    # 独立窗口状态栏的两个去向: 最小化(保留窗口) / 收回标签(归还标签栏)
+    assert _by_id(detached, "ProtocolSessionMinimize") is not None, "独立窗口缺少「最小化」"
+    ret = _by_id(detached, "ProtocolSessionReturn")
+    assert ret is not None, "独立窗口缺少「收回标签」"
+
+    # 点「收回标签」→ 关窗归还 (不再走 WM_CLOSE)
+    ret.click_input()
     assert _wait_until(lambda: _session_count(win) == before, timeout=8.0), (
-        f"关闭独立窗口后会话未放回: expected={before} got={_session_count(win)}"
+        f"点「收回标签」后会话未放回: expected={before} got={_session_count(win)}"
     )
+
+
+def test_modbus_composer_exposes_send_now_and_poll(app):
+    """Modbus 组帧区新增「生成并发送」与「周期轮询 + 间隔」。"""
+    win = find_window(TEST_WINDOW_TITLE, timeout=10)
+    if win is None:
+        pytest.skip("协议测试台窗口未打开 (依赖前面的用例)")
+
+    toggle = _by_id(win, "ProtocolModbusToggle")
+    assert toggle is not None, "未找到 Modbus 展开开关"
+    toggle.click_input()
+    time.sleep(0.6)
+
+    for auto_id in (
+        "ProtocolModbusGenerate",
+        "ProtocolModbusSendNow",
+        "ProtocolModbusPoll",
+        "ProtocolModbusPollInterval",
+    ):
+        assert _wait_until(lambda i=auto_id: _by_id(win, i) is not None, timeout=4.0), (
+            f"Modbus 组帧区缺少控件 {auto_id}"
+        )
+
+
+def test_session_tab_context_menu_exposes_actions(app):
+    """标签右键菜单: 关闭其他会话 / 复制标签名 (整路会话操作收在一处)。"""
+    win = find_window(TEST_WINDOW_TITLE, timeout=10)
+    if win is None:
+        _open_protocol_window(app["main"])
+        win = find_window(TEST_WINDOW_TITLE, timeout=15)
+    assert win is not None, "协议测试台窗口未打开"
+
+    lst = _by_id(win, "ProtocolSessionList")
+    assert lst is not None, "未找到会话标签条 (ProtocolSessionList)"
+    items = [d for d in lst.descendants() if d.element_info.control_type == "ListItem"]
+    assert items, "会话标签条为空"
+
+    # 右键会弹出 Popup (可能不在主窗自动化树下, 也可能是独立顶层窗), 两处都找
+    def _all_names():
+        names = []
+        try:
+            for d in win.descendants():
+                names.append(getattr(d.element_info, "name", "") or "")
+        except Exception:
+            pass
+        for h in _pid_windows(app["proc"].pid):
+            try:
+                for d in Desktop(backend="uia").window(handle=h).descendants():
+                    names.append(getattr(d.element_info, "name", "") or "")
+            except Exception:
+                pass
+        return names
+
+    names = []
+    for _ in range(3):
+        items[0].click_input()
+        time.sleep(0.3)
+        items[0].right_click_input()
+        time.sleep(0.9)
+        names = _all_names()
+        if "关闭其他会话" in names:
+            break
+
+    for want in ("关闭其他会话", "复制标签名"):
+        assert want in names, f"标签右键菜单缺少 {want!r}"
+
+    # 收起菜单, 别让它挡住后续用例
+    user32.keybd_event(0x1B, 0, 0, 0)  # ESC down
+    user32.keybd_event(0x1B, 0, 2, 0)  # ESC up
+    time.sleep(0.3)
+
 

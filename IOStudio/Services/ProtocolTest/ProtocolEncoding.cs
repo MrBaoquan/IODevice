@@ -39,12 +39,44 @@ namespace IOStudio.Services.ProtocolTest
             var n = (name ?? "UTF-8").Trim();
 
             if (string.Equals(n, "HEX", StringComparison.OrdinalIgnoreCase))
-            {
-                var cleaned = text.Replace(" ", "").Replace("-", "").Replace("\r", "").Replace("\n", "").Replace("\t", "");
-                return cleaned.Length == 0 ? Array.Empty<byte>() : Convert.FromHexString(cleaned);
-            }
+                return ParseHex(text);
 
             return Get(n).GetBytes(text);
+        }
+
+        /// <summary>
+        /// 宽松解析十六进制串 (对齐主流调试台的手感): 自动忽略空格/换行/制表符与
+        /// 逗号、分号、冒号、短横线、下划线等分隔符, 以及 <c>0x</c>/<c>0X</c> 前缀。
+        /// 剩余内容必须是**偶数个**十六进制字符, 否则抛出 —— 奇数字节不该被瞎猜。
+        /// </summary>
+        public static byte[] ParseHex(string? text)
+        {
+            text ??= "";
+            var sb = new StringBuilder(text.Length);
+            for (var i = 0; i < text.Length; i++)
+            {
+                var c = text[i];
+
+                if (char.IsWhiteSpace(c) || c is ',' or ';' or ':' or '-' or '_')
+                    continue;
+
+                // "0x" 前缀 (0 后面紧跟 x/X) 直接跳过, 兼容从代码里粘来的写法
+                if (c == '0' && i + 1 < text.Length && (text[i + 1] is 'x' or 'X'))
+                {
+                    i++;
+                    continue;
+                }
+
+                if (!Uri.IsHexDigit(c))
+                    throw new FormatException($"HEX 内容含非法字符 '{c}'");
+
+                sb.Append(c);
+            }
+
+            if (sb.Length % 2 != 0)
+                throw new FormatException("HEX 内容需要偶数个十六进制字符");
+
+            return sb.Length == 0 ? Array.Empty<byte>() : Convert.FromHexString(sb.ToString());
         }
 
         /// <summary>取 Encoding; 名字不认识时退回 UTF-8 (不抛, 避免下拉里多一项就炸)。</summary>

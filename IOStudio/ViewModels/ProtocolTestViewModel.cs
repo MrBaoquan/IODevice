@@ -243,6 +243,14 @@ namespace IOStudio.ViewModels
             SaveWorkspace();
         }
 
+        /// <summary>关闭除 keep 外的其他**标签**会话 (已弹到独立窗口的会话不动)。</summary>
+        public void CloseOtherSessions(ProtocolSessionViewModel keep)
+        {
+            foreach (var s in Sessions.Where(x => !ReferenceEquals(x, keep)).ToList())
+                RemoveSession(s);
+            SelectedSession = keep;
+        }
+
         /// <summary>
         /// 把一路会话弹到独立窗口: 从主窗标签移出 (会话对象**不**销毁), 返回它原来的位置,
         /// 供关窗时放回。窗口由 View 层创建 (见 ProtocolTestWindow.DetachSession)。
@@ -279,6 +287,7 @@ namespace IOStudio.ViewModels
         {
             s.CloseAction = RemoveSession;
             s.DetachAction = session => DetachRequested?.Invoke(session);
+            s.CloseOthersAction = CloseOtherSessions;
         }
 
         /// <summary>导出格式 (按选中会话导出; 主流工具都是"另存为")。</summary>

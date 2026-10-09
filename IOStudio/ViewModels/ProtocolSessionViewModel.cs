@@ -99,6 +99,10 @@ namespace IOStudio.ViewModels
                 () => DetachAction?.Invoke(this),
                 this.WhenAnyValue(x => x.IsVirtual, v => !v) // 虚拟(场景)会话不弹窗
             );
+            // 标签右键菜单: 关闭其他会话 / 复制标签名
+            CloseOthersCommand = ReactiveCommand.Create(() => CloseOthersAction?.Invoke(this));
+            CopyLabelCommand = ReactiveCommand.CreateFromTask(
+                () => ClipboardWriter?.Invoke(Label ?? "") ?? Task.CompletedTask);
             CopyEntryTextCommand = ReactiveCommand.CreateFromTask<ProtocolLogEntry?>(
                 e => CopyEntryAsync(e, hex: false)
             );
@@ -711,7 +715,7 @@ namespace IOStudio.ViewModels
                 catch
                 {
                     return _sendEncoding == "HEX"
-                        ? "HEX 内容非法 (需偶数个 0-9 / A-F)"
+                        ? "HEX 内容非法 (需偶数个 0-9 / A-F; 空格、逗号、0x 会被忽略)"
                         : $"内容无法按 {_sendEncoding} 编码";
                 }
             }
@@ -1105,11 +1109,20 @@ namespace IOStudio.ViewModels
         public ReactiveCommand<Unit, Unit> CloseCommand { get; }
         public ReactiveCommand<Unit, Unit> DetachCommand { get; }
 
+        /// <summary>关闭除本会话外的其他标签会话 (标签右键菜单)。</summary>
+        public ReactiveCommand<Unit, Unit> CloseOthersCommand { get; }
+
+        /// <summary>复制标签名到剪贴板 (标签右键菜单)。</summary>
+        public ReactiveCommand<Unit, Unit> CopyLabelCommand { get; }
+
         /// <summary>由窗口注入: 关闭本会话 (标签上的 ×)。</summary>
         public Action<ProtocolSessionViewModel>? CloseAction { get; set; }
 
         /// <summary>由窗口注入: 把本会话弹到独立窗口 (标签上的 ⧉)。</summary>
         public Action<ProtocolSessionViewModel>? DetachAction { get; set; }
+
+        /// <summary>由窗口注入: 关闭除本会话外的其他标签会话。</summary>
+        public Action<ProtocolSessionViewModel>? CloseOthersAction { get; set; }
 
         /// <summary>由窗口注入的剪贴板写入器 (VM 不依赖 UI, 便于 headless 测试用假实现断言复制内容)。</summary>
         public Func<string, Task>? ClipboardWriter { get; set; }
@@ -1304,6 +1317,7 @@ namespace IOStudio.ViewModels
         {
             var nextSend = Environment.TickCount64 + Math.Max(50, LoopIntervalMs);
             var nextTick = Environment.TickCount64 + 500;
+            var modbusNext = Environment.TickCount64 + Math.Max(50, Modbus.PollIntervalMs);
             var cmdNext = new Dictionary<QuickCommandViewModel, long>();
 
             while (!ct.IsCancellationRequested)
@@ -1323,6 +1337,22 @@ namespace IOStudio.ViewModels
                 {
                     nextSend = now + Math.Max(50, LoopIntervalMs);
                     await SendPayloadAsync(SendText, SendEncoding, SendNewLine, "定时", ct).ConfigureAwait(false);
+                }
+
+                // Modbus 周期轮询: 轻量重发当前请求帧 (每次推进 TCP 事务号), 不是主站轮询栈
+                if (Modbus.PollEnabled && now >= modbusNext)
+                {
+                    modbusNext = now + Math.Max(50, Modbus.PollIntervalMs);
+                    try
+                    {
+                        var frame = Modbus.BuildNextFrame();
+                        await SendBytesAsync(frame, "Modbus", ct).ConfigureAwait(false);
+                    }
+                    catch (Exception ex)
+                    {
+                        var msg = ex.Message;
+                        Dispatcher.UIThread.Post(() => Modbus.ReportPollFailure(msg));
+                    }
                 }
 
                 foreach (var cmd in QuickCommands.ToList())
@@ -1502,6 +1532,43 @@ namespace IOStudio.ViewModels
             catch (Exception ex)
             {
                 AddEntry(ProtocolLogEntry.Info("发送失败: " + ex.Message));
+            }
+        }
+
+        /// <summary>
+        /// 直接发送**已算好的字节** (Modbus 生成器 / 周期轮询用): 不再走编码、新行、校验设置,
+        /// 但仍统一计数、落日志, 与手动发送在日志里长得一样。
+        /// </summary>
+        public async Task SendBytesAsync(byte[] bytes, string channel, CancellationToken ct)
+        {
+            var ep = _endpoint;
+            if (ep is null)
+                return;
+
+            try
+            {
+                await ep.SendAsync(bytes, ct).ConfigureAwait(true);
+                // 调用方可能来自调度线程 (Modbus 轮询): 统计与日志必须回到 UI 线程再改。
+                void Record()
+                {
+                    _txCount++;
+                    _txBytes += bytes.Length;
+                    RaiseStats();
+                    AddEntry(ProtocolLogEntry.Frame("发", channel, bytes, null));
+                }
+
+                if (Dispatcher.UIThread.CheckAccess())
+                    Record();
+                else
+                    Dispatcher.UIThread.Post(Record);
+            }
+            catch (Exception ex)
+            {
+                var msg = "发送失败: " + ex.Message;
+                if (Dispatcher.UIThread.CheckAccess())
+                    AddEntry(ProtocolLogEntry.Info(msg));
+                else
+                    Dispatcher.UIThread.Post(() => AddEntry(ProtocolLogEntry.Info(msg)));
             }
         }
 

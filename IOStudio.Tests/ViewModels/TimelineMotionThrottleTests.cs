@@ -56,11 +56,23 @@ namespace IOStudio.Tests.ViewModels
                 var vm = new TimelineEditorViewModel(null);
                 int baseTimelineMs = vm.Timeline!.DispatchIntervalMs; // 文件自带配置, 应保持不变
 
-                vm.MotionThrottleIndex = 3; // 20 Hz
+                // 档位: 0=跟随文件 1=不节流 2=40Hz 3=30Hz 4=20Hz 5=15Hz 6=10Hz
+                Assert.Equal(7, vm.MotionThrottleOptions.Count);
+                Assert.Equal("40 Hz", vm.MotionThrottleOptions[2]);
+                Assert.Equal("15 Hz", vm.MotionThrottleOptions[5]);
+
+                vm.MotionThrottleIndex = 4; // 20 Hz
                 Assert.Equal(50, vm.MotionDispatchIntervalMs);
                 Assert.Equal(50, vm.EffectiveDispatchIntervalMs); // 已同步到引擎 (运行时覆盖)
                 Assert.Equal(50, settings.MotionDispatchIntervalMs); // 已持久化到应用设置
                 Assert.Equal(baseTimelineMs, vm.Timeline!.DispatchIntervalMs); // 不写回 .motion
+
+                vm.MotionThrottleIndex = 2; // 40 Hz
+                Assert.Equal(25, vm.MotionDispatchIntervalMs);
+                Assert.Equal(25, vm.EffectiveDispatchIntervalMs);
+
+                vm.MotionThrottleIndex = 5; // 15 Hz
+                Assert.Equal(67, vm.MotionDispatchIntervalMs);
 
                 vm.MotionThrottleIndex = 0; // 跟随动作文件 (清除覆盖)
                 Assert.Equal(-1, vm.MotionDispatchIntervalMs);

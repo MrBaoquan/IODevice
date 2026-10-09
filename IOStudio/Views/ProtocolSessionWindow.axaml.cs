@@ -24,5 +24,13 @@ namespace IOStudio.Views
             DataContext = session;
             Title = string.IsNullOrWhiteSpace(session.Label) ? "协议会话" : session.Label;
         }
+
+        /// <summary>最小化到任务栏 (会话仍留在独立窗口, 不收回标签)。</summary>
+        private void OnMinimizeClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e) =>
+            WindowState = Avalonia.Controls.WindowState.Minimized;
+
+        /// <summary>收回主窗标签栏 —— 关窗即归还 (由 <see cref="ProtocolTestWindow"/> 回收)。</summary>
+        private void OnReturnToTabsClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e) =>
+            Close();
     }
 }

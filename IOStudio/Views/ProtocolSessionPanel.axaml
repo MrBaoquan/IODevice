@@ -453,7 +453,7 @@
                                          AutomationProperties.AutomationId="ProtocolSendText"
                                          AutomationProperties.Name="发送内容"
                                          AcceptsReturn="True" TextWrapping="Wrap"
-                                         Watermark="发送内容 (HEX 编码时填十六进制, 空格/换行会自动忽略)"
+                                         Watermark="发送内容 (HEX 编码时填十六进制; 空格/逗号/0x 会自动忽略, 需偶数位)"
                                          FontFamily="Consolas,Menlo,monospace"/>
                             </Grid>
 
@@ -613,12 +613,31 @@
                                         <Button Classes="tool" Height="28" Padding="10,2" Content="生成到发送框"
                                                 Command="{Binding Modbus.ApplyCommand}"
                                                 AutomationProperties.AutomationId="ProtocolModbusGenerate"/>
+                                        <Button Classes="tool" Height="28" Padding="10,2" Content="生成并发送"
+                                                Command="{Binding Modbus.SendNowCommand}"
+                                                AutomationProperties.AutomationId="ProtocolModbusSendNow"
+                                                ToolTip.Tip="按当前参数组帧并立即下发 (未启动时退化为生成到发送框)"/>
                                         <CheckBox Content="解析应答" VerticalAlignment="Center"
                                                   IsChecked="{Binding DecodeModbus}"
                                                   AutomationProperties.AutomationId="ProtocolDecodeModbus"
                                                   ToolTip.Tip="收到 Modbus 应答时在日志里解析出功能码 / 寄存器 / 异常码"/>
                                         <TextBlock Text="{Binding Modbus.StatusText}" Classes="hint"
                                                    VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+                                    </StackPanel>
+                                    <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+                                        <CheckBox Content="周期轮询" VerticalAlignment="Center"
+                                                  IsChecked="{Binding Modbus.PollEnabled, Mode=TwoWay}"
+                                                  AutomationProperties.AutomationId="ProtocolModbusPoll"
+                                                  ToolTip.Tip="按间隔重复发送当前请求帧 (轻量重发, 不是主站轮询栈)"/>
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Text="间隔" Classes="inline-cap"/>
+                                            <TextBox Width="64" Classes="inline"
+                                                     Text="{Binding Modbus.PollIntervalMs, Mode=TwoWay}"
+                                                     AutomationProperties.AutomationId="ProtocolModbusPollInterval"
+                                                     ToolTip.Tip="轮询间隔 (毫秒, 最小 50)"/>
+                                            <TextBlock Text="ms" Classes="hint" VerticalAlignment="Center"
+                                                       Margin="4,0,0,0"/>
+                                        </StackPanel>
                                     </StackPanel>
                                     <TextBlock Text="{Binding Modbus.Preview}" Classes="mono"
                                                FontSize="{DynamicResource TlFontXs}"

@@ -342,7 +342,7 @@ namespace IOStudio.ViewModels.Timeline
 
         /// <summary>下发节流下拉档位 (索引 0 = 跟随动作文件)。</summary>
         public IReadOnlyList<string> MotionThrottleOptions { get; } =
-            new[] { "跟随动作文件", "不节流", "30 Hz", "20 Hz", "10 Hz" };
+            new[] { "跟随动作文件", "不节流", "40 Hz", "30 Hz", "20 Hz", "15 Hz", "10 Hz" };
 
         /// <summary>下发节流档位 (供传输栏下拉双向绑定); 写入即持久化并即时生效。</summary>
         public int MotionThrottleIndex
@@ -392,9 +392,11 @@ namespace IOStudio.ViewModels.Timeline
             index switch
             {
                 1 => 0,
-                2 => 33,
-                3 => 50,
-                4 => 100,
+                2 => 25, // 40 Hz
+                3 => 33, // 30 Hz
+                4 => 50, // 20 Hz
+                5 => 67, // 15 Hz
+                6 => 100, // 10 Hz
                 _ => -1,
             };
 
@@ -403,9 +405,11 @@ namespace IOStudio.ViewModels.Timeline
             {
                 < 0 => 0,
                 0 => 1,
-                <= 33 => 2,
-                <= 50 => 3,
-                _ => 4,
+                <= 25 => 2,
+                <= 33 => 3,
+                <= 50 => 4,
+                <= 67 => 5,
+                _ => 6,
             };
 
         /// <summary>引擎最近一次内部错误 (供 CLI/UI 暴露, 避免 tick 异常被静默吞掉)。</summary>

@@ -126,6 +126,25 @@
                             <Border Classes="tab"
                                     Classes.selected="{Binding $parent[ListBoxItem].IsSelected}"
                                     ToolTip.Tip="{Binding StatusText}">
+                                <!-- 标签右键菜单: 与内联 ⧉/× 并存, 把"整路会话"的操作收在一处 -->
+                                <Border.ContextMenu>
+                                    <ContextMenu>
+                                        <MenuItem Header="在独立窗口打开"
+                                                  Command="{Binding DetachCommand}"
+                                                  IsVisible="{Binding !IsVirtual}"
+                                                  AutomationProperties.AutomationId="ProtocolTabMenuDetach"/>
+                                        <MenuItem Header="关闭会话"
+                                                  Command="{Binding CloseCommand}"
+                                                  AutomationProperties.AutomationId="ProtocolTabMenuClose"/>
+                                        <MenuItem Header="关闭其他会话"
+                                                  Command="{Binding CloseOthersCommand}"
+                                                  AutomationProperties.AutomationId="ProtocolTabMenuCloseOthers"/>
+                                        <Separator/>
+                                        <MenuItem Header="复制标签名"
+                                                  Command="{Binding CopyLabelCommand}"
+                                                  AutomationProperties.AutomationId="ProtocolTabMenuCopyLabel"/>
+                                    </ContextMenu>
+                                </Border.ContextMenu>
                                 <StackPanel Orientation="Horizontal" Spacing="7" VerticalAlignment="Center">
                                     <iconPacks:PackIconIonicons Kind="PlayiOS" Width="11" Height="11"
                                                                 IsVisible="{Binding IsVirtual}"

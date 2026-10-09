@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reactive;
+using System.Threading;
+using System.Threading.Tasks;
 using IOStudio.Services.ProtocolTest;
 using ReactiveUI;
 
@@ -28,9 +30,13 @@ namespace IOStudio.ViewModels
         {
             _session = session;
             ApplyCommand = ReactiveCommand.Create(Apply);
+            SendNowCommand = ReactiveCommand.CreateFromTask(SendNowAsync);
         }
 
         public ReactiveCommand<Unit, Unit> ApplyCommand { get; }
+
+        /// <summary>按当前参数组帧并**立即下发** (未启动时退化为"生成到发送框")。</summary>
+        public ReactiveCommand<Unit, Unit> SendNowCommand { get; }
 
         public IReadOnlyList<string> Modes { get; } = new[] { "RTU", "TCP" };
 
@@ -128,6 +134,22 @@ namespace IOStudio.ViewModels
             private set => this.RaiseAndSetIfChanged(ref _statusText, value);
         }
 
+        private bool _pollEnabled;
+        /// <summary>周期轮询: 按 <see cref="PollIntervalMs"/> 重复发送当前请求帧 (轻量重发)。</summary>
+        public bool PollEnabled
+        {
+            get => _pollEnabled;
+            set => this.RaiseAndSetIfChanged(ref _pollEnabled, value);
+        }
+
+        private int _pollIntervalMs = 1000;
+        /// <summary>轮询间隔 (毫秒); 由会话调度循环读取。</summary>
+        public int PollIntervalMs
+        {
+            get => _pollIntervalMs;
+            set => this.RaiseAndSetIfChanged(ref _pollIntervalMs, value);
+        }
+
         /// <summary>是否需要填写"值" (写类功能码)。</summary>
         public bool NeedsValues => Function.Code is Modbus.WriteSingleCoil
             or Modbus.WriteSingleRegister
@@ -185,6 +207,20 @@ namespace IOStudio.ViewModels
             (ushort)_transactionId
         );
 
+        /// <summary>生成一帧并推进 TCP 事务号 (每次"真正发送/轮询"调用; 预览不推进)。</summary>
+        public byte[] BuildNextFrame()
+        {
+            var bytes = Build();
+            AdvanceTransaction();
+            return bytes;
+        }
+
+        private void AdvanceTransaction()
+        {
+            if (Modbus.IsTcp(Mode))
+                _transactionId = _transactionId >= 0xFFFF ? 1 : _transactionId + 1;
+        }
+
         private void Apply()
         {
             try
@@ -192,13 +228,41 @@ namespace IOStudio.ViewModels
                 var bytes = Build();
                 _session.SetSendHex(bytes);
                 StatusText = $"已生成 {bytes.Length} 字节 → 发送框" + (_session.IsRunning ? "" : " (点开始后发送)");
-                if (Modbus.IsTcp(Mode))
-                    _transactionId = _transactionId >= 0xFFFF ? 1 : _transactionId + 1;
+                AdvanceTransaction();
             }
             catch (Exception ex)
             {
                 StatusText = "生成失败: " + ex.Message;
             }
+        }
+
+        private async Task SendNowAsync()
+        {
+            try
+            {
+                var bytes = BuildNextFrame();
+                if (!_session.IsRunning)
+                {
+                    // 未启动: 退化为"生成到发送框", 点开始后再发
+                    _session.SetSendHex(bytes);
+                    StatusText = $"已生成 {bytes.Length} 字节 → 发送框 (点开始后发送)";
+                    return;
+                }
+
+                await _session.SendBytesAsync(bytes, "Modbus", CancellationToken.None).ConfigureAwait(true);
+                StatusText = $"已发送 {bytes.Length} 字节";
+            }
+            catch (Exception ex)
+            {
+                StatusText = "发送失败: " + ex.Message;
+            }
+        }
+
+        /// <summary>轮询组帧失败时由会话调度循环 (UI 线程) 回调: 报错并自动停用轮询。</summary>
+        internal void ReportPollFailure(string message)
+        {
+            StatusText = "轮询组帧失败: " + message;
+            PollEnabled = false;
         }
 
         private void RaiseDerived()

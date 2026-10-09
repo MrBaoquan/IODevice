@@ -270,6 +270,23 @@ def test_new_session_adds_parallel_session(app):
     )
 
 
+def test_protocol_single_transport_selector(app):
+    """批次 B「IA 收口」: 传输类型只保留**一个**下拉 (连接带里的 ProtocolTransport)。
+
+    此前工具条上还有一个「新建会话的传输」下拉 (ProtocolNewTransport), 与连接带
+    的「传输」并列可见, 用户分不清该用哪个。新建会话现在改为沿用当前会话的类型,
+    工具条不再需要专用下拉 —— 这里把它锁死, 防止回归。
+    """
+    win = find_window(TEST_WINDOW_TITLE, timeout=10)
+    if win is None:
+        pytest.skip("协议测试台窗口未打开 (依赖前面的用例)")
+
+    assert _by_id(win, "ProtocolTransport") is not None, "连接带缺少「传输」下拉"
+    assert _by_id(win, "ProtocolNewTransport") is None, (
+        "工具条的重复「传输」下拉 (ProtocolNewTransport) 不应再存在"
+    )
+
+
 def test_protocol_batch_a_affordances(app):
     """批次 A「读与发顺手」: 行详情面板 + 方向过滤 + 发送字节预览。
 

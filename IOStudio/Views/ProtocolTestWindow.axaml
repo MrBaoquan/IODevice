@@ -130,6 +130,24 @@
             <Setter Property="Foreground" Value="{DynamicResource TlTextPrimary}"/>
         </Style>
 
+        <!-- ═══════════════ 快捷指令 chip (贴在发送框上方, 单击即发) ═══════════════ -->
+        <Style Selector="Button.chip-send">
+            <Setter Property="MinHeight" Value="24"/>
+            <Setter Property="Padding" Value="10,2"/>
+            <Setter Property="FontSize" Value="{DynamicResource TlFontXs}"/>
+            <Setter Property="Foreground" Value="{DynamicResource TlTextPrimary}"/>
+        </Style>
+        <Style Selector="Button.chip-send /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="{DynamicResource TlSurfaceRaised}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource TlBorderLight}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="12"/>
+        </Style>
+        <Style Selector="Button.chip-send:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="{DynamicResource TlHoverBg}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource TlAccent}"/>
+        </Style>
+
         <!-- ═══════════════ 文本语义 ═══════════════ -->
         <!-- 分段标题: 每个功能带最左侧一列固定宽度, 让视线能沿一条竖线扫下来 -->
         <Style Selector="TextBlock.band-cap">
@@ -367,22 +385,10 @@
             <Grid ColumnDefinitions="Auto,*,Auto">
 
                 <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                    <TextBlock Text="新建" Classes="inline-cap"/>
-                    <ComboBox Width="150"
-                              ItemsSource="{Binding Transports}"
-                              SelectedItem="{Binding NewTransport}"
-                              AutomationProperties.AutomationId="ProtocolNewTransport"
-                              AutomationProperties.Name="新建会话的传输"
-                              ToolTip.Tip="新建会话使用的传输类型">
-                        <ComboBox.ItemTemplate>
-                            <DataTemplate x:DataType="vm:ProtocolTransportOption">
-                                <TextBlock Text="{Binding Label}"/>
-                            </DataTemplate>
-                        </ComboBox.ItemTemplate>
-                    </ComboBox>
+                    <TextBlock Text="会话" Classes="inline-cap"/>
                     <Button Classes="primary" Command="{Binding NewSessionCommand}"
                             AutomationProperties.AutomationId="ProtocolNewSession"
-                            ToolTip.Tip="按左侧传输类型新开一路会话并立即启动">
+                            ToolTip.Tip="新开一路与当前同类型的会话并立即启动">
                         <StackPanel Orientation="Horizontal" Spacing="5">
                             <iconPacks:PackIconIonicons Kind="AddiOS" Width="15" Height="15"
                                                         VerticalAlignment="Center"
@@ -472,6 +478,10 @@
                                     Classes.selected="{Binding $parent[ListBoxItem].IsSelected}"
                                     ToolTip.Tip="{Binding StatusText}">
                                 <StackPanel Orientation="Horizontal" Spacing="7" VerticalAlignment="Center">
+                                    <iconPacks:PackIconIonicons Kind="PlayiOS" Width="11" Height="11"
+                                                                IsVisible="{Binding IsVirtual}"
+                                                                VerticalAlignment="Center"
+                                                                Foreground="{DynamicResource TlTextMuted}"/>
                                     <Ellipse Classes="dot" Classes.running="{Binding IsRunning}"/>
                                     <TextBlock Classes="tab-name" Text="{Binding Label}"
                                                VerticalAlignment="Center"/>
@@ -509,23 +519,20 @@
                 BorderThickness="0,1,0,0"
                 Padding="12,0"
                 Height="24">
-            <Grid ColumnDefinitions="Auto,*,Auto,Auto" VerticalAlignment="Center">
-                <Ellipse Grid.Column="0" Width="6" Height="6"
-                         Fill="{DynamicResource TlAccent}" VerticalAlignment="Center"
-                         Margin="0,0,7,0"/>
-                <TextBlock Grid.Column="1" Text="{Binding StatusText}"
+            <Grid ColumnDefinitions="*,Auto,Auto" VerticalAlignment="Center">
+                <TextBlock Grid.Column="0" Text="{Binding StatusText}"
                            FontSize="{DynamicResource TlFontXs}"
                            Foreground="{DynamicResource TlTextSecondary}"
                            TextTrimming="CharacterEllipsis"
                            VerticalAlignment="Center"/>
-                <TextBlock Grid.Column="2" Text="{Binding SelectedSession.StatsText}"
+                <TextBlock Grid.Column="1" Text="{Binding SelectedSession.StatsText}"
                            IsVisible="{Binding HasSelection}"
                            FontSize="{DynamicResource TlFontXs}"
                            Foreground="{DynamicResource TlTextMuted}"
                            TextTrimming="CharacterEllipsis"
                            VerticalAlignment="Center"
                            Margin="0,0,14,0"/>
-                <TextBlock Grid.Column="3" Text="{Binding Sessions.Count, StringFormat='会话 {0}'}"
+                <TextBlock Grid.Column="2" Text="{Binding Sessions.Count, StringFormat='会话 {0}'}"
                            FontSize="{DynamicResource TlFontXs}"
                            Foreground="{DynamicResource TlTextMuted}"
                            VerticalAlignment="Center"/>
@@ -926,6 +933,28 @@
                             BorderThickness="0,1,0,0"
                             IsVisible="{Binding ShowControls}">
                         <StackPanel Spacing="6">
+
+                            <!-- 快捷指令 chip: 贴在发送框上方, 单击即发 (增删改仍在下方「工具」区) -->
+                            <ItemsControl ItemsSource="{Binding QuickCommands}"
+                                          IsVisible="{Binding HasQuickCommands}"
+                                          Margin="48,0,0,0">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <WrapPanel/>
+                                    </ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate x:DataType="vm:QuickCommandViewModel">
+                                        <Button Classes="chip-send" Margin="0,0,6,4"
+                                                Command="{Binding SendCommand}"
+                                                ToolTip.Tip="{Binding ChipTip}">
+                                            <TextBlock Text="{Binding ChipText}"
+                                                       MaxWidth="200"
+                                                       TextTrimming="CharacterEllipsis"/>
+                                        </Button>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
 
                             <!-- 主发送行 -->
                             <Grid ColumnDefinitions="Auto,Auto,Auto,Auto,*,Auto,Auto,Auto,64,Auto,Auto,Auto"

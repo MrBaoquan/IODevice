@@ -66,6 +66,9 @@ namespace IOStudio.ViewModels
                 Rules.Add(new AutoReplyRuleViewModel(r => Rules.Remove(r))));
             AddQuickCommandCommand = ReactiveCommand.Create(() =>
                 QuickCommands.Add(new QuickCommandViewModel(this, r => QuickCommands.Remove(r))));
+            // 发送框上方的快捷指令 chip 行随集合增减显示/隐藏
+            QuickCommands.CollectionChanged += (_, _) =>
+                this.RaisePropertyChanged(nameof(HasQuickCommands));
             ClearLogCommand = ReactiveCommand.Create(ClearLog);
             ResetStatsCommand = ReactiveCommand.Create(ResetStats);
             SendBreakCommand = ReactiveCommand.Create(
@@ -927,6 +930,9 @@ namespace IOStudio.ViewModels
 
         public ObservableCollection<QuickCommandViewModel> QuickCommands { get; } = new();
 
+        /// <summary>是否存在快捷指令 —— 决定发送框上方的 chip 行要不要出现。</summary>
+        public bool HasQuickCommands => QuickCommands.Count > 0;
+
         private bool _quickCommandsExpanded;
 
         /// <summary>「快捷指令」区段是否展开 —— 辅助区段默认收起, 把纵向空间让给日志。</summary>
@@ -1525,21 +1531,34 @@ namespace IOStudio.ViewModels
         public string Text
         {
             get => _text;
-            set => this.RaiseAndSetIfChanged(ref _text, value);
+            set
+            {
+                this.RaiseAndSetIfChanged(ref _text, value);
+                this.RaisePropertyChanged(nameof(ChipText));
+                this.RaisePropertyChanged(nameof(ChipTip));
+            }
         }
 
         private string _encoding = "UTF-8";
         public string Encoding
         {
             get => _encoding;
-            set => this.RaiseAndSetIfChanged(ref _encoding, value);
+            set
+            {
+                this.RaiseAndSetIfChanged(ref _encoding, value);
+                this.RaisePropertyChanged(nameof(ChipTip));
+            }
         }
 
         private string _newLine = "无";
         public string NewLine
         {
             get => _newLine;
-            set => this.RaiseAndSetIfChanged(ref _newLine, value);
+            set
+            {
+                this.RaiseAndSetIfChanged(ref _newLine, value);
+                this.RaisePropertyChanged(nameof(ChipTip));
+            }
         }
 
         private bool _periodicEnabled;
@@ -1554,6 +1573,22 @@ namespace IOStudio.ViewModels
         {
             get => _intervalMs;
             set => this.RaiseAndSetIfChanged(ref _intervalMs, value);
+        }
+
+        /// <summary>
+        /// chip 上显示的文字 (发送框上方那一行)。空指令给占位, 否则会是一个看不见的空白 chip。
+        /// 变更 <see cref="Text"/> 时一并通知。
+        /// </summary>
+        public string ChipText => string.IsNullOrWhiteSpace(Text) ? "(空指令)" : Text;
+
+        /// <summary>chip 的悬停提示: 说清这条会以什么编码 / 什么结尾发出去。</summary>
+        public string ChipTip
+        {
+            get
+            {
+                var nl = NewLine == "无" ? "无新行" : "新行 " + NewLine;
+                return $"{ChipText}\n编码 {Encoding} · {nl} · 单击即发";
+            }
         }
     }
 

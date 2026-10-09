@@ -32,8 +32,6 @@ namespace IOStudio.ViewModels
 
         public ProtocolTestViewModel()
         {
-            _newTransport = Transports[0];
-
             LoadScenarios();
 
             NewSessionCommand = ReactiveCommand.CreateFromTask(NewSessionAsync);
@@ -84,13 +82,6 @@ namespace IOStudio.ViewModels
             foreach (var s in Sessions.Where(x => !x.IsVirtual))
                 ws.Sessions.Add(s.Snapshot());
             ws.Save();
-        }
-
-        private ProtocolTransportOption _newTransport;
-        public ProtocolTransportOption NewTransport
-        {
-            get => _newTransport;
-            set => this.RaiseAndSetIfChanged(ref _newTransport, value);
         }
 
         private ProtocolSessionViewModel? _selectedSession;
@@ -193,7 +184,11 @@ namespace IOStudio.ViewModels
 
         private async Task NewSessionAsync()
         {
-            var session = CreateSession(NewTransport);
+            // 传输类型跟随当前会话 —— 新开一路"与当前同类型"是最常见用法
+            // (同时开多个 TCP 服务端 / 多路 UDP); 无选中时退回默认 (UDP 监听)。
+            // 这样"新建会话"不再需要一个专门的下拉框, 与连接带的"传输"合并为一个。
+            var transport = SelectedSession?.Transport ?? Transports[0];
+            var session = CreateSession(transport);
             SelectedSession = session;
             // 直接启动: 调试台的高频用法就是"开一路马上开始看"
             session.StartCommand.Execute().Subscribe();

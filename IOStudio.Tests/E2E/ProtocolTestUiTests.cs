@@ -1007,5 +1007,86 @@ namespace IOStudio.Tests.E2E
             Assert.False(info.CanResend);
             Assert.Equal("", info.HexDumpText);
         }
+
+        // ─────────── 批次 B: IA 收口 ───────────
+
+        [Fact]
+        public async Task QuickCommand_Chips_Track_Collection_And_Text()
+        {
+            var s = NewSession();
+            Assert.False(s.HasQuickCommands);
+
+            var changes = new System.Collections.Generic.List<bool>();
+            s.PropertyChanged += (_, e) =>
+            {
+                if (e.PropertyName == nameof(ProtocolSessionViewModel.HasQuickCommands))
+                    changes.Add(s.HasQuickCommands);
+            };
+
+            await _session.Dispatch(
+                () =>
+                {
+                    s.AddQuickCommandCommand.Execute().Subscribe();
+                    return true;
+                },
+                CancellationToken.None
+            );
+
+            Assert.True(s.HasQuickCommands);
+            Assert.Single(s.QuickCommands);
+            Assert.Contains(true, changes);
+
+            // 空指令给占位文案, 有内容则原样显示; 提示里带上编码口径。
+            var q = s.QuickCommands[0];
+            Assert.Equal("(空指令)", q.ChipText);
+            q.Text = "PING";
+            Assert.Equal("PING", q.ChipText);
+            Assert.Contains("PING", q.ChipTip);
+            Assert.Contains("UTF-8", q.ChipTip);
+
+            await _session.Dispatch(
+                () =>
+                {
+                    s.QuickCommands.Remove(q);
+                    return true;
+                },
+                CancellationToken.None
+            );
+            Assert.False(s.HasQuickCommands);
+            Assert.Contains(false, changes);
+        }
+
+        [Fact]
+        public async Task NewSession_Clones_Current_Transport()
+        {
+            var vm = new ProtocolTestViewModel();
+            try
+            {
+                var first = vm.SelectedSession!;
+                Assert.Equal("udp", first.Transport.Transport);
+
+                // 改成 TCP 服务端 (尚未启动, 传输可改) 后新建 → 新会话应沿用该类型。
+                var tcpServer = ProtocolUiOptions.Transports.First(t => t.Transport == "tcp-server");
+                var before = vm.Sessions.Count;
+                await _session.Dispatch(
+                    () =>
+                    {
+                        first.Transport = tcpServer;
+                        vm.NewSessionCommand.Execute().Subscribe();
+                        return true;
+                    },
+                    CancellationToken.None
+                );
+                await Task.Delay(150);
+
+                Assert.Equal(before + 1, vm.Sessions.Count);
+                Assert.Equal("tcp-server", vm.SelectedSession!.Transport.Transport);
+                Assert.NotSame(first, vm.SelectedSession);
+            }
+            finally
+            {
+                vm.Dispose();
+            }
+        }
     }
 }

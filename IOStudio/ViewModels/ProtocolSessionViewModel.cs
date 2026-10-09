@@ -400,17 +400,22 @@ namespace IOStudio.ViewModels
             set => this.RaiseAndSetIfChanged(ref _autoScroll, value);
         }
 
-        /// <summary>日志内容显示方式 (主流调试台的"HEX 显示"开关)。</summary>
-        public IReadOnlyList<string> ContentModes { get; } =
-            new[] { "文本+HEX", "仅HEX", "HEX转储", "仅文本" };
+        /// <summary>
+        /// 日志内容显示方式 (主流调试台的"HEX 显示"开关)。
+        ///
+        /// <para>2026-10: 去掉"文本+HEX"并排档 —— 内容和 HEX 同时展示既占宽度又把每条
+        /// 报文显示两遍。改为同一时刻只显示一种: 文本 / HEX / HEX 转储。</para>
+        /// </summary>
+        public IReadOnlyList<string> ContentModes { get; } = new[] { "文本", "HEX", "HEX转储" };
 
-        private string _contentModeLabel = "文本+HEX";
+        private string _contentModeLabel = "文本";
         public string ContentModeLabel
         {
             get => _contentModeLabel;
             set
             {
                 this.RaiseAndSetIfChanged(ref _contentModeLabel, value);
+                this.RaisePropertyChanged(nameof(ContentHeader));
                 // 已经显示的行要一起切换, 否则"切了没反应"很反直觉
                 var mode = CurrentContentMode();
                 foreach (var e in _all)
@@ -418,13 +423,21 @@ namespace IOStudio.ViewModels
             }
         }
 
+        /// <summary>内容列表头 (随显示模式变化: 内容 / HEX / HEX 转储)。</summary>
+        public string ContentHeader =>
+            _contentModeLabel switch
+            {
+                "HEX" => "HEX",
+                "HEX转储" => "HEX 转储",
+                _ => "内容",
+            };
+
         private ProtocolContentMode CurrentContentMode() =>
             _contentModeLabel switch
             {
-                "仅HEX" => ProtocolContentMode.HexOnly,
+                "HEX" => ProtocolContentMode.HexOnly,
                 "HEX转储" => ProtocolContentMode.Dump,
-                "仅文本" => ProtocolContentMode.Text,
-                _ => ProtocolContentMode.TextAndHex,
+                _ => ProtocolContentMode.Text,
             };
 
         private bool MatchesFilter(ProtocolLogEntry e)

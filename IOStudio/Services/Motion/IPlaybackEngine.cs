@@ -23,6 +23,14 @@ namespace IOStudio.Services.Motion
         bool LiveOutputToDevice { get; set; }
 
         /// <summary>
+        /// 设备下发节流间隔 (毫秒)。0 = 不节流 (每个 tick 都下发)。
+        ///
+        /// <para>&gt;0 时播放期间只在距上次真正下发达到该间隔才把时间推给 native, 中间帧只更新
+        /// UI。native 的 SafetyGuard 用内部时钟测实际间隔, 与调用频率无关, 故降频不削弱限速保护。</para>
+        /// </summary>
+        int DispatchIntervalMs { get; set; }
+
+        /// <summary>
         /// 最近一次内部错误 (如 native 派发失败); null = 无。
         ///
         /// <para>为什么需要: 播放 tick 里抛出的异常会被 Rx 订阅吞掉并**终止 tick**

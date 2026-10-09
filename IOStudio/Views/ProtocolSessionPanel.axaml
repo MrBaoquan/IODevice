@@ -209,7 +209,7 @@
                                           SelectedItem="{Binding ContentModeLabel}"
                                           AutomationProperties.AutomationId="ProtocolViewMode"
                                           AutomationProperties.Name="日志显示方式"
-                                          ToolTip.Tip="文本 / 文本+HEX / 仅HEX / HEX 转储, 切换即时改写已显示的行"/>
+                                          ToolTip.Tip="内容列显示 文本 / HEX / HEX 转储 (同一时刻只显示一种), 切换即时改写已显示的行"/>
 
                                 <Border Classes="vsep"/>
 
@@ -255,15 +255,14 @@
                             Padding="18,5"
                             BorderBrush="{DynamicResource TlBorderBrush}"
                             BorderThickness="0,0,0,1">
-                        <Grid ColumnDefinitions="96,54,140,52,92,*,1.15*" ColumnSpacing="8">
+                        <Grid ColumnDefinitions="96,54,140,52,92,*" ColumnSpacing="8">
                             <TextBlock Grid.Column="0" Text="时间" Classes="col-head"
                                        IsVisible="{Binding ShowTimestamp}"/>
                             <TextBlock Grid.Column="1" Text="方向" Classes="col-head"/>
                             <TextBlock Grid.Column="2" Text="对端" Classes="col-head"/>
                             <TextBlock Grid.Column="3" Text="字节" Classes="col-head"/>
                             <TextBlock Grid.Column="4" Text="Δt / RTT" Classes="col-head"/>
-                            <TextBlock Grid.Column="5" Text="内容" Classes="col-head"/>
-                            <TextBlock Grid.Column="6" Text="HEX" Classes="col-head"/>
+                            <TextBlock Grid.Column="5" Text="{Binding ContentHeader}" Classes="col-head"/>
                         </Grid>
                     </Border>
 
@@ -297,7 +296,7 @@
                                                           IsEnabled="{Binding CanResend}"/>
                                             </ContextMenu>
                                         </Border.ContextMenu>
-                                        <Grid ColumnDefinitions="96,54,140,52,92,*,1.15*" ColumnSpacing="8">
+                                        <Grid ColumnDefinitions="96,54,140,52,92,*" ColumnSpacing="8">
                                             <TextBlock Grid.Column="0" Text="{Binding Time}"
                                                        Classes="cell mono"
                                                        Foreground="{DynamicResource TlTextMuted}"
@@ -313,12 +312,13 @@
                                                        Foreground="{DynamicResource TlTextMuted}"/>
                                             <TextBlock Grid.Column="4" Text="{Binding TimingText}" Classes="cell mono"
                                                        Foreground="{DynamicResource TlTextMuted}"/>
-                                            <TextBlock Grid.Column="5" Text="{Binding ContentText}"
-                                                       Classes="cell mono" TextTrimming="CharacterEllipsis"/>
-                                            <TextBlock Grid.Column="6" Text="{Binding HexColumn}"
-                                                       Classes="cell mono"
-                                                       Foreground="{DynamicResource TlTextMuted}"
-                                                       TextTrimming="CharacterEllipsis"/>
+                                            <!-- 单列内容: 文本/HEX 单行截断; HEX 转储多行换行 -->
+                                            <TextBlock Grid.Column="5" Text="{Binding DisplayContent}"
+                                                       Classes="cell mono" TextTrimming="CharacterEllipsis"
+                                                       IsVisible="{Binding !IsDumpDisplay}"/>
+                                            <TextBlock Grid.Column="5" Text="{Binding DisplayContent}"
+                                                       Classes="cell mono" TextWrapping="Wrap"
+                                                       IsVisible="{Binding IsDumpDisplay}"/>
                                         </Grid>
                                     </Border>
                                 </DataTemplate>

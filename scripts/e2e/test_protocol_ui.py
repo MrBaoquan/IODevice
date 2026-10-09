@@ -38,6 +38,7 @@ TEST_WINDOW_TITLE = "协议测试台"
 WINDOW_TIMEOUT = int(os.environ.get("IOSTUDIO_WINDOW_TIMEOUT", "40"))
 
 PAYLOAD = "PING-FROM-UI-TEST"
+HEX_PAYLOAD = " ".join(f"{b:02X}" for b in PAYLOAD.encode("utf-8"))
 
 
 # ─────────────────────────── 基础设施 ───────────────────────────
@@ -163,6 +164,36 @@ def _set_port(win, port):
     time.sleep(0.3)
 
 
+def _select_combo(win, auto_id, item_text):
+    """选下拉项 (Avalonia ComboBox)。
+
+    内容列显示模式就是靠这个下拉切换 —— 这里必须走真实控件, 才能验证
+    "切了模式, 已显示的行确实跟着变"。
+    """
+    combo = _by_id(win, auto_id)
+    assert combo is not None, f"未找到下拉 {auto_id}"
+    try:
+        combo.select(item_text)
+        time.sleep(0.3)
+        return
+    except Exception:
+        pass
+
+    # 退路: 展开后从弹出项里点选
+    combo.click_input()
+    time.sleep(0.5)
+    for d in Desktop(backend="uia").descendants():
+        try:
+            if (d.element_info.name or "") == item_text and \
+                    d.element_info.control_type in ("ListItem", "Text"):
+                d.click_input()
+                time.sleep(0.3)
+                return
+        except Exception:
+            continue
+    raise AssertionError(f"下拉 {auto_id} 里没找到选项 {item_text!r}")
+
+
 # ─────────────────────────── 用例 ───────────────────────────
 
 @pytest.fixture(scope="module")
@@ -234,10 +265,19 @@ def test_menu_opens_protocol_window_and_shows_received_datagram(app):
     rows = _row_texts(win)
     assert ok, f"UI 列表未出现收到的报文 {PAYLOAD!r}; 当前列表: {rows}"
 
-    # 该行必须被标为「收」且带 HEX (证明是真正解析出的一帧, 而不是回显/占位)
+    # 该行必须被标为「收」且默认(文本模式)显示报文文本
     line = next(r for r in rows if PAYLOAD in r)
     assert "收" in line, f"收到的行未标记方向: {line!r}"
-    assert PAYLOAD.encode("utf-8").hex().upper() in line.upper(), f"该行缺少 HEX: {line!r}"
+    assert PAYLOAD in line, f"文本模式应显示报文文本: {line!r}"
+
+    # 切到 HEX 模式: 同一个内容列应改为显示该报文的十六进制
+    # (证明是真正解析出的一帧, 而不是回显/占位; 也验证内容列模式切换确实生效)
+    _select_combo(win, "ProtocolViewMode", "HEX")
+    assert _wait_until(lambda: any(HEX_PAYLOAD in r for r in _row_texts(win)), timeout=4.0), (
+        f"切到 HEX 模式后该行应显示 {HEX_PAYLOAD!r}; 当前列表: {_row_texts(win)}"
+    )
+    # 收尾: 切回文本, 不把模式留给后续用例
+    _select_combo(win, "ProtocolViewMode", "文本")
 
     stop = _by_id(win, "ProtocolStop")
     if stop is not None:

@@ -34,6 +34,10 @@ namespace IOStudio.Services.Motion
         private bool _loop;
         private double _speed = 1.0;
 
+        // ---- 设备下发节流 (DispatchIntervalMs = 0 时停用) ----
+        private readonly Stopwatch _dispatchClock = Stopwatch.StartNew();
+        private long _lastDispatchMs = long.MinValue / 2; // 哨兵: 首次必然立即下发
+
         // ---- 批量 LiveValue 缓冲 ----
         private readonly List<(string deviceName, string channelName, float value)> _batchBuffer =
             new();
@@ -91,6 +95,9 @@ namespace IOStudio.Services.Motion
 
         /// <summary>是否将预览值实时输出到物理设备</summary>
         public bool LiveOutputToDevice { get; set; }
+
+        /// <inheritdoc/>
+        public int DispatchIntervalMs { get; set; }
 
         // ---- IPlaybackEngine 操作 ----
 
@@ -259,6 +266,26 @@ namespace IOStudio.Services.Motion
 
         // ---- Tick ----
 
+        /// <summary>
+        /// 节流判定 (纯函数, 便于单测): <paramref name="intervalMs"/>&lt;=0 时恒 true;
+        /// 否则距上次下发已达间隔才 true。
+        /// </summary>
+        public static bool ShouldDispatch(long nowMs, long lastMs, int intervalMs)
+            => intervalMs <= 0 || nowMs - lastMs >= intervalMs;
+
+        /// <summary>
+        /// 取得本次下发名额 (把引擎内部单调钟与上次下发时刻比较)。
+        /// 返回 false 表示本 tick 应跳过设备下发, 只更新 UI。
+        /// </summary>
+        private bool AcquireDispatchSlot()
+        {
+            long now = _dispatchClock.ElapsedMilliseconds;
+            if (!ShouldDispatch(now, _lastDispatchMs, DispatchIntervalMs))
+                return false;
+            _lastDispatchMs = now;
+            return true;
+        }
+
         public void Tick()
         {
             switch (_state)
@@ -335,7 +362,8 @@ namespace IOStudio.Services.Motion
             // 设备输出开启时: 把当前时间推给 native Slot, 并驱动它 Tick。
             // 外部时钟模式下 Tick 的 delta 不参与计时 (时间由外部给定), 而 SafetyGuard
             // 用内部时钟测间隔 —— 因此这里的 delta 取值不影响行为。
-            if (LiveOutputToDevice && _slot != null)
+            // 节流 (DispatchIntervalMs>0) 时只在间隔到时才下发, 中间帧只更新 UI。
+            if (LiveOutputToDevice && _slot != null && AcquireDispatchSlot())
             {
                 try
                 {

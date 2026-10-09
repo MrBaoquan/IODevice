@@ -3,13 +3,13 @@ using System.Text;
 
 namespace IOStudio.Services.ProtocolTest
 {
-    /// <summary>日志内容的显示方式 (主流调试台都有"HEX 显示"开关)。</summary>
+    /// <summary>日志内容的显示方式 (主流调试台都有"HEX 显示"开关; 同一时刻只显示一种)。</summary>
     public enum ProtocolContentMode
     {
-        /// <summary>仅文本 (不可读为文本时为空, 由 HEX 列兜底时用 TextAndHex)。</summary>
+        /// <summary>仅文本 (不可读为文本的二进制帧由 HEX 兜底, 见 DisplayContent)。</summary>
         Text,
 
-        /// <summary>文本 + HEX (默认)。</summary>
+        /// <summary>文本 + HEX (旧双列模型的默认; 单列模型下等同 Text)。</summary>
         TextAndHex,
 
         /// <summary>仅 HEX (平铺)。</summary>

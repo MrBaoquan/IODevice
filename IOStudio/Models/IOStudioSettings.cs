@@ -40,6 +40,17 @@ namespace IOStudio.Models
         [XmlAttribute("TimelineLiveOutputHintShown")]
         public bool TimelineLiveOutputHintShown { get; set; } = false;
 
+        /// <summary>
+        /// 时间轴「设备下发节流」间隔（毫秒）。0 = 不节流（每个 tick 都下发, 现状）。
+        ///
+        /// <para>为什么要它: 联调时 C# 以 60Hz 逐帧把动作推给 native → 写设备; 有些设备/链路
+        /// 吃不下这个频率, 需要能把它降下来。&gt;0 时只在距上次下发达到该间隔才下发一次,
+        /// 中间帧只更新 UI、不写设备。native 的 SafetyGuard 用内部时钟测实际间隔, 与调用频率
+        /// 无关, 所以降频不会削弱限速保护。</para>
+        /// </summary>
+        [XmlAttribute("MotionDispatchIntervalMs")]
+        public int MotionDispatchIntervalMs { get; set; } = 0;
+
         /// <summary>检查器「待机循环」区段是否展开 (默认收起)。</summary>
         [XmlAttribute("InspectorIdleExpanded")]
         public bool InspectorIdleExpanded { get; set; } = false;
@@ -68,6 +79,14 @@ namespace IOStudio.Models
                 AnalogProcessorIntervalMs = 50;
             else if (AnalogProcessorIntervalMs > 500)
                 AnalogProcessorIntervalMs = 500;
+
+            // 动作下发节流: 0=不节流; 否则限制在 8-1000ms, 既避免无意义的高频也避免明显卡顿
+            if (MotionDispatchIntervalMs < 0)
+                MotionDispatchIntervalMs = 0;
+            else if (MotionDispatchIntervalMs is > 0 and < 8)
+                MotionDispatchIntervalMs = 8;
+            else if (MotionDispatchIntervalMs > 1000)
+                MotionDispatchIntervalMs = 1000;
         }
 
         /// <summary>

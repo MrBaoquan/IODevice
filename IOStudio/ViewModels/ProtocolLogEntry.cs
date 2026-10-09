@@ -11,8 +11,9 @@ namespace IOStudio.ViewModels
     /// <para>同一张表里同时承载"收/发的每一帧"与"每个步骤的结论" —— 人验证协议时,
     /// 需要把"收到了什么"和"这一步过没过"放在一起看, 分两个列表反而要来回对照。</para>
     ///
-    /// <para>显示方式是**可变**的 (文本 / 文本+HEX / 仅HEX / HEX转储): 主流调试台都有
-    /// "HEX 显示"开关, 切换时要让已经显示的行一起变, 所以这里做成会通知的属性。</para>
+    /// <para>显示方式是**可变**的 (文本 / HEX / HEX转储): 主流调试台都有"HEX 显示"开关,
+    /// 且同一时刻只显示一种 —— 内容和 HEX 并排把每条报文显示两遍既占宽又难读。
+    /// 切换时要让已经显示的行一起变, 所以这里做成会通知的属性。</para>
     /// </summary>
     public sealed class ProtocolLogEntry : ViewModelBase
     {
@@ -90,17 +91,35 @@ namespace IOStudio.ViewModels
                 _displayMode = value;
                 this.RaisePropertyChanged(nameof(ContentText));
                 this.RaisePropertyChanged(nameof(HexColumn));
+                this.RaisePropertyChanged(nameof(DisplayContent));
+                this.RaisePropertyChanged(nameof(IsDumpDisplay));
             }
         }
 
-        /// <summary>内容列: 转储模式下显示 hexdump, 其余显示文本。</summary>
+        /// <summary>
+        /// 内容列 (单列): 由显示模式决定这一列显示什么 —— 文本 / HEX / hexdump。
+        ///
+        /// <para>2026-10 起日志不再「内容 + HEX」两列并排: 同一条报文显示两遍既占宽度
+        /// 又难扫读。改为一个模式开关, 同一时刻只渲染一种。</para>
+        /// </summary>
+        public string DisplayContent =>
+            IsStep ? _plainText
+            : _displayMode == ProtocolContentMode.Dump ? Dump
+            : _displayMode == ProtocolContentMode.HexOnly ? SpacedHex
+            : !string.IsNullOrEmpty(_plainText) ? _plainText
+            : SpacedHex;   // 文本模式遇到不可读的二进制帧: 回退 HEX, 否则这一行会是空的
+
+        /// <summary>是否处于「HEX 转储」模式 (多行) —— 内容列据此决定是否换行。</summary>
+        public bool IsDumpDisplay => !IsStep && _displayMode == ProtocolContentMode.Dump;
+
+        /// <summary>内容列 (旧双列模型): 转储模式下显示 hexdump, 其余显示文本。</summary>
         public string ContentText =>
             IsStep ? _plainText
             : _displayMode == ProtocolContentMode.Dump ? Dump
             : _displayMode == ProtocolContentMode.HexOnly ? ""
             : _plainText;
 
-        /// <summary>HEX 列: 转储模式与纯文本模式下为空。</summary>
+        /// <summary>HEX 列 (旧双列模型): 转储模式与纯文本模式下为空。</summary>
         public string HexColumn =>
             IsStep ? ""
             : _displayMode == ProtocolContentMode.Dump ? ""
@@ -108,6 +127,29 @@ namespace IOStudio.ViewModels
             : _hexText;
 
         private string Dump => _dump ??= HexDump.Format(Raw);
+
+        private string? _spacedHex;
+
+        /// <summary>按字节分组的 HEX (AA BB CC) —— 单列 HEX 视图用, 比连写更易读。</summary>
+        private string SpacedHex
+        {
+            get
+            {
+                if (_spacedHex is not null)
+                    return _spacedHex;
+                if (Raw is null || Raw.Length == 0)
+                    return _spacedHex = "";
+
+                var sb = new StringBuilder(Raw.Length * 3);
+                for (int i = 0; i < Raw.Length; i++)
+                {
+                    if (i > 0)
+                        sb.Append(' ');
+                    sb.Append(Raw[i].ToString("X2"));
+                }
+                return _spacedHex = sb.ToString();
+            }
+        }
 
         /// <summary>完整 hexdump (详情面板用: offset / 分组 hex / ASCII 三段式)。</summary>
         public string HexDumpText => Raw is null ? "" : Dump;

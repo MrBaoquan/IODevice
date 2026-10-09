@@ -540,6 +540,12 @@ namespace IOStudio.Tests.E2E
         {
             var e = ProtocolLogEntry.Frame("收", "", Encoding.ASCII.GetBytes("AB"), null);
 
+            e.DisplayMode = ProtocolContentMode.Text;
+            Assert.Equal("AB", e.ContentText);
+            Assert.Equal("", e.HexColumn);
+            Assert.Equal("AB", e.DisplayContent);   // 单列: 文本模式显示文本
+            Assert.False(e.IsDumpDisplay);
+
             e.DisplayMode = ProtocolContentMode.TextAndHex;
             Assert.Equal("AB", e.ContentText);
             Assert.Equal("4142", e.HexColumn);
@@ -547,14 +553,35 @@ namespace IOStudio.Tests.E2E
             e.DisplayMode = ProtocolContentMode.HexOnly;
             Assert.Equal("", e.ContentText);
             Assert.Equal("4142", e.HexColumn);
+            Assert.Equal("41 42", e.DisplayContent);  // 单列 HEX 按字节分组, 比连写易读
+            Assert.False(e.IsDumpDisplay);
 
             e.DisplayMode = ProtocolContentMode.Dump;
             Assert.Contains("0000  41 42", e.ContentText);
             Assert.Equal("", e.HexColumn);
+            Assert.Contains("0000  41 42", e.DisplayContent);
+            Assert.True(e.IsDumpDisplay);            // 转储是多行, 内容列需换行
 
             // 过滤/导出用原始表示, 与显示模式无关
             Assert.Equal("AB", e.PlainText);
             Assert.Equal("4142", e.HexText);
+        }
+
+        [Fact]
+        public void ContentMode_List_Offers_No_Combined_Mode_And_Header_Tracks_Mode()
+        {
+            var s = NewSession();
+
+            // 内容和 HEX 不再同时展示: 没有"文本+HEX"并排档
+            Assert.Equal(new[] { "文本", "HEX", "HEX转储" }, s.ContentModes);
+            Assert.Equal("文本", s.ContentModeLabel);
+            Assert.Equal("内容", s.ContentHeader);
+
+            s.ContentModeLabel = "HEX";
+            Assert.Equal("HEX", s.ContentHeader);
+
+            s.ContentModeLabel = "HEX转储";
+            Assert.Equal("HEX 转储", s.ContentHeader);
         }
 
         [Fact]

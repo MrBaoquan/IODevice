@@ -103,6 +103,7 @@ namespace IOStudio.ViewModels.Timeline
             RedoCommand = ReactiveCommand.Create(Redo);
             ToggleThemeCommand = ReactiveCommand.Create(ToggleTheme);
             DismissLiveOutputHintCommand = ReactiveCommand.Create(DismissLiveOutputHint);
+            SetMotionThrottleCommand = ReactiveCommand.Create<string?>(SetMotionThrottle);
             SelectedSnapGrid = SnapGridOptions[0];
 
             // 恢复上次的「设备输出」开关状态 (默认关闭: 编排默认仅预览, 避免误驱动设备)。
@@ -110,6 +111,10 @@ namespace IOStudio.ViewModels.Timeline
             _isLiveOutputEnabled = IOStudio.Models.IOStudioSettings.Instance.TimelineLiveOutput;
             _engine.LiveOutputToDevice = _isLiveOutputEnabled;
             _showLiveOutputHint = !IOStudio.Models.IOStudioSettings.Instance.TimelineLiveOutputHintShown;
+
+            // 恢复上次的「设备下发节流」(0=不节流); 只同步字段与引擎标志
+            _motionDispatchIntervalMs = IOStudio.Models.IOStudioSettings.Instance.MotionDispatchIntervalMs;
+            _engine.DispatchIntervalMs = _motionDispatchIntervalMs;
 
             _undoRedo.StateChanged += () =>
             {
@@ -321,6 +326,70 @@ namespace IOStudio.ViewModels.Timeline
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine($"[Timeline] 保存提示状态失败: {ex.Message}");
+            }
+        }
+
+        // ── 设备下发节流 ──
+
+        private int _motionDispatchIntervalMs;
+
+        /// <summary>
+        /// 设备下发节流间隔 (毫秒)。0 = 不节流 (每个 tick 都下发)。
+        ///
+        /// <para>用于联调时把动作下发频率降下来, 以适配吃不下 60Hz 的设备/链路。</para>
+        /// </summary>
+        public int MotionDispatchIntervalMs
+        {
+            get => _motionDispatchIntervalMs;
+            private set
+            {
+                this.RaiseAndSetIfChanged(ref _motionDispatchIntervalMs, value);
+                this.RaisePropertyChanged(nameof(MotionThrottleText));
+                this.RaisePropertyChanged(nameof(MotionThrottleHeader));
+                this.RaisePropertyChanged(nameof(MotionThrottleNone));
+                this.RaisePropertyChanged(nameof(MotionThrottle30));
+                this.RaisePropertyChanged(nameof(MotionThrottle20));
+                this.RaisePropertyChanged(nameof(MotionThrottle10));
+                this.RaisePropertyChanged(nameof(EffectiveDispatchIntervalMs));
+            }
+        }
+
+        /// <summary>节流状态短文案 (0 → 不节流, 否则折算成 Hz)。</summary>
+        public string MotionThrottleText =>
+            _motionDispatchIntervalMs <= 0
+                ? "不节流"
+                : $"{Math.Round(1000.0 / _motionDispatchIntervalMs)} Hz";
+
+        /// <summary>节流子菜单标题 (含当前值, 让当前档位一眼可见)。</summary>
+        public string MotionThrottleHeader => $"设备下发节流 · {MotionThrottleText}";
+
+        /// <summary>引擎侧实际生效的节流间隔 (毫秒, 0=不节流); 只读诊断 (UI/测试核对已同步到引擎)。</summary>
+        public int EffectiveDispatchIntervalMs => _engine.DispatchIntervalMs;
+
+        public bool MotionThrottleNone => _motionDispatchIntervalMs <= 0;
+        public bool MotionThrottle30 => _motionDispatchIntervalMs == 33;
+        public bool MotionThrottle20 => _motionDispatchIntervalMs == 50;
+        public bool MotionThrottle10 => _motionDispatchIntervalMs == 100;
+
+        /// <summary>设置设备下发节流 (参数为毫秒字符串, "0"=不节流); 同步引擎并持久化。</summary>
+        public ReactiveCommand<string?, Unit> SetMotionThrottleCommand { get; }
+
+        private void SetMotionThrottle(string? arg)
+        {
+            if (!int.TryParse(arg, out int ms) || ms < 0)
+                ms = 0;
+
+            MotionDispatchIntervalMs = ms;
+            _engine.DispatchIntervalMs = ms;
+
+            try
+            {
+                IOStudio.Models.IOStudioSettings.Instance.MotionDispatchIntervalMs = ms;
+                IOStudio.Models.IOStudioSettings.Instance.Save();
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[Timeline] 保存「设备下发节流」失败: {ex.Message}");
             }
         }
 

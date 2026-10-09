@@ -142,6 +142,22 @@ namespace IOToolkit
             IONativeWrapper.MotionSetSafetyConfig(maxRatePerSecond);
         }
 
+        // ── 帧循环下发节流 (运行时覆盖) ───────────────
+        /// <summary>
+        /// 运行时下发节流覆盖 (毫秒, 不改变 .motion 配置): &lt;0 清除覆盖回到 .motion 配置;
+        /// 0 不节流; &gt;0 间隔毫秒。默认 (未设置) 使用加载的 .motion 的 dispatch_interval_ms。
+        /// </summary>
+        public static void SetSlotDispatchInterval(string slotId, int intervalMs)
+        {
+            IONativeWrapper.MotionSetSlotDispatchInterval(slotId, intervalMs);
+        }
+
+        /// <summary>返回 Slot 当前**生效**的下发节流间隔 (毫秒)。</summary>
+        public static int GetSlotDispatchInterval(string slotId)
+        {
+            return IONativeWrapper.MotionGetSlotDispatchInterval(slotId);
+        }
+
         // ── 通道工程量程 (归一化 0..1 → 工程量) ───────
         // 三级优先级 (轨道 engineering_range → 设备声明量程 → 直通) 的**解析**在宿主侧完成
         // (只有宿主知道轨道与设备声明), 但三级都能表达为绝对区间, 所以推给 native 的是一张

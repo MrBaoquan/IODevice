@@ -695,3 +695,16 @@ IOCAPI void __stdcall MotionSetSafetyConfig(float InMaxRatePerSecond)
 {
 	dh::MotionPlayer::Instance().SetSafetyConfig(InMaxRatePerSecond);
 }
+
+// 帧循环下发节流的运行时覆盖 (不改变 .motion 配置): <0 清除覆盖, 0 不节流, >0 间隔毫秒。
+IOCAPI void __stdcall MotionSetSlotDispatchInterval(BSTR InSlotId, int InIntervalMs)
+{
+	dh::MotionPlayer::Instance().SetSlotDispatchInterval(
+		BSTR2String(InSlotId).c_str(),
+		InIntervalMs);
+}
+
+IOCAPI int __stdcall MotionGetSlotDispatchInterval(BSTR InSlotId)
+{
+	return dh::MotionPlayer::Instance().GetSlotDispatchInterval(BSTR2String(InSlotId).c_str());
+}

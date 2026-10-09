@@ -34,9 +34,10 @@ namespace IOStudio.Services.Motion
         private bool _loop;
         private double _speed = 1.0;
 
-        // ---- 设备下发节流 (DispatchIntervalMs = 0 时停用) ----
-        private readonly Stopwatch _dispatchClock = Stopwatch.StartNew();
-        private long _lastDispatchMs = long.MinValue / 2; // 哨兵: 首次必然立即下发
+        // ---- 帧循环下发节流: 运行时覆盖 (毫秒; 0=不节流, <0=清除覆盖回到 .motion 配置) ----
+        // 默认值来自 .motion 的 dispatch_interval_ms, 由 native 帧循环派发直接使用;
+        // 这里只承载**运行时覆盖**, 不改变 .motion 配置。
+        private int _dispatchIntervalMs;
 
         // ---- 批量 LiveValue 缓冲 ----
         private readonly List<(string deviceName, string channelName, float value)> _batchBuffer =
@@ -96,8 +97,37 @@ namespace IOStudio.Services.Motion
         /// <summary>是否将预览值实时输出到物理设备</summary>
         public bool LiveOutputToDevice { get; set; }
 
-        /// <inheritdoc/>
-        public int DispatchIntervalMs { get; set; }
+        /// <summary>
+        /// 帧循环下发节流的**运行时覆盖** (毫秒)。<see cref="IPlaybackEngine.DispatchIntervalMs"/>。
+        ///
+        /// <para>默认值来自所加载 .motion 的 dispatch_interval_ms (native 帧循环默认使用);
+        /// 此属性提供显式运行时覆盖, 即刻作用于已加载的 native Slot, <b>不改变</b> .motion 配置。
+        /// &lt;0 = 清除覆盖, 回到 .motion 配置。</para>
+        /// </summary>
+        public int DispatchIntervalMs
+        {
+            get => _dispatchIntervalMs;
+            set
+            {
+                _dispatchIntervalMs = value;
+                ApplyDispatchIntervalToSlot();
+            }
+        }
+
+        /// <summary>把运行时节流覆盖推给当前 native Slot (&lt;0 = 清除覆盖, 回到 .motion 配置)。</summary>
+        private void ApplyDispatchIntervalToSlot()
+        {
+            if (_slot == null)
+                return;
+            try
+            {
+                _slot.DispatchIntervalMs = _dispatchIntervalMs;
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[NativeEngine] SetSlotDispatchInterval failed: {ex.Message}");
+            }
+        }
 
         // ---- IPlaybackEngine 操作 ----
 
@@ -127,6 +157,11 @@ namespace IOStudio.Services.Motion
 
             _slot = newSlot;
             _currentTimeline = timeline;
+
+            // 加载即以 .motion 配置同步运行时节流 (保持编辑器与文件一致; 由 native 帧循环使用)
+            _dispatchIntervalMs = timeline.DispatchIntervalMs;
+            ApplyDispatchIntervalToSlot();
+
             TimelineLoaded?.Invoke(timeline);
             Notified?.Invoke(new PlaybackNotification.TimelineReady(timeline));
             return true;
@@ -266,26 +301,6 @@ namespace IOStudio.Services.Motion
 
         // ---- Tick ----
 
-        /// <summary>
-        /// 节流判定 (纯函数, 便于单测): <paramref name="intervalMs"/>&lt;=0 时恒 true;
-        /// 否则距上次下发已达间隔才 true。
-        /// </summary>
-        public static bool ShouldDispatch(long nowMs, long lastMs, int intervalMs)
-            => intervalMs <= 0 || nowMs - lastMs >= intervalMs;
-
-        /// <summary>
-        /// 取得本次下发名额 (把引擎内部单调钟与上次下发时刻比较)。
-        /// 返回 false 表示本 tick 应跳过设备下发, 只更新 UI。
-        /// </summary>
-        private bool AcquireDispatchSlot()
-        {
-            long now = _dispatchClock.ElapsedMilliseconds;
-            if (!ShouldDispatch(now, _lastDispatchMs, DispatchIntervalMs))
-                return false;
-            _lastDispatchMs = now;
-            return true;
-        }
-
         public void Tick()
         {
             switch (_state)
@@ -362,8 +377,9 @@ namespace IOStudio.Services.Motion
             // 设备输出开启时: 把当前时间推给 native Slot, 并驱动它 Tick。
             // 外部时钟模式下 Tick 的 delta 不参与计时 (时间由外部给定), 而 SafetyGuard
             // 用内部时钟测间隔 —— 因此这里的 delta 取值不影响行为。
-            // 节流 (DispatchIntervalMs>0) 时只在间隔到时才下发, 中间帧只更新 UI。
-            if (LiveOutputToDevice && _slot != null && AcquireDispatchSlot())
+            // 下发节流由 native 按 .motion 的 dispatch_interval_ms 执行 (唯一权威);
+            // 运行时可经 DispatchIntervalMs 覆盖。
+            if (LiveOutputToDevice && _slot != null)
             {
                 try
                 {

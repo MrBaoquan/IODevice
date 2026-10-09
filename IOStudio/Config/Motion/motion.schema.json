@@ -26,6 +26,13 @@
       "minimum": 1,
       "maximum": 120
     },
+    "dispatch_interval_ms": {
+      "type": "integer",
+      "description": "设备下发节流间隔 (毫秒)。0 = 不节流 (帧循环每个 tick 都下发); native 帧循环默认使用; 可经 C ABI 运行时覆盖 (不改变本配置)",
+      "default": 0,
+      "minimum": 0,
+      "maximum": 1000
+    },
     "tracks": {
       "type": "array",
       "description": "轨道列表",

@@ -95,6 +95,16 @@ namespace IOToolkit {
         // ── 安全参数配置 ─────────────────────────────
         void SetSafetyConfig(float maxRatePerSecond);
 
+        // ── 帧循环下发节流 (运行时覆盖) ───────────────
+        // .motion 的 dispatch_interval_ms 是默认值 —— Tick 派发**默认使用**它;
+        // 这里提供显式运行时覆盖能力, **不改变** Motion 配置。
+        //   intervalMs < 0 → 清除覆盖, 回到 .motion 配置
+        //   intervalMs = 0 → 不节流 (每帧下发)
+        //   intervalMs > 0 → 间隔毫秒 (0 与 8..1000 被夹取)
+        void SetSlotDispatchInterval(const char* slotId, int intervalMs);
+        // 返回当前**生效**的下发节流间隔 (毫秒; 已含运行时覆盖)。
+        int  GetSlotDispatchInterval(const char* slotId) const;
+
         // ── 内部: 由 IODeviceController::Update() 驱动 ──
         void Tick(float deltaSeconds);
 

@@ -23,10 +23,12 @@ namespace IOStudio.Services.Motion
         bool LiveOutputToDevice { get; set; }
 
         /// <summary>
-        /// 设备下发节流间隔 (毫秒)。0 = 不节流 (每个 tick 都下发)。
+        /// 帧循环下发节流的**运行时覆盖** (毫秒)。0 = 不节流; &lt;0 = 清除覆盖。
         ///
-        /// <para>&gt;0 时播放期间只在距上次真正下发达到该间隔才把时间推给 native, 中间帧只更新
-        /// UI。native 的 SafetyGuard 用内部时钟测实际间隔, 与调用频率无关, 故降频不削弱限速保护。</para>
+        /// <para>.motion 的 dispatch_interval_ms 是默认值, native MotionPlayer 的帧循环派发默认
+        /// 使用它 (使编排端与放映端共用同一节流语义); 此属性提供显式运行时覆盖, 即刻作用于当前
+        /// Slot, 且<b>不改变</b> .motion 配置。native 的 SafetyGuard 用内部时钟测实际间隔, 与调用
+        /// 频率无关, 故降频不削弱限速保护。</para>
         /// </summary>
         int DispatchIntervalMs { get; set; }
 

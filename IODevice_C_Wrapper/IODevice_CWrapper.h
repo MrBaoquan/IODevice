@@ -174,6 +174,12 @@ extern "C"
 	IOCAPI int   __stdcall MotionEvaluateSlotAt(BSTR InSlotId, float InTimeMs, float* OutValues, int InMaxChannels);
 	IOCAPI void  __stdcall MotionSetSafetyConfig(float InMaxRatePerSecond);
 
+	// ── 帧循环下发节流 (运行时覆盖) ─────────────────────
+	// .motion 的 dispatch_interval_ms 是默认值; 这里提供显式运行时覆盖, 不改变 Motion 配置。
+	// InIntervalMs: <0 清除覆盖回到 .motion 配置; 0 不节流; >0 间隔毫秒 (8..1000 夹取)。
+	IOCAPI void  __stdcall MotionSetSlotDispatchInterval(BSTR InSlotId, int InIntervalMs);
+	IOCAPI int   __stdcall MotionGetSlotDispatchInterval(BSTR InSlotId);
+
 	// ── 通道工程量程: 归一化 0..1 → 工程量 ──────────────
 	// 三级优先级的解析由宿主完成, 推成绝对区间; 换算本身在 native (与放映端共用同一段代码)。
 	IOCAPI void  __stdcall MotionSetChannelRange(BSTR InDeviceName, BSTR InChannel, float InMinValue, float InMaxValue);

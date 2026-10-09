@@ -578,6 +578,18 @@ namespace IOToolkit.Core
         [DllImport(DllName, CallingConvention = NativeCallingConvention)]
         public static extern void MotionSetSafetyConfig(float InMaxRatePerSecond);
 
+        // ── 帧循环下发节流 (运行时覆盖, 不改变 .motion 配置) ──
+        [DllImport(DllName, CallingConvention = NativeCallingConvention)]
+        public static extern void MotionSetSlotDispatchInterval(
+            [MarshalAs(NativeStringType)] string InSlotId,
+            int InIntervalMs
+        );
+
+        [DllImport(DllName, CallingConvention = NativeCallingConvention)]
+        public static extern int MotionGetSlotDispatchInterval(
+            [MarshalAs(NativeStringType)] string InSlotId
+        );
+
         // ── 通道工程量程: 归一化 0..1 → 工程量 ──────────────
         // 三级优先级的解析由宿主完成并推成绝对区间; 换算本身在 native, 与放映端共用同一段代码。
 

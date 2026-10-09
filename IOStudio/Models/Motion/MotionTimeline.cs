@@ -24,6 +24,17 @@ namespace IOStudio.Models.Motion
         [JsonPropertyName("fps")]
         public double Fps { get; set; } = 60;
 
+        /// <summary>
+        /// 设备下发节流间隔 (毫秒)。0 = 不节流 (帧循环每个 tick 都下发)。
+        ///
+        /// <para>随 .motion 一起保存, 与媒体/设备无关; native MotionPlayer 的帧循环派发
+        /// <b>默认使用</b>该值, 使编排端与放映端共用同一节流语义。运行时可经 C ABI 显式覆盖,
+        /// 但不改变本配置。</para>
+        /// </summary>
+        [JsonPropertyName("dispatch_interval_ms")]
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+        public int DispatchIntervalMs { get; set; }
+
         /// <summary>轨道列表</summary>
         [JsonPropertyName("tracks")]
         public List<MotionTrack> Tracks { get; set; } = new();

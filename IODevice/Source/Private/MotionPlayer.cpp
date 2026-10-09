@@ -73,6 +73,9 @@ namespace {
 
     struct MotionTimeline {
         double durationMs = 0;
+        // 帧循环下发节流间隔 (毫秒; 0 = 不节流)。来自 .motion 的 dispatch_interval_ms,
+        // Tick 派发默认使用; 运行时可经 C ABI 覆盖 (见 MotionSlotImpl::dispatchIntervalOverrideMs)。
+        int    dispatchIntervalMs = 0;
         std::vector<MotionTrack> tracks;
     };
 
@@ -370,6 +373,18 @@ namespace {
         try {
             timeline.durationMs = doc.value("duration_ms", 0.0);
 
+            // 帧循环下发节流 (毫秒): 0=不节流; 否则夹取到 8..1000 (与旧编排端设置口径一致)。
+            {
+                int interval = doc.value("dispatch_interval_ms", 0);
+                if (interval < 0)
+                    interval = 0;
+                else if (interval > 0 && interval < 8)
+                    interval = 8;
+                else if (interval > 1000)
+                    interval = 1000;
+                timeline.dispatchIntervalMs = interval;
+            }
+
             if (doc.contains("tracks") && doc["tracks"].is_array()) {
                 for (const auto& jTrack : doc["tracks"]) {
                     MotionTrack track;
@@ -593,6 +608,32 @@ namespace {
         bool   loop = false;
         ClockMode clockMode = ClockMode::Internal;
         double externalTimeMs = 0;
+
+        // ── 帧循环下发节流 ─────────────────────────
+        // 默认值来自 .motion 的 dispatch_interval_ms; C ABI 可显式设置**运行时覆盖**,
+        // 覆盖只影响运行时, 不写回配置。
+        int    dispatchIntervalOverrideMs = -1; // <0 = 未覆盖 (用 .motion 配置)
+        double lastDispatchMs = 0;              // 上次真正下发的时刻 (IOClock 毫秒)
+        bool   dispatchTimerInitialized = false;
+
+        // 当前生效的节流间隔 (毫秒; 0 = 不节流)。
+        int EffectiveDispatchIntervalMs() const {
+            return dispatchIntervalOverrideMs >= 0 ? dispatchIntervalOverrideMs
+                                                   : timeline.dispatchIntervalMs;
+        }
+
+        // 本帧是否到达下发时刻 (间隔<=0 恒 true; 首次未初始化恒 true → 立即下发)。
+        bool ShouldDispatchNow(double nowMs) const {
+            const int interval = EffectiveDispatchIntervalMs();
+            if (interval <= 0) return true;
+            if (!dispatchTimerInitialized) return true;
+            return (nowMs - lastDispatchMs) >= static_cast<double>(interval);
+        }
+
+        void MarkDispatched(double nowMs) {
+            lastDispatchMs = nowMs;
+            dispatchTimerInitialized = true;
+        }
 
         // 高精度时间追踪
         std::uint64_t lastTick = 0;
@@ -883,6 +924,7 @@ int MotionPlayer::PlaySlot(const char* slotId) {
 
     slot->currentTimeMs = 0;
     slot->state = MotionState::Playing;
+    slot->dispatchTimerInitialized = false; // 重新起播 → 首帧立即下发
     slot->StartTimer();
     slot->FireEvent(MotionEvent::StateChanged);
     return 0;
@@ -895,6 +937,7 @@ int MotionPlayer::PlaySlotFrom(const char* slotId, float timeMs) {
 
     slot->currentTimeMs = (std::max)(0.0, (std::min)((double)timeMs, slot->timeline.durationMs));
     slot->state = MotionState::Playing;
+    slot->dispatchTimerInitialized = false; // 从新时间起播 → 首帧立即下发
     slot->StartTimer();
     slot->FireEvent(MotionEvent::StateChanged);
     return 0;
@@ -917,6 +960,7 @@ int MotionPlayer::ResumeSlot(const char* slotId) {
     if (!slot || slot->state != MotionState::Paused) return -1;
 
     slot->state = MotionState::Playing;
+    slot->dispatchTimerInitialized = false; // 恢复播放 → 首帧立即下发
     slot->StartTimer();
     slot->FireEvent(MotionEvent::StateChanged);
     return 0;
@@ -950,6 +994,8 @@ int MotionPlayer::SeekSlot(const char* slotId, float timeMs) {
     if (!slot) return -1;
 
     slot->currentTimeMs = (std::max)(0.0, (std::min)((double)timeMs, slot->timeline.durationMs));
+    // 显式 seek (拖播放头) → 立即下发该时刻的值, 不受节流间隔限制 (与编辑器"拖拽即时反馈"一致)。
+    slot->dispatchTimerInitialized = false;
     return 0;
 }
 
@@ -987,6 +1033,7 @@ void MotionPlayer::PlayAll() {
         if (slot.state == MotionState::Idle || slot.state == MotionState::Paused) {
             slot.currentTimeMs = 0;
             slot.state = MotionState::Playing;
+            slot.dispatchTimerInitialized = false; // 重新起播 → 首帧立即下发
             slot.StartTimer();
             slot.FireEvent(MotionEvent::StateChanged);
         }
@@ -1223,6 +1270,39 @@ void MotionPlayer::SetSafetyConfig(float maxRatePerSecond)
     IOLog::Instance().Log("MotionPlayer: SafetyConfig updated, maxRate=" + std::to_string(maxRatePerSecond) + "/s\n");
 }
 
+// ── 帧循环下发节流 (运行时覆盖) ─────────────────────
+
+void MotionPlayer::SetSlotDispatchInterval(const char* slotId, int intervalMs)
+{
+    std::lock_guard<std::recursive_mutex> lock(_impl->mutex);
+    auto* slot = _impl->GetSlot(slotId);
+    if (!slot) return;
+
+    if (intervalMs < 0) {
+        // 清除运行时覆盖 → 回到 .motion 配置
+        slot->dispatchIntervalOverrideMs = -1;
+    } else {
+        // 夹取口径与 .motion 解析一致 (0=不节流; 8..1000)
+        int v = intervalMs;
+        if (v > 0 && v < 8) v = 8;
+        else if (v > 1000) v = 1000;
+        slot->dispatchIntervalOverrideMs = v;
+    }
+    // 立即按新间隔重新判定 (清掉旧间隔残留的下发时点)
+    slot->dispatchTimerInitialized = false;
+
+    IOLog::Instance().Log(
+        std::string("MotionPlayer: slot '") + slotId +
+        "' dispatch interval override = " + std::to_string(slot->dispatchIntervalOverrideMs) +
+        " ms (effective " + std::to_string(slot->EffectiveDispatchIntervalMs()) + " ms)\n");
+}
+
+int MotionPlayer::GetSlotDispatchInterval(const char* slotId) const
+{
+    auto* slot = _impl->GetSlot(slotId);
+    return slot ? slot->EffectiveDispatchIntervalMs() : 0;
+}
+
 // ── Tick — 核心驱动 ──────────────────────────────────
 
 void MotionPlayer::Tick(float deltaSeconds) {
@@ -1276,23 +1356,26 @@ void MotionPlayer::Tick(float deltaSeconds) {
         }
     }
 
-    // Phase 2: 收集所有活跃 Slot 的通道输出
+    // Phase 2: 收集所有活跃 Slot 的通道输出。
+    // 帧循环下发节流: 未到间隔的 Slot 本帧不参与混流, 其通道保持上一值不被重写 —— 这正是
+    // "降低下发频率"的语义 (设备端保持上次输出)。间隔来源: .motion 的 dispatch_interval_ms,
+    // 或经 C ABI 设置的运行时覆盖。
+    const double nowMs = static_cast<double>(IOClock::GetMilliseconds());
     std::vector<SlotChannelOutput> slotOutputs;
     for (auto& [id, slot] : _impl->slots) {
-        if (slot.state == MotionState::Playing) {
-            SlotChannelOutput output;
-            output.priority = slot.priority;
-            output.policy = slot.policy;
-            output.channels = slot.EvaluateChannels();
-            slotOutputs.push_back(std::move(output));
-        }
-        else if (slot.state == MotionState::Stopping) {
-            SlotChannelOutput output;
-            output.priority = slot.priority;
-            output.policy = slot.policy;
-            output.channels = slot.EvaluateReturnChannels();
-            slotOutputs.push_back(std::move(output));
-        }
+        const bool active = (slot.state == MotionState::Playing ||
+                             slot.state == MotionState::Stopping);
+        if (!active) continue;
+        if (!slot.ShouldDispatchNow(nowMs)) continue;
+
+        slot.MarkDispatched(nowMs);
+        SlotChannelOutput output;
+        output.priority = slot.priority;
+        output.policy = slot.policy;
+        output.channels = (slot.state == MotionState::Playing)
+            ? slot.EvaluateChannels()
+            : slot.EvaluateReturnChannels();
+        slotOutputs.push_back(std::move(output));
     }
 
     // Phase 3: 通道仲裁 (ChannelMixer)

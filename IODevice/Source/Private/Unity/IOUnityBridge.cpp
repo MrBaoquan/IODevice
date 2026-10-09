@@ -517,4 +517,15 @@ IODEVICE_UNITY_API void MotionSetSafetyConfig(float maxRatePerSecond)
     dh::MotionPlayer::Instance().SetSafetyConfig(maxRatePerSecond);
 }
 
+// 帧循环下发节流的运行时覆盖 (不改变 .motion 配置): <0 清除覆盖, 0 不节流, >0 间隔毫秒。
+IODEVICE_UNITY_API void MotionSetSlotDispatchInterval(const char* slotId, int intervalMs)
+{
+    dh::MotionPlayer::Instance().SetSlotDispatchInterval(SafeString(slotId), intervalMs);
+}
+
+IODEVICE_UNITY_API int MotionGetSlotDispatchInterval(const char* slotId)
+{
+    return dh::MotionPlayer::Instance().GetSlotDispatchInterval(SafeString(slotId));
+}
+
 #endif

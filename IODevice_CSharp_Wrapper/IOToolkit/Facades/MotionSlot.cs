@@ -134,6 +134,19 @@ namespace IOToolkit
             IONativeWrapper.MotionSetSlotExternalTime(SlotId, timeMs);
         }
 
+        /// <summary>
+        /// 帧循环下发节流的**运行时覆盖** (毫秒)。&lt;0 = 清除覆盖, 回到 .motion 的
+        /// dispatch_interval_ms 配置; 0 = 不节流; &gt;0 = 间隔毫秒。
+        ///
+        /// <para>该覆盖只影响运行时, <b>不改变</b> .motion 内的配置。默认值 (未设置时)
+        /// 使用加载的 .motion 配置, 由 native 帧循环派发直接使用。</para>
+        /// </summary>
+        public int DispatchIntervalMs
+        {
+            get => IONativeWrapper.MotionGetSlotDispatchInterval(SlotId);
+            set => IONativeWrapper.MotionSetSlotDispatchInterval(SlotId, value);
+        }
+
         // ── 状态查询 ─────────────────────────────────
 
         public MotionState State => (MotionState)IONativeWrapper.MotionGetSlotState(SlotId);

@@ -2,10 +2,12 @@ using System;
 using System.Collections.Specialized;
 using System.Linq;
 using Avalonia.Controls;
+using Avalonia.Input;
 using Avalonia.Platform.Storage;
 using IOStudio.ViewModels;
 using ReactiveUI;
 using ReactiveUI.Avalonia;
+using Key = Avalonia.Input.Key;
 
 namespace IOStudio.Views
 {
@@ -29,6 +31,12 @@ namespace IOStudio.Views
             // 文件选择器由窗口注入 —— ViewModel 不依赖 UI, 才能脱离桌面做确定性测试
             ViewModel.FilePicker = PickFileAsync;
 
+            // 剪贴板同样由窗口注入 (行内"复制"要能落到系统剪贴板)
+            ViewModel.ClipboardWriter = CopyToClipboardAsync;
+
+            // 发送框的人机习惯: Ctrl+Enter 发送, ↑/↓ 调历史 (终端级肌肉记忆)
+            SendBox.KeyDown += OnSendBoxKeyDown;
+
             // 「自动滚动」得真的滚才有意义: 跟着选中会话的消息集合走
             _selectionSub = ViewModel.WhenAnyValue(x => x.SelectedSession).Subscribe(WatchSession);
 
@@ -39,6 +47,34 @@ namespace IOStudio.Views
                 _selectionSub.Dispose();
                 ViewModel?.Dispose();
             };
+        }
+
+        private void OnSendBoxKeyDown(object? sender, KeyEventArgs e)
+        {
+            var vm = ViewModel?.SelectedSession;
+            if (vm is null)
+                return;
+
+            if (e.Key == Key.Enter && e.KeyModifiers.HasFlag(KeyModifiers.Control))
+            {
+                e.Handled = true;
+                if (vm.IsRunning && !vm.HasSendTextError)
+                    vm.SendCommand.Execute().Subscribe();
+                return;
+            }
+
+            // 只有无修饰键的上下键才当历史翻页 (留给将来的多行编辑)
+            if (e.KeyModifiers == KeyModifiers.None && e.Key == Key.Up && vm.HistoryPrev())
+                e.Handled = true;
+            else if (e.KeyModifiers == KeyModifiers.None && e.Key == Key.Down && vm.HistoryNext())
+                e.Handled = true;
+        }
+
+        private async System.Threading.Tasks.Task CopyToClipboardAsync(string text)
+        {
+            var clipboard = Avalonia.Controls.TopLevel.GetTopLevel(this)?.Clipboard;
+            if (clipboard is not null)
+                await clipboard.SetTextAsync(text ?? "");
         }
 
         private void WatchSession(ProtocolSessionViewModel? session)

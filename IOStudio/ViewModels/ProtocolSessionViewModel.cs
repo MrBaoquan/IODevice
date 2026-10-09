@@ -59,7 +59,8 @@ namespace IOStudio.ViewModels
             );
             SendCommand = ReactiveCommand.CreateFromTask(
                 SendAsync,
-                this.WhenAnyValue(x => x.IsRunning)
+                // 内容非法 (如 HEX 写错) 时不发 —— 否则只会静默失败, 让人以为"点了没反应"
+                this.WhenAnyValue(x => x.IsRunning, x => x.HasSendTextError, (r, bad) => r && !bad)
             );
             AddRuleCommand = ReactiveCommand.Create(() =>
                 Rules.Add(new AutoReplyRuleViewModel(r => Rules.Remove(r))));
@@ -74,6 +75,24 @@ namespace IOStudio.ViewModels
             BrowseFileCommand = ReactiveCommand.CreateFromTask(BrowseFileAsync);
             SendFileCommand = ReactiveCommand.CreateFromTask(
                 SendFileAsync,
+                this.WhenAnyValue(x => x.IsRunning)
+            );
+            ClearSendCommand = ReactiveCommand.Create(() =>
+            {
+                SendText = "";
+            });
+            ClearSelectionCommand = ReactiveCommand.Create(() =>
+            {
+                SelectedEntry = null;
+            });
+            CopyEntryTextCommand = ReactiveCommand.CreateFromTask<ProtocolLogEntry?>(
+                e => CopyEntryAsync(e, hex: false)
+            );
+            CopyEntryHexCommand = ReactiveCommand.CreateFromTask<ProtocolLogEntry?>(
+                e => CopyEntryAsync(e, hex: true)
+            );
+            ResendEntryCommand = ReactiveCommand.CreateFromTask<ProtocolLogEntry?>(
+                ResendAsync,
                 this.WhenAnyValue(x => x.IsRunning)
             );
         }
@@ -233,6 +252,39 @@ namespace IOStudio.ViewModels
             RaiseStats();
         }
 
+        // ───────────── 标签角标: 非当前会话的"有新数据 / 有异常" ─────────────
+
+        /// <summary>是否为当前选中的会话 (由窗口 VM 维护)。是 → 不做未读累计。</summary>
+        public bool IsActive { get; set; }
+
+        private int _unseen;
+        private bool _erroredSinceSeen;
+
+        public int UnseenCount => _unseen;
+        public bool HasUnseen => _unseen > 0;
+        public bool HasErrorSinceSeen => _erroredSinceSeen;
+
+        /// <summary>角标文本: 有异常显示 "!", 否则显示未读数。</summary>
+        public string BadgeText => _erroredSinceSeen ? "!" : (_unseen > 99 ? "99+" : _unseen.ToString());
+
+        /// <summary>切到该会话时清角标。</summary>
+        public void MarkSeen()
+        {
+            if (_unseen == 0 && !_erroredSinceSeen)
+                return;
+            _unseen = 0;
+            _erroredSinceSeen = false;
+            RaiseBadge();
+        }
+
+        private void RaiseBadge()
+        {
+            this.RaisePropertyChanged(nameof(UnseenCount));
+            this.RaisePropertyChanged(nameof(HasUnseen));
+            this.RaisePropertyChanged(nameof(HasErrorSinceSeen));
+            this.RaisePropertyChanged(nameof(BadgeText));
+        }
+
         // ───────────── 对端 (多客户端服务端) ─────────────
 
         public ObservableCollection<string> Peers { get; } = new();
@@ -259,6 +311,20 @@ namespace IOStudio.ViewModels
         /// <summary>UI 绑定的集合 (只含通过过滤的条目)。</summary>
         public ObservableCollection<ProtocolLogEntry> Messages { get; } = new();
 
+        /// <summary>选中的日志行 —— 详情面板与「复制 / 重发」的操作对象 (此前选中一行没有任何用途)。</summary>
+        private ProtocolLogEntry? _selectedEntry;
+        public ProtocolLogEntry? SelectedEntry
+        {
+            get => _selectedEntry;
+            set
+            {
+                this.RaiseAndSetIfChanged(ref _selectedEntry, value);
+                this.RaisePropertyChanged(nameof(HasSelectedEntry));
+            }
+        }
+
+        public bool HasSelectedEntry => _selectedEntry is not null;
+
         private string _filterText = "";
         public string FilterText
         {
@@ -270,12 +336,37 @@ namespace IOStudio.ViewModels
             }
         }
 
+        /// <summary>方向过滤 (现场最常按"只看收 / 只看发 / 只看异常"筛)。</summary>
+        public IReadOnlyList<string> FilterDirections { get; } =
+            new[] { "全部", "收", "发", "异常", "系统" };
+
+        private string _filterDirection = "全部";
+        public string FilterDirection
+        {
+            get => _filterDirection;
+            set
+            {
+                this.RaiseAndSetIfChanged(ref _filterDirection, value);
+                RebuildVisible();
+            }
+        }
+
         /// <summary>暂停显示: 仍在收/仍在记, 只是不往界面刷 (高速流下保住可读性)。</summary>
         private bool _pauseDisplay;
         public bool PauseDisplay
         {
             get => _pauseDisplay;
-            set => this.RaiseAndSetIfChanged(ref _pauseDisplay, value);
+            set
+            {
+                if (_pauseDisplay == value)
+                    return;
+                _pauseDisplay = value;
+                this.RaisePropertyChanged();
+                // 恢复时必须把暂停期间积在 _all 里的帧补回界面, 否则"暂停一下回来接着看"的
+                // 直觉落空 —— 那些帧其实一直在, 只是没进 Messages。
+                if (!value)
+                    RebuildVisible();
+            }
         }
 
         private bool _showTimestamp = true;
@@ -319,12 +410,25 @@ namespace IOStudio.ViewModels
                 _ => ProtocolContentMode.TextAndHex,
             };
 
-        private bool MatchesFilter(ProtocolLogEntry e) =>
-            string.IsNullOrWhiteSpace(_filterText)
-            || (e.PlainText?.Contains(_filterText, StringComparison.OrdinalIgnoreCase) ?? false)
-            || (e.HexText?.Contains(_filterText, StringComparison.OrdinalIgnoreCase) ?? false)
-            || (e.Direction?.Contains(_filterText, StringComparison.OrdinalIgnoreCase) ?? false)
-            || (e.Channel?.Contains(_filterText, StringComparison.OrdinalIgnoreCase) ?? false);
+        private bool MatchesFilter(ProtocolLogEntry e)
+        {
+            var dirOk = _filterDirection switch
+            {
+                "收" => e.IsReceived,
+                "发" => e.IsSent,
+                "异常" => e.IsBad,
+                "系统" => e.IsStep,
+                _ => true,
+            };
+            if (!dirOk)
+                return false;
+
+            return string.IsNullOrWhiteSpace(_filterText)
+                || (e.PlainText?.Contains(_filterText, StringComparison.OrdinalIgnoreCase) ?? false)
+                || (e.HexText?.Contains(_filterText, StringComparison.OrdinalIgnoreCase) ?? false)
+                || (e.Direction?.Contains(_filterText, StringComparison.OrdinalIgnoreCase) ?? false)
+                || (e.Channel?.Contains(_filterText, StringComparison.OrdinalIgnoreCase) ?? false);
+        }
 
         // ── 时序: Δt(与上一次同方向帧的间隔) 与 RTT(上次发送→本次收到) ──
 
@@ -365,11 +469,30 @@ namespace IOStudio.ViewModels
         private void AddEntry(ProtocolLogEntry entry)
         {
             entry.DisplayMode = CurrentContentMode();
+            entry.Owner = this;
             StampTiming(entry, Environment.TickCount64);
 
             _all.Add(entry);
             if (_all.Count > MaxLogEntries)
                 _all.RemoveRange(0, _all.Count - MaxLogEntries);
+
+            // 非当前会话: 累计未读/异常, 让并行标签也能看出"哪路有动静"
+            if (!IsActive)
+            {
+                var changed = false;
+                if (entry.IsReceived)
+                {
+                    _unseen++;
+                    changed = true;
+                }
+                if (entry.IsBad)
+                {
+                    _erroredSinceSeen = true;
+                    changed = true;
+                }
+                if (changed)
+                    RaiseBadge();
+            }
 
             if (PauseDisplay || !MatchesFilter(entry))
                 return;
@@ -462,7 +585,7 @@ namespace IOStudio.ViewModels
             set
             {
                 this.RaiseAndSetIfChanged(ref _sendText, value);
-                this.RaisePropertyChanged(nameof(ChecksumPreview));
+                RaiseSendDerived();
             }
         }
 
@@ -473,7 +596,7 @@ namespace IOStudio.ViewModels
             set
             {
                 this.RaiseAndSetIfChanged(ref _sendEncoding, value);
-                this.RaisePropertyChanged(nameof(ChecksumPreview));
+                RaiseSendDerived();
             }
         }
 
@@ -481,7 +604,127 @@ namespace IOStudio.ViewModels
         public string SendNewLine
         {
             get => _sendNewLine;
-            set => this.RaiseAndSetIfChanged(ref _sendNewLine, value);
+            set
+            {
+                this.RaiseAndSetIfChanged(ref _sendNewLine, value);
+                RaiseSendDerived();
+            }
+        }
+
+        // ── 发送前就地校验与预览 (HEX 写错时不再"点了没反应、日志多一行") ──
+
+        /// <summary>发送内容的问题描述; 无问题为 null。HEX 模式会明确指出非法。</summary>
+        public string? SendTextError
+        {
+            get
+            {
+                if (string.IsNullOrEmpty(_sendText))
+                    return null;
+                try
+                {
+                    ProtocolEncoding.Encode(_sendText + ProtocolUiOptions.NewLineToText(_sendNewLine), _sendEncoding);
+                    return null;
+                }
+                catch
+                {
+                    return _sendEncoding == "HEX"
+                        ? "HEX 内容非法 (需偶数个 0-9 / A-F)"
+                        : $"内容无法按 {_sendEncoding} 编码";
+                }
+            }
+        }
+
+        public bool HasSendTextError => SendTextError is not null;
+
+        /// <summary>将要发出的字节数 (含新行与追加的校验和)。</summary>
+        public string SendPreviewText
+        {
+            get
+            {
+                if (string.IsNullOrEmpty(_sendText))
+                    return "";
+                try
+                {
+                    var payload = ProtocolEncoding.Encode(
+                        _sendText + ProtocolUiOptions.NewLineToText(_sendNewLine),
+                        _sendEncoding
+                    );
+                    var total = payload.Length;
+                    var extra = "";
+                    if (AppendChecksum && _checksumMode != "无")
+                    {
+                        var cs = Checksums.Compute(_checksumMode, payload);
+                        if (cs.Length > 0)
+                        {
+                            total += cs.Length;
+                            extra = $" (含 {cs.Length} 字节校验)";
+                        }
+                    }
+                    return $"将发送 {total} 字节{extra}";
+                }
+                catch
+                {
+                    return "";
+                }
+            }
+        }
+
+        /// <summary>发送框右侧的状态文本: 优先报错, 否则给字节预览。</summary>
+        public string SendStatusText => SendTextError ?? SendPreviewText;
+
+        private void RaiseSendDerived()
+        {
+            this.RaisePropertyChanged(nameof(ChecksumPreview));
+            this.RaisePropertyChanged(nameof(SendTextError));
+            this.RaisePropertyChanged(nameof(HasSendTextError));
+            this.RaisePropertyChanged(nameof(SendPreviewText));
+            this.RaisePropertyChanged(nameof(SendStatusText));
+        }
+
+        // ── 发送历史 (终端级习惯: ↑/↓ 调回上一条) ──
+
+        private readonly List<string> _history = new();
+        private int _historyCursor = -1;
+
+        private void PushHistory(string text)
+        {
+            if (string.IsNullOrWhiteSpace(text))
+                return;
+            if (_history.Count == 0 || _history[^1] != text)
+                _history.Add(text);
+            if (_history.Count > 100)
+                _history.RemoveAt(0);
+            _historyCursor = _history.Count;
+        }
+
+        /// <summary>↑ 上翻历史; 返回是否消费了该按键。</summary>
+        public bool HistoryPrev()
+        {
+            if (_history.Count == 0)
+                return false;
+            if (_historyCursor < 0 || _historyCursor > _history.Count)
+                _historyCursor = _history.Count;
+            if (_historyCursor == 0)
+                return true;
+            _historyCursor--;
+            SendText = _history[_historyCursor];
+            return true;
+        }
+
+        /// <summary>↓ 下翻历史 (越过最新一条则清空, 回到"新输入"状态)。</summary>
+        public bool HistoryNext()
+        {
+            if (_history.Count == 0 || _historyCursor < 0)
+                return false;
+            if (_historyCursor >= _history.Count - 1)
+            {
+                _historyCursor = _history.Count;
+                SendText = "";
+                return true;
+            }
+            _historyCursor++;
+            SendText = _history[_historyCursor];
+            return true;
         }
 
         /// <summary>循环发送 (对发送框里的内容)。</summary>
@@ -510,7 +753,7 @@ namespace IOStudio.ViewModels
             set
             {
                 this.RaiseAndSetIfChanged(ref _checksumMode, value);
-                this.RaisePropertyChanged(nameof(ChecksumPreview));
+                RaiseSendDerived();
             }
         }
 
@@ -518,7 +761,11 @@ namespace IOStudio.ViewModels
         public bool AppendChecksum
         {
             get => _appendChecksum;
-            set => this.RaiseAndSetIfChanged(ref _appendChecksum, value);
+            set
+            {
+                this.RaiseAndSetIfChanged(ref _appendChecksum, value);
+                RaiseSendDerived();
+            }
         }
 
         /// <summary>实时显示当前发送内容算出的校验值 (填对之前先看一眼)。</summary>
@@ -716,6 +963,14 @@ namespace IOStudio.ViewModels
         public ReactiveCommand<Unit, Unit> SendBreakCommand { get; }
         public ReactiveCommand<Unit, Unit> BrowseFileCommand { get; }
         public ReactiveCommand<Unit, Unit> SendFileCommand { get; }
+        public ReactiveCommand<Unit, Unit> ClearSendCommand { get; }
+        public ReactiveCommand<Unit, Unit> ClearSelectionCommand { get; }
+        public ReactiveCommand<ProtocolLogEntry?, Unit> CopyEntryTextCommand { get; }
+        public ReactiveCommand<ProtocolLogEntry?, Unit> CopyEntryHexCommand { get; }
+        public ReactiveCommand<ProtocolLogEntry?, Unit> ResendEntryCommand { get; }
+
+        /// <summary>由窗口注入的剪贴板写入器 (VM 不依赖 UI, 便于 headless 测试用假实现断言复制内容)。</summary>
+        public Func<string, Task>? ClipboardWriter { get; set; }
 
         private IProtocolEndpoint? _endpoint;
         private CancellationTokenSource? _cts;
@@ -980,8 +1235,50 @@ namespace IOStudio.ViewModels
 
         private async Task SendAsync()
         {
-            await SendPayloadAsync(SendText, SendEncoding, SendNewLine, "", CancellationToken.None)
+            var text = SendText;
+            PushHistory(text);
+            await SendPayloadAsync(text, SendEncoding, SendNewLine, "", CancellationToken.None)
                 .ConfigureAwait(true);
+        }
+
+        // ── 行内操作: 复制 / 重发 ──
+
+        private async Task CopyEntryAsync(ProtocolLogEntry? entry, bool hex)
+        {
+            if (entry is null || ClipboardWriter is null)
+                return;
+            var body = hex ? entry.HexText : entry.PlainText;
+            if (string.IsNullOrEmpty(body))
+                body = entry.HexDumpText; // 二进制帧没有文本列, 退回可读的转储
+            try
+            {
+                await ClipboardWriter(body ?? "").ConfigureAwait(true);
+            }
+            catch (Exception ex)
+            {
+                AddEntry(ProtocolLogEntry.Info("复制失败: " + ex.Message));
+            }
+        }
+
+        /// <summary>把某条历史帧原样重发 (拿到原始字节的收/发帧都可)。</summary>
+        private async Task ResendAsync(ProtocolLogEntry? entry)
+        {
+            var ep = _endpoint;
+            if (ep is null || entry?.Raw is null)
+                return;
+            try
+            {
+                var bytes = entry.Raw;
+                await ep.SendAsync(bytes, _cts?.Token ?? CancellationToken.None).ConfigureAwait(true);
+                _txCount++;
+                _txBytes += bytes.Length;
+                RaiseStats();
+                AddEntry(ProtocolLogEntry.Frame("发", entry.Channel, bytes, null));
+            }
+            catch (Exception ex)
+            {
+                AddEntry(ProtocolLogEntry.Info("重发失败: " + ex.Message));
+            }
         }
 
         /// <summary>统一的发送入口 (手动/循环/快捷指令共用, 保证编码与换行行为一致)。</summary>

@@ -769,5 +769,243 @@ namespace IOStudio.Tests.E2E
                 CancellationToken.None
             );
         }
+
+        // ─────────── 批次 A: 读与发顺手 ───────────
+
+        [Fact]
+        public async Task Invalid_Hex_Is_Reported_Inline()
+        {
+            var s = NewSession();
+            var r = await _session.Dispatch(
+                () =>
+                {
+                    s.SendEncoding = "HEX";
+                    s.SendText = "AB CD"; // 空格应被容忍
+                    var valid = (s.SendTextError is null, s.HasSendTextError);
+
+                    s.SendText = "ABC"; // 奇数位 → 非法
+                    var odd = s.SendTextError ?? "";
+
+                    s.SendText = "ZZ"; // 非十六进制字符 → 非法
+                    var nonHex = s.SendTextError ?? "";
+
+                    s.SendEncoding = "UTF-8";
+                    s.SendText = "hello";
+                    var back = s.HasSendTextError;
+                    return (valid, odd, nonHex, back);
+                },
+                CancellationToken.None
+            );
+
+            Assert.True(r.valid.Item1);
+            Assert.False(r.valid.Item2);
+            Assert.Contains("HEX", r.odd);
+            Assert.Contains("HEX", r.nonHex);
+            Assert.False(r.back);
+        }
+
+        [Fact]
+        public async Task Send_Preview_Counts_Bytes_Including_NewLine()
+        {
+            var s = NewSession();
+            var r = await _session.Dispatch(
+                () =>
+                {
+                    s.SendEncoding = "UTF-8";
+                    s.SendText = "PING";
+                    s.SendNewLine = "\\r\\n";
+                    var withNewLine = s.SendPreviewText;
+
+                    s.SendNewLine = "无";
+                    var plain = s.SendPreviewText;
+
+                    s.SendText = "";
+                    var empty = s.SendPreviewText;
+                    return (withNewLine, plain, empty);
+                },
+                CancellationToken.None
+            );
+
+            Assert.Equal("将发送 6 字节", r.withNewLine);
+            Assert.Equal("将发送 4 字节", r.plain);
+            Assert.Equal("", r.empty);
+        }
+
+        [Fact]
+        public async Task Pause_Then_Resume_Reveals_Buffered_Frames()
+        {
+            var s = NewSession();
+            await AppendAsync(s, ProtocolLogEntry.Frame("收", "", Encoding.UTF8.GetBytes("A"), null));
+            Assert.Single(s.Messages);
+
+            await _session.Dispatch(() => { s.PauseDisplay = true; return true; }, CancellationToken.None);
+
+            // 暂停期间到达的帧不应立刻显示…
+            await AppendAsync(s, ProtocolLogEntry.Frame("收", "", Encoding.UTF8.GetBytes("B"), null));
+            Assert.Single(s.Messages);
+
+            // …但恢复后必须补回来 (此前会永久丢失)
+            await _session.Dispatch(() => { s.PauseDisplay = false; return true; }, CancellationToken.None);
+            Assert.Equal(2, s.Messages.Count);
+        }
+
+        [Fact]
+        public async Task Direction_Filter_Separates_Rx_Tx_And_Errors()
+        {
+            var s = NewSession();
+            await AppendAsync(s, ProtocolLogEntry.Frame("收", "", Encoding.UTF8.GetBytes("R"), null));
+            await AppendAsync(s, ProtocolLogEntry.Frame("发", "", Encoding.UTF8.GetBytes("T"), null));
+            await AppendAsync(s, ProtocolLogEntry.Frame("收", "", Encoding.UTF8.GetBytes("X"), matched: false));
+
+            var counts = await _session.Dispatch(
+                () =>
+                {
+                    s.FilterDirection = "收";
+                    var rx = s.Messages.Count;
+                    s.FilterDirection = "发";
+                    var tx = s.Messages.Count;
+                    s.FilterDirection = "异常";
+                    var bad = s.Messages.Count;
+                    s.FilterDirection = "全部";
+                    var all = s.Messages.Count;
+                    return (rx, tx, bad, all);
+                },
+                CancellationToken.None
+            );
+
+            Assert.Equal(2, counts.rx); // 收到 R + 失败 X
+            Assert.Equal(1, counts.tx);
+            Assert.Equal(1, counts.bad);
+            Assert.Equal(3, counts.all);
+        }
+
+        [Fact]
+        public async Task Copy_Entry_Writes_Text_And_Hex_To_Clipboard()
+        {
+            var s = NewSession();
+            string? captured = null;
+            s.ClipboardWriter = t =>
+            {
+                captured = t;
+                return Task.CompletedTask;
+            };
+
+            var e = ProtocolLogEntry.Frame("收", "", Encoding.UTF8.GetBytes("HELLO"), null);
+            await AppendAsync(s, e);
+
+            await _session.Dispatch(
+                () =>
+                {
+                    s.CopyEntryTextCommand.Execute(e).Subscribe();
+                    return true;
+                },
+                CancellationToken.None
+            );
+            await Task.Delay(30);
+            Assert.Equal("HELLO", captured);
+
+            await _session.Dispatch(
+                () =>
+                {
+                    s.CopyEntryHexCommand.Execute(e).Subscribe();
+                    return true;
+                },
+                CancellationToken.None
+            );
+            await Task.Delay(30);
+            Assert.Equal("48454C4C4F", captured);
+        }
+
+        [Fact]
+        public async Task Binary_Frame_Copy_Falls_Back_To_Hexdump()
+        {
+            var s = NewSession();
+            string? captured = null;
+            s.ClipboardWriter = t =>
+            {
+                captured = t;
+                return Task.CompletedTask;
+            };
+
+            var e = ProtocolLogEntry.Frame("收", "", new byte[] { 0x00, 0xFF }, null);
+            await AppendAsync(s, e);
+
+            await _session.Dispatch(
+                () =>
+                {
+                    s.CopyEntryTextCommand.Execute(e).Subscribe();
+                    return true;
+                },
+                CancellationToken.None
+            );
+            await Task.Delay(30);
+            Assert.Contains("00 FF", captured); // 二进制帧没有文本列 → 退回转储
+        }
+
+        [Fact]
+        public async Task Send_History_Recalls_Previous_Input()
+        {
+            var s = NewSession();
+            var r = await _session.Dispatch(
+                () =>
+                {
+                    // 无端点: 记录历史仍应发生 (发送本身早退)
+                    s.SendText = "AAA";
+                    s.SendCommand.Execute().Subscribe();
+                    s.SendText = "BBB";
+                    s.SendCommand.Execute().Subscribe();
+
+                    var p1 = s.HistoryPrev();
+                    var afterFirst = s.SendText;
+                    s.HistoryPrev();
+                    var afterSecond = s.SendText;
+                    s.HistoryNext();
+                    var afterNext = s.SendText;
+                    return (p1, afterFirst, afterSecond, afterNext);
+                },
+                CancellationToken.None
+            );
+
+            Assert.True(r.p1);
+            Assert.Equal("BBB", r.afterFirst);
+            Assert.Equal("AAA", r.afterSecond);
+            Assert.Equal("BBB", r.afterNext);
+        }
+
+        [Fact]
+        public async Task Inactive_Session_Badges_Unseen_Then_Clears()
+        {
+            var s = NewSession();
+            s.IsActive = false;
+
+            await AppendAsync(s, ProtocolLogEntry.Frame("收", "", Encoding.UTF8.GetBytes("A"), null));
+            Assert.True(s.HasUnseen);
+            Assert.Equal("1", s.BadgeText);
+
+            s.MarkSeen();
+            Assert.False(s.HasUnseen);
+
+            await AppendAsync(s, ProtocolLogEntry.Frame("收", "", Encoding.UTF8.GetBytes("X"), matched: false));
+            Assert.True(s.HasErrorSinceSeen);
+            Assert.Equal("!", s.BadgeText);
+
+            // 当前会话不做未读累计
+            s.IsActive = true;
+            s.MarkSeen();
+            await AppendAsync(s, ProtocolLogEntry.Frame("收", "", Encoding.UTF8.GetBytes("B"), null));
+            Assert.False(s.HasUnseen);
+        }
+
+        [Fact]
+        public void Selected_Entry_Provides_Hexdump_For_Detail_Pane()
+        {
+            var e = ProtocolLogEntry.Frame("收", "", new byte[] { 0x00, 0xFF, 0x10, 0xAB }, null);
+            Assert.Contains("00 FF 10 AB", e.HexDumpText);
+            Assert.True(e.CanResend);
+
+            var info = ProtocolLogEntry.Info("就绪");
+            Assert.False(info.CanResend);
+            Assert.Equal("", info.HexDumpText);
+        }
     }
 }

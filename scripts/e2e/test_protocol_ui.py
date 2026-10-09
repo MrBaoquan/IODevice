@@ -268,3 +268,45 @@ def test_new_session_adds_parallel_session(app):
     assert _wait_until(lambda: _session_count(win) == before + 1, timeout=6.0), (
         f"新建会话后会话数未增加: before={before} after={_session_count(win)}"
     )
+
+
+def test_protocol_batch_a_affordances(app):
+    """批次 A「读与发顺手」: 行详情面板 + 方向过滤 + 发送字节预览。
+
+    这条路径的价值在"人把收到的帧看懂 / 回得出去": 选中一行必须能拿到
+    可复制的文本与 HEX、能从这一帧重发; 发送前必须能看出会发多少字节。
+    Headless 侧已断言 VM 语义, 这里只验真实控件确实按预期出现/联动
+    (自动化树里不出现 = 用户根本点不到)。
+    """
+    win = find_window(TEST_WINDOW_TITLE, timeout=10)
+    if win is None:
+        pytest.skip("协议测试台窗口未打开 (依赖前面的用例)")
+
+    # 方向过滤 / 发送框清空 / 字节预览 —— 三个新控件的存在性
+    for auto_id in ("ProtocolFilterDirection", "ProtocolClearSend", "ProtocolSendStatus"):
+        assert _by_id(win, auto_id) is not None, f"缺少批次 A 控件 {auto_id}"
+
+    # 选中一行日志 → 底部详情面板出现 (未选中时这些按钮不在自动化树里)
+    lst = _by_id(win, "ProtocolMessages")
+    assert lst is not None, "未找到日志列表 (ProtocolMessages)"
+    rows = [
+        d for d in lst.descendants() if d.element_info.control_type == "ListItem"
+    ]
+    assert rows, "日志列表为空 (依赖第一个用例先收到报文)"
+    rows[-1].click_input()
+    time.sleep(0.5)
+
+    assert _wait_until(
+        lambda: _by_id(win, "ProtocolCopyText") is not None, timeout=4.0
+    ), "选中日志行后未出现详情面板 (ProtocolCopyText)"
+    assert _by_id(win, "ProtocolCopyHex") is not None, "详情面板缺少「复制 HEX」"
+
+    # 发送框输入 → 字节预览实时更新
+    send = _by_id(win, "ProtocolSendText")
+    assert send is not None, "未找到发送框 (ProtocolSendText)"
+    send.set_edit_text("PING")
+    time.sleep(0.4)
+
+    status = _by_id(win, "ProtocolSendStatus")
+    text = (status.element_info.name or "") if status is not None else ""
+    assert "字节" in text, f"字节预览未更新, 当前: {text!r}"

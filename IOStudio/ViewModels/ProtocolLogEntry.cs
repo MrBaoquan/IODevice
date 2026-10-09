@@ -24,10 +24,23 @@ namespace IOStudio.ViewModels
         /// <summary>原始字节 (hexdump 转储懒计算; 未拿到原始字节时为空)。</summary>
         public byte[]? Raw { get; private init; }
 
+        /// <summary>
+        /// 归属会话 (行内右键"复制 / 重发"要回到会话执行)。
+        /// 由 <c>AddEntry</c> 写入 —— 放在条目上而不是让 XAML 跨 popup 可视树找
+        /// ListBox 的 DataContext, 后者在 ContextMenu 里不可靠。
+        /// </summary>
+        public ProtocolSessionViewModel? Owner { get; set; }
+
+        /// <summary>能否重发 (只有拿到原始字节的收/发帧可以; 步骤/提示行不行)。</summary>
+        public bool CanResend => Raw is { Length: > 0 };
+
         public string Time { get; private init; } = "";
         public string Direction { get; private init; } = "";
         public string Channel { get; private init; } = "";
         public string Size { get; private init; } = "";
+
+        /// <summary>带单位的字节数 (详情面板用; 系统/步骤行没有字节数, 返回空)。</summary>
+        public string SizeText => string.IsNullOrEmpty(Size) ? "" : Size + " 字节";
 
         /// <summary>该行是否为步骤结论行 (而非收发帧)。</summary>
         public bool IsStep { get; private init; }
@@ -93,6 +106,9 @@ namespace IOStudio.ViewModels
 
         private string Dump => _dump ??= HexDump.Format(Raw);
 
+        /// <summary>完整 hexdump (详情面板用: offset / 分组 hex / ASCII 三段式)。</summary>
+        public string HexDumpText => Raw is null ? "" : Dump;
+
         /// <summary>原始文本表示 (与显示模式无关, 供过滤/导出使用)。</summary>
         public string PlainText => _plainText;
 
@@ -156,7 +172,7 @@ namespace IOStudio.ViewModels
             new()
             {
                 Time = DateTime.Now.ToString("HH:mm:ss.fff"),
-                Direction = "··",
+                Direction = "系统",
                 _plainText = message,
                 IsStep = true,
             };

@@ -160,6 +160,23 @@
             <Setter Property="FontFamily" Value="Consolas,Menlo,monospace"/>
         </Style>
 
+        <!-- 发送前预览 / 就地报错 -->
+        <Style Selector="TextBlock.send-status">
+            <Setter Property="FontSize" Value="{DynamicResource TlFontXs}"/>
+            <Setter Property="Foreground" Value="{DynamicResource TlTextMuted}"/>
+            <Setter Property="VerticalAlignment" Value="Bottom"/>
+        </Style>
+        <Style Selector="TextBlock.send-status.error">
+            <Setter Property="Foreground" Value="{DynamicResource TlDanger}"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+        </Style>
+        <Style Selector="TextBox.invalid">
+            <Setter Property="BorderBrush" Value="{DynamicResource TlDanger}"/>
+        </Style>
+        <Style Selector="TextBox.invalid:focus-visible">
+            <Setter Property="BorderBrush" Value="{DynamicResource TlDanger}"/>
+        </Style>
+
         <!-- ═══════════════ 日志单元格 ═══════════════ -->
         <Style Selector="TextBlock.cell">
             <Setter Property="FontSize" Value="{DynamicResource TlFontXs}"/>
@@ -280,6 +297,28 @@
         </Style>
         <Style Selector="Ellipse.dot.running">
             <Setter Property="Fill" Value="{DynamicResource TlSuccess}"/>
+        </Style>
+
+        <!-- 会话标签角标: 非当前会话的未读数 / 异常 -->
+        <Style Selector="Border.tab-badge">
+            <Setter Property="CornerRadius" Value="8"/>
+            <Setter Property="MinWidth" Value="16"/>
+            <Setter Property="Padding" Value="5,0"/>
+            <Setter Property="Background" Value="{DynamicResource TlBadgeBg}"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+        <Style Selector="Border.tab-badge > TextBlock">
+            <Setter Property="FontSize" Value="10"/>
+            <Setter Property="Foreground" Value="{DynamicResource TlTextMuted}"/>
+            <Setter Property="HorizontalAlignment" Value="Center"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+        <Style Selector="Border.tab-badge.error">
+            <Setter Property="Background" Value="{DynamicResource TlDanger}"/>
+        </Style>
+        <Style Selector="Border.tab-badge.error > TextBlock">
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="FontWeight" Value="Bold"/>
         </Style>
 
         <!-- ═══════════════ 日志列表: 行即表格行 ═══════════════ -->
@@ -436,6 +475,12 @@
                                     <Ellipse Classes="dot" Classes.running="{Binding IsRunning}"/>
                                     <TextBlock Classes="tab-name" Text="{Binding Label}"
                                                VerticalAlignment="Center"/>
+                                    <Border Classes="tab-badge"
+                                            Classes.error="{Binding HasErrorSinceSeen}"
+                                            IsVisible="{Binding HasUnseen}"
+                                            ToolTip.Tip="非当前会话收到的帧数 / 异常">
+                                        <TextBlock Text="{Binding BadgeText}"/>
+                                    </Border>
                                 </StackPanel>
                             </Border>
                         </DataTemplate>
@@ -660,19 +705,27 @@
                         <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
                             <TextBlock Grid.Column="0" Text="日志" Classes="band-cap"/>
 
-                            <Grid Grid.Column="1" VerticalAlignment="Center">
-                                <TextBox Text="{Binding FilterText, Mode=TwoWay}"
-                                         Padding="28,4,8,4"
-                                         Watermark="过滤 (内容 / HEX / 方向 / 对端)"
-                                         AutomationProperties.AutomationId="ProtocolFilter"
-                                         AutomationProperties.Name="日志过滤"/>
-                                <iconPacks:PackIconIonicons Kind="SearchiOS"
-                                                            Width="14" Height="14"
-                                                            Margin="9,0,0,0"
-                                                            HorizontalAlignment="Left"
-                                                            VerticalAlignment="Center"
-                                                            IsHitTestVisible="False"
-                                                            Foreground="{DynamicResource TlTextMuted}"/>
+                            <Grid Grid.Column="1" ColumnDefinitions="Auto,*" ColumnSpacing="8">
+                                <ComboBox Grid.Column="0" Width="86"
+                                          ItemsSource="{Binding FilterDirections}"
+                                          SelectedItem="{Binding FilterDirection}"
+                                          AutomationProperties.AutomationId="ProtocolFilterDirection"
+                                          AutomationProperties.Name="方向过滤"
+                                          ToolTip.Tip="只看收 / 只看发 / 只看异常 / 只看系统提示"/>
+                                <Grid Grid.Column="1" VerticalAlignment="Center">
+                                    <TextBox Text="{Binding FilterText, Mode=TwoWay}"
+                                             Padding="28,4,8,4"
+                                             Watermark="过滤 (内容 / HEX / 方向 / 对端)"
+                                             AutomationProperties.AutomationId="ProtocolFilter"
+                                             AutomationProperties.Name="日志过滤"/>
+                                    <iconPacks:PackIconIonicons Kind="SearchiOS"
+                                                                Width="14" Height="14"
+                                                                Margin="9,0,0,0"
+                                                                HorizontalAlignment="Left"
+                                                                VerticalAlignment="Center"
+                                                                IsHitTestVisible="False"
+                                                                Foreground="{DynamicResource TlTextMuted}"/>
+                                </Grid>
                             </Grid>
 
                             <StackPanel Grid.Column="2" Orientation="Horizontal"
@@ -732,45 +785,138 @@
                         </Grid>
                     </Border>
 
-                    <!-- ─────────── ④ 日志正文 (终端面, 占满剩余高度) ─────────── -->
-                    <ListBox Grid.Row="3"
-                             x:Name="MessageList"
-                             Classes="plain log"
-                             Background="{DynamicResource TlInputBg}"
-                             BorderThickness="0"
-                             AutomationProperties.AutomationId="ProtocolMessages"
-                             AutomationProperties.Name="实时消息"
-                             ItemsSource="{Binding Messages}">
-                        <ListBox.ItemTemplate>
-                            <DataTemplate x:DataType="vm:ProtocolLogEntry">
-                                <Border Classes="row" Padding="18,4">
-                                    <Grid ColumnDefinitions="96,54,140,52,92,*,1.15*" ColumnSpacing="8">
-                                        <TextBlock Grid.Column="0" Text="{Binding Time}"
-                                                   Classes="cell mono"
-                                                   Foreground="{DynamicResource TlTextMuted}"
-                                                   IsVisible="{Binding $parent[ListBox].((vm:ProtocolSessionViewModel)DataContext).ShowTimestamp}"/>
-                                        <TextBlock Grid.Column="1" Text="{Binding Direction}" Classes="cell"
-                                                   Classes.received="{Binding IsReceived}"
-                                                   Classes.sent="{Binding IsSent}"
-                                                   Classes.auto="{Binding IsAuto}"
-                                                   Classes.pass="{Binding IsPass}"
-                                                   Classes.bad="{Binding IsBad}"/>
-                                        <TextBlock Grid.Column="2" Text="{Binding Channel}" Classes="cell mono"/>
-                                        <TextBlock Grid.Column="3" Text="{Binding Size}" Classes="cell mono"
-                                                   Foreground="{DynamicResource TlTextMuted}"/>
-                                        <TextBlock Grid.Column="4" Text="{Binding TimingText}" Classes="cell mono"
-                                                   Foreground="{DynamicResource TlTextMuted}"/>
-                                        <TextBlock Grid.Column="5" Text="{Binding ContentText}"
-                                                   Classes="cell mono" TextWrapping="Wrap"/>
-                                        <TextBlock Grid.Column="6" Text="{Binding HexColumn}"
-                                                   Classes="cell mono"
-                                                   Foreground="{DynamicResource TlTextMuted}"
-                                                   TextWrapping="Wrap"/>
-                                    </Grid>
-                                </Border>
-                            </DataTemplate>
-                        </ListBox.ItemTemplate>
-                    </ListBox>
+                    <!-- ─────────── ④ 日志正文 (终端面) + 选中行详情 ─────────── -->
+                    <Grid Grid.Row="3" RowDefinitions="*,Auto">
+                        <ListBox Grid.Row="0"
+                                 x:Name="MessageList"
+                                 Classes="plain log"
+                                 Background="{DynamicResource TlInputBg}"
+                                 BorderThickness="0"
+                                 AutomationProperties.AutomationId="ProtocolMessages"
+                                 AutomationProperties.Name="实时消息"
+                                 ItemsSource="{Binding Messages}"
+                                 SelectedItem="{Binding SelectedEntry}">
+                            <ListBox.ItemTemplate>
+                                <DataTemplate x:DataType="vm:ProtocolLogEntry">
+                                    <Border Classes="row" Padding="18,4">
+                                        <!-- 行内右键: 复制 / 重发 (协议调试最高频的两个动作) -->
+                                        <Border.ContextMenu>
+                                            <ContextMenu>
+                                                <MenuItem Header="复制文本"
+                                                          Command="{Binding Owner.CopyEntryTextCommand}"
+                                                          CommandParameter="{Binding}"/>
+                                                <MenuItem Header="复制 HEX"
+                                                          Command="{Binding Owner.CopyEntryHexCommand}"
+                                                          CommandParameter="{Binding}"/>
+                                                <Separator/>
+                                                <MenuItem Header="重发这一帧"
+                                                          Command="{Binding Owner.ResendEntryCommand}"
+                                                          CommandParameter="{Binding}"
+                                                          IsEnabled="{Binding CanResend}"/>
+                                            </ContextMenu>
+                                        </Border.ContextMenu>
+                                        <Grid ColumnDefinitions="96,54,140,52,92,*,1.15*" ColumnSpacing="8">
+                                            <TextBlock Grid.Column="0" Text="{Binding Time}"
+                                                       Classes="cell mono"
+                                                       Foreground="{DynamicResource TlTextMuted}"
+                                                       IsVisible="{Binding $parent[ListBox].((vm:ProtocolSessionViewModel)DataContext).ShowTimestamp}"/>
+                                            <TextBlock Grid.Column="1" Text="{Binding Direction}" Classes="cell"
+                                                       Classes.received="{Binding IsReceived}"
+                                                       Classes.sent="{Binding IsSent}"
+                                                       Classes.auto="{Binding IsAuto}"
+                                                       Classes.pass="{Binding IsPass}"
+                                                       Classes.bad="{Binding IsBad}"/>
+                                            <TextBlock Grid.Column="2" Text="{Binding Channel}" Classes="cell mono"/>
+                                            <TextBlock Grid.Column="3" Text="{Binding Size}" Classes="cell mono"
+                                                       Foreground="{DynamicResource TlTextMuted}"/>
+                                            <TextBlock Grid.Column="4" Text="{Binding TimingText}" Classes="cell mono"
+                                                       Foreground="{DynamicResource TlTextMuted}"/>
+                                            <TextBlock Grid.Column="5" Text="{Binding ContentText}"
+                                                       Classes="cell mono" TextTrimming="CharacterEllipsis"/>
+                                            <TextBlock Grid.Column="6" Text="{Binding HexColumn}"
+                                                       Classes="cell mono"
+                                                       Foreground="{DynamicResource TlTextMuted}"
+                                                       TextTrimming="CharacterEllipsis"/>
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
+
+                        <!-- 选中行详情 (此前选中一行没有任何用途) -->
+                        <Border Grid.Row="1"
+                                Background="{DynamicResource TlSurfaceSubtle}"
+                                BorderBrush="{DynamicResource TlBorderBrush}"
+                                BorderThickness="0,1,0,0"
+                                Padding="12,6"
+                                IsVisible="{Binding HasSelectedEntry}">
+                            <Grid RowDefinitions="Auto,Auto" RowSpacing="5">
+                                <Grid Grid.Row="0" ColumnDefinitions="Auto,Auto,Auto,Auto,*,Auto,Auto,Auto,Auto"
+                                      ColumnSpacing="10">
+                                    <TextBlock Grid.Column="0" Text="详情" Classes="inline-cap"
+                                               VerticalAlignment="Center"/>
+                                    <TextBlock Grid.Column="1" Text="{Binding SelectedEntry.Direction}"
+                                               FontSize="{DynamicResource TlFontS}" FontWeight="SemiBold"
+                                               Foreground="{DynamicResource TlTextPrimary}"
+                                               VerticalAlignment="Center"/>
+                                    <TextBlock Grid.Column="2" Text="{Binding SelectedEntry.Channel}"
+                                               Classes="mono" FontSize="{DynamicResource TlFontXs}"
+                                               Foreground="{DynamicResource TlTextMuted}"
+                                               VerticalAlignment="Center"/>
+                                    <TextBlock Grid.Column="3" Text="{Binding SelectedEntry.Time}"
+                                               Classes="mono" FontSize="{DynamicResource TlFontXs}"
+                                               Foreground="{DynamicResource TlTextMuted}"
+                                               VerticalAlignment="Center"/>
+                                    <TextBlock Grid.Column="4" Text="{Binding SelectedEntry.SizeText}"
+                                               Classes="mono" FontSize="{DynamicResource TlFontXs}"
+                                               Foreground="{DynamicResource TlTextMuted}"
+                                               VerticalAlignment="Center"/>
+                                    <Button Grid.Column="5" Classes="tool" Height="26" Padding="9,2"
+                                            Content="复制文本"
+                                            Command="{Binding CopyEntryTextCommand}"
+                                            CommandParameter="{Binding SelectedEntry}"
+                                            AutomationProperties.AutomationId="ProtocolCopyText"/>
+                                    <Button Grid.Column="6" Classes="tool" Height="26" Padding="9,2"
+                                            Content="复制 HEX"
+                                            Command="{Binding CopyEntryHexCommand}"
+                                            CommandParameter="{Binding SelectedEntry}"
+                                            AutomationProperties.AutomationId="ProtocolCopyHex"/>
+                                    <Button Grid.Column="7" Classes="tool" Height="26" Padding="9,2"
+                                            Content="重发"
+                                            Command="{Binding ResendEntryCommand}"
+                                            CommandParameter="{Binding SelectedEntry}"
+                                            AutomationProperties.AutomationId="ProtocolResend"/>
+                                    <Button Grid.Column="8" Classes="iconbtn" Width="26" Height="26"
+                                            Command="{Binding ClearSelectionCommand}"
+                                            ToolTip.Tip="关闭详情">
+                                        <iconPacks:PackIconIonicons Kind="CloseiOS" Width="13" Height="13"/>
+                                    </Button>
+                                </Grid>
+
+                                <Grid Grid.Row="1" ColumnDefinitions="*,*" ColumnSpacing="12">
+                                    <StackPanel Grid.Column="0" Spacing="2">
+                                        <TextBlock Text="文本" Classes="inline-cap"/>
+                                        <ScrollViewer MaxHeight="94" VerticalScrollBarVisibility="Auto">
+                                            <SelectableTextBlock Text="{Binding SelectedEntry.PlainText}"
+                                                                 FontFamily="Consolas,Menlo,monospace"
+                                                                 FontSize="{DynamicResource TlFontXs}"
+                                                                 Foreground="{DynamicResource TlTextSecondary}"
+                                                                 TextWrapping="Wrap"/>
+                                        </ScrollViewer>
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="1" Spacing="2">
+                                        <TextBlock Text="HEX 转储 (offset / hex / ASCII)" Classes="inline-cap"/>
+                                        <ScrollViewer MaxHeight="94" VerticalScrollBarVisibility="Auto">
+                                            <SelectableTextBlock Text="{Binding SelectedEntry.HexDumpText}"
+                                                                 FontFamily="Consolas,Menlo,monospace"
+                                                                 FontSize="{DynamicResource TlFontXs}"
+                                                                 Foreground="{DynamicResource TlTextMuted}"/>
+                                        </ScrollViewer>
+                                    </StackPanel>
+                                </Grid>
+                            </Grid>
+                        </Border>
+                    </Grid>
 
                     <!-- ─────────── ⑤ 发送 ─────────── -->
                     <Border Grid.Row="4"
@@ -782,11 +928,13 @@
                         <StackPanel Spacing="6">
 
                             <!-- 主发送行 -->
-                            <Grid ColumnDefinitions="Auto,Auto,Auto,Auto,*,Auto,Auto,72,Auto"
-                                  ColumnSpacing="8" VerticalAlignment="Center">
-                                <TextBlock Grid.Column="0" Text="发送" Classes="band-cap"/>
+                            <Grid ColumnDefinitions="Auto,Auto,Auto,Auto,*,Auto,Auto,Auto,64,Auto,Auto,Auto"
+                                  ColumnSpacing="8">
+                                <TextBlock Grid.Column="0" Text="发送" Classes="band-cap"
+                                           VerticalAlignment="Bottom" Margin="0,0,10,6"/>
 
-                                <StackPanel Grid.Column="1" Orientation="Horizontal">
+                                <StackPanel Grid.Column="1" Orientation="Horizontal"
+                                            VerticalAlignment="Bottom">
                                     <TextBlock Text="编码" Classes="inline-cap"/>
                                     <ComboBox Width="92"
                                               ItemsSource="{x:Static vm:ProtocolUiOptions.SendEncodings}"
@@ -795,7 +943,8 @@
                                               AutomationProperties.Name="发送编码"/>
                                 </StackPanel>
 
-                                <StackPanel Grid.Column="2" Orientation="Horizontal">
+                                <StackPanel Grid.Column="2" Orientation="Horizontal"
+                                            VerticalAlignment="Bottom">
                                     <TextBlock Text="新行" Classes="inline-cap"/>
                                     <ComboBox Width="84"
                                               ItemsSource="{x:Static vm:ProtocolUiOptions.NewLineOptions}"
@@ -805,6 +954,7 @@
                                 </StackPanel>
 
                                 <StackPanel Grid.Column="3" Orientation="Horizontal"
+                                            VerticalAlignment="Bottom"
                                             IsVisible="{Binding ShowPeers}">
                                     <TextBlock Text="发送给" Classes="inline-cap"/>
                                     <ComboBox Width="126"
@@ -816,17 +966,27 @@
                                 </StackPanel>
 
                                 <TextBox Grid.Column="4" Classes="multiline"
+                                         x:Name="SendBox"
                                          Text="{Binding SendText, Mode=TwoWay}"
+                                         Classes.invalid="{Binding HasSendTextError}"
                                          AutomationProperties.AutomationId="ProtocolSendText"
                                          AutomationProperties.Name="发送内容"
                                          AcceptsReturn="True" TextWrapping="Wrap"
                                          Watermark="发送内容 (HEX 编码时填十六进制)"
                                          FontFamily="Consolas,Menlo,monospace"/>
 
-                                <Button Grid.Column="5" Classes="primary" MinWidth="92"
+                                <Button Grid.Column="5" Classes="iconbtn" VerticalAlignment="Bottom"
+                                        Command="{Binding ClearSendCommand}"
+                                        AutomationProperties.AutomationId="ProtocolClearSend"
+                                        ToolTip.Tip="清空发送内容">
+                                    <iconPacks:PackIconIonicons Kind="CloseiOS" Width="14" Height="14"/>
+                                </Button>
+
+                                <Button Grid.Column="6" Classes="primary" MinWidth="92"
                                         Command="{Binding SendCommand}"
                                         AutomationProperties.AutomationId="ProtocolSend"
-                                        VerticalAlignment="Bottom">
+                                        VerticalAlignment="Bottom"
+                                        ToolTip.Tip="Ctrl+Enter 发送; ↑/↓ 调回历史">
                                     <StackPanel Orientation="Horizontal" Spacing="5">
                                         <iconPacks:PackIconIonicons Kind="ArrowForwardiOS" Width="14" Height="14"
                                                                     VerticalAlignment="Center"
@@ -835,17 +995,27 @@
                                     </StackPanel>
                                 </Button>
 
-                                <CheckBox Grid.Column="6" Content="循环" VerticalAlignment="Center"
-                                          Margin="4,0,0,0"
+                                <CheckBox Grid.Column="7" Content="循环" VerticalAlignment="Bottom"
+                                          Margin="4,0,0,6"
                                           IsChecked="{Binding LoopSend}"
                                           AutomationProperties.AutomationId="ProtocolLoopSend"/>
 
-                                <TextBox Grid.Column="7" Classes="inline"
+                                <TextBox Grid.Column="8" Classes="inline" VerticalAlignment="Bottom"
                                          Text="{Binding LoopIntervalMs, Mode=TwoWay}"
                                          AutomationProperties.AutomationId="ProtocolLoopMs"/>
 
-                                <TextBlock Grid.Column="8" Text="ms" Classes="inline-cap"
-                                           VerticalAlignment="Center"/>
+                                <TextBlock Grid.Column="9" Text="ms" Classes="inline-cap"
+                                           VerticalAlignment="Bottom" Margin="0,0,0,6"/>
+
+                                <Border Grid.Column="10" Classes="vsep" Height="18"
+                                        VerticalAlignment="Bottom" Margin="3,0,3,6"/>
+
+                                <!-- 发送前预览 / 就地报错 (HEX 写错不再静默失败) -->
+                                <TextBlock Grid.Column="11" Text="{Binding SendStatusText}"
+                                           Classes="send-status"
+                                           Classes.error="{Binding HasSendTextError}"
+                                           VerticalAlignment="Bottom" Margin="0,0,0,6"
+                                           AutomationProperties.AutomationId="ProtocolSendStatus"/>
                             </Grid>
 
                             <!-- 次发送行: 文件 / 分块 / 校验和 (与主行左对齐到同一竖线) -->

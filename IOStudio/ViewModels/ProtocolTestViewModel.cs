@@ -99,8 +99,20 @@ namespace IOStudio.ViewModels
             get => _selectedSession;
             set
             {
+                if (ReferenceEquals(_selectedSession, value))
+                    return;
+
+                if (_selectedSession is not null)
+                    _selectedSession.IsActive = false;
+
                 this.RaiseAndSetIfChanged(ref _selectedSession, value);
                 this.RaisePropertyChanged(nameof(HasSelection));
+
+                if (value is not null)
+                {
+                    value.IsActive = true;
+                    value.MarkSeen(); // 切过去就把标签角标清掉
+                }
             }
         }
 
@@ -117,6 +129,20 @@ namespace IOStudio.ViewModels
                 _filePicker = value;
                 foreach (var s in Sessions)
                     s.FilePicker = value;
+            }
+        }
+
+        private Func<string, Task>? _clipboardWriter;
+
+        /// <summary>由窗口注入的剪贴板写入器 (同样下发到各会话)。</summary>
+        public Func<string, Task>? ClipboardWriter
+        {
+            get => _clipboardWriter;
+            set
+            {
+                _clipboardWriter = value;
+                foreach (var s in Sessions)
+                    s.ClipboardWriter = value;
             }
         }
 
@@ -149,6 +175,7 @@ namespace IOStudio.ViewModels
             {
                 Label = $"{transport.Label} #{_sessionCounter}",
                 FilePicker = _filePicker,
+                ClipboardWriter = _clipboardWriter,
             };
             session.Port = SuggestPort(transport);
             Sessions.Add(session);

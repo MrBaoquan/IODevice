@@ -1362,89 +1362,137 @@ public class Device : ViewModelBase
 
     public void Update()
     {
+        ApplySnapshot(ReadSnapshot());
+    }
+
+    /// <summary>
+    /// 只读取原生设备值、构造纯数据快照，不触碰任何绑定属性，可在后台（设备轮询）线程调用。
+    ///
+    /// 动机：原生 <c>IODeviceController.Update()</c> 在整个设备 Tick 期间持有全局
+    /// <c>RegistryMutex</c>；而每次 <c>GetKey/GetDO/GetAxis</c> 都会经
+    /// <c>IODevices::GetDevice</c> 再次申请同一把锁。若在 UI 线程逐键读取，UI 线程会被
+    /// 轮询整轮持锁的时间反复阻塞，窗口表现为长时间“未响应”。
+    /// 把读取挪到轮询线程后，UI 线程只做纯托管赋值，不再与原生锁争用。
+    /// </summary>
+    public DeviceSnapshot ReadSnapshot()
+    {
+        var snapshot = new DeviceSnapshot();
+
+        // 设备句柄解析统一放到 UI 线程（见 ApplySnapshot），避免后台线程与 UI 线程
+        // 并发触碰包装层那张非线程安全的设备表。
         if (this.devcie == null)
         {
-            this.devcie = IODeviceController.GetIODevice(Name);
-        }
-        IsValid = this.devcie.IsValid();
-        if (IsValid == false)
-            return;
-
-        // 首次设备有效时，同步 OAction 的 Scale 和 InvertEvent 属性到 IODevice
-        if (!_propsInitialized)
-        {
-            _propsInitialized = true;
-            SyncOActionPropsToIODevice();
-            // SyncPropertyKeysToIODevice(); // 移除：IODevice 会从配置文件自动加载 Properties
+            snapshot.NeedsResolve = true;
+            return snapshot;
         }
 
-        // 只在值变化时更新，减少不必要的属性通知
+        snapshot.IsValid = this.devcie.IsValid();
+        if (!snapshot.IsValid)
+            return snapshot;
+
         Actions.ForEach(_action =>
         {
             _action.Keys.ForEach(_key =>
-            {
-                var newValue = this.devcie.GetKey(_key.Name) ? 1f : 0f;
-                if (Math.Abs(_key.Value - newValue) > float.Epsilon)
-                    _key.Value = newValue;
-            });
+                snapshot.KeyValues.Add((_key, this.devcie.GetKey(_key.Name) ? 1f : 0f)));
         });
 
-        DIKeys
-            .ToList()
-            .ForEach(_key =>
-            {
-                var newValue = this.devcie.GetKey(_key.Name) ? 1f : 0f;
-                if (Math.Abs(_key.Value - newValue) > float.Epsilon)
-                    _key.Value = newValue;
-            });
+        foreach (var _key in DIKeys)
+            snapshot.KeyValues.Add((_key, this.devcie.GetKey(_key.Name) ? 1f : 0f));
 
-        ADKeys
-            .ToList()
-            .ForEach(_key =>
-            {
-                var newValue = this.devcie.GetRawKeyValue(_key.Name);
-                if (Math.Abs(_key.Value - newValue) > float.Epsilon)
-                    _key.Value = newValue;
-            });
+        foreach (var _key in ADKeys)
+            snapshot.KeyValues.Add((_key, this.devcie.GetRawKeyValue(_key.Name)));
 
-        DOKeys
-            .ToList()
-            .ForEach(_key =>
-            {
-                IOToolkit.Key doKey = _key.Name;
-                var newValue = this.devcie.GetDO(doKey);
-                if (Math.Abs(_key.Value - newValue) > float.Epsilon)
-                    _key.Value = newValue;
-            });
+        foreach (var _key in DOKeys)
+        {
+            IOToolkit.Key doKey = _key.Name;
+            snapshot.KeyValues.Add((_key, this.devcie.GetDO(doKey)));
+        }
 
         Axes.ForEach(_axis =>
         {
-            var newAxisValue = this.devcie.GetAxis(_axis.Name);
-            if (Math.Abs(_axis.Value - newAxisValue) > float.Epsilon)
-                _axis.Value = newAxisValue;
-
+            snapshot.NodeValues.Add((_axis, this.devcie.GetAxis(_axis.Name)));
             _axis.Keys.ForEach(_key =>
-            {
-                var newValue = this.devcie.GetAxisKey(_key.Name);
-                if (Math.Abs(_key.Value - newValue) > float.Epsilon)
-                    _key.Value = newValue;
-            });
+                snapshot.KeyValues.Add((_key, this.devcie.GetAxisKey(_key.Name))));
         });
 
         OActions.ForEach(_oaction =>
         {
-            var newOActionValue = this.devcie.GetDO(_oaction.Name);
-            if (Math.Abs(_oaction.Value - newOActionValue) > float.Epsilon)
-                _oaction.Value = newOActionValue;
-
+            snapshot.NodeValues.Add((_oaction, this.devcie.GetDO(_oaction.Name)));
             _oaction.Keys.ForEach(_key =>
             {
                 IOToolkit.Key _ioKey = _key.Name;
-                var newValue = this.devcie.GetDO(_ioKey);
-                if (Math.Abs(_key.Value - newValue) > float.Epsilon)
-                    _key.Value = newValue;
+                snapshot.KeyValues.Add((_key, this.devcie.GetDO(_ioKey)));
             });
         });
+
+        return snapshot;
+    }
+
+    /// <summary>把快照值写回绑定属性。必须在 UI 线程调用（会触发 PropertyChanged）。</summary>
+    public void ApplySnapshot(DeviceSnapshot snapshot)
+    {
+        if (snapshot == null)
+            return;
+
+        if (this.devcie == null)
+        {
+            this.devcie = IODeviceController.GetIODevice(Name);
+        }
+
+        // 关键: 有快照时直接信任快照里的有效性, 绝不在 UI 线程再调一次原生 IsValid() —
+        // 原生 IsValid() 同样会申请 RegistryMutex, 会把 UI 线程重新拖进"轮询整轮持锁"的
+        // 等待里 (这正是窗口长时间未响应的根因)。仅 NeedsResolve (读取时还没有设备句柄,
+        // 只会发生在首次) 才需要在 UI 线程解析。
+        if (snapshot.NeedsResolve)
+        {
+            IsValid = this.devcie.IsValid();
+            if (!IsValid)
+                return;
+            EnsurePropsInitialized();
+            return;
+        }
+
+        IsValid = snapshot.IsValid;
+        if (!IsValid)
+            return;
+
+        // 首次设备有效时，同步 OAction 的 Scale 和 InvertEvent 属性到 IODevice
+        EnsurePropsInitialized();
+
+        // 只在值变化时更新，减少不必要的属性通知
+        foreach (var _kv in snapshot.KeyValues)
+        {
+            if (Math.Abs(_kv.Key.Value - _kv.Value) > float.Epsilon)
+                _kv.Key.Value = _kv.Value;
+        }
+        foreach (var _nv in snapshot.NodeValues)
+        {
+            if (Math.Abs(_nv.Node.Value - _nv.Value) > float.Epsilon)
+                _nv.Node.Value = _nv.Value;
+        }
+    }
+
+    /// <summary>首次设备有效时，同步 OAction 的 Scale / InvertEvent 属性到 IODevice（仅一次）。</summary>
+    private void EnsurePropsInitialized()
+    {
+        if (_propsInitialized)
+            return;
+        _propsInitialized = true;
+        SyncOActionPropsToIODevice();
+        // SyncPropertyKeysToIODevice(); // 移除：IODevice 会从配置文件自动加载 Properties
+    }
+
+    /// <summary>设备值的原始快照（纯数据，不涉及 UI 绑定）。</summary>
+    public sealed class DeviceSnapshot
+    {
+        /// <summary>需要在 UI 线程解析原生设备句柄（仅首次）。</summary>
+        public bool NeedsResolve;
+
+        public bool IsValid;
+
+        public List<(Key Key, float Value)> KeyValues { get; } = new();
+
+        public List<(IONodeBase Node, float Value)> NodeValues { get; } = new();
     }
 }
 

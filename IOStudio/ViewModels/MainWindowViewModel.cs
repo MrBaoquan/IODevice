@@ -888,11 +888,35 @@ namespace IOStudio.ViewModels
                                 // 绑定该命令的 Avalonia Button 随即抛
                                 // "InvalidOperationException: Call from invalid thread",
                                 // 并且该异常会沿调用栈弄死订阅它的设备轮询。
-                                Dispatcher.UIThread.Post(() =>
+                                // 原生读取放在轮询（后台）线程执行：UI 线程直读会与
+                                // IODeviceController.Update() 整轮持有的原生 RegistryMutex 争用，
+                                // 造成窗口长时间“未响应”（UI 线程栈阻塞在 GetKey）。这里只在
+                                // 后台线程取纯数据快照，回 UI 线程仅做托管赋值。
+                                var _selectedDevice = SelectedIODevcie;
+                                if (_selectedDevice != null)
                                 {
-                                    SelectedIODevcie?.Update();
-                                    RefreshStatusDerived();
-                                });
+                                    Device.DeviceSnapshot _deviceSnapshot;
+                                    try
+                                    {
+                                        _deviceSnapshot = _selectedDevice.ReadSnapshot();
+                                    }
+                                    catch (Exception exSnapshot)
+                                    {
+                                        // 录制等会并发修改 Key 集合，快照读取可能抛；跳过本次，
+                                        // 下一周期自动恢复，也不影响订阅存活。
+                                        Debug.WriteLine($"[DevicePoll] 值快照读取跳过: {exSnapshot.Message}");
+                                        _deviceSnapshot = null;
+                                    }
+
+                                    if (_deviceSnapshot != null)
+                                    {
+                                        Dispatcher.UIThread.Post(() =>
+                                        {
+                                            _selectedDevice.ApplySnapshot(_deviceSnapshot);
+                                            RefreshStatusDerived();
+                                        });
+                                    }
+                                }
                             }
                             catch (Exception ex)
                             {

@@ -49,10 +49,10 @@ PLUGIN_LOG = DEPLOY / "ExternalLibraries" / "Logs" / "MP-YDL.log"
 
 
 def _netmsg(cmd, para_obj=None):
-    """按协议打包 NetMsgJson: Para 是"转义后的 JSON 字符串"。"""
+    """按协议打包 NetMsgJson: Para 是**嵌套对象** (原厂确认, 非转义字符串)。"""
     msg = {"Cmd": cmd}
     if para_obj is not None:
-        msg["Para"] = json.dumps(para_obj, ensure_ascii=False, separators=(",", ":"))
+        msg["Para"] = para_obj
     return json.dumps(msg, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
 
 

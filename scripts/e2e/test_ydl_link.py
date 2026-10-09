@@ -7,7 +7,7 @@ MP-YDL (影动力) 协议链路验收测试。
 断言 (逐条对应已修复的缺陷):
   1. 有报文产生 (链路通)。
   2. **100% 可被标准 JSON 解析** —— 修复前实测 97% 非法 (Para 未转义)。
-  3. 每条带 Para 的报文, 其 Para 反转义后**自身也是合法 JSON**。
+  3. 每条带 Para 的报文, Para 是**嵌套对象** (合法 JSON, 原厂确认形态)。
   4. Cmd 属于协议枚举。
   5. 电缸发送间隔 **>= 45ms** —— 协议建议 50ms; 修复前实测 22ms (超发 2 倍)。
   6. HeightRatioList 值域在 0..1。
@@ -164,6 +164,19 @@ def captured():
     return result
 
 
+def _para_obj(obj):
+    """取 Para 为对象 (协议: 嵌套对象; 兼容旧的转义字符串形态)。"""
+    para = obj.get("Para")
+    if isinstance(para, dict):
+        return para
+    if isinstance(para, str):
+        try:
+            return json.loads(para)
+        except Exception:
+            return None
+    return None
+
+
 def _split(records):
     """返回 (valid, invalid, para_objects)。"""
     valid, invalid, paras = [], [], []
@@ -174,12 +187,8 @@ def _split(records):
             invalid.append((ms, text))
             continue
         valid.append((ms, obj))
-        para = obj.get("Para")
-        if isinstance(para, str):
-            try:
-                paras.append((ms, obj.get("Cmd"), json.loads(para)))
-            except Exception:
-                paras.append((ms, obj.get("Cmd"), None))
+        if "Para" in obj:
+            paras.append((ms, obj.get("Cmd"), _para_obj(obj)))
     return valid, invalid, paras
 
 
@@ -205,11 +214,11 @@ def test_messages_are_all_valid_json(captured):
 
 
 def test_para_payload_is_valid_json(captured):
-    """P0-1 回归: Para 反转义后自身必须是合法 JSON (协议要求 Para 为转义后的 JSON 字符串)。"""
+    """P0-1 回归: Para 必须是合法 JSON 对象 (协议要求 Para 为嵌套对象)。"""
     _, _, paras = _split(captured["records"])
     bad = [(ms, cmd) for ms, cmd, obj in paras if obj is None]
     assert paras, "没有任何带 Para 的报文, 无法验证"
-    assert bad == [], f"以下报文的 Para 不是合法 JSON: {bad[:5]}"
+    assert bad == [], f"以下报文的 Para 不是合法 JSON 对象: {bad[:5]}"
 
 
 def test_commands_are_known(captured):
@@ -238,7 +247,9 @@ def test_cylinder_values_in_range(captured):
     for ms, obj in valid:
         if obj.get("Cmd") != "GamePlatform_Cylinder":
             continue
-        data = json.loads(obj["Para"])
+        data = _para_obj(obj)
+        if not isinstance(data, dict):
+            continue
         for v in data.get("HeightRatioList", []):
             if not (0.0 <= v <= 1.0):
                 bad.append((ms, v))
@@ -261,7 +272,9 @@ def test_effect_intensity_is_within_protocol_range(captured):
     for ms, obj in valid:
         if obj.get("Cmd") != "GamePlatform_PlatformEffect":
             continue
-        data = json.loads(obj["Para"])
+        data = _para_obj(obj)
+        if not isinstance(data, dict):
+            continue
         eff = data.get("EffectData", {})
         if "Intensity" in eff and not (1 <= eff["Intensity"] <= 100):
             bad.append((ms, eff["Intensity"]))

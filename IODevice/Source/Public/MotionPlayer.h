@@ -67,9 +67,12 @@ namespace IOToolkit {
 
         // ── 通道工程量程 (归一化 0..1 → 工程量) ───────
         // 三级优先级的"解析"由宿主完成 (它才知道轨道 engineering_range 与设备声明量程),
-        // 但三级**都可以表达为一个绝对区间**, 所以这里只存一张
-        // (device, channel) → (min, max) 表, 换算就是一次仿射映射, 没有任何分支。
-        // 未登记的通道 → 直通 (保持既有行为)。
+        // 但三级**都可以表达为一个绝对区间**, 所以这里只存 (device, channel) → (min, max),
+        // 换算就是一次仿射映射, 没有任何分支。查表分两层, 优先级从高到低:
+        //   1) 宿主显式推送 (SetChannelRange / ClearChannelRanges 管理) —— 权威值;
+        //   2) 已装载 Slot 的轨道 engineering_range 派生 —— 内容自带兜底 (宿主未推送时生效,
+        //      随 Slot 装载/卸载重建, 不受 ClearChannelRanges 影响)。
+        // 两层都没有的通道 → 直通 (保持既有行为)。
         //
         // 换算只在**派发收口点**执行 (DispatchChannel / EvaluateSlotAtEngineering);
         // 求值本身仍返回归一化值, 因此跨语言契约测试仍可比对归一化语义。

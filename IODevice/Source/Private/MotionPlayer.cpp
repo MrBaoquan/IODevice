@@ -66,6 +66,10 @@ namespace {
         std::string valueType;   // "float" or "bool" (用于中性值默认推断)
         bool muted = false;
         float neutralValue = 0.5f; // 无 Clip 覆盖时的输出值 (解析自 neutral_value, 缺省按 value_type)
+        // 轨道级工程量程 (对称行程, 绕中位): engineering_range。>0 表示本轨道自带量程,
+        // 核心在 LoadSlot 时据此登记 (device, channel) → (min, max) 的兜底;
+        // 宿主显式 SetChannelRange 可覆盖。0 = 未声明 (回退设备声明量程 / 直通)。
+        float engineeringRange = 0.0f;
         MotionIdleLoop idle;      // 可选待机循环 (缺省 disabled → 回退 neutralValue)
         std::vector<MotionKeyframe> overrideKeyframes; // 空窗覆盖关键帧 (绝对时间, 两点插值, 之外回 idle)
         std::vector<MotionClip> clips;
@@ -402,6 +406,12 @@ namespace {
                         track.neutralValue = (track.valueType == "bool") ? 0.0f : 0.5f;
                     }
 
+                    // 轨道级工程量程 (对称行程): >0 时供 LoadSlot 登记兜底量程
+                    if (jTrack.contains("engineering_range") && jTrack["engineering_range"].is_number()) {
+                        float er = jTrack["engineering_range"].get<float>();
+                        track.engineeringRange = (er > 0.0f) ? er : 0.0f;
+                    }
+
                     // Idle 循环 (可选): 无 clip 覆盖时的待机循环动作
                     if (jTrack.contains("idle") && jTrack["idle"].is_object()) {
                         const auto& jIdle = jTrack["idle"];
@@ -732,22 +742,64 @@ public:
     // ── 通道工程量程表: "device\x1Fchannel" → (min, max) ──
     // 三级优先级 (轨道 engineering_range → 设备声明量程 → 直通) 的**解析**由宿主完成
     // (它才知道轨道与设备声明), 但三级都能表达为绝对区间, 所以这里只做一次仿射映射, 无分支。
+    //
+    // 表分两层, 优先级从高到低:
+    //   1) channelRanges —— 宿主显式推送 (SetChannelRange / ClearChannelRanges 管理), 权威值;
+    //   2) trackRanges   —— 由**当前已装载 Slot** 的轨道 engineering_range 派生
+    //                       (RebuildTrackRanges), 是"已装载 Slots"的纯函数, 只读;
+    //                       宿主的 ClearChannelRanges 不会抹掉它。
+    // 这样"内容自带工程含义"的 .motion 在未推送量程的宿主 (如 UNIPlayer) 上也能得到工程量,
+    // 同时宿主清空/重推量程不会与内容兜底互相踩踏。
     std::map<std::string, std::pair<float, float>> channelRanges;
+    std::map<std::string, std::pair<float, float>> trackRanges;
 
     static std::string RangeKey(const std::string& deviceName, const std::string& channel) {
         return deviceName + "\x1F" + channel;
     }
 
-    /// 归一化 → 工程量。未登记或退化区间 → 直通 (保持既有行为)。
+    /// 归一化 → 工程量。宿主推送优先, 其次轨道自带兜底; 都无或退化区间 → 直通 (既有行为)。
     float ConvertToEngineering(const std::string& deviceName, const std::string& channel,
                                float normalized) const {
-        auto it = channelRanges.find(RangeKey(deviceName, channel));
-        if (it == channelRanges.end()) return normalized;
-        const float mn = it->second.first;
-        const float mx = it->second.second;
+        const std::string key = RangeKey(deviceName, channel);
+        const std::pair<float, float>* range = nullptr;
+        auto host = channelRanges.find(key);
+        if (host != channelRanges.end()) {
+            range = &host->second;
+        } else {
+            auto track = trackRanges.find(key);
+            if (track != trackRanges.end()) range = &track->second;
+        }
+        if (!range) return normalized;
+        const float mn = range->first;
+        const float mx = range->second;
         if (!(mx > mn)) return normalized;
         const float v = (std::max)(0.0f, (std::min)(1.0f, normalized));
         return mn + v * (mx - mn);
+    }
+
+    /// 从**当前已装载的所有 Slot** 重建轨道兜底量程 (内容自带量程)。
+    /// 语义与宿主 EngineeringValueConverter.ResolveRange 的"轨道显式覆盖"分支一致:
+    /// 绕中位的对称行程 → 绝对区间 min=(0-neutral)*range, max=(1-neutral)*range。
+    /// 因为它是"已装载 Slots"的纯函数, 宿主 ClearChannelRanges / SetChannelRange 不影响它,
+    /// 多个 Slot/多个宿主也不会因清表而互相丢失兜底量程。
+    void RebuildTrackRanges() {
+        trackRanges.clear();
+        for (const auto& [id, slot] : slots) {
+            for (const auto& track : slot.timeline.tracks) {
+                if (track.muted) continue;
+                const float range = track.engineeringRange;
+                if (!(range > 0.0f)) continue;
+                if (track.deviceName.empty()) continue;
+                const std::string channel =
+                    (track.outputType == "oaxis" && !track.oaxisChannel.empty())
+                        ? track.oaxisChannel
+                        : track.oactionName;
+                if (channel.empty()) continue;
+                const float neutral = track.neutralValue;
+                trackRanges[RangeKey(track.deviceName, channel)] =
+                    std::make_pair((0.0f - neutral) * range, (1.0f - neutral) * range);
+            }
+        }
     }
 
     /// EvaluateSlotAt / EvaluateSlotAtEngineering 的共用实现 (engineering=true 时输出工程量)
@@ -764,7 +816,8 @@ public:
     // Device dispatch: channelKey -> IODevice SetDO
     //
     // 归一化 → 工程量 的换算就在这里 (派发收口点), 使用 Impl::channelRanges 里由宿主推送的
-    // (min, max) 表。求值本身仍返回归一化值, 所以跨语言契约测试比对的仍是归一化语义。
+    // (min, max) 表; 宿主未推送时回退到 Impl::trackRanges (由已装载 Slot 的轨道
+    // engineering_range 派生)。求值本身仍返回归一化值, 所以跨语言契约测试比对的仍是归一化语义。
     //
     // NOTE: 编排端(编辑器)目前不驱动本路径 (它由 C# 侧驱动时间并派发); 本路径服务放映端
     // (UNIPlayer)。两端的换算必须一致 —— 这正是把换算放进 native 并让编排端也复用它的原因。
@@ -858,6 +911,9 @@ int MotionPlayer::LoadSlot(const char* slotId, const char* filePath,
 
     _impl->slots[slotId] = std::move(slot);
 
+    // 轨道自带 engineering_range → 重建兜底量程 (宿主之后 SetChannelRange 仍可覆盖)
+    _impl->RebuildTrackRanges();
+
     IOLog::Instance().Log(std::string("MotionPlayer: Loaded slot '") + slotId + "' from " + filePath + "\n");
     return 0;
 }
@@ -890,6 +946,9 @@ int MotionPlayer::LoadSlotFromJson(const char* slotId, const char* jsonContent,
 
     _impl->slots[slotId] = std::move(slot);
 
+    // 轨道自带 engineering_range → 重建兜底量程 (宿主之后 SetChannelRange 仍可覆盖)
+    _impl->RebuildTrackRanges();
+
     IOLog::Instance().Log(std::string("MotionPlayer: Loaded slot '") + slotId + "' from JSON string\n");
     return 0;
 }
@@ -901,6 +960,7 @@ void MotionPlayer::UnloadSlot(const char* slotId) {
     if (it != _impl->slots.end()) {
         it->second.StopTimer();
         _impl->slots.erase(it);
+        _impl->RebuildTrackRanges();
         IOLog::Instance().Log(std::string("MotionPlayer: Unloaded slot '") + slotId + "'\n");
     }
 }
@@ -911,6 +971,7 @@ void MotionPlayer::UnloadAll() {
         slot.StopTimer();
     }
     _impl->slots.clear();
+    _impl->RebuildTrackRanges();
     _impl->safetyGuard.Reset();
     IOLog::Instance().Log("MotionPlayer: All slots unloaded.\n");
 }

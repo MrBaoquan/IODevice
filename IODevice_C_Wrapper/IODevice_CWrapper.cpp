@@ -85,6 +85,11 @@ IOCAPI int __stdcall SetIORuntimeRoot(BSTR InRuntimeRoot)
 	return dh::IOSettings::Instance().SetIORuntimeRoot(std::filesystem::path(std::wstring(InRuntimeRoot)).string().data());
 }
 
+IOCAPI int __stdcall SetPluginConfigRoot(BSTR InRoot)
+{
+	return dh::IOSettings::Instance().SetPluginConfigRoot(std::filesystem::path(std::wstring(InRoot)).string().data());
+}
+
 IOCAPI int __stdcall SetIOLogDir(BSTR InLogDir)
 {
 	return dh::IOSettings::Instance().SetIOLogDir(std::filesystem::path(std::wstring(InLogDir)).string().data());

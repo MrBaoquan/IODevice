@@ -21,6 +21,14 @@ namespace IOToolkit
         int SetIORuntimeRoot(const char* InRuntimeRoot);
 
         /**
+         * Set plugin config root only (i.e. <InRoot>/Config), leaving the module
+         * directory / ExternalLibraries / Logs untouched. Used by the -project
+         * product-pack flow so device-layer config comes from the pack while native
+         * libraries stay next to the module.
+         */
+        int SetPluginConfigRoot(const char* InRoot);
+
+        /**
          * Set Log Directory
          */
         int SetIOLogDir(const char* InLogDir);

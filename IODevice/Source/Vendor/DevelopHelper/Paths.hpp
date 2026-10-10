@@ -38,9 +38,20 @@ class Paths
             SetDirectoriesFromRoot(InRuntimeRoot);
             return *this;
         }
+        /// 只重定向「插件配置根」(即 <InConfigRoot>/Config)，不动模块目录、
+        /// ExternalLibraries 与 Logs。-project 产品包模式用它把设备层配置切到包内，
+        /// 而引擎/中间件动态库仍留在模块目录（Windows 既有行为）。
+        /// 同时把原始根记录下来，供宿主在装载插件时经 SetPluginRuntimeRoot 下发。
+        Paths& SetConfigRoot(const std::string& InConfigRoot)
+        {
+            plugin_config_root = NormalizeBaseDir(InConfigRoot);
+            config_dir = AppendDir(plugin_config_root, "Config");
+            return *this;
+        }
 		const std::string& GetModuleDir() const{ return module_dir; }
 		const std::string& GetResourceDir() const{ return resource_dir; }
 		const std::string& GetConfigDir() const{ return config_dir; }
+        const std::string& GetPluginConfigRoot() const { return plugin_config_root; }
         const std::string& GetLogDir() const { return log_dir; }
 		const std::string& GetExternalLibrariesDir() const { return external_libraries_dir; }
 		const std::string& GetExternalLibraryCoreDir() const { return external_library_core_dir; }
@@ -56,6 +67,7 @@ class Paths
 		std::string module_dir;
 		std::string resource_dir;
 		std::string config_dir;
+        std::string plugin_config_root;
         std::string log_dir;
         std::string external_libraries_dir;
         std::string external_library_core_dir;

@@ -33,6 +33,13 @@ int IOSettings::SetIORuntimeRoot(const char* InRuntimeRoot)
     return 1;
 }
 
+int IOSettings::SetPluginConfigRoot(const char* InRoot)
+{
+    if (!InRoot || InRoot[0] == '\0') return 0;
+    Paths::Instance().SetConfigRoot(InRoot);
+    return 1;
+}
+
 int IOToolkit::IOSettings::SetIOLogDir(const char* InLogDir)
 {
     return IOLog::Instance().SetLogDir(InLogDir);

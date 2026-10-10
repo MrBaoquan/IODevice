@@ -74,6 +74,11 @@ IODEVICE_UNITY_API int SetIORuntimeRoot(const char* runtimeRoot)
     return dh::IOSettings::Instance().SetIORuntimeRoot(SafeString(runtimeRoot));
 }
 
+IODEVICE_UNITY_API int SetPluginConfigRoot(const char* root)
+{
+    return dh::IOSettings::Instance().SetPluginConfigRoot(SafeString(root));
+}
+
 IODEVICE_UNITY_API int SetIOLogDir(const char* logDir)
 {
     return dh::IOSettings::Instance().SetIOLogDir(SafeString(logDir));

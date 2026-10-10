@@ -412,8 +412,19 @@ void IOToolkit::ExternalIO::Constructor()
         bValid = false;
         return;
     }
+	// 插件配置根: -project 产品包模式下宿主把包根下发, 使插件按 <包根>/Config/<plugin>
+	// 读取设备配置; 未显式设置时保持既有行为 (非 Windows 仍下发模块目录)。
+	// 必须在 Initialize()/OpenDevice() 之前, 插件才有机会用正确的 Config 目录。
+	const std::string& pluginConfigRoot = Paths::Instance().GetPluginConfigRoot();
+	if (!pluginConfigRoot.empty())
+	{
+		externalDll.SetPluginRuntimeRoot(pluginConfigRoot.c_str());
+	}
 #if !IODEVICE_PLATFORM_WINDOWS
-	externalDll.SetPluginRuntimeRoot(Paths::Instance().GetModuleDir().data());
+	else
+	{
+		externalDll.SetPluginRuntimeRoot(Paths::Instance().GetModuleDir().data());
+	}
 #endif
     DeviceInfo* devInfo = externalDll.Initialize();
     inputCount = devInfo->InputCount;

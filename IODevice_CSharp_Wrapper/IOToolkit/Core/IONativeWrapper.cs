@@ -632,7 +632,10 @@ namespace IOToolkit.Core
         [return: MarshalAs(NativeStringType)]
         public static extern string MotionGetUnresolvedChannels();
 
-        [DllImport(DllName, CallingConvention = CallingConvention.StdCall, CharSet = CharSet.Unicode)]
+        // Native MotionGetRateLimitedChannels returns a BSTR via string2BSTR.
+        // Match MotionGetUnresolvedChannels so the CLR uses SysFreeString, not CoTaskMemFree.
+        [DllImport(DllName, CallingConvention = NativeCallingConvention)]
+        [return: MarshalAs(NativeStringType)]
         public static extern string MotionGetRateLimitedChannels();
 
         /// <summary>清零未送达计数 (起播本身也会清)。</summary>

@@ -32,6 +32,7 @@ namespace IOStudio.Views
         private float _originalMax;
         private float _originalDeadZone;
         private float _originalSensitivity;
+        private float _originalSlewRate;
         private float _originalExponent;
         private bool _originalInvert;
         private bool _originalInvertEvent;
@@ -46,6 +47,7 @@ namespace IOStudio.Views
         private NumericUpDown? _maxNumeric;
         private NumericUpDown? _deadZoneNumeric;
         private NumericUpDown? _sensitivityNumeric;
+        private NumericUpDown? _slewRateNumeric;
         private NumericUpDown? _exponentNumeric;
         private CheckBox? _invertCheckBox;
         private CheckBox? _invertEventCheckBox;
@@ -137,6 +139,7 @@ namespace IOStudio.Views
             _originalMax = Key.Max;
             _originalDeadZone = Key.DeadZone;
             _originalSensitivity = Key.Sensitivity;
+            _originalSlewRate = Key.SlewRate;
             _originalExponent = Key.Exponent;
             _originalInvert = Key.InvertBool;
             _originalInvertEvent = Key.InvertEventBool;
@@ -259,6 +262,7 @@ namespace IOStudio.Views
             _maxNumeric = this.FindControl<NumericUpDown>("MaxNumeric");
             _deadZoneNumeric = this.FindControl<NumericUpDown>("DeadZoneNumeric");
             _sensitivityNumeric = this.FindControl<NumericUpDown>("SensitivityNumeric");
+            _slewRateNumeric = this.FindControl<NumericUpDown>("SlewRateNumeric");
             _minUnlimitedCheckBox = this.FindControl<CheckBox>("MinUnlimitedCheckBox");
             _maxUnlimitedCheckBox = this.FindControl<CheckBox>("MaxUnlimitedCheckBox");
 
@@ -367,6 +371,12 @@ namespace IOStudio.Views
             {
                 _sensitivityNumeric.Value = SafeFloatToDecimal(_originalSensitivity);
                 _sensitivityNumeric.ValueChanged += OnConfigChanged;
+            }
+
+            if (_slewRateNumeric != null)
+            {
+                _slewRateNumeric.Value = SafeFloatToDecimal(_originalSlewRate);
+                _slewRateNumeric.ValueChanged += OnConfigChanged;
             }
 
             if (_exponentNumeric != null)
@@ -517,6 +527,8 @@ namespace IOStudio.Views
                 key.DeadZone = (float)(_deadZoneNumeric.Value ?? 0);
             if (_sensitivityNumeric != null)
                 key.Sensitivity = (float)(_sensitivityNumeric.Value ?? 1);
+            if (_slewRateNumeric != null)
+                key.SlewRate = (float)(_slewRateNumeric.Value ?? 0);
             if (_exponentNumeric != null)
                 key.Exponent = (float)(_exponentNumeric.Value ?? 1);
             if (_invertCheckBox != null)

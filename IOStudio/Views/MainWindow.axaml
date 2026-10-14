@@ -202,7 +202,9 @@
 				<StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="12">
 					<StackPanel Spacing="1" VerticalAlignment="Center">
 						<TextBlock Text="IOStudio" FontSize="16" FontWeight="SemiBold" Foreground="{DynamicResource TlTextPrimary}" />
-						<TextBlock Text="设备调试工作台" FontSize="11" Foreground="{DynamicResource TlTextMuted}" />
+						<!-- 版本必须一直看得见: 否则"当前是什么版本"只能靠更新提示反推, 而更新提示
+						     比的是分发渠道上的版本, 与手上这份构建未必是一回事。 -->
+						<TextBlock Text="{Binding AppVersionText}" FontSize="11" Foreground="{DynamicResource TlTextMuted}" />
 					</StackPanel>
 					<Border Width="1" Height="28" Background="{DynamicResource TlBorderBrush}" VerticalAlignment="Center" />
 					<Button Command="{Binding AddDeviceCommand}" Classes="primary-button" Padding="14 7" FontSize="13" AutomationProperties.Name="添加设备" IsEnabled="{Binding IsEditMode}">

@@ -134,6 +134,21 @@ int IOToolkit::UInputSettings::Initialize()
 					keyProperty.Min = GetNodeValue(Key->first_attribute("Min") ? Key->first_attribute("Min")->value() : "", -FLT_MAX);
 					keyProperty.Max = GetNodeValue(Key->first_attribute("Max") ? Key->first_attribute("Max")->value() : "", FLT_MAX);
 
+                    // 变化速率上限 (归一化值/秒, 见 PlayerInput.h 的 FInputKeyProperties::SlewRate)。
+                    // 它是<b>全局 Key 属性</b> —— 配一次, 所有引用该通道的 Action/Axis/OAction
+                    // 下的 Key 都继承, 不必逐个重复。0/缺省 = 不限速, 保持既有行为不变。
+                    //
+                    // 兼容: 早期版本这个属性叫 MaxPerSecond (字面像"每秒的最大值", 易误读), 一并认。
+                    auto slewAttr = Key->first_attribute("SlewRate")
+                        ? Key->first_attribute("SlewRate")
+                        : Key->first_attribute("MaxPerSecond");
+                    float slewRate = GetNodeValue(slewAttr ? slewAttr->value() : "", 0.f);
+                    if (slewRate > 0.f)
+                    {
+                        keyProperty.SlewRate = slewRate;
+                        ChannelRateLimits[DeviceName + "|" + keyName] = slewRate;
+                    }
+
                     KeyProperties[deviceID].insert(std::pair<FKey, FInputKeyProperties>(FKey(keyName.data()), keyProperty));
                 }
             }
@@ -210,24 +225,6 @@ int IOToolkit::UInputSettings::Initialize()
 				_oactions.insert(std::pair<std::string, std::vector<FOutputActionKey>>(axisName, _oactionKeys));
 			}
 			OActionMappings.push_back(_oactions);
-
-			// 通道速率上限: <ChannelRate Name="OAxis_6" MaxPerSecond="0.5" />
-			for (xml_node<>* rate = device->first_node("ChannelRate"); rate; rate = rate->next_sibling("ChannelRate"))
-			{
-				std::string channelName = rate->first_attribute("Name") ? rate->first_attribute("Name")->value() : IOType::Invalid;
-				if (channelName == IOType::Invalid)
-				{
-					IOLog::Instance().Warning(std::string("Please make sure that all of your ChannelRate node in ") + DeviceName + " have a correct Name attribute. ");
-					continue;
-				}
-				float maxPerSecond = GetNodeValue(
-					rate->first_attribute("MaxPerSecond") ? rate->first_attribute("MaxPerSecond")->value() : "", 0.f);
-				// 非正值 = 不限速: 与"缺省不限速"一致, 不入表 (避免用 0 去"限死")
-				if (maxPerSecond > 0.f)
-				{
-					ChannelRateLimits[DeviceName + "|" + channelName] = maxPerSecond;
-				}
-			}
 
 
             deviceID++;

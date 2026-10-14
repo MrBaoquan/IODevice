@@ -354,7 +354,7 @@ namespace {
         /// 为什么默认不限速而不是给个宽松值: 通道的"安全速度"完全取决于硬件语义 ——
         /// 电缸是模拟量 (要限), 喷水/风扇/游戏状态宣告是开关量或命令 (必须瞬时)。
         /// 给一个全局值会无差别地把开关量也拖成斜坡 (实测会把 200ms 宽的脉冲削成半截)。
-        /// 所以保护来自**显式配置** <ChannelRate>; 未配置 = 保持既有行为不变。
+        /// 所以保护来自**显式配置** (设备表的全局 Key 属性 SlewRate); 未配置 = 保持既有行为不变。
         float maxRatePerSecond = 0.0f;
     };
 
@@ -974,7 +974,7 @@ public:
     // 分发混合后的通道值
     void DispatchMixedChannels(const std::map<std::string, float>& channels) {
         for (const auto& [channelKey, rawValue] : channels) {
-            // 按通道取速率上限 (设备表的 <ChannelRate>)。缺省 0 = 不限速。
+            // 按通道取速率上限 (设备表全局 Key 属性的 SlewRate)。缺省 0 = 不限速。
             // 间隔由 SafetyGuard 自己用内部时钟测 (不再由调用方传 delta)
             float safeValue = safetyGuard.Check(channelKey, rawValue, RateLimitFor(channelKey));
             DispatchChannel(channelKey, safeValue);

@@ -39,6 +39,20 @@
             <Setter Property="Padding" Value="16"/>
             <Setter Property="Margin" Value="0,0,0,8"/>
         </Style>
+
+        <!-- 参数对: 标签与值同一行 (两行式会把 6 项撑成 12 行), 固定标签宽度让数值左对齐成列 -->
+        <Style Selector="TextBlock.param-label">
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="Foreground" Value="#9ca3af"/>
+            <Setter Property="MinWidth" Value="72"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+        <Style Selector="TextBlock.param-value">
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="Foreground" Value="#374151"/>
+            <Setter Property="FontFamily" Value="Consolas, monospace"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
     </Window.Styles>
 
     <DockPanel>
@@ -205,36 +219,58 @@
                                                 </Button>
                                             </Grid>
 
-                                            <!-- 配置参数展示 -->
-                                            <Grid ColumnDefinitions="*,*,*" RowDefinitions="Auto,Auto" ColumnSpacing="8" RowSpacing="4">
-                                                <!-- Row 0 -->
-                                                <StackPanel Grid.Column="0" Grid.Row="0">
-                                                    <TextBlock Text="Offset" FontSize="11" Foreground="#6b7280"/>
-                                                    <TextBlock Text="{Binding Offset}" FontSize="12"/>
-                                                </StackPanel>
-                                                <StackPanel Grid.Column="1" Grid.Row="0">
-                                                    <TextBlock Text="Scale" FontSize="11" Foreground="#6b7280"/>
-                                                    <TextBlock Text="{Binding Scale}" FontSize="12"/>
-                                                </StackPanel>
-                                                <StackPanel Grid.Column="2" Grid.Row="0">
-                                                    <TextBlock Text="Min" FontSize="11" Foreground="#6b7280"/>
-                                                    <TextBlock Text="{Binding Min, Converter={StaticResource MinMaxDisplayConverter}, ConverterParameter=min}" FontSize="12"/>
-                                                </StackPanel>
+                                            <!-- 常看的几项做成小徽章: 一眼扫完, 不占一整行文字。
+                                                 不在这里改 —— 统一走编辑对话框, 免得同一份参数
+                                                 有两个入口、两种改法。 -->
+                                            <ItemsControl ItemsSource="{Binding SummaryItems}" Focusable="False">
+                                                <ItemsControl.ItemsPanel>
+                                                    <ItemsPanelTemplate>
+                                                        <WrapPanel Orientation="Horizontal"/>
+                                                    </ItemsPanelTemplate>
+                                                </ItemsControl.ItemsPanel>
+                                                <ItemsControl.ItemTemplate>
+                                                    <DataTemplate>
+                                                        <Border Background="#f3f4f6" CornerRadius="3"
+                                                                Padding="6,2" Margin="0,0,6,4">
+                                                            <TextBlock Text="{Binding}" FontSize="10"
+                                                                       Foreground="#4b5563"/>
+                                                        </Border>
+                                                    </DataTemplate>
+                                                </ItemsControl.ItemTemplate>
+                                            </ItemsControl>
 
-                                                <!-- Row 1 -->
-                                                <StackPanel Grid.Column="0" Grid.Row="1">
-                                                    <TextBlock Text="Max" FontSize="11" Foreground="#6b7280"/>
-                                                    <TextBlock Text="{Binding Max, Converter={StaticResource MinMaxDisplayConverter}, ConverterParameter=max}" FontSize="12"/>
-                                                </StackPanel>
-                                                <StackPanel Grid.Column="1" Grid.Row="1">
-                                                    <TextBlock Text="DeadZone" FontSize="11" Foreground="#6b7280"/>
-                                                    <TextBlock Text="{Binding DeadZone}" FontSize="12"/>
-                                                </StackPanel>
-                                                <StackPanel Grid.Column="2" Grid.Row="1">
-                                                    <TextBlock Text="Sensitivity" FontSize="11" Foreground="#6b7280"/>
-                                                    <TextBlock Text="{Binding Sensitivity}" FontSize="12"/>
-                                                </StackPanel>
-                                            </Grid>
+                                            <!-- 其余参数直接铺开。原先折进 Expander 是"再多点一次"的多余动作:
+                                                 徽章已承担"一眼看", 剩下的就这 6 项, 收起反而要人再点开。 -->
+                                            <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto,Auto"
+                                                  ColumnSpacing="16" RowSpacing="3" Margin="0,2,0,0">
+                                                    <StackPanel Grid.Column="0" Grid.Row="0" Orientation="Horizontal" Spacing="6">
+                                                        <TextBlock Classes="param-label" Text="Offset"/>
+                                                        <TextBlock Classes="param-value" Text="{Binding Offset}"/>
+                                                    </StackPanel>
+                                                    <StackPanel Grid.Column="1" Grid.Row="0" Orientation="Horizontal" Spacing="6">
+                                                        <TextBlock Classes="param-label" Text="Sensitivity"/>
+                                                        <TextBlock Classes="param-value" Text="{Binding Sensitivity}"/>
+                                                    </StackPanel>
+
+                                                    <StackPanel Grid.Column="0" Grid.Row="1" Orientation="Horizontal" Spacing="6">
+                                                        <TextBlock Classes="param-label" Text="Min"/>
+                                                        <TextBlock Classes="param-value" Text="{Binding Min, Converter={StaticResource MinMaxDisplayConverter}, ConverterParameter=min}"/>
+                                                    </StackPanel>
+                                                    <StackPanel Grid.Column="1" Grid.Row="1" Orientation="Horizontal" Spacing="6">
+                                                        <TextBlock Classes="param-label" Text="Max"/>
+                                                        <TextBlock Classes="param-value" Text="{Binding Max, Converter={StaticResource MinMaxDisplayConverter}, ConverterParameter=max}"/>
+                                                    </StackPanel>
+
+                                                    <StackPanel Grid.Column="0" Grid.Row="2" Orientation="Horizontal" Spacing="6">
+                                                        <TextBlock Classes="param-label" Text="Exponent"/>
+                                                        <TextBlock Classes="param-value" Text="{Binding Exponent}"/>
+                                                    </StackPanel>
+                                                    <StackPanel Grid.Column="1" Grid.Row="2" Orientation="Horizontal" Spacing="6">
+                                                        <TextBlock Classes="param-label" Text="反转/事件反转"/>
+                                                        <TextBlock Classes="param-value" Text="{Binding InvertDisplay}"/>
+                                                    </StackPanel>
+                                                </Grid>
+
                                         </StackPanel>
                                     </Border>
                                 </DataTemplate>
@@ -263,59 +299,6 @@
                                   HorizontalAlignment="Center"/>
                             </StackPanel>
                         </Border>
-                    </StackPanel>
-                </Border>
-
-                <!-- 通道速率上限: 防止内容里的阶跃把电机顶到报错。
-                     按通道而非按设备 —— 同一台设备上模拟量通道要限速、开关量通道必须瞬时。 -->
-                <Border Classes="section-border">
-                    <StackPanel Spacing="12">
-                        <StackPanel Orientation="Horizontal" Spacing="12">
-                            <TextBlock Classes="section-title" Text="通道速率上限" VerticalAlignment="Center"/>
-                            <TextBlock Text="（归一化值/秒；0 或留空 = 不限速。只给模拟量通道配，开关量请勿添加）"
-                                       FontSize="12" Foreground="#9ca3af" VerticalAlignment="Center"
-                                       TextWrapping="Wrap"/>
-                        </StackPanel>
-
-                        <StackPanel Orientation="Horizontal" Spacing="12" HorizontalAlignment="Right">
-                            <Button Content="+ 添加通道"
-                                    Name="AddChannelRateButton"
-                                    Background="#3b82f6" Foreground="White"
-                                    Padding="12,6" FontSize="13"/>
-                        </StackPanel>
-
-                        <ItemsControl ItemsSource="{Binding ChannelRates}">
-                            <ItemsControl.ItemTemplate>
-                                <DataTemplate>
-                                    <Border BorderBrush="#e5e7eb" BorderThickness="1" CornerRadius="4"
-                                            Padding="12" Margin="0,0,0,8" Background="#fafafa">
-                                        <Grid ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="10">
-                                            <TextBlock Grid.Column="0" Text="通道" FontSize="12"
-                                                       VerticalAlignment="Center" Foreground="#6b7280"/>
-                                            <TextBox Grid.Column="1" Name="ChannelRateNameBox"
-                                                     Text="{Binding Name}"
-                                                     Watermark="如 OAxis_6"
-                                                     FontSize="13"/>
-                                            <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6">
-                                                <TextBlock Text="上限" FontSize="12"
-                                                           VerticalAlignment="Center" Foreground="#6b7280"/>
-                                                <NumericUpDown Name="ChannelRateValueBox"
-                                                               Value="{Binding MaxPerSecond}"
-                                                               Minimum="0" Maximum="100" Increment="0.1"
-                                                               FormatString="0.###"
-                                                               Width="120"/>
-                                                <TextBlock Text="/秒" FontSize="12"
-                                                           VerticalAlignment="Center" Foreground="#6b7280"/>
-                                            </StackPanel>
-                                            <Button Grid.Column="3" Name="DeleteChannelRateButton"
-                                                    Content="删除"
-                                                    Background="#fee2e2" Foreground="#b91c1c"
-                                                    Padding="10,5" FontSize="12"/>
-                                        </Grid>
-                                    </Border>
-                                </DataTemplate>
-                            </ItemsControl.ItemTemplate>
-                        </ItemsControl>
                     </StackPanel>
                 </Border>
 

@@ -50,35 +50,6 @@ public class IORoot : SingletonConfig<IORoot>
     }
 }
 
-/// <summary>
-/// 单个通道的速率上限 (归一化值/秒)。0 或负值 = 不限速。
-///
-/// <para>写在设备表的 <c>&lt;ChannelRate Name="OAxis_6" MaxPerSecond="0.5" /&gt;</c>,
-/// 由 native 派发前按通道查表执行。默认只对模拟量通道有意义 —— 开关量通道应保持不限速。</para>
-/// </summary>
-public class ChannelRate : ReactiveObject
-{
-    private string name = string.Empty;
-
-    /// <summary>通道名 (与 &lt;Key Name=...&gt; 同一命名, 如 OAxis_6)。</summary>
-    [XmlAttribute("Name")]
-    public string Name
-    {
-        get => name;
-        set => this.RaiseAndSetIfChanged(ref name, value);
-    }
-
-    private float maxPerSecond;
-
-    /// <summary>归一化值每秒最大变化量 (0 = 不限速)。</summary>
-    [XmlAttribute("MaxPerSecond")]
-    public float MaxPerSecond
-    {
-        get => maxPerSecond;
-        set => this.RaiseAndSetIfChanged(ref maxPerSecond, value);
-    }
-}
-
 public class Device : ViewModelBase
 {
     private string name = string.Empty;
@@ -446,18 +417,7 @@ public class Device : ViewModelBase
     [XmlElement("OAction")]
     public List<OAction> OActions { get; set; } = new List<OAction>();
 
-    /// <summary>
-    /// 通道速率上限 —— 按<b>通道</b>限制归一化值的变化速度, 防止内容里的阶跃把电机顶到报错。
-    ///
-    /// <para><b>为什么按通道而不是按设备</b>: 同一台设备上既有模拟量通道 (电缸, 需要限速),
-    /// 也有开关量通道 (喷水/风扇, 必须瞬时开合)。按设备限速会把开关量拖成两秒才到位。</para>
-    ///
-    /// <para>用 <see cref="ObservableCollection{T}"/> 而非 List: 它既能被 XmlSerializer 直接
-    /// 读写 (有 Add), 又能直接给界面绑定 —— 从而免掉 KeyList 那套"两个列表互相同步"的机制。
-    /// 这个节点必须能被 C# 完整往返, 否则设备管理里任何一次保存都会把它整份抹掉。</para>
-    /// </summary>
-    [XmlElement("ChannelRate")]
-    public ObservableCollection<ChannelRate> ChannelRates { get; set; } = new();
+
 
     public Action FirstOrCreateAction(string actionName)
     {
@@ -1564,6 +1524,67 @@ public class Key : ReactiveObject
         set { this.RaiseAndSetIfChanged(ref name, value); }
     }
 
+    private float slewRate;
+
+    /// <summary>
+    /// 变化速率上限 (归一化值/秒; 0 = 不限速) —— 该通道的值每秒最多能变多少,
+    /// 防止内容里的阶跃把执行机构顶到报错。
+    ///
+    /// <para><b>为什么叫 SlewRate 而不是 MaxPerSecond</b>: 后者的字面读法是"每秒的最大值",
+    /// 而这里说的是"变化率的上限"(值域本身仍是 0..1)。SlewRate 是控制/伺服领域对该概念的
+    /// 既有术语, 也不会与"量程"混淆。</para>
+    ///
+    /// <para>它是<b>全局 Key 属性</b> —— Action/Axis/OAction 下的 Key 继承 <c>Properties</c>
+    /// 里的配置, 所以这里配一次, 所有引用该通道的编排都生效。</para>
+    /// </summary>
+    [XmlAttribute("SlewRate")]
+    public float SlewRate
+    {
+        get => slewRate;
+        set
+        {
+            this.RaiseAndSetIfChanged(ref slewRate, value);
+            RaiseSummaryChanged();
+        }
+    }
+
+    /// <summary>
+    /// 行内摘要 —— 只放"调这个通道时最该先看到的几项", 其余收进可展开的「全部参数」。
+    ///
+    /// <para>速率上限是输出侧属性, 与 Offset/Scale 那组输入标定不同源, 所以单独点出来;
+    /// 0 显示成"不限速"而不是 "0", 否则读者要额外知道"0 是特殊值"。</para>
+    /// </summary>
+    [XmlIgnore]
+    public IReadOnlyList<string> SummaryItems =>
+        new[]
+        {
+            $"速率 {SlewRateDisplay}",
+            $"死区 {DeadZone:0.##}",
+            $"缩放 {Scale:0.##}",
+        };
+
+    /// <summary>同一组摘要的纯文本形态 (日志/提示用; 界面用 <see cref="SummaryItems"/> 做徽章)。</summary>
+    [XmlIgnore]
+    public string SummaryText => string.Join("  ·  ", SummaryItems);
+
+    /// <summary>速率上限的显示文本 (0 = 不限速)。</summary>
+    [XmlIgnore]
+    public string SlewRateDisplay => SlewRate > 0f ? $"{SlewRate:0.###}/秒" : "不限速";
+
+    /// <summary>两个反转位的合并显示。</summary>
+    [XmlIgnore]
+    public string InvertDisplay =>
+        $"{(InvertBool ? "开" : "关")} / {(InvertEventBool ? "开" : "关")}";
+
+    /// <summary>摘要里用到的字段变化时刷新摘要 (逐字段显示, 必须手动通知)。</summary>
+    private void RaiseSummaryChanged()
+    {
+        this.RaisePropertyChanged(nameof(SummaryText));
+        this.RaisePropertyChanged(nameof(SummaryItems));
+        this.RaisePropertyChanged(nameof(SlewRateDisplay));
+        this.RaisePropertyChanged(nameof(InvertDisplay));
+    }
+
     private float _value = 0f;
 
     [XmlIgnore]
@@ -1642,7 +1663,11 @@ public class Key : ReactiveObject
     public float Scale
     {
         get => _scale;
-        set => this.RaiseAndSetIfChanged(ref _scale, value);
+        set
+        {
+            this.RaiseAndSetIfChanged(ref _scale, value);
+            RaiseSummaryChanged();
+        }
     }
 
     private float _min = -3.40282e+38f; // 默认无限制 (-FLT_MAX)
@@ -1689,7 +1714,11 @@ public class Key : ReactiveObject
     public float DeadZone
     {
         get => _deadZone;
-        set => this.RaiseAndSetIfChanged(ref _deadZone, value);
+        set
+        {
+            this.RaiseAndSetIfChanged(ref _deadZone, value);
+            RaiseSummaryChanged();
+        }
     }
 
     private float _sensitivity = 1;
@@ -1732,14 +1761,22 @@ public class Key : ReactiveObject
     public bool InvertEventBool
     {
         get => InvertEvent == "True";
-        set => InvertEvent = value ? "True" : "False";
+        set
+        {
+            InvertEvent = value ? "True" : "False";
+            RaiseSummaryChanged();
+        }
     }
 
     [XmlIgnore]
     public bool InvertBool
     {
         get => Invert == "True";
-        set => Invert = value ? "True" : "False";
+        set
+        {
+            Invert = value ? "True" : "False";
+            RaiseSummaryChanged();
+        }
     }
 
     /// <summary>
@@ -1764,7 +1801,10 @@ public class Key : ReactiveObject
             Sensitivity = this.Sensitivity,
             Exponent = this.Exponent,
             Invert = this.Invert,
-            InvertEvent = this.InvertEvent
+            InvertEvent = this.InvertEvent,
+            // 逐字段克隆的代价: 新增属性必须同步加进来, 否则会在"克隆"这一步被静默丢掉
+            // (设备属性对话框就是靠 Clone 把源设备复制成可编辑副本的)。
+            SlewRate = this.SlewRate
         };
     }
 }

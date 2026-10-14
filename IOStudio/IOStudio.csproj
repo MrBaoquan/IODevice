@@ -23,10 +23,17 @@
     <BaseOutputPath>$(IODeviceRoot)\Binaries\Win64\</BaseOutputPath>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
     <!-- 软件分发版本号：自更新解析以 AssemblyInformationalVersion 为 current_version -->
-    <VersionPrefix>1.0.1</VersionPrefix>
+    <!-- 必须与分发渠道上的最新版本一致。发布脚本会用 -Version 覆盖它; 这里的基础值只影响
+         "不走发布脚本"的构建 (直接 dotnet build/publish) —— 它若长期停在旧值, 那些构建会
+         自报旧版本并因此**永远提示更新**。 -->
+    <VersionPrefix>1.0.13</VersionPrefix>
     <Version>$(VersionPrefix)</Version>
     <AssemblyVersion>$(VersionPrefix).0</AssemblyVersion>
     <FileVersion>$(VersionPrefix).0</FileVersion>
+    <!-- current_version 是拿 InformationalVersion 与渠道版本**逐字比较**的, 所以它必须恰好
+         等于 "1.0.13"。.NET 默认会把源码版本 (git sha) 拼成 "1.0.13+abc1234", 那与 "1.0.13"
+         不相等 → 每次启动都误判"有新版本"。关掉拼接, 让这个字段只承载版本号。 -->
+    <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
     <InformationalVersion>$(VersionPrefix)</InformationalVersion>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">

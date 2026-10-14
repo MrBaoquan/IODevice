@@ -71,8 +71,6 @@ namespace IOStudio.Views
             if (clearPropertyKeysButton != null)
                 clearPropertyKeysButton.Click += ClearPropertyKeysButton_Click;
 
-            if (this.FindControl<Button>("AddChannelRateButton") is { } addRateButton)
-                addRateButton.Click += AddChannelRateButton_Click;
 
             if (_restartDeviceButton != null)
                 _restartDeviceButton.Click += RestartDeviceButton_Click;
@@ -102,7 +100,6 @@ namespace IOStudio.Views
             // Handle edit and delete button clicks from DataTemplate
             this.AddHandler(Button.ClickEvent, OnEditPropertyKeyClick, handledEventsToo: true);
             this.AddHandler(Button.ClickEvent, OnDeletePropertyKeyClick, handledEventsToo: true);
-            this.AddHandler(Button.ClickEvent, OnDeleteChannelRateClick, handledEventsToo: true);
         }
 
         private void InitializeComboBoxes()
@@ -194,10 +191,6 @@ namespace IOStudio.Views
                 Properties = new Properties()
             };
             _device.Properties.CopyFrom(device.Properties);
-            // 通道速率上限也要带过来: 不带的话这个段落永远渲染成空表,
-            // 用户看不到设备表里已经配好的限速 (改成新建的 Device 就丢了)。
-            foreach (var rate in device.ChannelRates)
-                _device.ChannelRates.Add(new ChannelRate { Name = rate.Name, MaxPerSecond = rate.MaxPerSecond });
             DataContext = _device;
             if (device != null)
             {
@@ -541,32 +534,6 @@ namespace IOStudio.Views
             }
         }
 
-        /// <summary>
-        /// 新增一条通道速率上限。
-        ///
-        /// <para>不弹编辑框 —— 这一项只有"通道名 + 数值"两个字段, 直接在行内填更快;
-        /// 新增时预填一个保守值, 避免用户留空 0 (0 = 不限速, 与"想限速但没填"语义相反)。</para>
-        /// </summary>
-        private void AddChannelRateButton_Click(object? sender, RoutedEventArgs e)
-        {
-            if (DataContext is not Device device)
-                return;
-
-            device.ChannelRates.Add(
-                new ChannelRate { Name = "", MaxPerSecond = 0.5f }
-            );
-        }
-
-        private void OnDeleteChannelRateClick(object? sender, RoutedEventArgs e)
-        {
-            if (e.Source is Button button && button.Name == "DeleteChannelRateButton")
-            {
-                if (button.DataContext is ChannelRate rate)
-                    (DataContext as Device)?.ChannelRates.Remove(rate);
-                e.Handled = true;
-            }
-        }
-
         private async void AddPropertyKeyButton_Click(object? sender, RoutedEventArgs e)
         {
             var device = DataContext as Device;
@@ -667,17 +634,6 @@ namespace IOStudio.Views
             _sourceDevice.DllName = _device.DllName;
             _sourceDevice.Index = _device.Index;
             _sourceDevice.Properties.CopyFrom(_device.Properties);
-            // 通道速率上限必须一并回写 —— 否则 UI 里加的限速配了等于没配
-            // (它由 native 侧读取执行, 只在界面上改而没落库, 现场会以为"配了没用")。
-            _sourceDevice.ChannelRates.Clear();
-            foreach (var rate in _device.ChannelRates)
-            {
-                // 跳过没填通道名的行: 保存进去就是一条 Name="" 的垃圾, native 侧永远匹配不上,
-                // 却会一直躺在设备表里让人以为"配了限速"。空行是编辑中的中间态, 不该落盘。
-                if (string.IsNullOrWhiteSpace(rate.Name))
-                    continue;
-                _sourceDevice.ChannelRates.Add(new ChannelRate { Name = rate.Name.Trim(), MaxPerSecond = rate.MaxPerSecond });
-            }
             _sourceDevice.UpdateConfigSummary();
 
             IsConfirmed = true;

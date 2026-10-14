@@ -40,6 +40,14 @@ struct FInputKeyProperties
 	float Min;
 	float Max;
 
+	/**
+	 * 变化速率上限 (归一化值/秒; 0 = 不限速)。
+	 * 限制该通道每秒最多能变多少 —— 内容里的阶跃会顶到执行机构报错,
+	 * 由 MotionPlayer 派发前按通道执行。命名取控制领域的 SlewRate 而非
+	 * MaxPerSecond: 后者字面像"每秒的最大值", 而这是"变化率的上限"。
+	 */
+	float SlewRate;
+
     FInputKeyProperties()
         : Offset(0.f)
 		, Scale(1.f)
@@ -50,6 +58,7 @@ struct FInputKeyProperties
         , bInvertEvent(false)
 		, Min(-FLT_MAX)
 		, Max(FLT_MAX)
+		, SlewRate(0.f)
     {}
 
 };

@@ -1,7 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <IORoot>
   <Device Name="YDL-0" Type="External" DllName="MP-YDL" Index="0">
-    <Properties />
+    <!-- 速率上限是全局 Key 属性: 配一次, 所有引用该通道的 OAction/轨道都继承 -->
+    <Properties>
+      <Key Name="OAxis_6" SlewRate="0.5" />
+    </Properties>
     <OAction Name="Heave" Label="电缸升降">
       <Key Name="OAxis_6" />
     </OAction>
@@ -26,6 +29,13 @@
     <OAction Name="Action" Label="动作">
       <Key Name="OAxis_49" />
     </OAction>
-    <ChannelRate Name="OAxis_6" MaxPerSecond="0.5" />
+    <!-- 播控联动 (厂商私有区 DO[64..65]): 与插件 CH_GAME_READY / CH_GAME_OVER 对应。
+         值变化到非 0 时发一条 GameState, 发送完该通道回读即复位 —— 是命令, 不是持续状态。 -->
+    <OAction Name="GameReady" Label="游戏就绪(开始指令)">
+      <Key Name="OAxis_64" />
+    </OAction>
+    <OAction Name="GameOver" Label="游戏结束">
+      <Key Name="OAxis_65" />
+    </OAction>
   </Device>
 </IORoot>

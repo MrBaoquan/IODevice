@@ -324,6 +324,19 @@
                                   Height="36"/>
                 </StackPanel>
 
+                <!-- 变化速率上限 (输出侧): 限制该通道每秒最多能变多少 -->
+                <StackPanel Spacing="8">
+                    <TextBlock Classes="label" Text="SlewRate（变化速率上限）"/>
+                    <TextBlock Text="归一化值/秒；0 = 不限速。限制该通道每秒最多能变多少，防止内容里的阶跃把执行机构顶到报错。只对模拟量通道有意义，开关量请留 0。"
+                               FontSize="11" Foreground="#9ca3af" Margin="0,-4,0,4" TextWrapping="Wrap"/>
+                    <NumericUpDown Name="SlewRateNumeric"
+                                  Value="0"
+                                  Minimum="0"
+                                  Increment="0.1"
+                                  FormatString="0.###"
+                                  Height="36"/>
+                </StackPanel>
+
                 <!-- Min / Max -->
                 <Grid ColumnDefinitions="*,16,*">
                     <StackPanel Grid.Column="0" Spacing="8">

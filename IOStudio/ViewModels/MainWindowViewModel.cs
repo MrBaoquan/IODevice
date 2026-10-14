@@ -1224,8 +1224,36 @@ namespace IOStudio.ViewModels
             );
         }
 
+        /// <summary>
+        /// 本机构建是否为开发构建。
+        ///
+        /// <para><b>为什么要区分</b>: 开发构建的版本号来自 csproj 的 <c>VersionPrefix</c>
+        /// (长期停在某个值), 而分发渠道上已有更高版本 —— 于是开发时每次启动都提示"有新版本",
+        /// 那提示毫无意义 (手上这份本来就不是发布版)。</para>
+        /// </summary>
+        public static bool IsDevelopmentBuild =>
+#if DEBUG
+            true;
+#else
+            false;
+#endif
+
+        /// <summary>
+        /// 版本显示文本 (标题栏左侧常显)。开发构建额外标注 —— 否则"当前跑的是什么"
+        /// 只能靠更新提示反推, 而更新提示比的是渠道版本, 与手上这份不是一回事。
+        /// </summary>
+        public string AppVersionText =>
+            IsDevelopmentBuild
+                ? $"设备调试工作台 · v{_updateService.CurrentVersion}（开发构建，不检查更新）"
+                : $"设备调试工作台 · v{_updateService.CurrentVersion}";
+
         private async System.Threading.Tasks.Task CheckForUpdateAsync(bool showNoUpdate)
         {
+            // 开发构建跳过启动时的自动检查: 它的版本号停在 csproj 的值上, 与渠道版本比
+            // 必然"有更新", 那提示只会天天刷屏。手动检查仍然可用 (用户主动问就得答)。
+            if (!showNoUpdate && IsDevelopmentBuild)
+                return;
+
             if (!_updateService.IsConfigured)
             {
                 if (showNoUpdate)

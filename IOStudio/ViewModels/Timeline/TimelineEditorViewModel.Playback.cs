@@ -195,7 +195,7 @@ namespace IOStudio.ViewModels.Timeline
 
             PushStatus(
                 $"本次播放有 {limited.Count} 个通道被速率上限削过: {list}"
-                    + "。内容要求的跳变超过了硬件允许的速度，已在设备表用 <ChannelRate> 限速。"
+                    + "。内容要求的跳变超过了硬件允许的速度，已在设备表用 Key 的 SlewRate 属性限速。"
             );
         }
 

@@ -4,6 +4,7 @@
   <Device Name="Simulator-1" Type="External" DllName="Simulator" Index="1" />
   <!-- 影动力 (MP-YDL) 游戏动感平台: UDP JSON, 本地 30120 / 远端 30121 -->
   <Device Name="YDL-0" Type="External" DllName="MP-YDL" Index="0">
+    <ChannelRate Name="OAxis_6" MaxPerSecond="0.5" />
     <!-- 平台机构 -->
     <OAction Name="Heave" Label="电缸升降">
       <Key Name="OAxis_6" />

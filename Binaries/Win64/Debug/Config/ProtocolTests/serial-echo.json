@@ -1,0 +1,12 @@
+{
+  "name": "串口往返 (需真实/虚拟串口 + 回环或回显设备)",
+  "timeout_ms": 3000,
+  "steps": [
+    { "op": "listen", "as": "port", "transport": "serial",
+      "device": "${IOUI_TEST_SERIAL}", "baud": 115200,
+      "frame": { "mode": "delimiter", "delimiter": "\r\n", "delimiter_encoding": "utf8" } },
+
+    { "op": "send",   "via": "port", "encoding": "utf8", "data": "AT" },
+    { "op": "expect", "via": "port", "match": { "type": "contains", "value": "OK" } }
+  ]
+}

@@ -257,6 +257,11 @@ namespace IOStudio.Cli
                         payload["tickMaxMediaMs"] = vm.TickMaxMediaMs;
                         payload["tickStartCount"] = vm.TickStartCount;
                         payload["tickStopCount"] = vm.TickStopCount;
+                        // 未送达设备的通道 (native 静默丢弃的输出) —— 不暴露就只剩"动作在走、设备不动"
+                        payload["unresolvedChannels"] = vm.UnresolvedChannels;
+                        // 与"未送达"互补: 这些是发出去了但被速率上限削慢的通道。
+                        // 放进来是为了让 --validate 之外的实际播放也能被脚本取证。
+                        payload["rateLimitedChannels"] = vm.RateLimitedChannels;
                         // 后台设备轮询耗时 (定位"定时调度被饿死")
                         payload["pollCount"] = Services.Motion.PollDiagnostics.UpdateCount;
                         payload["pollMaxMs"] = Services.Motion.PollDiagnostics.MaxUpdateMs;
@@ -662,6 +667,12 @@ namespace IOStudio.Cli
                     timeline,
                     new IOStudio.Services.Motion.MotionValidationOptions
                     {
+                        // 设备名是否被逻辑映射表认领 —— 未被认领的轨道播放时会被静默丢弃,
+                        // 这是交付门禁必须拦下的一类问题。
+                        IsDeviceDeclared = IOStudio.Services.Motion.MotionDeviceCatalog.IsDeclared,
+                        // 动作是否在该设备上声明 —— 同一类静默丢失, 且 native 侧连"未解析"计数都没有。
+                        IsOActionDeclared = IOStudio.Services.Motion.MotionDeviceCatalog
+                            .IsOActionDeclared,
                         DeviceRange = IOStudio.Services.Motion.DeviceRangeCatalog.Resolve,
                     }
                 );

@@ -73,6 +73,10 @@ namespace IOStudio.ViewModels.Timeline
             // 播放前预检: 把静默失效问题摆到状态栏 (不阻断播放)
             ReportValidationSummary();
 
+            // 设备绑定丢失是"时间轴在走、设备却不动"的头号原因, 且完全静默。
+            // 自动提示一次 (同一文件 + 同一组未解析设备, 本会话只提示一次, 不反复打断)。
+            _ = CheckDeviceBindingsAsync(autoPrompt: true);
+
             // 设备输出关闭时, 播放不会驱动任何设备 —— 这是"时间轴在走但设备不动"的常见原因,
             // 且工具栏只有一个很小的状态点, 容易被忽略。这里明确说一次。
             if (!IsLiveOutputEnabled)
@@ -106,6 +110,93 @@ namespace IOStudio.ViewModels.Timeline
             _engine.Stop();
             _engine.SetExternalClockMs(null);
             // Tick 在回中完成后自动停止
+            ReportUnresolvedChannels();
+            ReportRateLimitedChannels();
+        }
+
+        /// <summary>
+        /// 停播时汇报"本次播放有多少输出没送出去"。
+        ///
+        /// <para>native 派发时查不到设备的通道会被<b>静默</b>丢弃 (无日志、无 UI, 状态仍是 playing),
+        /// 现场只表现为"动作在走、设备不动"。native 侧只按场次累加、不逐帧打日志, 这里读一次汇总
+        /// 并写进状态栏, 让丢失可见。</para>
+        ///
+        /// <para>与打开文件时的静态设备绑定预检<b>互补而非重复</b>: 静态预检按
+        /// <c>Config/IODevice.xml</c> 判断名字有没有被声明 (管作者写错); 这里报告运行期
+        /// "这一刻真的没送出去", 也覆盖"名字在表里但设备没建出来"这种预检会放过的情形。</para>
+        ///
+        /// <para>设备输出未开启时 native 根本不派发, 计数必为空 —— 那种情况下"设备不动"是
+        /// 设置问题, 已由开播时的提示说明, 这里不再插话。</para>
+        /// </summary>
+        private void ReportUnresolvedChannels()
+        {
+            IReadOnlyDictionary<string, long> unresolved;
+            try
+            {
+                unresolved = _engine.UnresolvedChannels;
+            }
+            catch
+            {
+                return; // 统计不是关键路径, 取不到就静默
+            }
+
+            if (unresolved.Count == 0)
+                return;
+
+            long total = unresolved.Values.Sum();
+            // 通道多了状态栏放不下: 按丢弃次数取前几条, 其余归入"等 N 个"
+            const int shown = 3;
+            var top = unresolved
+                .OrderByDescending(kv => kv.Value)
+                .Take(shown)
+                .Select(kv => kv.Key)
+                .ToList();
+            string list = string.Join(", ", top);
+            if (unresolved.Count > top.Count)
+                list += $" 等 {unresolved.Count} 个通道";
+
+            PushStatus(
+                $"⚠ 本次播放有 {unresolved.Count} 个通道未送达设备 (共 {total} 次丢弃): {list}"
+                    + "。工具栏「设备绑定检查」可一键映射。"
+            );
+        }
+
+        /// <summary>
+        /// 报告被速率上限削过的通道。
+        ///
+        /// <para>与"未送达"互补: 那些是**根本没发出去**, 这些是**发出去了但被削慢**。
+        /// 被限速的输出看起来完全正常 (只是变慢), 所以不说的话, 作者会把"电缸跟不上内容"
+        /// 误当成设备故障 —— 而实际原因是他写的曲线太快。</para>
+        /// </summary>
+        private void ReportRateLimitedChannels()
+        {
+            IReadOnlyDictionary<string, long> limited;
+            try
+            {
+                limited = _engine.RateLimitedChannels;
+            }
+            catch
+            {
+                return; // 统计不是关键路径, 取不到就静默
+            }
+
+            if (limited.Count == 0)
+                return;
+
+            const int shown = 3;
+            var top = limited
+                .OrderByDescending(kv => kv.Value)
+                .Take(shown)
+                .Select(kv => kv.Key)
+                .ToList();
+            string list = string.Join(", ", top);
+            if (limited.Count > top.Count)
+                list += $" 等 {limited.Count} 个通道";
+
+            PushStatus(
+                $"本次播放有 {limited.Count} 个通道被速率上限削过: {list}"
+                    + "。内容要求的跳变超过了硬件允许的速度，已在设备表用 <ChannelRate> 限速。"
+            );
         }
 
         private void ToggleLoop()
@@ -288,6 +379,9 @@ namespace IOStudio.ViewModels.Timeline
             {
                 // 播放完成通知 (可扩展为 UI 提示)
                 System.Diagnostics.Debug.WriteLine("[Timeline] Playback completed");
+                // 自然播完也要汇报未送达通道 —— 否则"播完就静默结束"时丢失无人知晓
+                ReportUnresolvedChannels();
+                ReportRateLimitedChannels();
             });
         }
 

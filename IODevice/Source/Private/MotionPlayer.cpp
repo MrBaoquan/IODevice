@@ -7,6 +7,7 @@
 #include "MotionPlayer.h"
 #include "IOStatics.h"
 #include "IOLog.h"
+#include "InputSettings.h"
 
 #include "IOClock.h"
 #include <cstdint>
@@ -65,6 +66,13 @@ namespace {
         std::string oaxisChannel;
         std::string valueType;   // "float" or "bool" (用于中性值默认推断)
         bool muted = false;
+        /// 禁用: 完全不参与播放 (输出与回中都不参与)。
+        ///
+        /// <para>必须在这里也判, 不能只靠宿主: 演示端 (UNIPlayer) 与编辑器读同一份 .motion,
+        /// 若只有编辑器尊重它, 同一份内容在两处行为就不一致。</para>
+        bool enabled = true;
+        /// 独奏: 只要本时间轴存在"启用且独奏"的轨道, 其余轨道都不参与输出。
+        bool solo = false;
         float neutralValue = 0.5f; // 无 Clip 覆盖时的输出值 (解析自 neutral_value, 缺省按 value_type)
         // 轨道级工程量程 (对称行程, 绕中位): engineering_range。>0 表示本轨道自带量程,
         // 核心在 LoadSlot 时据此登记 (device, channel) → (min, max) 的兜底;
@@ -82,6 +90,32 @@ namespace {
         int    dispatchIntervalMs = 0;
         std::vector<MotionTrack> tracks;
     };
+
+    // ── 轨道参与输出的判据 (唯一收口) ────────────────
+    //
+    // 三个"关掉"位必须在这里一次判清, 否则会出现"界面看着对、设备照发"的错位 ——
+    // 宿主 (IOStudio 的实时预览) 早已按三者过滤, 而本层曾经只认 muted, 于是
+    // 被禁用的轨道在面板上不再跳数, 却仍在驱动真设备。
+    //
+    //   enabled=false  → 不参与 (禁用)
+    //   muted=true     → 不参与 (静音)
+    //   solo           → 只要存在"启用且独奏"的轨道, 其余一律不参与
+    //
+    // 禁用也参与 solo 的判定源: 被禁用的独奏轨道不应把别人压掉 (与宿主一致)。
+    static bool AnySoloActive(const std::vector<MotionTrack>& tracks) {
+        for (const auto& t : tracks) {
+            if (t.enabled && t.solo)
+                return true;
+        }
+        return false;
+    }
+
+    static bool IsTrackActive(const MotionTrack& track, bool anySolo) {
+        if (!track.enabled) return false;
+        if (track.muted) return false;
+        if (anySolo && !track.solo) return false;
+        return true;
+    }
 
     // ── 插值计算 ────────────────────────────────────
 
@@ -315,18 +349,28 @@ namespace {
     struct SafetyConfig {
         float minValue = 0.0f;
         float maxValue = 1.0f;
-        float maxRatePerSecond = 5.0f; // 最大变化速率 (每秒)
+        /// 全局兜底速率 (每秒, 归一化值)。**默认 0 = 不限速**。
+        ///
+        /// 为什么默认不限速而不是给个宽松值: 通道的"安全速度"完全取决于硬件语义 ——
+        /// 电缸是模拟量 (要限), 喷水/风扇/游戏状态宣告是开关量或命令 (必须瞬时)。
+        /// 给一个全局值会无差别地把开关量也拖成斜坡 (实测会把 200ms 宽的脉冲削成半截)。
+        /// 所以保护来自**显式配置** <ChannelRate>; 未配置 = 保持既有行为不变。
+        float maxRatePerSecond = 0.0f;
     };
 
     class SafetyGuard {
     public:
-        /// 间隔超过该值视为"不连续" → 重置基线而非限速 (通道被静音一段、暂停后恢复等)。
+        /// 间隔超过该值不再视为"连续" —— 但**不是**跳过限速, 见 Check 里的处理。
         static constexpr double kDiscontinuitySec = 0.5;
 
-        /// 限速一次。**用内部时钟测实际间隔**, 不信任调用方传的 delta ——
-        /// 否则 tick 频率一变 (编排端 10Hz 轮询 vs 放映端 Unity 逐帧), 限速强度就跟着变,
-        /// 甚至被放大到失效 (10Hz 下每次允许 0.5 归一化变化)。
-        float Check(const std::string& channelKey, float rawValue) {
+        /// 通道被静音/暂停期间, 恢复后允许按多少秒的行程去"追"上次的值。
+        ///
+        /// 取小值是刻意的: 这个额度决定了**单步最大跳变** (rate × kResyncSeconds)。
+        /// 0.5s 时电缸 (0.5/s) 一步能跳 250mm —— 实测仍被反映为"跳变过大";
+        /// 收到 0.1s 后单步上限降到 50mm, 既不会一步到位, 也不会恢复得太慢。
+        static constexpr double kResyncSeconds = 0.1;
+
+        float Check(const std::string& channelKey, float rawValue, float channelRateLimit) {
             const double nowMs = static_cast<double>(IOClock::GetMilliseconds());
 
             auto valueIt = _lastValues.find(channelKey);
@@ -343,12 +387,34 @@ namespace {
             _lastTimes[channelKey] = nowMs;
 
             float clamped = Clamp01(rawValue);
-            if (deltaSec > 0.0001 && deltaSec < kDiscontinuitySec) {
+
+            // 生效上限: 按通道配置优先, 未配置才用全局兜底。
+            // rate <= 0 表示该通道明确不限速。
+            float rate = channelRateLimit != 0.f ? channelRateLimit : _config.maxRatePerSecond;
+
+            if (rate > 0.f)
+            {
+                // 实际允许的变化时间:
+                //  - 正常连续: 用真实间隔
+                //  - 间隔过大 (静音/暂停后恢复): 用 kResyncSeconds 封顶 ——
+                //    关键点是**仍然限速**, 而不是像旧实现那样直接跳过限速 (那会让
+                //    "停一段再跳"变成一步到位, 实测出现过 836mm 的单步跳变)。
+                //
+                // 注意: dt≈0 (同一毫秒内被重复调用) **不能**当作"不连续" ——
+                // 那会给它整整 kResyncSeconds 的额度, 而它每秒被调用很多次,
+                // 限速就完全失效了 (实测就是这个原因导致 0.5/s 配置却跑出 3/s)。
+                // dt≈0 就是"没有时间流过", 允许的变化量自然是 0。
+                double effectiveSec = deltaSec >= kDiscontinuitySec ? kResyncSeconds : deltaSec;
+
+                float maxDelta = rate * static_cast<float>(effectiveSec);
                 float lastVal = valueIt->second;
-                float maxDelta = _config.maxRatePerSecond * static_cast<float>(deltaSec);
                 float diff = clamped - lastVal;
                 if (std::abs(diff) > maxDelta) {
                     clamped = lastVal + (diff > 0 ? maxDelta : -maxDelta);
+                    ++_limitedCount;
+                    // 按通道累计, 供宿主在停播时汇总"哪些通道被限速削过" ——
+                    // 不做这个, 作者只会看到"电缸变慢了", 不知道是自己的内容太快。
+                    ++_limitedByChannel[channelKey];
                 }
             }
 
@@ -360,14 +426,27 @@ namespace {
         void Reset() {
             _lastValues.clear();
             _lastTimes.clear();
+            _limitedCount = 0;
+            _limitedByChannel.clear();
         }
 
         void SetMaxRatePerSecond(float rate) { _config.maxRatePerSecond = rate; }
         float GetMaxRatePerSecond() const { return _config.maxRatePerSecond; }
+
+        /// 本次播放以来被限速削过的次数 (供宿主摘要"内容要求了 X, 硬件限到 Y")。
+        long long GetLimitedCount() const { return _limitedCount; }
+
+        /// 按通道统计的被限速次数。空表 = 没有任何通道被削。
+        const std::map<std::string, uint64_t>& GetLimitedByChannel() const {
+            return _limitedByChannel;
+        }
+
     private:
         SafetyConfig _config;
         std::map<std::string, float> _lastValues;
         std::map<std::string, double> _lastTimes;
+        long long _limitedCount = 0;
+        std::map<std::string, uint64_t> _limitedByChannel;
     };
 
     // ── .motion JSON 解析 ───────────────────────────
@@ -397,6 +476,10 @@ namespace {
                     track.outputType   = jTrack.value("output_type", "oaction");
                     track.oaxisChannel = jTrack.value("oaxis_channel", "");
                     track.muted        = jTrack.value("muted", false);
+                    // 缺省 true: 老 .motion 没有该键时按"启用"处理。
+                    // 注意写入端必须始终写出该键 —— 若被省略, "省略"与"false"就分不开了。
+                    track.enabled      = jTrack.value("enabled", true);
+                    track.solo         = jTrack.value("solo", false);
                     // 中性/空闲值: 显式 neutral_value 优先, 缺省按 value_type (bool=0, float=0.5)
                     track.valueType    = jTrack.value("value_type", "float");
                     if (jTrack.contains("neutral_value") && jTrack["neutral_value"].is_number()) {
@@ -672,8 +755,9 @@ namespace {
         // 求值当前帧所有通道
         std::map<std::string, float> EvaluateChannels() const {
             std::map<std::string, float> snapshot;
+            const bool anySolo = AnySoloActive(timeline.tracks);
             for (const auto& track : timeline.tracks) {
-                if (track.muted) continue;
+                if (!IsTrackActive(track, anySolo)) continue;
                 float val = EvaluateTrack(track, currentTimeMs);
                 snapshot[MakeChannelKey(track)] = val;
             }
@@ -753,8 +837,45 @@ public:
     std::map<std::string, std::pair<float, float>> channelRanges;
     std::map<std::string, std::pair<float, float>> trackRanges;
 
+    // ── 未送达通道统计: 完整通道键 → 丢弃次数 ──
+    // DispatchChannel 里 HasDevice 失败就 `return` —— 输出被**静默**丢弃 (无日志、无 UI,
+    // 状态仍是 playing), 现场只表现为"动作在走、设备不动"。
+    //
+    // 判据是 IODevices::HasDevice, 即"设备实例已在注册表里", 所以它同时覆盖两种情形:
+    //   1) 设备名根本不在设备表 (宿主静态预检已报错);
+    //   2) 名字在表里、但设备没建出来 (预检会放过 —— 离线编排的正常态)。
+    // 这两层互补: 静态那层管"作者写错了", 这里管"这一刻真的没送出去"。
+    //
+    // **只累加、不逐帧打日志**: 逐帧打日志会淹没日志且拖慢派发。汇总由宿主在停播时读一次
+    // (GetUnresolvedChannelsJson), 计数在**起播时**清零 (PlaySlot / PlaySlotFrom) —— 按"一次播放"
+    // 统计, 不跨场次累加。**不**在 Unload 时清: 停播路径会先 UnloadSlot 再读汇总, 在那清会把统计抹空。
+    std::map<std::string, uint64_t> unresolvedChannels;
+
     static std::string RangeKey(const std::string& deviceName, const std::string& channel) {
         return deviceName + "\x1F" + channel;
+    }
+
+    /// 未送达通道的汇总 (供宿主一次读取)。空表返回 `{}`。
+    /// 形如 `{"YDL-0.oaxis.OAxis_6":4320,"YDL-0.oaxis.OAxis_16":720}` ——
+    /// 键与 .motion 里的通道写法同形, 人一眼能对上。
+    std::string BuildUnresolvedJson() const {
+        json out = json::object();
+        for (const auto& [key, count] : unresolvedChannels) {
+            out[key] = count;
+        }
+        return out.dump();
+    }
+
+    /// 被速率上限削过的通道汇总 (供宿主一次读取, 停播时用)。
+    /// 与 unresolvedChannels 同形: `{"YDL-0.oaxis.OAxis_6":1234}`。
+    /// 用途是让作者知道"你的内容要求的速度超过了硬件上限, 被削到了多少"——
+    /// 只有说清楚这一点, "电缸变慢了"才不会被误当成故障。
+    std::string BuildRateLimitedJson() const {
+        json out = json::object();
+        for (const auto& [key, count] : safetyGuard.GetLimitedByChannel()) {
+            out[key] = count;
+        }
+        return out.dump();
     }
 
     /// 归一化 → 工程量。宿主推送优先, 其次轨道自带兜底; 都无或退化区间 → 直通 (既有行为)。
@@ -785,8 +906,9 @@ public:
     void RebuildTrackRanges() {
         trackRanges.clear();
         for (const auto& [id, slot] : slots) {
+            const bool anySolo = AnySoloActive(slot.timeline.tracks);
             for (const auto& track : slot.timeline.tracks) {
-                if (track.muted) continue;
+                if (!IsTrackActive(track, anySolo)) continue;
                 const float range = track.engineeringRange;
                 if (!(range > 0.0f)) continue;
                 if (track.deviceName.empty()) continue;
@@ -828,7 +950,12 @@ public:
         std::string deviceName = channelKey.substr(0, dotIndex);
         std::string remainder = channelKey.substr(dotIndex + 1);
 
-        if (!IODevices::HasDevice(deviceName)) return;
+        // 查不到设备 → 这次输出**送不出去**。这里只记一笔 (不打日志, 见 unresolvedChannels 注释),
+        // 由宿主在停播时汇总成"本次播放 N 个通道未送达"。
+        if (!IODevices::HasDevice(deviceName)) {
+            ++unresolvedChannels[channelKey];
+            return;
+        }
 
         IODevice& device = IODevices::GetDevice(deviceName);
 
@@ -847,10 +974,26 @@ public:
     // 分发混合后的通道值
     void DispatchMixedChannels(const std::map<std::string, float>& channels) {
         for (const auto& [channelKey, rawValue] : channels) {
+            // 按通道取速率上限 (设备表的 <ChannelRate>)。缺省 0 = 不限速。
             // 间隔由 SafetyGuard 自己用内部时钟测 (不再由调用方传 delta)
-            float safeValue = safetyGuard.Check(channelKey, rawValue);
+            float safeValue = safetyGuard.Check(channelKey, rawValue, RateLimitFor(channelKey));
             DispatchChannel(channelKey, safeValue);
         }
+    }
+
+    /// 由 channelKey ("设备名.oaxis.OAxis_6" / "设备名.OAction名") 解析出设备与通道,
+    /// 再取该通道配置的速率上限。
+    float RateLimitFor(const std::string& channelKey) {
+        auto dot = channelKey.find('.');
+        if (dot == std::string::npos) return 0.f;
+
+        std::string deviceName = channelKey.substr(0, dot);
+        std::string remainder = channelKey.substr(dot + 1);
+        std::string channelName = remainder.rfind("oaxis.", 0) == 0 && remainder.length() > 6
+            ? remainder.substr(6)
+            : remainder;
+
+        return UInputSettings::Instance().GetChannelRateLimit(deviceName, channelName);
     }
 };
 
@@ -983,6 +1126,11 @@ int MotionPlayer::PlaySlot(const char* slotId) {
     auto* slot = _impl->GetSlot(slotId);
     if (!slot) return -1;
 
+    // 新场次起算: 未送达计数按"一次播放"统计, 不跨场次累加。
+    // 只在这里 (起播) 清零, **不在** Unload 时清 —— 宿主是"停播后读一次"的次序,
+    // 而停播路径 (ForceStop) 会先 UnloadSlot 再读, 在那清零会把统计抹成空。
+    _impl->unresolvedChannels.clear();
+
     slot->currentTimeMs = 0;
     slot->state = MotionState::Playing;
     slot->dispatchTimerInitialized = false; // 重新起播 → 首帧立即下发
@@ -995,6 +1143,9 @@ int MotionPlayer::PlaySlotFrom(const char* slotId, float timeMs) {
     std::lock_guard<std::recursive_mutex> lock(_impl->mutex);
     auto* slot = _impl->GetSlot(slotId);
     if (!slot) return -1;
+
+    // 同 PlaySlot: 按场次统计, 起播清零。
+    _impl->unresolvedChannels.clear();
 
     slot->currentTimeMs = (std::max)(0.0, (std::min)((double)timeMs, slot->timeline.durationMs));
     slot->state = MotionState::Playing;
@@ -1035,8 +1186,9 @@ int MotionPlayer::StopSlot(const char* slotId) {
     if (slot->state == MotionState::Playing || slot->state == MotionState::Paused) {
         // 记录当前各通道值, 准备平滑回中
         slot->returnStartValues.clear();
+        const bool anySolo = AnySoloActive(slot->timeline.tracks);
         for (const auto& track : slot->timeline.tracks) {
-            if (track.muted) continue;
+            if (!IsTrackActive(track, anySolo)) continue;
             std::string key = MakeChannelKey(track);
             slot->returnStartValues[key] = EvaluateTrack(track, slot->currentTimeMs);
         }
@@ -1127,8 +1279,9 @@ void MotionPlayer::StopAll() {
         if (!slot) continue;
         if (slot->state == MotionState::Playing || slot->state == MotionState::Paused) {
             slot->returnStartValues.clear();
+            const bool anySolo = AnySoloActive(slot->timeline.tracks);
             for (const auto& track : slot->timeline.tracks) {
-                if (track.muted) continue;
+                if (!IsTrackActive(track, anySolo)) continue;
                 std::string key = MakeChannelKey(track);
                 slot->returnStartValues[key] = EvaluateTrack(track, slot->currentTimeMs);
             }
@@ -1243,8 +1396,9 @@ int MotionPlayer::Impl::EvaluateSlotAtImpl(const char* slotId, float timeMs, boo
 
     // 求值指定时间的所有通道 (始终返回归一化值; 需要时再换算成工程量)
     std::map<std::string, float> snapshot;
+    const bool anySolo = AnySoloActive(slot->timeline.tracks);
     for (const auto& track : slot->timeline.tracks) {
-        if (track.muted) continue;
+        if (!IsTrackActive(track, anySolo)) continue;
         float val = EvaluateTrack(track, static_cast<double>(timeMs));
         snapshot[MakeChannelKey(track)] = val;
     }
@@ -1322,6 +1476,26 @@ float MotionPlayer::ToEngineering(const char* deviceName, const char* channel, f
     return _impl->ConvertToEngineering(deviceName, channel, normalized);
 }
 
+// ── 未送达通道统计 (播放期可观测性) ──────────────────
+
+std::string MotionPlayer::GetUnresolvedChannelsJson() const
+{
+    std::lock_guard<std::recursive_mutex> lock(_impl->mutex);
+    return _impl->BuildUnresolvedJson();
+}
+
+void MotionPlayer::ResetUnresolvedCounters()
+{
+    std::lock_guard<std::recursive_mutex> lock(_impl->mutex);
+    _impl->unresolvedChannels.clear();
+}
+
+std::string MotionPlayer::GetRateLimitedChannelsJson() const
+{
+    std::lock_guard<std::recursive_mutex> lock(_impl->mutex);
+    return _impl->BuildRateLimitedJson();
+}
+
 // ── 安全参数配置 ─────────────────────────────────────
 
 void MotionPlayer::SetSafetyConfig(float maxRatePerSecond)
@@ -1389,8 +1563,9 @@ void MotionPlayer::Tick(float deltaSeconds) {
                         slot.currentTimeMs = slot.timeline.durationMs;
                         // 播放完成 → 开始回中
                         slot.returnStartValues.clear();
+                        const bool anySolo = AnySoloActive(slot.timeline.tracks);
                         for (const auto& track : slot.timeline.tracks) {
-                            if (track.muted) continue;
+                            if (!IsTrackActive(track, anySolo)) continue;
                             std::string key = MakeChannelKey(track);
                             slot.returnStartValues[key] = EvaluateTrack(track, slot.currentTimeMs);
                         }

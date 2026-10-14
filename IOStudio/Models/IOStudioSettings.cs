@@ -64,6 +64,27 @@ namespace IOStudio.Models
         public bool InspectorEventExpanded { get; set; } = false;
 
         /// <summary>
+        /// 启动时加载哪一份设备表 —— <c>Config</c> 目录下的<b>文件名</b>（不是全路径）。
+        ///
+        /// <para>默认 <c>IODevice.xml</c>。可以指向预设，如 <c>IODevice.YDL.xml</c>，
+        /// 于是同一台机器上能在"影动力台"和"仿真台"之间切换，而不必互相覆盖配置。</para>
+        ///
+        /// <para>只认文件名: 全路径会把配置绑死在某台机器的目录布局上 (装机位置一变就失效)。
+        /// 文件不存在时回落到 <c>IODevice.xml</c>, 不会因为改错名字就打不开设备。</para>
+        /// </summary>
+        [XmlAttribute("DeviceTableFile")]
+        public string DeviceTableFile { get; set; } = DeviceTableLocator.DefaultFileName;
+
+        /// <summary>
+        /// 用户点过「忽略此版本」的版本号 (空 = 没有忽略过)。
+        ///
+        /// <para><b>为什么需要</b>: 启动时的更新提醒原本是模态弹窗, 每启动一次拦一次 —
+        /// 只要没更新就永远拦。记住被忽略的版本后, 那个版本不再提, <b>出现更新的版本才再提</b>。</para>
+        /// </summary>
+        [XmlAttribute("SkippedUpdateVersion")]
+        public string SkippedUpdateVersion { get; set; } = "";
+
+        /// <summary>
         /// 验证并修正配置值
         /// </summary>
         public void Validate()

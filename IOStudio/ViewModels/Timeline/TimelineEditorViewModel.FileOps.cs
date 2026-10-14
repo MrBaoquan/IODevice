@@ -155,6 +155,10 @@ namespace IOStudio.ViewModels.Timeline
             _undoRedo.Clear();
             UpdateWindowTitle();
             StartAutoSave();
+
+            // 绑定检查要等窗口显示出来才能弹模态框 (打开文件的调用可能发生在窗口 Show 之前),
+            // 所以这里只登记, 由窗口的 Opened 事件真正执行。
+            QueueBindingCheckAfterOpen();
         }
 
         private void SaveFile()

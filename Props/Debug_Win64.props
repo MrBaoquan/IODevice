@@ -10,6 +10,13 @@
   <ItemDefinitionGroup>
     <ClCompile>
       <PreprocessorDefinitions>WIN_64;IODEVICEEXPORTS;_WINDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <!-- 源码是 UTF-8 (无 BOM), 而 MSVC 默认按**系统 ANSI 代码页**读源码。在 936 代码页上,
+           中文注释里的 →/──/( ) 等字符会被按 GBK 重新切分, 尾部字节吃掉紧随的 ASCII 字符,
+           于是注释提前结束、后面的声明被当成语句 —— 表现为 MotionPlayer.h 里一串
+           "意外的类型 float"。这是**编译环境**决定的坑 (IDE 与命令行可能不同), 不是代码问题。
+           显式声明源码字符集即可复现构建。执行字符集不动 (仍是系统 ANSI), 因此窄字符串字面量
+           的编码不变。 -->
+      <AdditionalOptions>/source-charset:utf-8 %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemGroup />

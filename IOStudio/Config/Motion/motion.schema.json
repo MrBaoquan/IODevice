@@ -140,6 +140,11 @@
           "type": "number",
           "description": "工程量程覆盖 (归一化→工程: (v-neutral)*range); 缺省由设备声明量程决定"
         },
+        "value_display": {
+          "type": "string",
+          "enum": ["percent", "symmetric", "engineering"],
+          "description": "值显示规则 (仅影响面板呈现, 不参与换算): percent=0..100%; symmetric=以复位原点为 0% 的 ±100%; engineering=工程量带单位。缺省按 neutral_value 推导 (0→percent, 0.5→symmetric)"
+        },
         "idle": { "$ref": "#/definitions/idle" },
         "override_keyframes": {
           "type": "array",

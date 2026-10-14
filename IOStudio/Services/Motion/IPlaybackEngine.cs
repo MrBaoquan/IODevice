@@ -42,6 +42,25 @@ namespace IOStudio.Services.Motion
         string? LastError { get; }
 
         /// <summary>
+        /// 本次播放**未送达设备**的通道 → 丢弃次数 (键形如 <c>"YDL-0.oaxis.OAxis_6"</c>); 空 = 全部送达。
+        ///
+        /// <para>与编辑器打开时的静态设备绑定预检是**互补**的两层, 不是重复: 静态预检按
+        /// <c>Config/IODevice.xml</c> 判断"名字有没有被声明"(管作者写错), 这里报告运行期
+        /// "这一刻真的没送出去"(也覆盖"名字在表里但设备没建出来"这种预检会放过的情形)。</para>
+        ///
+        /// <para>native 侧只按场次累加、不逐帧打日志; 起播时清零, 所以停播后读到的是本场次总量。</para>
+        /// </summary>
+        IReadOnlyDictionary<string, long> UnresolvedChannels { get; }
+
+        /// <summary>
+        /// 本次播放被速率上限削过的通道 → 次数 (键与 .motion 的通道写法同形)。空表 = 没被削过。
+        ///
+        /// <para>被限速的输出看起来完全正常, 只是变慢了 —— 不给这个汇总, 作者就分不清
+        /// "内容要求的速度超了硬件上限"和"设备坏了"。</para>
+        /// </summary>
+        IReadOnlyDictionary<string, long> RateLimitedChannels { get; }
+
+        /// <summary>
         /// 统一通知事件 — 所有引擎通知通过此单一事件发出。
         /// 使用 pattern matching 处理不同类型:
         /// <code>

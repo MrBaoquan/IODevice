@@ -172,6 +172,11 @@
             <Setter Property="Background" Value="{DynamicResource TlStatusOfflineBg}"/>
             <Setter Property="Foreground" Value="{DynamicResource TlDanger}"/>
         </Style>
+        <!-- 单轨静音沿用与分组静音相同的"危险色"约定: 同一个语义不该有两种视觉 -->
+        <Style Selector="ToggleButton.track-mute-toggle:checked">
+            <Setter Property="Background" Value="{DynamicResource TlStatusOfflineBg}"/>
+            <Setter Property="Foreground" Value="{DynamicResource TlDanger}"/>
+        </Style>
         <Style Selector="ToggleButton.group-solo-toggle:checked">
             <Setter Property="Background" Value="{DynamicResource TlAccentSoftBg}"/>
             <Setter Property="Foreground" Value="{DynamicResource TlAccent}"/>
@@ -220,6 +225,15 @@
         <Style Selector="Button.tl-btn:pointerover">
             <Setter Property="Opacity" Value="0.92"/>
         </Style>
+
+        <!-- 右键菜单里的分组标题: 只作视觉分组用, 不可点。
+             菜单项一多, 光靠分隔线切不出一眼可辨的语义块。 -->
+        <Style Selector="MenuItem.ctx-group">
+            <Setter Property="FontSize" Value="10"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="Opacity" Value="0.55"/>
+            <Setter Property="Margin" Value="0,6,0,1"/>
+        </Style>
     </Window.Styles>
 
     <DockPanel Background="{DynamicResource TlWindowBg}">
@@ -254,6 +268,9 @@
                           InputGesture="Delete"/>
                 <Separator/>
                 <MenuItem Header="删除选中轨道" Click="OnDeleteSelectedTrack"/>
+                <Separator/>
+                <MenuItem Header="解决设备绑定..." Click="OnCheckDeviceBindings"
+                          ToolTip.Tip="检查各轨道的设备名是否在设备表 (Config/IODevice.xml) 中声明，并可批量映射修复"/>
                 <Separator/>
                 <MenuItem Header="在播放头插入时间">
                     <MenuItem Header="插入 0.5 秒" Click="OnRippleInsert" Tag="500"/>
@@ -527,6 +544,23 @@
                                       AutomationProperties.AutomationId="TransportMotionThrottle"
                                       AutomationProperties.Name="设备下发节流"
                                       ToolTip.Tip="设备下发节流: 降低动作下发频率 (只在「设备输出」开启时生效); SafetyGuard 限速不受影响"/>
+                            <Border Width="1" Background="{DynamicResource TlTransportSeparator}" Margin="4,5"/>
+                            <!-- 设备绑定检查: 动作文件里的设备名必须与设备表一致,
+                                 否则 native 侧查不到设备就直接丢弃输出 (不报错)。 -->
+                            <Button Classes="transport-btn" Click="OnCheckDeviceBindings"
+                                    AutomationProperties.AutomationId="TransportDeviceBindings"
+                                    AutomationProperties.Name="设备绑定"
+                                    ToolTip.Tip="设备绑定检查：动作文件里的设备名必须与设备表 (Config/IODevice.xml) 一致，否则这些轨道的输出会被静默丢弃"
+                                    Foreground="{DynamicResource TlTransportBtn}">
+                                <Canvas Width="15" Height="15">
+                                    <Path Data="M 7.5,2 L 14,13 L 1,13 Z"
+                                          Stroke="{DynamicResource TlTransportBtn}" StrokeThickness="1.3" Fill="Transparent"/>
+                                    <Path Data="M 7.5,6 L 7.5,9.6"
+                                          Stroke="{DynamicResource TlTransportBtn}" StrokeThickness="1.3"/>
+                                    <Ellipse Canvas.Left="6.9" Canvas.Top="10.8" Width="1.4" Height="1.4"
+                                             Fill="{DynamicResource TlTransportBtn}"/>
+                                </Canvas>
+                            </Button>
                             <!-- 下一关键帧 -->
                             <Button Classes="transport-btn" Click="OnNextKeyframe"
                                     AutomationProperties.AutomationId="TransportNextKeyframe"
@@ -935,54 +969,20 @@
                                                         ToolTip.Tip="{Binding DisplayTitle}"
                                                         PointerPressed="OnTrackHeaderPointerPressed">
                                                     <Border.ContextMenu>
-                                                        <ContextMenu>
-                                                            <!-- 外观 -->
-                                                            <MenuItem Header="轨道颜色" Tag="{Binding}">
-                                                                <MenuItem Header="蓝色" Tag="{Binding}"
-                                                                          Click="OnCtxSetColor"
-                                                                          CommandParameter="#4FC3F7"/>
-                                                                <MenuItem Header="绿色" Tag="{Binding}"
-                                                                          Click="OnCtxSetColor"
-                                                                          CommandParameter="#4CAF50"/>
-                                                                <MenuItem Header="橙色" Tag="{Binding}"
-                                                                          Click="OnCtxSetColor"
-                                                                          CommandParameter="#FF9800"/>
-                                                                <MenuItem Header="红色" Tag="{Binding}"
-                                                                          Click="OnCtxSetColor"
-                                                                          CommandParameter="#ef4444"/>
-                                                                <MenuItem Header="紫色" Tag="{Binding}"
-                                                                          Click="OnCtxSetColor"
-                                                                          CommandParameter="#a855f7"/>
-                                                                <MenuItem Header="青色" Tag="{Binding}"
-                                                                          Click="OnCtxSetColor"
-                                                                          CommandParameter="#06b6d4"/>
-                                                            </MenuItem>
-                                                            <MenuItem Header="轨道高度" Tag="{Binding}">
-                                                                <MenuItem Header="小" Tag="{Binding}"
-                                                                          Click="OnCtxSetTrackHeight"
-                                                                          CommandParameter="28"/>
-                                                                <MenuItem Header="标准" Tag="{Binding}"
-                                                                          Click="OnCtxSetTrackHeight"
-                                                                          CommandParameter="36"/>
-                                                                <MenuItem Header="中" Tag="{Binding}"
-                                                                          Click="OnCtxSetTrackHeight"
-                                                                          CommandParameter="52"/>
-                                                                <MenuItem Header="大" Tag="{Binding}"
-                                                                          Click="OnCtxSetTrackHeight"
-                                                                          CommandParameter="80"/>
-                                                                <Separator/>
-                                                                <MenuItem Header="恢复默认" Tag="{Binding}"
-                                                                          Click="OnCtxResetTrackHeight"/>
-                                                            </MenuItem>
+                                                        <ContextMenu Opening="OnTrackContextMenuOpening">
+                                                            <!-- 外观: 子项在代码里按调色板/尺寸表生成 (单一来源, 且当前值带勾) -->
+                                                            <MenuItem Header="外观" Classes="ctx-group" IsEnabled="False"/>
+                                                            <MenuItem Header="轨道颜色" Name="CtxTrackColorMenu" Tag="{Binding}"/>
+                                                            <MenuItem Header="轨道高度（单条覆盖）" Name="CtxTrackHeightMenu" Tag="{Binding}"/>
                                                             <Separator/>
-                                                            <!-- 分组 -->
-                                                            <MenuItem Header="移入分组..." Tag="{Binding}"
+                                                            <MenuItem Header="分组" Classes="ctx-group" IsEnabled="False"/>
+                                                            <MenuItem Header="移入分组…" Tag="{Binding}"
                                                                       Click="OnCtxMoveToGroup"/>
                                                             <MenuItem Header="移出分组"
                                                                       Command="{Binding $parent[Window].((vm:TimelineEditorViewModel)DataContext).RemoveFromGroupCommand}"
                                                                       CommandParameter="{Binding}"/>
                                                             <Separator/>
-                                                            <!-- 待机循环 (idle) -->
+                                                            <MenuItem Header="待机" Classes="ctx-group" IsEnabled="False"/>
                                                             <MenuItem Header="待机循环">
                                                                 <MenuItem Header="{Binding HasIdleLoop, StringFormat=待机循环: {0}}"
                                                                           IsEnabled="False"/>
@@ -1004,39 +1004,38 @@
                                                                               Click="OnCtxApplyIdleTemplate"
                                                                               CommandParameter="micro"/>
                                                                 </MenuItem>
-                                                                <Separator/>
-                                                                <MenuItem Header="待机参数…" Click="OnEditTrackProperties"
-                                                                          Tag="{Binding}"/>
                                                             </MenuItem>
                                                             <Separator/>
-                                                            <!-- 管理 -->
-                                                            <MenuItem Header="轨道属性..." Click="OnEditTrackProperties"
+                                                            <MenuItem Header="这条轨道" Classes="ctx-group" IsEnabled="False"/>
+                                                            <MenuItem Header="轨道属性…" Click="OnEditTrackProperties"
                                                                       Tag="{Binding}"
                                                                       InputGesture="F2"/>
                                                             <MenuItem Header="复制轨道"
                                                                       Command="{Binding $parent[Window].((vm:TimelineEditorViewModel)DataContext).DuplicateTrackCommand}"
                                                                       CommandParameter="{Binding}"/>
-                                                            <MenuItem Header="上移"
-                                                                      Command="{Binding $parent[Window].((vm:TimelineEditorViewModel)DataContext).MoveTrackUpCommand}"
-                                                                      CommandParameter="{Binding}"/>
-                                                            <MenuItem Header="下移"
-                                                                      Command="{Binding $parent[Window].((vm:TimelineEditorViewModel)DataContext).MoveTrackDownCommand}"
-                                                                      CommandParameter="{Binding}"/>
-                                                            <MenuItem Header="添加轨道..." Click="OnAddTrack"/>
-                                                            <MenuItem Header="新建分组..." Click="OnPanelNewGroup"/>
+                                                            <MenuItem Header="排序">
+                                                                <MenuItem Header="上移"
+                                                                          Command="{Binding $parent[Window].((vm:TimelineEditorViewModel)DataContext).MoveTrackUpCommand}"
+                                                                          CommandParameter="{Binding}"/>
+                                                                <MenuItem Header="下移"
+                                                                          Command="{Binding $parent[Window].((vm:TimelineEditorViewModel)DataContext).MoveTrackDownCommand}"
+                                                                          CommandParameter="{Binding}"/>
+                                                            </MenuItem>
+                                                            <Separator/>
+                                                            <MenuItem Header="剪贴板">
+                                                                <MenuItem Header="复制为 JSON（系统剪贴板）"
+                                                                          Tag="{Binding}"
+                                                                          Click="OnCtxCopyTrackJson"
+                                                                          ToolTip.Tip="把整条轨道 (含片段/关键帧) 复制到系统剪贴板"/>
+                                                                <MenuItem Header="从系统剪贴板粘贴轨道"
+                                                                          Click="OnCtxPasteTrackFromClipboard"
+                                                                          ToolTip.Tip="从系统剪贴板粘贴一条轨道 (自动分配新 Id, 解除动作实例绑定)"/>
+                                                            </MenuItem>
                                                             <Separator/>
                                                             <MenuItem Header="删除轨道"
                                                                       Command="{Binding $parent[Window].((vm:TimelineEditorViewModel)DataContext).DeleteTrackCommand}"
                                                                       CommandParameter="{Binding}"
                                                                       Foreground="{DynamicResource TlDanger}"/>
-                                                            <Separator/>
-                                                            <MenuItem Header="复制轨道 JSON"
-                                                                      Tag="{Binding}"
-                                                                      Click="OnCtxCopyTrackJson"
-                                                                      ToolTip.Tip="把整条轨道 (含片段/关键帧) 复制到系统剪贴板"/>
-                                                            <MenuItem Header="从剪贴板粘贴轨道"
-                                                                      Click="OnCtxPasteTrackFromClipboard"
-                                                                      ToolTip.Tip="从系统剪贴板粘贴一条轨道 (自动分配新 Id, 解除动作实例绑定)"/>
                                                         </ContextMenu>
                                                     </Border.ContextMenu>
                                                     <Grid>
@@ -1080,6 +1079,16 @@
                                                                            VerticalAlignment="Center" Opacity="0.7"
                                                                            TextTrimming="CharacterEllipsis"
                                                                            IsVisible="{Binding ShowSubtitle}"/>
+                                                                <!-- 输出种类: 直连 OAxis 通道 还是 OAction 动作别名。
+                                                                     两者的静默失效原因与修复路径完全不同, 不标出来就分不清。 -->
+                                                                <Border Background="{DynamicResource TlRoleBadgeBg}"
+                                                                        CornerRadius="2" Padding="3,1"
+                                                                        VerticalAlignment="Center"
+                                                                        ToolTip.Tip="{Binding OutputKindTip}">
+                                                                    <TextBlock Text="{Binding OutputKindBadge}"
+                                                                               FontSize="8" FontWeight="Bold"
+                                                                               Foreground="{DynamicResource TlRoleBadgeText}"/>
+                                                                </Border>
                                                                 <!-- 有效量程: 让归一化值域可见 (悬停看来源: 轨道覆盖 / 设备声明 / 直通) -->
                                                                 <Border Background="{DynamicResource TlRoleBadgeBg}"
                                                                         CornerRadius="2" Padding="3,1"
@@ -1111,6 +1120,19 @@
                                                                                    FontWeight="Bold"/>
                                                                     </StackPanel>
                                                                 </Border>
+                                                                <!-- 设备绑定失效警示: 名字不在设备表里 → native 会把该轨道输出静默丢弃 -->
+                                                                <Border Background="{DynamicResource TlBadgeBg}"
+                                                                        CornerRadius="2" Padding="3,1"
+                                                                        IsVisible="{Binding HasUnresolvedDevice}"
+                                                                        VerticalAlignment="Center"
+                                                                        ToolTip.Tip="{Binding UnresolvedDeviceTip}">
+                                                                    <StackPanel Orientation="Horizontal" Spacing="2">
+                                                                        <TextBlock Text="⚠" FontSize="9" Foreground="{DynamicResource TlDanger}"
+                                                                                   VerticalAlignment="Center"/>
+                                                                        <TextBlock Text="绑定失效" FontSize="8" FontWeight="Bold"
+                                                                                   Foreground="{DynamicResource TlDanger}"/>
+                                                                    </StackPanel>
+                                                                </Border>
                                                             </StackPanel>
                                                         </DockPanel>
 
@@ -1134,7 +1156,8 @@
                                                                     IsVisible="{Binding !IsCompactDisplay}">
                                                             <ToggleButton Classes="track-toggle" IsChecked="{Binding IsEnabled}"
                                                                           Padding="2" Background="Transparent"
-                                                                          ToolTip.Tip="启用/禁用"
+                                                                          ToolTip.Tip="{Binding EnableActionLabel}"
+                                                                          AutomationProperties.Name="{Binding EnableActionLabel}"
                                                                           MinWidth="0" MinHeight="0"
                                                                           Width="22" Height="22"
                                                                           Click="OnToggleTrackEnabled">
@@ -1145,9 +1168,22 @@
                                                                           Stroke="{Binding $parent[ToggleButton].Foreground}" StrokeThickness="1.5"/>
                                                                 </Canvas>
                                                             </ToggleButton>
+                                                            <!-- 单轨静音: 调试时只摘掉一条轨道听/看效果 (分组静音是另一粒度) -->
+                                                            <ToggleButton Classes="track-toggle track-mute-toggle"
+                                                                          IsChecked="{Binding IsMuted}"
+                                                                          Padding="2" Background="Transparent"
+                                                                          ToolTip.Tip="{Binding MuteActionLabel}"
+                                                                          AutomationProperties.Name="{Binding MuteActionLabel}"
+                                                                          MinWidth="0" MinHeight="0"
+                                                                          Width="22" Height="22"
+                                                                          Click="OnToggleTrackMuted">
+                                                                <TextBlock Text="M" FontSize="12" FontWeight="Bold"
+                                                                           HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                                            </ToggleButton>
                                                             <ToggleButton Classes="track-toggle" IsChecked="{Binding IsSolo}"
                                                                           Padding="2" Background="Transparent"
-                                                                          ToolTip.Tip="独奏"
+                                                                          ToolTip.Tip="{Binding SoloActionLabel}"
+                                                                          AutomationProperties.Name="{Binding SoloActionLabel}"
                                                                           MinWidth="0" MinHeight="0"
                                                                           Width="22" Height="22"
                                                                           Click="OnToggleTrackSolo"

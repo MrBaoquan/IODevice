@@ -21,6 +21,8 @@ namespace IOStudio.Tests.Services
     /// 注意: 原生 DLL 不可用时<b>必须失败</b>而不是静默跳过 —— 否则"契约测试全绿"会变成
     /// 假安全感 (测的是一个不参与实播的实现)。
     /// </summary>
+    /// <remarks>装载 native Slot 属于进程级共享状态, 见 <see cref="NativeMotionStateCollection"/>。</remarks>
+    [Collection("NativeMotionState")]
     public class CrossLanguageContractTests
     {
         private readonly ITestOutputHelper _out;

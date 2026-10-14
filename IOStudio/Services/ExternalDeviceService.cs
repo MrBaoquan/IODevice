@@ -492,7 +492,7 @@ namespace IOStudio.Services
         }
 
         /// <summary>
-        /// 同步设备的 Schema（从 INI 更新）
+        /// 同步设备的 Schema（INI 后端从 INI 键反推；XML 后端按配置真相重载）
         /// </summary>
         public bool SyncSchema(string dllName)
         {
@@ -502,7 +502,14 @@ namespace IOStudio.Services
 
             try
             {
-                var schema = DeviceSchemaService.Instance.SyncFromIni(dllName);
+                var current = DeviceSchemaService.Instance.LoadSchema(dllName);
+                var schema = string.Equals(
+                    current?.Backend,
+                    "xml",
+                    StringComparison.OrdinalIgnoreCase
+                )
+                    ? DeviceSchemaService.Instance.LoadSchema(dllName, forceReload: true)
+                    : DeviceSchemaService.Instance.SyncFromIni(dllName);
                 device.HasSchema = schema != null;
                 return device.HasSchema;
             }

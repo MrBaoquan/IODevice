@@ -115,11 +115,9 @@
 						  Command="{Binding AddDeviceCommand}" IsEnabled="{Binding IsEditMode}"/>
 				<MenuItem Header="{Binding OpenCloseMenuText}" Command="{Binding OpenCloseDeviceCommand}"/>
 				<Separator/>
-				<MenuItem Header="设备属性(_P)" Command="{Binding OpenDevicePropertiesCommand}" IsEnabled="{Binding IsEditMode}"/>
-				<MenuItem Header="删除当前设备(_X)"
-						  Command="{Binding DeleteDeviceCommand}"
-						  CommandParameter="{Binding SelectedIODevcie}"
-						  IsEnabled="{Binding IsEditMode}" />
+				<!-- 设备作用域的操作 (属性 / 删除) 都在设备区里: 那块视图的 DataContext 就是设备本身,
+				     操作对象无需推断。菜单只留应用级动作。 -->
+				<MenuItem Header="设备表(_T)" Name="DeviceTableMenu"/>
 			</MenuItem>
 			<MenuItem Header="工作区(_W)">
 				<MenuItem Header="动作编排" Command="{Binding OpenTimelineEditorCommand}">
@@ -165,6 +163,32 @@
 				<MenuItem Header="关于(_A)" Command="{Binding AboutCommand}" />
 			</MenuItem>
 		</Menu>
+
+		<!-- 更新提醒横幅: **非模态** —— 启动时不再用弹窗拦截用户。
+		     放在工具栏之下、内容之上, 关掉或忽略后即消失。 -->
+		<Border Name="UpdateBanner" DockPanel.Dock="Top"
+		        IsVisible="{Binding IsUpdateBannerVisible}"
+		        Background="#eff6ff" BorderBrush="#bfdbfe" BorderThickness="0 0 0 1"
+		        Padding="18 10">
+			<Grid ColumnDefinitions="Auto,*,Auto,Auto">
+				<iconPacks:PackIconMaterial Grid.Column="0" Kind="Update"
+				                           Width="16" Height="16" VerticalAlignment="Center"
+				                           Margin="0,0,10,0" Foreground="#1d4ed8"/>
+				<TextBlock Grid.Column="1" VerticalAlignment="Center" TextWrapping="Wrap"
+				           Text="{Binding UpdateBannerText}"
+				           FontSize="12" Foreground="#1e3a8a"/>
+				<Button Grid.Column="2" Content="查看更新" Click="OnUpdateBannerView"
+				        Padding="12,5" Margin="12,0,8,0"
+				        Background="#2563eb" Foreground="White"
+				        HorizontalContentAlignment="Center"/>
+				<StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="6">
+					<Button Content="忽略此版本" Click="OnUpdateBannerSkip"
+					        Padding="12,5" IsVisible="{Binding CanSkipUpdateVersion}"/>
+					<Button Content="稍后" Click="OnUpdateBannerDismiss"
+					        Padding="12,5"/>
+				</StackPanel>
+			</Grid>
+		</Border>
 
 		<Border DockPanel.Dock="Top" Background="{DynamicResource TlToolbarBg}" BorderBrush="{DynamicResource TlBorderBrush}" BorderThickness="0 0 0 1" Padding="18 12">
 			<Grid>

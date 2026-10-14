@@ -44,6 +44,15 @@ namespace IOStudio.Views.Timeline
 
         // ═══════ 初始化与绑定 ═══════
 
+        protected override void OnOpened(EventArgs e)
+        {
+            base.OnOpened(e);
+
+            // 打开文件时登记的设备绑定检查要等窗口显示出来才能弹模态框 —— 这里才是时候。
+            if (ViewModel is { } vm)
+                _ = vm.RunPendingBindingCheckAsync();
+        }
+
         protected override void OnDataContextChanged(EventArgs e)
         {
             base.OnDataContextChanged(e);

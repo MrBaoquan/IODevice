@@ -259,6 +259,140 @@ namespace IOStudio.Views.Timeline
         }
 
         /// <summary>设置轨道颜色 (右键菜单)</summary>
+        /// <summary>
+        /// 展开右键菜单前，按需填充「轨道颜色」「轨道高度」两个子菜单。
+        ///
+        /// <para><b>为什么改成代码生成</b>: 原先这两个子菜单在 XAML 里写死了 6 个颜色 / 4 档高度,
+        /// 而「轨道属性」对话框里另有一份 <b>10 色</b>调色板 —— 同一件事两套取值, 且右键那套
+        /// 既不显示当前值、也不含对话框里有的颜色。现在颜色统一取自
+        /// <c>AddTrackDialogViewModel.ColorPalette</c> (单一来源), 并给当前值打勾。</para>
+        /// </summary>
+        private void PopulateTrackAppearanceMenus(ContextMenu menu)
+        {
+            if (menu.Items.Count == 0)
+                return;
+
+            // 菜单从它挂靠的轨道头继承 DataContext —— 就是被右键的那条轨道
+            if (menu.DataContext is not TrackViewModel trackVm)
+                return;
+
+            // 注意: 这两项在 DataTemplate 里, 不能用窗口的 FindControl 取。
+            // 直接遍历菜单项 (而不是走可视/逻辑树) —— 未展开的子菜单其子项尚未实现,
+            // 走树会找不到; 而 Items 是模型层, 一定在。
+            var colorMenu = FindMenuItemByName(menu.Items, "CtxTrackColorMenu");
+            var heightMenu = FindMenuItemByName(menu.Items, "CtxTrackHeightMenu");
+            if (colorMenu is null || heightMenu is null)
+                return;
+
+            // ── 颜色: 与「轨道属性」对话框同一个调色板 ──
+            colorMenu.Items.Clear();
+            foreach (var hex in IOStudio.ViewModels.Timeline.AddTrackDialogViewModel.ColorPalette)
+            {
+                bool isCurrent = string.Equals(trackVm.Color, hex, StringComparison.OrdinalIgnoreCase);
+                var item = new MenuItem
+                {
+                    Header = hex,
+                    Tag = trackVm,
+                    CommandParameter = hex,
+                    Icon = BuildSwatch(hex, isCurrent),
+                };
+                item.Click += OnCtxSetColor;
+                colorMenu.Items.Add(item);
+            }
+
+            // ── 高度: 单条覆盖; 勾出当前生效档 ──
+            heightMenu.Items.Clear();
+            foreach (var (label, height) in TrackHeightPresets)
+            {
+                var item = new MenuItem
+                {
+                    Header = label,
+                    Tag = trackVm,
+                    CommandParameter = height.ToString(),
+                    Icon = CheckIcon(trackVm.IndividualTrackHeight == height),
+                };
+                item.Click += OnCtxSetTrackHeight;
+                heightMenu.Items.Add(item);
+            }
+            heightMenu.Items.Add(new Separator());
+            var reset = new MenuItem
+            {
+                Header = "恢复跟随全局",
+                Tag = trackVm,
+                Icon = CheckIcon(!trackVm.HasIndividualHeight),
+            };
+            reset.Click += OnCtxResetTrackHeight;
+            heightMenu.Items.Add(reset);
+        }
+
+        /// <summary>在菜单项里按 Name 递归查找 (含各级子菜单)。</summary>
+        private static MenuItem? FindMenuItemByName(IEnumerable<object?> items, string name)
+        {
+            foreach (var item in items)
+            {
+                if (item is not MenuItem mi)
+                    continue;
+                if (mi.Name == name)
+                    return mi;
+                if (FindMenuItemByName(mi.Items, name) is { } found)
+                    return found;
+            }
+            return null;
+        }
+
+        /// <summary>轨道右键菜单打开时填充外观子菜单。</summary>
+        private void OnTrackContextMenuOpening(object? sender, CancelEventArgs e)
+        {
+            if (sender is ContextMenu menu)
+                PopulateTrackAppearanceMenus(menu);
+        }
+
+        /// <summary>单条轨道高度的预设档 (与右键菜单/工具栏共用同一组值)。</summary>
+        private static readonly (string Label, double Height)[] TrackHeightPresets =
+        {
+            ("小 (28)", 28),
+            ("标准 (36)", 36),
+            ("中 (52)", 52),
+            ("大 (80)", 80),
+        };
+
+        /// <summary>色块图标。勾选态在外圈加一道环, 避免只用颜色表达选中。</summary>
+        private static Control BuildSwatch(string hex, bool checkedState = false)
+        {
+            Color color;
+            try
+            {
+                color = Color.Parse(hex);
+            }
+            catch
+            {
+                color = Colors.Gray;
+            }
+
+            return new Border
+            {
+                Width = 12,
+                Height = 12,
+                CornerRadius = new CornerRadius(2),
+                Background = new SolidColorBrush(color),
+                BorderBrush = new SolidColorBrush(
+                    checkedState ? Colors.White : Colors.Transparent
+                ),
+                BorderThickness = new Thickness(checkedState ? 2 : 0),
+            };
+        }
+
+        /// <summary>勾选对勾 (未选中时留空, 保持各行文字对齐)。</summary>
+        private static Control? CheckIcon(bool isChecked) =>
+            isChecked
+                ? new TextBlock
+                {
+                    Text = "✓",
+                    FontSize = 12,
+                    VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center,
+                }
+                : null;
+
         private void OnCtxSetColor(object? sender, RoutedEventArgs e)
         {
             if (
@@ -1493,6 +1627,15 @@ namespace IOStudio.Views.Timeline
                 return;
             int idx = ViewModel.Tracks.IndexOf(trackVm);
             curveEditor.SetSelectedTrack(idx);
+        }
+
+        /// <summary>
+        /// 设备绑定检查 (工具栏入口) —— 未解析的设备名会让对应轨道输出被静默丢弃。
+        /// </summary>
+        private async void OnCheckDeviceBindings(object? sender, RoutedEventArgs e)
+        {
+            if (ViewModel is { } vm)
+                await vm.CheckDeviceBindingsAsync(autoPrompt: false);
         }
 
         /// <summary>

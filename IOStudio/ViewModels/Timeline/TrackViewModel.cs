@@ -45,6 +45,10 @@ namespace IOStudio.ViewModels.Timeline
             {
                 Track.DeviceName = value;
                 this.RaisePropertyChanged();
+                // 设备名换了, 绑定是否有效也跟着变 —— 轨道头的警示徽章要同步。
+                this.RaisePropertyChanged(nameof(HasUnresolvedDevice));
+                this.RaisePropertyChanged(nameof(UnresolvedDeviceTip));
+                this.RaisePropertyChanged(nameof(OutputKindTip));
             }
         }
 
@@ -68,20 +72,81 @@ namespace IOStudio.ViewModels.Timeline
             }
         }
 
-        /// <summary>显示标题: "Label (DeviceName / OActionName)" 或 "Label (DeviceName / OAxis_XX)"</summary>
+        /// <summary>该轨道是直连 OAxis 通道, 还是走 OAction 动作 (动作是若干通道的别名)。</summary>
+        public bool IsOAxisOutput =>
+            string.Equals(Track.OutputType, "oaxis", StringComparison.OrdinalIgnoreCase);
+
+        /// <summary>输出种类徽章文本 — 让"改的是通道还是动作"一眼可辨。</summary>
+        public string OutputKindBadge => IsOAxisOutput ? "OAxis" : "OAction";
+
+        /// <summary>
+        /// 输出种类徽章的悬停说明。OAction 轨道顺带把"这个动作落到哪些物理通道"回显出来 ——
+        /// 那个映射只存在于设备表 (Config/IODevice.xml) 里, 动作文件里看不到。
+        /// </summary>
+        public string OutputKindTip
+        {
+            get
+            {
+                if (IsOAxisOutput)
+                {
+                    return string.IsNullOrEmpty(Track.OAxisChannel)
+                        ? "直连 OAxis 通道（未指定通道名, 输出会被丢弃）"
+                        : $"直连 OAxis 通道 {Track.OAxisChannel}";
+                }
+
+                if (string.IsNullOrEmpty(OActionName))
+                    return "OAction 动作（未指定动作名, 输出会被丢弃）";
+
+                var declared = Services.Motion.MotionDeviceCatalog.FindOAction(DeviceName, OActionName);
+                if (declared is { KeyNames.Count: > 0 })
+                    return $"OAction 动作 {OActionName} → {string.Join(", ", declared.KeyNames)}";
+
+                if (Services.Motion.MotionDeviceCatalog.IsDeclared(DeviceName))
+                    return $"OAction 动作 {OActionName} —— 该设备未声明此动作, 输出会被静默丢弃";
+
+                return $"OAction 动作 {OActionName}";
+            }
+        }
+
+        /// <summary>显示标题: "Label (DeviceName / OAxis_XX)" 或 "Label (DeviceName / OAction 动作名)"</summary>
         public string DisplayTitle
         {
             get
             {
-                string outputDesc =
-                    Track.OutputType == "oaxis" && !string.IsNullOrEmpty(Track.OAxisChannel)
-                        ? Track.OAxisChannel
-                        : OActionName;
+                // 带上种类前缀: 只写 "OAxis_6" 或 "Heave" 时看不出哪一种是通道、哪一种是动作别名,
+                // 而这两者的修复路径完全不同 (前者在插件里, 后者在设备表里)。
+                string outputDesc = IsOAxisOutput
+                    ? (
+                        string.IsNullOrEmpty(Track.OAxisChannel)
+                            ? "OAxis (未指定)"
+                            : $"OAxis {Track.OAxisChannel}"
+                    )
+                    : OActionName;
+
+                if (!IsOAxisOutput && !string.IsNullOrEmpty(outputDesc))
+                    outputDesc = $"OAction {outputDesc}";
+
                 return string.IsNullOrEmpty(Label)
                     ? $"{DeviceName} / {outputDesc}"
                     : $"{Label} ({DeviceName} / {outputDesc})";
             }
         }
+
+        /// <summary>
+        /// 设备名未在设备表 (Config/IODevice.xml) 中声明 —— native 侧查不到设备会直接丢掉该轨道输出。
+        ///
+        /// 这是"时间轴在走、设备却不动"的头号原因且完全静默, 所以轨道头上要显性标出来。
+        /// 注意不能拿 IODevice.IsValid() 当判据: 设备表整体没加载时任何名字都查不到, 离线编排会满屏误报。
+        /// </summary>
+        public bool HasUnresolvedDevice =>
+            !string.IsNullOrEmpty(DeviceName) && !Services.Motion.MotionDeviceCatalog.IsDeclared(DeviceName);
+
+        /// <summary>未解析设备绑定的悬停说明 (含一键修复入口提示)</summary>
+        public string UnresolvedDeviceTip =>
+            HasUnresolvedDevice
+                ? $"设备 '{DeviceName}' 未在设备表中声明，该轨道输出会被静默丢弃。\n" +
+                  "工具栏「设备绑定检查」可一键映射到已有设备。"
+                : "";
 
         public string Color
         {
@@ -177,8 +242,13 @@ namespace IOStudio.ViewModels.Timeline
                 Track.Muted = value;
                 this.RaiseAndSetIfChanged(ref _isMuted, value);
                 this.RaisePropertyChanged(nameof(TrackOpacity));
+                this.RaisePropertyChanged(nameof(MuteActionLabel));
             }
         }
+
+        /// <summary>静音按钮的动作语义 —— 与 <see cref="LockActionLabel"/> 一致地随状态切换,
+        /// 让提示与无障碍名称在任何时刻都说得通 (写死的"静音/取消静音"做不到)。</summary>
+        public string MuteActionLabel => IsMuted ? "取消静音" : "静音";
 
         private bool _isSolo;
         public bool IsSolo
@@ -188,8 +258,11 @@ namespace IOStudio.ViewModels.Timeline
             {
                 Track.Solo = value;
                 this.RaiseAndSetIfChanged(ref _isSolo, value);
+                this.RaisePropertyChanged(nameof(SoloActionLabel));
             }
         }
+
+        public string SoloActionLabel => IsSolo ? "取消独奏" : "独奏";
 
         private bool _isEnabled = true;
         public bool IsEnabled
@@ -200,8 +273,12 @@ namespace IOStudio.ViewModels.Timeline
                 Track.Enabled = value;
                 this.RaiseAndSetIfChanged(ref _isEnabled, value);
                 this.RaisePropertyChanged(nameof(TrackOpacity));
+                this.RaisePropertyChanged(nameof(EnableActionLabel));
             }
         }
+
+        /// <summary>启用按钮的动作语义 (与静音/独奏同构; 原先写死的"启用/禁用"没有随状态切换)。</summary>
+        public string EnableActionLabel => IsEnabled ? "禁用轨道" : "启用轨道";
 
         /// <summary>轨道不透明度 — 禁用/静音/非Solo 时变淡</summary>
         public double TrackOpacity => IsEnabled && !IsMuted ? 1.0 : 0.4;
@@ -371,17 +448,35 @@ namespace IOStudio.ViewModels.Timeline
         /// <summary>公开访问 (供检查器显示工程值单位)。</summary>
         public string DeclaredUnitValue => DeclaredUnit;
 
-        /// <summary>该轨道实际生效的量程 (如 "±30°") — 让归一化值域可见。</summary>
+        /// <summary>
+        /// 该轨道实际生效的量程 (如 "0..100%" / "-100%..+100%" / "0..1000mm")。
+        /// 显示规则由 <c>value_display</c> 或 <c>neutral_value</c> 推导 —— 见
+        /// <see cref="IOStudio.Services.Motion.EngineeringDisplay.DescribeRange"/>。
+        /// </summary>
         public string EffectiveRangeText =>
             IOStudio.Services.Motion.EngineeringDisplay
-                .DescribeRange(Track.EngineeringRange, DeclaredRange, DeclaredUnit, ValueType)
+                .DescribeRange(
+                    Track.ValueDisplay,
+                    Track.EngineeringRange,
+                    DeclaredRange,
+                    DeclaredUnit,
+                    ValueType,
+                    Track.NeutralValue
+                )
                 .Text;
 
-        /// <summary>量程来源 (悬停说明): 轨道覆盖 / 设备声明 / 直通。</summary>
+        /// <summary>量程来源 (悬停说明): 显示规则 + 量程来源。</summary>
         public string EffectiveRangeTip =>
             "有效量程: "
             + IOStudio.Services.Motion.EngineeringDisplay
-                .DescribeRange(Track.EngineeringRange, DeclaredRange, DeclaredUnit, ValueType)
+                .DescribeRange(
+                    Track.ValueDisplay,
+                    Track.EngineeringRange,
+                    DeclaredRange,
+                    DeclaredUnit,
+                    ValueType,
+                    Track.NeutralValue
+                )
                 .Source;
 
         /// <summary>
@@ -390,6 +485,7 @@ namespace IOStudio.ViewModels.Timeline
         /// </summary>
         public string LiveValueDisplay =>
             IOStudio.Services.Motion.EngineeringDisplay.FormatLive(
+                Track.ValueDisplay,
                 LiveValue,
                 ValueType,
                 Track.NeutralValue,
@@ -412,6 +508,11 @@ namespace IOStudio.ViewModels.Timeline
         public void RaiseAllBindingsChanged()
         {
             this.RaisePropertyChanged(nameof(DisplayTitle));
+            this.RaisePropertyChanged(nameof(HasUnresolvedDevice));
+            this.RaisePropertyChanged(nameof(UnresolvedDeviceTip));
+            this.RaisePropertyChanged(nameof(IsOAxisOutput));
+            this.RaisePropertyChanged(nameof(OutputKindBadge));
+            this.RaisePropertyChanged(nameof(OutputKindTip));
             this.RaisePropertyChanged(nameof(DeviceName));
             this.RaisePropertyChanged(nameof(OActionName));
             this.RaisePropertyChanged(nameof(Label));
@@ -419,6 +520,8 @@ namespace IOStudio.ViewModels.Timeline
             this.RaisePropertyChanged(nameof(ValueType));
             this.RaisePropertyChanged(nameof(ValueTypeDisplay));
             this.RaisePropertyChanged(nameof(LiveValueDisplay));
+            this.RaisePropertyChanged(nameof(EffectiveRangeText));
+            this.RaisePropertyChanged(nameof(EffectiveRangeTip));
         }
     }
 }

@@ -45,6 +45,17 @@ namespace IOStudio.ViewModels
         // 静态实例引用，用于外部调用重启设备
         private static MainWindowViewModel? _instance;
 
+        /// <summary>
+        /// 主窗口 ViewModel 实例 (设备表增删的唯一落库方)。
+        ///
+        /// <para>设备视图 (<c>IODeviceView</c>) 的 DataContext 是 <c>Device</c> 本身, 它要发起
+        /// "删除我自己" 只能经这个入口回到应用级流程 (确认框 + 落盘 + 重启提示都在那边)。
+        /// 未创建时为 null (CLI / 无头路径), 调用方自行兜底。</para>
+        /// </summary>
+        public static MainWindowViewModel? Instance => _instance;
+
+
+
         private bool isStarted = false;
         public bool IsStared
         {
@@ -112,7 +123,6 @@ namespace IOStudio.ViewModels
         public ReactiveCommand<Unit, Unit> NewSessionCommand { get; }
         public ReactiveCommand<Unit, Unit> OpenConfigCommand { get; }
         public ReactiveCommand<Unit, Unit> ExitCommand { get; }
-        public ReactiveCommand<Unit, Unit> OpenDevicePropertiesCommand { get; }
         public ReactiveCommand<Unit, Unit> ToggleThemeCommand { get; }
         public ReactiveCommand<Unit, Unit> AboutCommand { get; }
         public ReactiveCommand<Unit, Unit> OpenCloseDeviceCommand { get; }
@@ -232,6 +242,30 @@ namespace IOStudio.ViewModels
         }
 
         private readonly ISoftwareUpdateService _updateService;
+
+        /// <summary>
+        /// 启动时的更新提醒状态 (横幅显隐/文案/忽略规则)。
+        /// 版本号用委托延迟取 —— 字段初始化时更新服务还没解析出来。
+        /// </summary>
+        private readonly UpdateNotice _updateNotice =
+            new(() => ServiceLocator.Resolve<ISoftwareUpdateService>().CurrentVersion);
+
+        /// <summary>
+        /// 是否显示更新提醒横幅。
+        ///
+        /// <para>启动检查走<b>横幅</b>而不是弹窗 —— 弹窗会拦下用户正在做的事, 而且只要没更新
+        /// 就每次启动都拦。横幅不阻塞, 且可"忽略此版本"永久消停。</para>
+        /// </summary>
+        public bool IsUpdateBannerVisible => _updateNotice.IsVisible;
+
+        /// <summary>横幅文案 (版本 + 体积)。</summary>
+        public string UpdateBannerText => _updateNotice.Text;
+
+        /// <summary>
+        /// 是否提供"忽略此版本"。强制更新时不给 —— 那种情况下忽略等于让用户停在有问题的版本上。
+        /// </summary>
+        public bool CanSkipUpdateVersion => _updateNotice.CanSkip;
+
         private CompositeDisposable? _recordingSubscriptions;
 
         private Device selectedIODevcie;
@@ -311,7 +345,7 @@ namespace IOStudio.ViewModels
             IOStudioSettings.LoadOrCreate();
 
             var _errorMsg = IORoot.Instance
-                .SetConfig(Path.Combine(AppRoot, "Config\\IODevice.xml"))
+                .SetConfig(Models.DeviceTableLocator.ResolveEffectivePath())
                 .Load();
             if (_errorMsg != string.Empty)
             {
@@ -343,10 +377,13 @@ namespace IOStudio.ViewModels
                 });
 
             IODeviceController.Load();
+
+            // 设备表刚被重新读入，编排侧的设备名判据缓存一并作废。
+            Services.Motion.MotionDeviceCatalog.Invalidate();
         }
 
         /// <summary>
-        /// 添加新设备
+        /// 添加新设备 (设备管理入口: 名字自动生成)
         /// </summary>
         private async System.Threading.Tasks.Task AddDeviceAsync()
         {
@@ -356,30 +393,42 @@ namespace IOStudio.ViewModels
                 return;
             }
 
-            // 创建新设备实例
-            var newDevice = new Device
-            {
-                Name = $"Device_{Devices.Count + 1}",
-                Type = "External",
-                DllName = "MODBUS",
-                Index = 0,
-                IsRuntimeActive = IsStared
-            };
+            await ShowDeviceEditorAndCommitAsync(
+                new Device
+                {
+                    Name = $"Device_{Devices.Count + 1}",
+                    Type = "External",
+                    DllName = "MODBUS",
+                    Index = 0,
+                    IsRuntimeActive = IsStared,
+                },
+                null
+            );
+        }
 
-            // 打开设备属性配置窗口
+        /// <summary>打开设备编辑器并在确认后落库 (IORoot + 设备列表 + 磁盘)。</summary>
+        private async System.Threading.Tasks.Task<bool> ShowDeviceEditorAndCommitAsync(
+            Device newDevice,
+            Avalonia.Controls.Window? owner
+        )
+        {
             var window = new DevicePropertiesWindow();
             window.SetDevice(newDevice);
 
-            // 获取主窗口作为父窗口
-            var mainWindow = Avalonia.Application.Current?.ApplicationLifetime
-                is Avalonia.Controls.ApplicationLifetimes.IClassicDesktopStyleApplicationLifetime desktop
-                ? desktop.MainWindow
-                : null;
+            // 宿主窗口: 优先调用方给的 (编排面板), 否则主窗口
+            var host =
+                owner
+                ?? (
+                    Avalonia.Application.Current?.ApplicationLifetime
+                    is Avalonia.Controls.ApplicationLifetimes.IClassicDesktopStyleApplicationLifetime desktop
+                        ? desktop.MainWindow
+                        : null
+                );
 
-            // 统一处理: 优先模态, 无主窗口(如独立进程/测试)时回退非模态 + Closed 事件, 避免确认后设备丢失
-            if (mainWindow != null)
+            // 统一处理: 优先模态, 无宿主(如独立进程/测试)时回退非模态 + Closed 事件, 避免确认后设备丢失
+            if (host != null)
             {
-                await window.ShowDialog(mainWindow);
+                await window.ShowDialog(host);
             }
             else
             {
@@ -389,22 +438,23 @@ namespace IOStudio.ViewModels
                 await tcs.Task; // 等待用户关闭窗口后判断确认结果
             }
 
-            // 如果用户确认添加
-            if (window.IsConfirmed)
-            {
-                // 添加到 IORoot
-                IORoot.Instance.Devices.Add(newDevice);
+            if (!window.IsConfirmed)
+                return false;
 
-                // 添加到设备列表
-                _devListSource.Add(newDevice);
+            // 添加到 IORoot
+            IORoot.Instance.Devices.Add(newDevice);
 
-                // 选中新添加的设备
-                SelectedIODevcie = newDevice;
+            // 添加到设备列表
+            _devListSource.Add(newDevice);
 
-                // 保存配置到文件
-                SaveDeviceConfig();
-            }
+            // 选中新添加的设备
+            SelectedIODevcie = newDevice;
+
+            // 保存配置到文件
+            SaveDeviceConfig();
+            return true;
         }
+
 
         /// <summary>
         /// 删除设备
@@ -412,7 +462,11 @@ namespace IOStudio.ViewModels
         private async System.Threading.Tasks.Task DeleteDeviceAsync(Device device)
         {
             if (device == null)
+            {
+                // 静默 return 会让"点了没反应"看起来像坏了 —— 说清楚为什么没删
+                PushStatus("请先选中要删除的设备（点击上方设备标签页）");
                 return;
+            }
 
             if (!IsEditMode)
             {
@@ -447,15 +501,22 @@ namespace IOStudio.ViewModels
                 SelectedIODevcie = Devices.FirstOrDefault()!;
             }
 
-            // 保存配置
-            SaveDeviceConfig();
+            // 保存配置 —— 结果必须如实回报: 写失败时若仍说"删除成功",
+            // 用户会以为文件已同步, 而实际设备还在表里, 下次启动又回来了。
+            string tableName = System.IO.Path.GetFileName(
+                Models.DeviceTableLocator.ResolveEffectivePath()
+            );
+            bool saved = SaveDeviceConfig();
 
-            // 提示需要重启
+            // 提示需要重启 / 或写入失败
             var restartBox = MessageBoxManager.GetMessageBoxStandard(
-                "删除成功",
-                $"设备 \"{device.Title}\" 已删除。\n\n为使更改完全生效，建议重启应用程序。",
+                saved ? "删除成功" : "删除未落盘",
+                saved
+                    ? $"设备 \"{device.Title}\" 已从设备表 {tableName} 中删除。\n\n为使更改完全生效，建议重启应用程序。"
+                    : $"设备 \"{device.Title}\" 已从内存移除，但写入设备表 {tableName} 失败（详见状态栏）。\n\n"
+                        + "文件里仍有该设备，重启后会恢复。",
                 ButtonEnum.Ok,
-                MsBox.Avalonia.Enums.Icon.Info
+                saved ? MsBox.Avalonia.Enums.Icon.Info : MsBox.Avalonia.Enums.Icon.Warning
             );
             await restartBox.ShowAsync();
         }
@@ -463,15 +524,24 @@ namespace IOStudio.ViewModels
         /// <summary>
         /// 保存设备配置到文件
         /// </summary>
-        private void SaveDeviceConfig()
+        /// <returns>是否真的写入了文件。</returns>
+        private bool SaveDeviceConfig()
         {
             try
             {
                 IORoot.Instance.Save();
+
+                // 设备表已改写，编排侧缓存的设备名判据随之失效 —— 否则增删设备后
+                // 编排面板仍按旧表判断"设备是否被认领"。
+                Services.Motion.MotionDeviceCatalog.Invalidate();
+                return true;
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"保存配置失败: {ex.Message}");
+                // 必须说出来: 本应用是 WinExe 没有控制台, Debug.WriteLine 等于丢弃。
+                // 写失败时界面上还显示"删除成功", 而文件里设备还在 —— 用户以为改了、其实没改。
+                PushStatus($"⚠ 设备表写入失败：{ex.Message}");
+                return false;
             }
         }
 
@@ -543,7 +613,7 @@ namespace IOStudio.ViewModels
                     return;
                 }
 
-                var _configPath = Path.Combine(AppRoot, "Config/IODevice.xml");
+                var _configPath = Models.DeviceTableLocator.ResolveEffectivePath();
                 EditorLauncher.OpenWithPreferredEditor(_configPath);
             });
 
@@ -575,7 +645,7 @@ namespace IOStudio.ViewModels
                     return;
                 }
 
-                var cfg = Path.Combine(AppRoot, "Config/IODevice.xml");
+                var cfg = Models.DeviceTableLocator.ResolveEffectivePath();
                 EditorLauncher.OpenWithPreferredEditor(cfg);
             });
 
@@ -585,22 +655,6 @@ namespace IOStudio.ViewModels
                     Avalonia.Application.Current?.ApplicationLifetime
                     as Avalonia.Controls.ApplicationLifetimes.IClassicDesktopStyleApplicationLifetime;
                 lifetime?.MainWindow?.Close();
-            });
-
-            // ── 设备菜单 ──
-            OpenDevicePropertiesCommand = ReactiveCommand.CreateFromTask(async () =>
-            {
-                if (SelectedIODevcie != null && IsEditMode)
-                {
-                    var win = new DevicePropertiesWindow();
-                    win.SetDevice(SelectedIODevcie);
-                    var mainWindow = Avalonia.Application.Current?.ApplicationLifetime
-                        is Avalonia.Controls.ApplicationLifetimes.IClassicDesktopStyleApplicationLifetime desktop
-                        ? desktop.MainWindow
-                        : null;
-                    if (mainWindow != null)
-                        await win.ShowDialog(mainWindow);
-                }
             });
 
             // ── 视图菜单 ──
@@ -1079,87 +1133,124 @@ namespace IOStudio.ViewModels
         /// 检查软件更新：有更新时提示用户下载并启动安装；安装完成后退出当前应用。
         /// </summary>
         /// <param name="showNoUpdate">为 true 时，即使没有更新也提示用户"当前已是最新版本"。</param>
-        private async System.Threading.Tasks.Task CheckForUpdateAsync(bool showNoUpdate)
+        /// <summary>横幅「稍后」: 本次会话不再显示 (下次启动再说)。</summary>
+        public void DismissUpdateBanner()
         {
+            _updateNotice.Dismiss();
+            RaiseUpdateBannerChanged();
+        }
+
+        /// <summary>
+        /// 横幅「忽略此版本」: 持久化版本号, 那个版本永久不再提醒。
+        /// <b>出现更新的版本仍会提醒</b> —— 忽略的是版本, 不是更新这件事。
+        /// </summary>
+        public void SkipUpdateVersion()
+        {
+            if (_updateNotice.Skip() is { } version)
+                PushStatus($"已忽略版本 {version}，该版本不再提醒（出现更新的版本仍会提示）");
+
+            RaiseUpdateBannerChanged();
+        }
+
+        /// <summary>横幅「查看更新」: 走手动流程 (有对话框确认)。</summary>
+        public System.Threading.Tasks.Task ViewPendingUpdateAsync()
+        {
+            if (_updateNotice.Take() is not { } info)
+                return System.Threading.Tasks.Task.CompletedTask;
+            RaiseUpdateBannerChanged();
+            return RunUpdateFlowAsync(info);
+        }
+
+        /// <summary>测试用: 直接挂上待提醒的更新 (不联网)。</summary>
+        internal void SetPendingUpdateForTest(SoftwareUpdateManifest info)
+        {
+            _updateNotice.Set(info);
+            RaiseUpdateBannerChanged();
+        }
+
+        private void RaiseUpdateBannerChanged()
+        {
+            this.RaisePropertyChanged(nameof(IsUpdateBannerVisible));
+            this.RaisePropertyChanged(nameof(UpdateBannerText));
+            this.RaisePropertyChanged(nameof(CanSkipUpdateVersion));
+        }
+
+        ///
+        /// <para><b>三个阶段各自报错</b>: 检查失败是网络/配置问题, 下载失败是传输问题,
+        /// 安装启动失败是本机更新组件缺失 —— 原实现把三者都报成"检查更新失败", 会把人
+        /// 引向错误方向。而且下载进度原本写进 <c>Console</c>, 本应用是 <c>WinExe</c> 没有控制台,
+        /// 于是 150MB 下载全程界面一片空白。</para>
+        /// </summary>
+        /// <param name="showNoUpdate">
+        /// true = 用户手动点的「检查更新」: 任何结果都要给回执 (含"已是最新"与失败原因);
+        /// false = 启动时静默检查: 只在**确有更新**时打断, 失败写状态栏 (不打扰但看得见)。
+        /// </param>
+        /// <summary>
+        /// 切换设备表并立即重载。
+        ///
+        /// <para><b>只改"加载哪一份", 不改写任何文件</b> —— 切换不存在覆盖配置的风险。
+        /// 切完必须重载: 设备实例是按表建出来的, 不重载就还是旧表那批设备。</para>
+        ///
+        /// <para>查看 / 测试模式下也允许切换 —— "换一份表来看"与"换项目"同性质, 不是编辑动作;
+        /// 真正的编辑限制仍由各编辑入口自己把关。</para>
+        /// </summary>
+        public void SwitchDeviceTable(string fileName)
+        {
+            if (string.IsNullOrWhiteSpace(fileName))
+                return;
+
+            string path = Models.DeviceTableLocator.ResolvePath(fileName);
+            if (!System.IO.File.Exists(path))
+            {
+                PushStatus($"设备表不存在: {fileName}");
+                return;
+            }
+
+            IOStudioSettings.Instance.DeviceTableFile = System.IO.Path.GetFileName(path);
             try
             {
-                if (!_updateService.IsConfigured)
-                {
-                    if (showNoUpdate)
-                    {
-                        await MessageBoxManager
-                            .GetMessageBoxStandard(
-                                "检查更新",
-                                "软件分发尚未配置，请先部署 distribution.json 后再试。",
-                                ButtonEnum.Ok,
-                                Icon.Info
-                            )
-                            .ShowAsync();
-                    }
-                    return;
-                }
+                IOStudioSettings.Instance.Save();
+            }
+            catch (Exception ex)
+            {
+                PushStatus($"记住设备表选择失败：{ex.Message}");
+            }
 
-                var info = await _updateService.CheckForUpdateAsync();
-                if (info != null)
-                {
-                    var msg =
-                        $"检测到新版本 {info.Version}（当前 {_updateService.CurrentVersion}）\n"
-                        + $"{(string.IsNullOrWhiteSpace(info.ReleaseName) ? "" : info.ReleaseName + "\n")}"
-                        + "是否现在下载并安装？";
-                    var result = await MessageBoxManager
-                        .GetMessageBoxStandard("发现新版本", msg, ButtonEnum.YesNo, Icon.Question)
-                        .ShowAsync();
-                    if (result == ButtonResult.Yes)
-                    {
-                        var progress = new Progress<DownloadProgress>(p =>
-                        {
-                            Console.WriteLine(
-                                $"正在下载更新: {p.Percentage:F0}% ({p.BytesReceived}/{p.TotalBytes})"
-                            );
-                        });
-                        var downloaded = await _updateService.DownloadAsync(info, progress);
-                        if (_updateService.LaunchInstaller(downloaded))
-                        {
-                            // 启动独立 Updater 后，退出当前应用等待替换
-                            if (
-                                Avalonia.Application.Current?.ApplicationLifetime
-                                is Avalonia.Controls.ApplicationLifetimes.IClassicDesktopStyleApplicationLifetime desktopLifetime
-                            )
-                            {
-                                desktopLifetime.Shutdown();
-                            }
-                            else
-                            {
-                                Environment.Exit(0);
-                            }
-                        }
-                        else
-                        {
-                            await MessageBoxManager
-                                .GetMessageBoxStandard(
-                                    "更新失败",
-                                    "更新 Helper 不可用，请重新安装当前版本后再试。",
-                                    ButtonEnum.Ok,
-                                    Icon.Warning
-                                )
-                                .ShowAsync();
-                        }
-                    }
-                }
-                else if (showNoUpdate)
+            // 重载: 重新读表 + 重建设备实例 (Load 内部会 IODeviceController.Load 并作废设备目录缓存)
+            Load();
+            PushStatus(
+                $"已切换到设备表 {Models.DeviceTableLocator.DescribeLabel(fileName)}"
+                    + $"（{Devices.Count} 个设备）"
+            );
+        }
+
+        private async System.Threading.Tasks.Task CheckForUpdateAsync(bool showNoUpdate)
+        {
+            if (!_updateService.IsConfigured)
+            {
+                if (showNoUpdate)
                 {
                     await MessageBoxManager
                         .GetMessageBoxStandard(
                             "检查更新",
-                            $"当前已是最新版本（{_updateService.CurrentVersion}）。",
+                            "软件分发尚未配置，请先部署 distribution.json 后再试。",
                             ButtonEnum.Ok,
                             Icon.Info
                         )
                         .ShowAsync();
                 }
+                return;
+            }
+
+            SoftwareUpdateManifest? info;
+            try
+            {
+                info = await _updateService.CheckForUpdateAsync();
             }
             catch (Exception ex)
             {
+                // 静默检查失败原先被整段吞掉 —— 网络不通/未登录/配置错时界面毫无迹象。
+                // 不弹框 (启动时不该被打断), 但状态栏必须说, 否则等于没有检查。
                 if (showNoUpdate)
                 {
                     await MessageBoxManager
@@ -1171,7 +1262,91 @@ namespace IOStudio.ViewModels
                         )
                         .ShowAsync();
                 }
+                else
+                {
+                    PushStatus($"检查更新失败：{ex.Message}");
+                }
+                return;
             }
+
+            if (info is null)
+            {
+                if (showNoUpdate)
+                {
+                    await MessageBoxManager
+                        .GetMessageBoxStandard(
+                            "检查更新",
+                            $"当前已是最新版本（{_updateService.CurrentVersion}）。",
+                            ButtonEnum.Ok,
+                            Icon.Info
+                        )
+                        .ShowAsync();
+                }
+                return;
+            }
+
+            // 启动路径: 挂横幅 (非模态)。被忽略过的版本不再出现 —— 除非是强制更新。
+            if (!showNoUpdate)
+            {
+                if (!UpdateNotice.ShouldNotify(info, IOStudioSettings.Instance.SkippedUpdateVersion))
+                    return;
+
+                _updateNotice.Set(info);
+                RaiseUpdateBannerChanged();
+                return;
+            }
+
+            await RunUpdateFlowAsync(info);
         }
+
+        /// <summary>询问 → 下载(独立窗口) → 启动安装。</summary>
+        private async System.Threading.Tasks.Task RunUpdateFlowAsync(SoftwareUpdateManifest info)
+        {
+            var ask =
+                $"检测到新版本 {info.Version}（当前 {_updateService.CurrentVersion}）\n"
+                + $"{(string.IsNullOrWhiteSpace(info.ReleaseName) ? "" : info.ReleaseName + "\n")}"
+                + $"{(info.Size > 0 ? $"更新包体积 {ViewModels.UpdateDownloadViewModel.FormatBytes(info.Size)}\n" : "")}"
+                + "是否现在下载并安装？";
+            var result = await MessageBoxManager
+                .GetMessageBoxStandard("发现新版本", ask, ButtonEnum.YesNo, Icon.Question)
+                .ShowAsync();
+            if (result != ButtonResult.Yes)
+                return;
+
+            // 下载走独立窗口: 有进度条/速度/剩余时间/取消, 且不冻结主界面。
+            var window = new UpdateDownloadWindow { DataContext = new UpdateDownloadViewModel() };
+            if (GetMainWindow() is { } owner)
+                window.Show(owner);
+            else
+                window.Show();
+
+            bool installed = await window.RunAsync(_updateService, info);
+            if (installed)
+            {
+                PushStatus($"更新 {info.Version} 已开始安装，应用即将退出");
+                if (
+                    Avalonia.Application.Current?.ApplicationLifetime
+                    is Avalonia.Controls.ApplicationLifetimes.IClassicDesktopStyleApplicationLifetime desktopLifetime
+                )
+                {
+                    desktopLifetime.Shutdown();
+                }
+                else
+                {
+                    Environment.Exit(0);
+                }
+                return;
+            }
+
+            // 失败/取消的细节由那个窗口显示, 这里只补一条状态栏留痕
+            PushStatus($"更新未完成：{window.ViewModel.HeaderText}");
+        }
+
+        /// <summary>取主窗口 (用于给对话框定父窗口)。</summary>
+        private static Avalonia.Controls.Window? GetMainWindow() =>
+            Avalonia.Application.Current?.ApplicationLifetime
+            is Avalonia.Controls.ApplicationLifetimes.IClassicDesktopStyleApplicationLifetime desktop
+                ? desktop.MainWindow
+                : null;
     }
 }

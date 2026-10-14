@@ -10,6 +10,27 @@ namespace IOStudio.Models
     public static class EditorLauncher
     {
         /// <summary>
+        /// 在系统文件管理器里打开目录 —— 让用户看到设备表还可能有哪几份 (预设)。
+        /// </summary>
+        public static void OpenDirectory(string dirPath)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(dirPath) || !Directory.Exists(dirPath))
+                {
+                    Debug.WriteLine($"目录不存在: {dirPath}");
+                    return;
+                }
+
+                Process.Start(new ProcessStartInfo { FileName = dirPath, UseShellExecute = true });
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"打开目录失败: {ex.Message}");
+            }
+        }
+
+        /// <summary>
         /// 按优先级顺序检测并用对应编辑器打开文件。
         /// </summary>
         /// <param name="filePath">要打开的文件完整路径</param>

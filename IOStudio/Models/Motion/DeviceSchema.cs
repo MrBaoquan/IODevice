@@ -21,6 +21,15 @@ namespace IOStudio.Models.Motion
 
         /// <summary>Idle 循环配置 (null = 不启用 idle, 空窗期输出中性值)</summary>
         public IdleLoop? IdleLoop { get; set; }
+
+        /// <summary>值显示规则 ("percent" | "symmetric" | "engineering"; null = 自动)。</summary>
+        public string? ValueDisplay { get; set; }
+
+        /// <summary>轨道级量程覆盖 (null = 用设备声明或直通)。</summary>
+        public float? EngineeringRange { get; set; }
+
+        /// <summary>复位原点 (null = 按 value_type 默认)。</summary>
+        public float? NeutralValue { get; set; }
     }
 
     /// <summary>OAction 信息 — 设备的输出动作定义。</summary>
@@ -59,6 +68,19 @@ namespace IOStudio.Models.Motion
     public class DeviceSchemaInfo
     {
         public string DeviceName { get; set; } = "";
+
+        /// <summary>
+        /// 设备的驱动插件名 (IODevice.xml 的 <c>DllName</c> 属性)。
+        ///
+        /// <para>native 侧对 <c>DllName</c> 解析不出来的 External 设备是<b>直接不建</b>
+        /// (见 <c>InputSettings</c>), 所以它必须是本机真实存在的插件名 —— 这也是
+        /// "复制一个已在工作的设备"能保证新设备可用、而凭空捏造不能的原因。</para>
+        /// </summary>
+        public string DllName { get; set; } = "";
+
+        /// <summary>设备槽位号 (IODevice.xml 的 <c>Index</c> 属性)。</summary>
+        public int Index { get; set; }
+
         public List<OActionInfo> OActions { get; set; } = new();
         public List<OAxisChannelInfo> OAxisChannels { get; set; } = new();
     }

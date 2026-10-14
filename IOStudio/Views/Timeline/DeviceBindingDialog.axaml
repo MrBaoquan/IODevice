@@ -1,0 +1,67 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="IOStudio.Views.Timeline.DeviceBindingDialog"
+        Width="640" Height="520" MinWidth="520" MinHeight="340"
+        WindowStartupLocation="CenterOwner"
+        CanResize="True"
+        Title="设备绑定问题">
+    <Grid RowDefinitions="Auto,Auto,*,Auto" Background="{DynamicResource TlPanelBg}">
+        <!-- 标题 / 说明 -->
+        <Border Padding="16,12" BorderBrush="{DynamicResource TlBorderBrush}" BorderThickness="0,0,0,1">
+            <StackPanel Spacing="4">
+                <TextBlock Name="HeaderText" FontSize="14" FontWeight="SemiBold"
+                           Foreground="{DynamicResource TlTextSecondary}"/>
+                <TextBlock Name="SubText" FontSize="11" TextWrapping="Wrap"
+                           Foreground="{DynamicResource TlTextMuted}"/>
+            </StackPanel>
+        </Border>
+
+        <!-- 设备表为空时的硬提示 -->
+        <Border Name="NoTableBanner" Grid.Row="1" Margin="12,10,12,0" Padding="10,7" IsVisible="False"
+                Background="{DynamicResource TlTransportWarn}" CornerRadius="3">
+            <TextBlock FontSize="11" TextWrapping="Wrap"
+                       Foreground="{DynamicResource TlPanelBg}"
+                       Text="设备表 (Config/IODevice.xml) 为空或不存在，本机没有任何真实设备可以映射。请先在「设备管理」里添加设备并保存，再回来修复。"/>
+        </Border>
+
+        <Border Grid.Row="2" Margin="12">
+            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                <StackPanel Spacing="10">
+                    <!-- A 段: 设备名没人认领 -->
+                    <TextBlock Name="DeviceSectionHeader" FontSize="12" FontWeight="SemiBold"
+                               Foreground="{DynamicResource TlTextSecondary}"/>
+                    <ItemsControl Name="BindingList">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <StackPanel Spacing="12"/>
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                    </ItemsControl>
+
+                    <!-- B 段: 设备在, 但动作没声明 (native 侧连计数都没有的那一类) -->
+                    <TextBlock Name="OActionSectionHeader" FontSize="12" FontWeight="SemiBold"
+                               Margin="0,6,0,0" IsVisible="False"
+                               Foreground="{DynamicResource TlTextSecondary}"/>
+                    <ItemsControl Name="OActionList">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <StackPanel Spacing="12"/>
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                    </ItemsControl>
+                </StackPanel>
+            </ScrollViewer>
+        </Border>
+
+        <!-- 底栏 -->
+        <Border Grid.Row="3" Padding="16,12" BorderBrush="{DynamicResource TlBorderBrush}" BorderThickness="0,1,0,0">
+            <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="10">
+                <TextBlock Name="FooterHint" FontSize="10" TextWrapping="Wrap"
+                           Foreground="{DynamicResource TlTextMuted}" VerticalAlignment="Center"/>
+                <Button Grid.Column="1" Content="取消" Click="OnCancelClick" Padding="18,7"/>
+                <Button Name="ApplyButton" Grid.Column="2" Content="应用" Click="OnApplyClick" Padding="18,7"
+                        Background="{DynamicResource TlAccent}" Foreground="{DynamicResource TlAccentFg}"/>
+            </Grid>
+        </Border>
+    </Grid>
+</Window>

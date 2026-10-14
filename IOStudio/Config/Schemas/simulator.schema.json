@@ -1,0 +1,178 @@
+{
+  "dllName": "Simulator",
+  "displayName": "Simulator 仿真器",
+  "version": "1.0",
+  "category": "调试器",
+  "sections": [
+    {
+      "name": "simulation",
+      "title": "仿真节拍",
+      "collapsed": false,
+      "fields": [
+        {
+          "key": "tick_ms",
+          "label": "仿真周期 (ms)",
+          "type": "number",
+          "default": "50",
+          "description": "插件主循环周期，决定反馈刷新频率",
+          "min": 10,
+          "showInSummary": true,
+          "summaryColor": "#059669"
+        },
+        {
+          "key": "door_duration_ms",
+          "label": "舱门行程时长 (ms)",
+          "type": "number",
+          "default": "3000",
+          "description": "DO[35] 开门 / DO[36] 关门的行程时长",
+          "min": 1
+        },
+        {
+          "key": "lap_bar_duration_ms",
+          "label": "压杠行程时长 (ms)",
+          "type": "number",
+          "default": "3000",
+          "description": "DO[32] 安全带锁 / DO[33] 压杠下 / DO[34] 压杠上的行程时长",
+          "min": 1
+        },
+        {
+          "key": "carrier_duration_ms",
+          "label": "载具行程时长 (ms)",
+          "type": "number",
+          "default": "3000",
+          "description": "DO[44] 至展示位 / DO[45] 至停放位的行程时长",
+          "min": 1
+        },
+        {
+          "key": "effect_confirm_ms",
+          "label": "特效确认延迟 (ms)",
+          "type": "number",
+          "default": "180",
+          "description": "DI[16..22] 与 AD[32..38] 在收到 DO[16..22] 后延迟反映为实际状态",
+          "min": 0
+        }
+      ]
+    },
+    {
+      "name": "web",
+      "title": "Web 调试页",
+      "collapsed": true,
+      "fields": [
+        {
+          "key": "web_enabled",
+          "label": "启用 Web 调试页",
+          "type": "boolean",
+          "default": "1",
+          "description": "插件自带本地 HTTP 服务，无鉴权，仅供开发期使用"
+        },
+        {
+          "key": "web_port",
+          "label": "Web 端口",
+          "type": "number",
+          "default": "18080",
+          "description": "Windows 绑定 127.0.0.1，其他平台绑定 0.0.0.0",
+          "min": 1,
+          "max": 65535,
+          "showInSummary": true,
+          "summaryColor": "#0891b2"
+        },
+        {
+          "key": "web_auto_open",
+          "label": "自动打开策略",
+          "type": "text",
+          "default": "resume",
+          "description": "浏览器自动打开行为；resume 表示复用已打开的调试页"
+        },
+        {
+          "key": "embedded_ui",
+          "label": "启用内嵌 UI",
+          "type": "boolean",
+          "default": "0",
+          "description": "本地内嵌界面占位开关，独立 Simulator UI 适配器接入前保持关闭"
+        }
+      ]
+    },
+    {
+      "name": "motion",
+      "title": "动感平台行程",
+      "collapsed": true,
+      "fields": [
+        {
+          "key": "motion_travel_pitch_deg",
+          "label": "俯仰行程 (deg)",
+          "type": "number",
+          "default": "30",
+          "description": "三维视图姿态软限位，超行程会钳制并提示",
+          "min": 1
+        },
+        {
+          "key": "motion_travel_yaw_deg",
+          "label": "偏航行程 (deg)",
+          "type": "number",
+          "default": "30",
+          "min": 1
+        },
+        {
+          "key": "motion_travel_roll_deg",
+          "label": "横滚行程 (deg)",
+          "type": "number",
+          "default": "30",
+          "min": 1
+        },
+        {
+          "key": "motion_travel_x_mm",
+          "label": "X 位移行程 (mm)",
+          "type": "number",
+          "default": "300",
+          "min": 1
+        },
+        {
+          "key": "motion_travel_y_mm",
+          "label": "Y 位移行程 (mm)",
+          "type": "number",
+          "default": "300",
+          "min": 1
+        },
+        {
+          "key": "motion_travel_z_mm",
+          "label": "Z 位移行程 (mm)",
+          "type": "number",
+          "default": "300",
+          "min": 1
+        },
+        {
+          "key": "motion_travel_angle_deg",
+          "label": "转台行程 (deg)",
+          "type": "number",
+          "default": "360",
+          "min": 1
+        },
+        {
+          "key": "leg_stroke_min_mm",
+          "label": "电缸最小行程 (mm)",
+          "type": "number",
+          "default": "250",
+          "description": "用于三维视图杆件长度校验提示",
+          "min": 0
+        },
+        {
+          "key": "leg_stroke_max_mm",
+          "label": "电缸最大行程 (mm)",
+          "type": "number",
+          "default": "1400",
+          "min": 1
+        },
+        {
+          "key": "mm_per_unit",
+          "label": "场景比例尺 (mm/单位)",
+          "type": "number",
+          "default": "1000",
+          "description": "1 场景单位 = N 毫米；须与平台本体与电缸行程量级一致",
+          "min": 1
+        }
+      ]
+    }
+  ],
+  "disabled": false,
+  "starred": false
+}

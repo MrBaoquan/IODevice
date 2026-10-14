@@ -53,7 +53,7 @@ namespace IOStudio.Services.Motion
             _vlcInitialized = true;
             try
             {
-                Core.Initialize();
+                LibVlcInitializer.Initialize();
                 _libVlc = new LibVLC("--no-audio", "--no-osd", "--no-snapshot-preview");
                 _mediaPlayer = new MediaPlayer(_libVlc);
 

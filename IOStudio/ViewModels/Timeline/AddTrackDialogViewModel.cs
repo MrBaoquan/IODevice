@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Globalization;
 using System.Linq;
 using System.Reactive;
 using System.Reactive.Linq;
@@ -70,6 +71,20 @@ namespace IOStudio.ViewModels.Timeline
 
         // ── 内部数据 ──
         private readonly List<DeviceSchemaInfo> _devices;
+
+        /// <summary>
+        /// 回显项: 合成显示文本 → 真实值。
+        ///
+        /// <para>编辑已有轨道时, 若它的设备或输出<b>没有</b>被设备表声明, 它就不在候选列表里。
+        /// 这时不能把下拉留在第一个候选项上 —— 用户什么都没改、按了保存, 设备名/输出名就被
+        /// 悄悄换掉了 (这正是"编辑轨道属性"最容易毁掉内容的地方)。做法是把这个真实值作为
+        /// 一个带标记的合成项插进列表并选中, 保存时再按这张表写回真实值。</para>
+        /// </summary>
+        private readonly Dictionary<string, string> _echoedValues = new(StringComparer.Ordinal);
+
+        /// <summary>回显输出的真实值及其所属真实设备名 (无回显时为 null)。</summary>
+        private string? _echoedOutputRaw;
+        private string? _echoedDeviceRaw;
 
         // ── Idle 循环配置 ──
         private bool _idleEnabled;
@@ -402,40 +417,29 @@ namespace IOStudio.ViewModels.Timeline
             DialogTitle = "编辑轨道属性";
             ConfirmButtonText = "保存修改";
 
-            // 选中对应设备
-            if (DeviceNames.Contains(track.DeviceName))
-            {
-                SelectedDeviceName = track.DeviceName;
-            }
+            // 选中对应设备 —— 设备表没声明这个设备时, 把它作为回显项插进列表并选中。
+            // 不能放任下拉停在别的设备上: 那样"编辑轨道属性"会变成一次静默的设备改写。
+            SelectOrEchoDevice(track.DeviceName);
 
             // 切换输出类型
             SelectedOutputTypeIndex = track.OutputType == "oaxis" ? 1 : 0;
 
-            // 选中对应输出项 (按 DisplayName 匹配)
-            var device = _devices.FirstOrDefault(d => d.DeviceName == track.DeviceName);
-            if (device != null)
-            {
-                if (track.OutputType == "oaxis")
-                {
-                    var ch = device.OAxisChannels.FirstOrDefault(
-                        c => c.ChannelName == track.OAxisChannel
-                    );
-                    if (ch != null && OutputItems.Contains(ch.DisplayName))
-                        SelectedOutputDisplay = ch.DisplayName;
-                }
-                else
-                {
-                    var oa = device.OActions.FirstOrDefault(
-                        o => o.OActionName == track.OActionName
-                    );
-                    if (oa != null && OutputItems.Contains(oa.DisplayName))
-                        SelectedOutputDisplay = oa.DisplayName;
-                }
-            }
+            // 选中对应输出项 (按 DisplayName 匹配); 匹配不上就回显真实值, 理由同上。
+            SelectOrEchoOutput(track);
 
             Label = track.Label;
             SelectedColor = track.Color;
             SelectedValueTypeIndex = track.ValueType == "bool" ? 1 : 0;
+
+            // 值显示规则 / 量程 / 复位原点 —— 必须回填, 否则"打开属性看一眼再保存"会把它们清掉
+            // (这正是本对话框此前发生过的静默改写, 见 LoadFromTrack 的输出回显部分)。
+            int modeIdx = Array.IndexOf(
+                ValueDisplayModeTags,
+                track.ValueDisplay?.Trim().ToLowerInvariant()
+            );
+            ValueDisplayModeIndex = modeIdx >= 0 ? modeIdx : 0;
+            EngineeringRangeText = track.EngineeringRange?.ToString(CultureInfo.InvariantCulture);
+            NeutralValueText = track.NeutralValue?.ToString(CultureInfo.InvariantCulture);
 
             // Idle 循环配置
             _idleKeyframes.Clear();
@@ -499,7 +503,144 @@ namespace IOStudio.ViewModels.Timeline
             }
         }
 
-        // ── 私有方法 ──
+        // ── 值显示规则 ──
+        private int _valueDisplayModeIndex;
+        private string? _engineeringRangeText;
+        private string? _neutralValueText;
+
+        /// <summary>值显示规则选项 (下标对应 <see cref="ValueDisplayMode"/> 的语义顺序)。</summary>
+        public static readonly string[] ValueDisplayModeNames =
+        {
+            "自动（按复位原点推导）",
+            "百分比 · 原点在下限 (0..100%)",
+            "百分比 · 复位原点居中 (±100%)",
+            "工程量（带单位，需量程）",
+        };
+
+        private static readonly string?[] ValueDisplayModeTags = { null, "percent", "symmetric", "engineering" };
+
+        public int ValueDisplayModeIndex
+        {
+            get => _valueDisplayModeIndex;
+            set => this.RaiseAndSetIfChanged(ref _valueDisplayModeIndex, value);
+        }
+
+        /// <summary>轨道级量程覆盖的输入文本 (空 = 用设备声明或直通)。</summary>
+        public string? EngineeringRangeText
+        {
+            get => _engineeringRangeText;
+            set => this.RaiseAndSetIfChanged(ref _engineeringRangeText, value);
+        }
+
+        /// <summary>复位原点的输入文本 (空 = 按 value_type 默认: float→0.5, bool→0)。</summary>
+        public string? NeutralValueText
+        {
+            get => _neutralValueText;
+            set => this.RaiseAndSetIfChanged(ref _neutralValueText, value);
+        }
+
+        /// <summary>当前选择的显示规则标签。</summary>
+        private string? SelectedValueDisplayTag =>
+            _valueDisplayModeIndex >= 0 && _valueDisplayModeIndex < ValueDisplayModeTags.Length
+                ? ValueDisplayModeTags[_valueDisplayModeIndex]
+                : null;
+
+        /// <summary>供测试读取当前生效的显示规则标签。</summary>
+        internal string? SelectedValueDisplayTagForTest() => SelectedValueDisplayTag;
+
+        /// <summary>解析输入的浮点数; 空/非法一律当作"未声明"。</summary>
+        private static float? ParseOptionalFloat(string? text) =>
+            float.TryParse(
+                (text ?? "").Trim(),
+                NumberStyles.Float,
+                CultureInfo.InvariantCulture,
+                out float value
+            )
+                ? value
+                : null;
+
+        /// <summary>
+        /// 当前选中设备的<b>真实</b>名字 (回显项会还原成原值)。
+        /// 内部一律用它查设备表, 而不是用下拉里那串带标记的显示文本。
+        /// </summary>
+        private string? CurrentDeviceName =>
+            SelectedDeviceName is { } display && _echoedValues.TryGetValue(display, out var raw)
+                ? raw
+                : SelectedDeviceName;
+
+        /// <summary>当前选中输出的<b>真实</b>值 (回显项会还原成原值; 否则为 null)。</summary>
+        private string? CurrentOutputEcho =>
+            SelectedOutputDisplay is { } display && _echoedValues.TryGetValue(display, out var raw)
+                ? raw
+                : null;
+
+        /// <summary>
+        /// 选中设备; 设备表里没有这个名字时, 插入一个带标记的回显项并选中它。
+        ///
+        /// <para>回显项带标记而不是直接塞裸名字, 是为了让用户看得出"这一项不是设备表声明的"
+        /// —— 否则它和真设备在下拉里长得一样, 反而更容易误判。</para>
+        /// </summary>
+        private void SelectOrEchoDevice(string deviceName)
+        {
+            if (string.IsNullOrWhiteSpace(deviceName))
+                return;
+
+            if (DeviceNames.Contains(deviceName))
+            {
+                SelectedDeviceName = deviceName;
+                return;
+            }
+
+            string display = EchoLabel($"{deviceName}（设备表未声明）", deviceName);
+            DeviceNames.Add(display);
+            // 设了才会触发 RefreshOutputList —— 而它内部会拿 CurrentDeviceName 去查表,
+            // 查不到就是空输出列表, 正好由随后的 SelectOrEchoOutput 兜底。
+            SelectedDeviceName = display;
+        }
+
+        /// <summary>选中输出项; 设备表里没有这个输出时, 同样插入带标记的回显项并选中。</summary>
+        private void SelectOrEchoOutput(MotionTrack track)
+        {
+            var device = _devices.FirstOrDefault(d => d.DeviceName == track.DeviceName);
+            bool isOAxis = track.OutputType == "oaxis";
+            string raw = isOAxis ? track.OAxisChannel : track.OActionName;
+
+            if (device is not null)
+            {
+                string? match = isOAxis
+                    ? device.OAxisChannels.FirstOrDefault(c => c.ChannelName == raw)?.DisplayName
+                    : device.OActions.FirstOrDefault(o => o.OActionName == raw)?.DisplayName;
+
+                if (match is not null && OutputItems.Contains(match))
+                {
+                    SelectedOutputDisplay = match;
+                    return;
+                }
+            }
+
+            if (string.IsNullOrWhiteSpace(raw))
+                return;
+
+            // 匹配不上 = 设备表没声明这个输出。回显真实值, 让"没改就保存"不会把它改掉。
+            _echoedOutputRaw = raw;
+            _echoedDeviceRaw = track.DeviceName;
+            string display = EchoLabel($"{raw}（设备表未声明）", raw);
+            OutputItems.Add(display);
+            SelectedOutputDisplay = display;
+            this.RaisePropertyChanged(nameof(HasOutputItems));
+            this.RaisePropertyChanged(nameof(OutputEmptyMessage));
+        }
+
+        /// <summary>登记一个回显项 (显示文本 → 真实值), 返回显示文本。</summary>
+        private string EchoLabel(string display, string raw)
+        {
+            // 同名的先删掉, 避免同一真实值被登记两次后下拉里出现重复项
+            foreach (var key in _echoedValues.Where(kv => kv.Value == raw).Select(kv => kv.Key).ToList())
+                _echoedValues.Remove(key);
+
+            _echoedValues[display] = raw;
+            return display;
+        }
 
         /// <summary>根据当前设备+输出类型刷新输出列表。</summary>
         private void RefreshOutputList()
@@ -507,41 +648,59 @@ namespace IOStudio.ViewModels.Timeline
             OutputItems.Clear();
             SelectedOutputDisplay = null;
 
-            if (string.IsNullOrEmpty(SelectedDeviceName))
+            var deviceName = CurrentDeviceName;
+            if (string.IsNullOrEmpty(deviceName))
                 return;
 
-            var device = _devices.FirstOrDefault(d => d.DeviceName == SelectedDeviceName);
-            if (device is null)
-                return;
-
-            if (SelectedOutputType == "oaxis")
+            // 回显项要跟着重建, 且必须在"设备查不到"的早退之前 —— 未声明的设备本来就查不到,
+            // 而用户把设备切走又切回来时, 下拉里不能只剩表内候选:
+            // 那会让"切回来"变成一次静默改写 (原本未声明的输出被换成第一个候选)。
+            bool restoreEcho = _echoedOutputRaw is not null && _echoedDeviceRaw == deviceName;
+            string? echoDisplay = null;
+            if (restoreEcho)
             {
-                foreach (var ch in device.OAxisChannels)
-                {
-                    OutputItems.Add(ch.DisplayName);
-                }
-            }
-            else
-            {
-                foreach (var oa in device.OActions)
-                {
-                    OutputItems.Add(oa.DisplayName);
-                }
+                echoDisplay = EchoLabel($"{_echoedOutputRaw}（设备表未声明）", _echoedOutputRaw!);
+                OutputItems.Add(echoDisplay);
             }
 
-            if (OutputItems.Count > 0)
+            var device = _devices.FirstOrDefault(d => d.DeviceName == deviceName);
+            if (device is not null)
             {
-                SelectedOutputDisplay = OutputItems[0];
+                if (SelectedOutputType == "oaxis")
+                {
+                    foreach (var ch in device.OAxisChannels)
+                    {
+                        OutputItems.Add(ch.DisplayName);
+                    }
+                }
+                else
+                {
+                    foreach (var oa in device.OActions)
+                    {
+                        OutputItems.Add(oa.DisplayName);
+                    }
+                }
             }
+
+            // 回显项优先选中 —— 它就是这条轨道当前的真实值, 不该被第一个候选顶掉。
+            SelectedOutputDisplay =
+                echoDisplay ?? (OutputItems.Count > 0 ? OutputItems[0] : null);
+
             this.RaisePropertyChanged(nameof(HasOutputItems));
             this.RaisePropertyChanged(nameof(OutputEmptyMessage));
             this.RaisePropertyChanged(nameof(SelectedOutputTypeDisplayName));
         }
 
-        /// <summary>从当前选择构建 <see cref="AddTrackResult"/>。</summary>
-        private AddTrackResult BuildResult()
+        /// <summary>
+        /// 从当前选择构建 <see cref="AddTrackResult"/>。
+        /// internal 供测试直接验证"打开属性对话框、什么都不改、保存"到底写回了什么 ——
+        /// 这正是静默改写发生的那一步, 值得有测试盯着。
+        /// </summary>
+        internal AddTrackResult BuildResult()
         {
-            var device = _devices.FirstOrDefault(d => d.DeviceName == SelectedDeviceName);
+            // 一律用真实值查表与回写 —— 下拉里那串带"(设备表未声明)"标记的显示文本绝不能进模型。
+            var deviceName = CurrentDeviceName;
+            var device = _devices.FirstOrDefault(d => d.DeviceName == deviceName);
 
             IdleLoop? idle = null;
             if (IdleEnabled)
@@ -582,16 +741,26 @@ namespace IOStudio.ViewModels.Timeline
                     c => c.DisplayName == SelectedOutputDisplay
                 );
 
+                // 回显项优先: 设备表没声明这个通道时, 它才是原值 —— 不能退化成 OAxis_00
+                // (那正是"打开属性对话框、什么都没改、保存后通道被换掉"的来源)。
+                string oaxisChannel =
+                    CurrentOutputEcho ?? channel?.ChannelName ?? "OAxis_00";
+
                 return new AddTrackResult
                 {
-                    DeviceName = SelectedDeviceName ?? "",
+                    DeviceName = deviceName ?? "",
                     OActionName = "",
                     OutputType = "oaxis",
-                    OAxisChannel = channel?.ChannelName ?? "OAxis_00",
-                    Label = string.IsNullOrWhiteSpace(Label) ? channel?.ChannelName ?? "" : Label,
+                    OAxisChannel = oaxisChannel,
+                    Label = string.IsNullOrWhiteSpace(Label)
+                        ? channel?.ChannelName ?? ""
+                        : Label,
                     Color = SelectedColor,
                     ValueType = SelectedValueType,
-                    IdleLoop = idle
+                    IdleLoop = idle,
+                    ValueDisplay = SelectedValueDisplayTag,
+                    EngineeringRange = ParseOptionalFloat(EngineeringRangeText),
+                    NeutralValue = ParseOptionalFloat(NeutralValueText),
                 };
             }
             else
@@ -600,16 +769,23 @@ namespace IOStudio.ViewModels.Timeline
                     o => o.DisplayName == SelectedOutputDisplay
                 );
 
+                // 同上: 未声明的动作名必须原样写回, 否则会被换成下拉里的第一个动作。
+                string oactionName =
+                    CurrentOutputEcho ?? oaction?.OActionName ?? "";
+
                 return new AddTrackResult
                 {
-                    DeviceName = SelectedDeviceName ?? "",
-                    OActionName = oaction?.OActionName ?? SelectedOutputDisplay ?? "",
+                    DeviceName = deviceName ?? "",
+                    OActionName = oactionName,
                     OutputType = "oaction",
                     OAxisChannel = "",
                     Label = string.IsNullOrWhiteSpace(Label) ? oaction?.Label ?? "" : Label,
                     Color = SelectedColor,
                     ValueType = SelectedValueType,
-                    IdleLoop = idle
+                    IdleLoop = idle,
+                    ValueDisplay = SelectedValueDisplayTag,
+                    EngineeringRange = ParseOptionalFloat(EngineeringRangeText),
+                    NeutralValue = ParseOptionalFloat(NeutralValueText),
                 };
             }
         }

@@ -116,7 +116,13 @@ def closed_loop():
 
     def peer():
         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        sock.bind(("127.0.0.1", PLATFORM_PORT))
+        try:
+            sock.bind(("127.0.0.1", PLATFORM_PORT))
+        except OSError as exc:
+            # 线程内异常会被解释器吞掉, 表现为 records 为空 → 用例误报"插件未加载"。
+            # 明确暴露出来, 否则永远看不到真实原因。
+            result["peerError"] = f"绑定 127.0.0.1:{PLATFORM_PORT} 失败: {exc!r}"
+            return
         sock.settimeout(0.2)
         t0 = time.time()
         last_send = 0.0
@@ -135,8 +141,13 @@ def closed_loop():
                     data, _ = sock.recvfrom(8192)
                 except socket.timeout:
                     continue
-                except OSError:
-                    break
+                except OSError as exc:
+                    # Windows 上 UDP 的 WSAECONNRESET(10054) 是**瞬时**的: 对端 socket
+                    # 恰好关闭/未就绪时, 先前 sendto 触发的 ICMP 端口不可达会在此刻
+                    # 冒出来。它不是"链路断了", 继续循环即可 —— 旧实现在此 break,
+                    # 直接导致整轮抓包作废 (实测 0 条记录, 用例报"插件未加载")。
+                    result.setdefault("peerSoftErrors", []).append(repr(exc))
+                    continue
                 records.append((round(now * 1000), data.decode("utf-8", errors="replace")))
         finally:
             sock.close()
@@ -170,7 +181,12 @@ def closed_loop():
 
     result["log"] = _read_plugin_log()
     if not result["records"]:
-        pytest.skip("未捕获到任何 UDP 报文 (插件未加载或设备未注册为 YDL-0)")
+        if result.get("peerError"):
+            pytest.fail(result["peerError"])
+        pytest.skip(
+            "未捕获到任何 UDP 报文 (插件未加载或设备未注册为 YDL-0); "
+            f"监听线程存活={th.is_alive()}, 软错误={result.get('peerSoftErrors', [])[:3]}"
+        )
     return result
 
 
@@ -197,6 +213,104 @@ def test_outbound_is_valid_json(closed_loop):
         except Exception:
             bad.append(text[:160])
     assert bad == [], f"{len(bad)}/{len(closed_loop['records'])} 条出站报文非法 JSON: {bad[:2]}"
+
+
+# ---------- 电缸 (heave): 通道号必须对得上 ----------
+
+def test_cylinder_flows_for_heave(closed_loop):
+    """回归: 电缸升降必须真的发出 GamePlatform_Cylinder。
+
+    曾经的现象是"动作在走、电缸不动、播控端收不到"。根因不在插件链路, 而在**绑定**:
+    插件的电缸输入是**通道 6**, 而动作文件把 heave 绑到了 `OAxis_00` (通道 0) ——
+    `SetDeviceDO` 只读 `InDOStatus[6]`, 通道 0 的变化它根本看不到, 于是静默无输出。
+    """
+    valid = _parsed(closed_loop)
+    cyl = [o for o in valid if o.get("Cmd") == "GamePlatform_Cylinder"]
+    assert cyl, (
+        "没有收到任何 GamePlatform_Cylinder —— 电缸通道没有对上。"
+        "检查动作文件的 heave 轨道: 通道必须是 OAxis_6 (插件 CH_HEAVE=6), 设备名必须与设备表一致。"
+    )
+
+    for o in cyl:
+        heights = o["Para"]["HeightRatioList"]
+        assert len(heights) >= 1, f"HeightRatioList 为空: {o}"
+        assert all(0.0 <= h <= 1.0 for h in heights), f"高度比例越界 (协议要求 0-1): {o}"
+
+
+def test_cylinder_respects_protocol_interval(closed_loop):
+    """协议建议电缸 >=50ms 间隔发送 —— 不许按 60fps 逐帧超发。"""
+    times = [ms for ms, text in closed_loop["records"] if _is_cmd(text, "GamePlatform_Cylinder")]
+    if len(times) < 5:
+        pytest.skip(f"Cylinder 样本太少 ({len(times)}), 无法评估间隔")
+    gaps = sorted(b - a for a, b in zip(times, times[1:]))
+    median = gaps[len(gaps) // 2]
+    assert median >= 40, f"Cylinder 平均下发间隔过密 (中位 {median}ms), 协议建议 50ms"
+
+
+# ---------- 特效: 风扇/水/香味必须合并成一条 CustomMixEffect ----------
+
+def test_environment_effects_are_merged_into_custom_mix(closed_loop):
+    """影动力协议约束: 风扇/水/香味要**一次性合并发送**。
+
+    这三者本是同一个"混合特效"语义, 官方为此提供 `CustomMixEffect` (一条报文同时携带
+    FanStrength/WaterOpen/SmellOpen)。旧实现按通道各发一条 (Wind / Water 各一个
+    EffectType, 香味又是另一条 CustomMixEffect), 同 tick 内互相覆盖, 现场表现为
+    "开了又被关掉"。回归判据: 这两个 EffectType 不许再单独出现。
+    """
+    valid = _parsed(closed_loop)
+    effects = [o for o in valid if o.get("Cmd") == "GamePlatform_PlatformEffect"]
+    assert effects, "没有收到任何 GamePlatform_PlatformEffect"
+
+    solo_types = {
+        o["Para"]["EffectType"]
+        for o in effects
+        if isinstance(o.get("Para"), dict) and o["Para"].get("EffectType")
+    }
+    leaked = solo_types & {"Wind", "Water"}
+    assert not leaked, (
+        f"风扇/水仍然按独立 EffectType 下发: {sorted(leaked)} —— "
+        "应折进 CustomMixEffect 与其他混合特效一起发。"
+    )
+
+
+def test_custom_mix_carries_all_three_fields(closed_loop):
+    """合并报文必须带上三项完整状态, 否则会把手动开的风扇/水/香味覆盖掉。"""
+    valid = _parsed(closed_loop)
+    mix = [
+        o
+        for o in valid
+        if o.get("Cmd") == "GamePlatform_PlatformEffect"
+        and isinstance(o.get("Para"), dict)
+        and o["Para"].get("EffectType") == "CustomMixEffect"
+    ]
+    if not mix:
+        pytest.skip("本次播放窗口内没有混合特效变化 (演示文件的风扇从 16s 才起)")
+
+    for o in mix:
+        data = o["Para"].get("EffectData")
+        assert isinstance(data, dict), f"CustomMixEffect 的 EffectData 不是对象: {o}"
+        missing = {"FanStrength", "WaterOpen", "SmellOpen"} - set(data)
+        assert not missing, f"CustomMixEffect 缺字段 {sorted(missing)}: {o}"
+        assert 0.0 <= float(data["FanStrength"]) <= 1.0, f"FanStrength 越界 (协议 0-1): {o}"
+        assert isinstance(data["WaterOpen"], bool), f"WaterOpen 必须是 bool: {o}"
+        assert isinstance(data["SmellOpen"], bool), f"SmellOpen 必须是 bool: {o}"
+
+
+def _parsed(closed_loop):
+    out = []
+    for _, text in closed_loop["records"]:
+        try:
+            out.append(json.loads(text))
+        except Exception:
+            pass
+    return out
+
+
+def _is_cmd(text, cmd):
+    try:
+        return json.loads(text).get("Cmd") == cmd
+    except Exception:
+        return False
 
 
 # ---------- 方向 2: 播控端 → 插件 (入站, 闭环) ----------

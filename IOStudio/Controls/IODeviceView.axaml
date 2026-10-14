@@ -149,6 +149,17 @@
 								Width="32" Height="32" Padding="6" >
 							<iconPacks:PackIconIonicons Kind="DocumentiOS" Width="16" Height="16"/>
 						</Button>
+						<!-- 删除本设备: 放在设备区里, 操作对象就是这块视图所代表的设备 ——
+						     不依赖"当前选中是哪台"这种需要用户推断的上下文。 -->
+						<Button Name="DeleteDeviceButton" Classes="icon-button"
+								ToolTip.Tip="删除本设备（仅编辑模式）"
+								AutomationProperties.Name="删除本设备（仅编辑模式）"
+								Command="{Binding DeleteSelfCommand}"
+								IsEnabled="{Binding IsEditMode}"
+								Width="32" Height="32" Padding="6">
+							<iconPacks:PackIconIonicons Kind="TrashiOS" Width="16" Height="16"
+													   Foreground="{DynamicResource TlDanger}"/>
+						</Button>
 					</StackPanel>
 
 					<ToggleButton IsChecked="{Binding StandardIOFullscreen}" Grid.Column="3" Classes="fullscreen-toggle" AutomationProperties.Name="{Binding StandardIOFullscreenTip}">

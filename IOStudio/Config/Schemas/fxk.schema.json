@@ -1,0 +1,100 @@
+{
+  "dllName": "FXK",
+  "displayName": "动感平台-FXK",
+  "version": "1.0",
+  "category": "动感平台",
+  "sections": [
+    {
+      "name": "connection",
+      "title": "连接配置",
+      "collapsed": false,
+      "fields": [
+        {
+          "key": "remote_ip",
+          "label": "平台 IP 地址",
+          "type": "text",
+          "default": "127.0.0.1",
+          "description": "动感平台控制器的 IP 地址",
+          "showInSummary": true,
+          "summaryColor": "#0891b2"
+        },
+        {
+          "key": "platform_port",
+          "label": "平台端口",
+          "type": "number",
+          "default": "5501",
+          "description": "下发姿态/动作的 UDP 端口",
+          "min": 1,
+          "max": 65535,
+          "showInSummary": true
+        },
+        {
+          "key": "player_port",
+          "label": "播放器端口",
+          "type": "number",
+          "default": "18888",
+          "description": "与播控播放器通信的端口",
+          "min": 1,
+          "max": 65535
+        },
+        {
+          "key": "listen_port",
+          "label": "本地监听端口",
+          "type": "number",
+          "default": "5502",
+          "description": "接收平台状态回传的本地 UDP 端口",
+          "min": 1,
+          "max": 65535
+        },
+        {
+          "key": "enable_player_port",
+          "label": "启用播放器端口",
+          "type": "boolean",
+          "default": "1",
+          "description": "关闭后不再与播放器通信"
+        },
+        {
+          "key": "door_open_threshold",
+          "label": "开门阈值",
+          "type": "number",
+          "default": "5",
+          "description": "判定舱门打开的阈值",
+          "min": 0
+        }
+      ]
+    },
+    {
+      "name": "limits",
+      "title": "姿态限位",
+      "collapsed": false,
+      "fields": [
+        {
+          "key": "lim_pitch",
+          "label": "俯仰限位 (deg)",
+          "type": "number",
+          "default": "25",
+          "description": "俯仰轴软限位",
+          "min": 1
+        },
+        {
+          "key": "lim_yaw",
+          "label": "偏航限位 (deg)",
+          "type": "number",
+          "default": "25",
+          "description": "偏航轴软限位",
+          "min": 1
+        },
+        {
+          "key": "lim_roll",
+          "label": "横滚限位 (deg)",
+          "type": "number",
+          "default": "25",
+          "description": "横滚轴软限位",
+          "min": 1
+        }
+      ]
+    }
+  ],
+  "disabled": false,
+  "starred": false
+}

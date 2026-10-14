@@ -415,6 +415,18 @@ namespace IOStudio.ViewModels.Timeline
         /// <summary>引擎最近一次内部错误 (供 CLI/UI 暴露, 避免 tick 异常被静默吞掉)。</summary>
         public string? LastError => _engine.LastError;
 
+        /// <summary>
+        /// 本次播放未送达设备的通道 → 丢弃次数 (供 CLI status file 与状态栏暴露)。
+        ///
+        /// <para>native 派发时查不到设备的通道会被静默丢弃, 这是"时间轴在走、设备不动"的
+        /// 运行期原因。与打开文件时的静态设备绑定预检互补: 那个管"名字没被声明", 这个报告
+        /// 运行期"真的没送出去"(也覆盖名字在表里但设备没建出来的情形)。</para>
+        /// </summary>
+        public IReadOnlyDictionary<string, long> UnresolvedChannels => _engine.UnresolvedChannels;
+
+        /// <summary>本次播放被速率上限削过的通道 → 次数 (CLI 取证与停播摘要都用它)。</summary>
+        public IReadOnlyDictionary<string, long> RateLimitedChannels => _engine.RateLimitedChannels;
+
         private double _playbackSpeed = 1.0;
         public double PlaybackSpeed
         {

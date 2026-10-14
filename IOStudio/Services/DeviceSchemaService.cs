@@ -539,6 +539,12 @@ namespace IOStudio.Services
         public string? Category { get; set; }
 
         /// <summary>
+        /// 配置读写后端: null/"ini" = config.ini（默认）; "xml" = config.xml。
+        /// 只读 XML 的插件必须声明 "xml"，否则面板读不到真实值、保存也会写错文件。
+        /// </summary>
+        public string? Backend { get; set; }
+
+        /// <summary>
         /// 是否为常用设备（星标显示）
         /// </summary>
         public bool Starred { get; set; } = false;
@@ -613,6 +619,13 @@ namespace IOStudio.Services
         public double? Max { get; set; }
         public List<SchemaOption>? Options { get; set; }
         public Dictionary<string, string>? VisibleWhen { get; set; }
+
+        /// <summary>
+        /// XML 后端专用: 该字段在 config.xml 中的 XPath。末段以 @ 开头则写属性，
+        /// 否则写元素文本；{n} 替换为 1-based 的设备节点序号。
+        /// 例: MPRoot/YDLDevice[{n}]/UDP/@localPort
+        /// </summary>
+        public string? XmlPath { get; set; }
 
         /// <summary>
         /// 数组类型的键前缀（如 ai_channel，实际键为 ai_channel, ai_channel_1, ai_channel_2 等）

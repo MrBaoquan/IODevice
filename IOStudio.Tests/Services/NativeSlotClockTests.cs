@@ -13,6 +13,8 @@ namespace IOStudio.Tests.Services
     /// <para>背景: 让编排端改用 native 派发时, 观测到 slot 停在 Playing/External 且外部时间在推,
     /// 但内部时间似乎不动。这里不经 VM/Rx, 直接驱动 native, 把问题收窄到 native 或驱动层。</para>
     /// </summary>
+    /// <remarks>装载 native Slot 属于进程级共享状态, 见 <see cref="NativeMotionStateCollection"/>。</remarks>
+    [Collection("NativeMotionState")]
     public class NativeSlotClockTests
     {
         private static MotionSlot LoadSlot(string slotId, double durationMs = 10000)

@@ -13,6 +13,8 @@ namespace IOStudio.Tests.ViewModels
     /// 是**应用级运行时覆盖**, 只推给 native、**不写回** .motion。这里验证: 文件字段往返 + 应用级
     /// 设置只作用于运行时覆盖。</para>
     /// </summary>
+    /// <remarks>装载 native Slot 属于进程级共享状态, 见 <see cref="NativeMotionStateCollection"/>。</remarks>
+    [Collection("NativeMotionState")]
     public class TimelineMotionThrottleTests
     {
         [Fact]

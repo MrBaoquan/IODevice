@@ -188,6 +188,17 @@ extern "C"
 	IOCAPI float __stdcall MotionToEngineering(BSTR InDeviceName, BSTR InChannel, float InNormalized);
 	IOCAPI int   __stdcall MotionEvaluateSlotAtEngineering(BSTR InSlotId, float InTimeMs, float* OutValues, int InMaxChannels);
 
+	// ── 未送达通道统计 (播放期可观测性) ──────────────────
+	// 派发时查不到设备的通道, 其输出被静默丢弃。这里把丢弃按通道键累加, 供宿主在停播时读一次。
+	// 判据是"设备实例已在注册表里", 所以它同时覆盖"名字不在设备表"与"名字在表里但设备没建出来"。
+	// 不逐帧打日志; 计数在起播时清零 (不在卸载时清 —— 宿主是"停播后读一次"的次序)。
+	/// 返回 JSON 对象字符串 `{"YDL-0.oaxis.OAxis_6":4320, ...}`; 无未送达通道时返回 `{}`。
+	IOCAPI BSTR  __stdcall MotionGetUnresolvedChannels();
+
+	/// 被速率上限削过的通道汇总 (与被限速对照着看)。键与 .motion 通道写法同形。
+	IOCAPI BSTR  __stdcall MotionGetRateLimitedChannels();
+	IOCAPI void  __stdcall MotionResetUnresolvedCounters();
+
 	/// 驱动 native Tick (单位: 秒)。编排端按 60fps 调用即可让 native 承担派发。
 	IOCAPI void  __stdcall MotionTick(float InDeltaSeconds);
 }

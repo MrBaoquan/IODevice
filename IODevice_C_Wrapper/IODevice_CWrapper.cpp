@@ -651,6 +651,23 @@ IOCAPI int __stdcall MotionEvaluateSlotAtEngineering(BSTR InSlotId, float InTime
 		InMaxChannels);
 }
 
+// ── 未送达通道统计 (播放期可观测性) ──────────────────
+
+IOCAPI BSTR __stdcall MotionGetUnresolvedChannels()
+{
+	return string2BSTR(dh::MotionPlayer::Instance().GetUnresolvedChannelsJson().c_str());
+}
+
+IOCAPI BSTR __stdcall MotionGetRateLimitedChannels()
+{
+	return string2BSTR(dh::MotionPlayer::Instance().GetRateLimitedChannelsJson().c_str());
+}
+
+IOCAPI void __stdcall MotionResetUnresolvedCounters()
+{
+	dh::MotionPlayer::Instance().ResetUnresolvedCounters();
+}
+
 // Global managed callback holder
 static MotionEventCallbackManaged g_managedEventCallback = nullptr;
 static MotionEventDataCallbackManaged g_managedEventDataCallback = nullptr;

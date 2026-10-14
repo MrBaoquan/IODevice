@@ -50,6 +50,35 @@ public class IORoot : SingletonConfig<IORoot>
     }
 }
 
+/// <summary>
+/// 单个通道的速率上限 (归一化值/秒)。0 或负值 = 不限速。
+///
+/// <para>写在设备表的 <c>&lt;ChannelRate Name="OAxis_6" MaxPerSecond="0.5" /&gt;</c>,
+/// 由 native 派发前按通道查表执行。默认只对模拟量通道有意义 —— 开关量通道应保持不限速。</para>
+/// </summary>
+public class ChannelRate : ReactiveObject
+{
+    private string name = string.Empty;
+
+    /// <summary>通道名 (与 &lt;Key Name=...&gt; 同一命名, 如 OAxis_6)。</summary>
+    [XmlAttribute("Name")]
+    public string Name
+    {
+        get => name;
+        set => this.RaiseAndSetIfChanged(ref name, value);
+    }
+
+    private float maxPerSecond;
+
+    /// <summary>归一化值每秒最大变化量 (0 = 不限速)。</summary>
+    [XmlAttribute("MaxPerSecond")]
+    public float MaxPerSecond
+    {
+        get => maxPerSecond;
+        set => this.RaiseAndSetIfChanged(ref maxPerSecond, value);
+    }
+}
+
 public class Device : ViewModelBase
 {
     private string name = string.Empty;
@@ -416,6 +445,19 @@ public class Device : ViewModelBase
 
     [XmlElement("OAction")]
     public List<OAction> OActions { get; set; } = new List<OAction>();
+
+    /// <summary>
+    /// 通道速率上限 —— 按<b>通道</b>限制归一化值的变化速度, 防止内容里的阶跃把电机顶到报错。
+    ///
+    /// <para><b>为什么按通道而不是按设备</b>: 同一台设备上既有模拟量通道 (电缸, 需要限速),
+    /// 也有开关量通道 (喷水/风扇, 必须瞬时开合)。按设备限速会把开关量拖成两秒才到位。</para>
+    ///
+    /// <para>用 <see cref="ObservableCollection{T}"/> 而非 List: 它既能被 XmlSerializer 直接
+    /// 读写 (有 Add), 又能直接给界面绑定 —— 从而免掉 KeyList 那套"两个列表互相同步"的机制。
+    /// 这个节点必须能被 C# 完整往返, 否则设备管理里任何一次保存都会把它整份抹掉。</para>
+    /// </summary>
+    [XmlElement("ChannelRate")]
+    public ObservableCollection<ChannelRate> ChannelRates { get; set; } = new();
 
     public Action FirstOrCreateAction(string actionName)
     {
@@ -849,6 +891,21 @@ public class Device : ViewModelBase
         // 理论不可达 (上限 1000 个节点足够), 兜底时间戳
         return $"{prefix}_{DateTime.Now:HHmmss}";
     }
+
+    /// <summary>
+    /// 删除本设备 (设备区里的入口)。
+    ///
+    /// <para>走应用级流程 —— 确认框、写入设备表、重启提示都在
+    /// <c>MainWindowViewModel.DeleteDeviceAsync</c> 那一处, 不在这里重复一份。
+    /// 设备视图的 DataContext 就是 <c>Device</c>, 所以"操作对象"天然明确, 不需要用户
+    /// 先去菜单里理解"当前设备"指的是哪一台。</para>
+    /// </summary>
+    [XmlIgnore]
+    public ICommand DeleteSelfCommand =>
+        ReactiveCommand.Create(() =>
+        {
+            ViewModels.MainWindowViewModel.Instance?.DeleteDeviceCommand.Execute(this);
+        });
 
     [XmlIgnore]
     public ICommand EditDevicePropertiesCommand =>

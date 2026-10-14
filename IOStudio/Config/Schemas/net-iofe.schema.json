@@ -1,0 +1,10 @@
+{
+  "dllName": "NET-IOFE",
+  "displayName": "NET-IOFE 网络 IO",
+  "version": "1.0",
+  "_comment": "已退役：功能由 IOHUB 集成替代。如需恢复，将 disabled 置为 false。",
+  "category": "通讯协议",
+  "sections": [],
+  "disabled": true,
+  "starred": false
+}

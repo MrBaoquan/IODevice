@@ -188,6 +188,60 @@ namespace IOToolkit
             return IONativeWrapper.MotionToEngineering(deviceName, channel, normalized);
         }
 
+        // ── 未送达通道统计 (播放期可观测性) ───────────
+        // 派发时查不到设备的通道, 输出被 native 静默丢弃 (无日志、无 UI, 状态仍是 playing),
+        // 现场只表现为"动作在走、设备不动"。宿主在停播时读一次汇总, 让丢失不再无声。
+
+        /// <summary>
+        /// 本次播放未送达设备的通道汇总, 原始 JSON 对象串:
+        /// <c>{"YDL-0.oaxis.OAxis_6":4320}</c>; 无则 <c>{}</c>。键与 .motion 里的通道写法同形。
+        ///
+        /// <para>这里**不解析** —— 本程序集是 net452、零依赖 (没有 Newtonsoft, 也没有
+        /// System.Text.Json), 为了一个诊断字段引入 JSON 库不划算。调用方 (net8 侧) 自行解析。</para>
+        ///
+        /// <para>判据是"设备实例已在注册表里", 所以它同时覆盖: 设备名根本不在设备表,
+        /// 以及名字在表里但设备没建出来。与静态预检互补 —— 静态管"作者写错了",
+        /// 这里管"这一刻真的没送出去"。native 侧不逐帧打日志, 计数在起播时清零,
+        /// 所以这是"本场次"的统计。</para>
+        /// </summary>
+        public static string GetUnresolvedChannelsJson()
+        {
+            try
+            {
+                return IONativeWrapper.MotionGetUnresolvedChannels() ?? "{}";
+            }
+            catch
+            {
+                // 旧版 native 没有这个导出 → 不把"读不到统计"变成播放路径上的异常
+                return "{}";
+            }
+        }
+
+        /// <summary>清零未送达计数 (起播本身也会清)。</summary>
+        public static void ResetUnresolvedCounters()
+        {
+            IONativeWrapper.MotionResetUnresolvedCounters();
+        }
+
+        /// <summary>
+        /// 本次播放被速率上限削过的通道汇总, 原始 JSON 对象串:
+        /// <c>{"YDL-0.oaxis.OAxis_6":1234}</c>; 无则 <c>{}</c>。
+        ///
+        /// <para>被限速的输出看起来完全正常, 只是变慢了 —— 没有这个汇总, 作者分不清
+        /// "内容速度超了硬件上限"和"设备出问题"。同样不在此解析 (net452 零依赖)。</para>
+        /// </summary>
+        public static string GetRateLimitedChannelsJson()
+        {
+            try
+            {
+                return IONativeWrapper.MotionGetRateLimitedChannels() ?? "{}";
+            }
+            catch
+            {
+                return "{}";
+            }
+        }
+
         // ── native Tick 驱动 ─────────────────────────
 
         /// <summary>

@@ -312,7 +312,7 @@ namespace IOStudio.Services.Motion
 
             try
             {
-                Core.Initialize();
+                LibVlcInitializer.Initialize();
                 // 禁用视频输出 + 界面元素以加速提取 (使用 dummy vout 而非 --no-video, 避免影响音频解复用)
                 _libVlc = new LibVLC(
                     "--vout=none",

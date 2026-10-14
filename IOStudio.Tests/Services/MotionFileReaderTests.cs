@@ -347,3 +347,127 @@ namespace IOStudio.Tests.Services
         }
     }
 }
+
+namespace IOStudio.Tests.Services
+{
+    /// <summary>
+    /// 轨道开关位的**落盘契约**。
+    ///
+    /// <para><b>为什么值得一条专门的用例</b>: <c>enabled</c> 曾经带
+    /// <c>WhenWritingDefault</c>, 而 bool 的 default 是 <c>false</c> —— 于是"被禁用"
+    /// 会被序列化成**省略该键**。读取端 (native MotionPlayer) 无法区分
+    /// "键缺失 = 老文件, 应当启用" 与 "键缺失 = 显式禁用", 只能按启用处理,
+    /// 结果就是 <b>禁用轨道后输出照发</b>。契约必须是: 写入端始终显式落盘。</para>
+    /// </summary>
+    public class TrackFlagSerializationTests
+    {
+        private static string WriteTemp(MotionTimeline timeline)
+        {
+            string path = Path.Combine(
+                Path.GetTempPath(),
+                $"trackflag_{Guid.NewGuid():N}.motion"
+            );
+            Assert.True(MotionFileReader.Write(timeline, path));
+            return path;
+        }
+
+        private static MotionTimeline OneTrack(Action<MotionTrack> configure)
+        {
+            var track = new MotionTrack
+            {
+                Id = "t1",
+                DeviceName = "YDL-0",
+                OutputType = "oaxis",
+                OAxisChannel = "OAxis_6",
+                Label = "升降",
+                ValueType = "float",
+            };
+            track.Clips.Add(
+                new MotionClip
+                {
+                    Id = "c1",
+                    StartMs = 0,
+                    EndMs = 1000,
+                    Keyframes = new List<MotionKeyframe>
+                    {
+                        new() { TimeMs = 0, Value = 0f },
+                        new() { TimeMs = 1000, Value = 1f },
+                    },
+                }
+            );
+            configure(track);
+            return new MotionTimeline
+            {
+                Version = "3.0",
+                Name = "flags",
+                DurationMs = 1000,
+                Tracks = new List<MotionTrack> { track },
+            };
+        }
+
+        [Fact]
+        public void DisabledTrack_AlwaysWritesTheEnabledKey()
+        {
+            string path = WriteTemp(OneTrack(t => t.Enabled = false));
+            try
+            {
+                string json = File.ReadAllText(path);
+                // 关键: false 也必须显式写出, 不能被省略
+                Assert.Contains("\"enabled\": false", json);
+            }
+            finally
+            {
+                File.Delete(path);
+            }
+        }
+
+        [Fact]
+        public void EnabledTrack_AlsoWritesTheKey()
+        {
+            string path = WriteTemp(OneTrack(t => t.Enabled = true));
+            try
+            {
+                Assert.Contains("\"enabled\": true", File.ReadAllText(path));
+            }
+            finally
+            {
+                File.Delete(path);
+            }
+        }
+
+        [Fact]
+        public void DisabledTrack_SurvivesARoundTrip()
+        {
+            string path = WriteTemp(OneTrack(t => t.Enabled = false));
+            try
+            {
+                var back = MotionFileReader.Read(path);
+                Assert.False(back!.Tracks[0].Enabled);
+            }
+            finally
+            {
+                File.Delete(path);
+            }
+        }
+
+        [Fact]
+        public void MutedAndSolo_AlsoSurviveARoundTrip()
+        {
+            string path = WriteTemp(OneTrack(t =>
+            {
+                t.Muted = true;
+                t.Solo = true;
+            }));
+            try
+            {
+                var back = MotionFileReader.Read(path);
+                Assert.True(back!.Tracks[0].Muted);
+                Assert.True(back.Tracks[0].Solo);
+            }
+            finally
+            {
+                File.Delete(path);
+            }
+        }
+    }
+}

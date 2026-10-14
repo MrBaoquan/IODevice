@@ -83,6 +83,24 @@ namespace IOStudio
                 var mainWindow = new MainWindow { DataContext = mainViewModel, };
                 desktop.MainWindow = mainWindow;
 
+                // ── 自更新健康上报：Updater 替换文件并拉起新版本后，会等待本进程写回
+                //    --himind-update-health-file；窗口真正打开（UI/消息循环就绪）即视为启动成功。
+                //    若超时不写回，Updater 会判定更新失败并回滚旧版本。 ──
+                var updateHealthFile = UpdateHealthReporter.ResolveHealthFile(desktop.Args);
+                if (updateHealthFile is not null)
+                {
+                    mainWindow.Opened += (_, _) =>
+                    {
+                        var ok = UpdateHealthReporter.Report(updateHealthFile);
+                        AppLog.Info(
+                            "Update",
+                            ok
+                                ? $"已写回更新健康文件: {updateHealthFile}"
+                                : $"更新健康文件写回失败: {updateHealthFile}"
+                        );
+                    };
+                }
+
                 if (cli.MotionPath is not null || cli.ExitAfterMs is not null)
                 {
                     Cli.CliRunner.ApplyWindowMode(mainWindow, cli);

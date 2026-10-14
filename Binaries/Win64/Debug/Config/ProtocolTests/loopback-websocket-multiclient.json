@@ -1,0 +1,23 @@
+{
+  "name": "WebSocket 服务端多客户端 (并行接入 + 广播)",
+  "timeout_ms": 4000,
+  "steps": [
+    { "op": "listen",  "as": "srv", "transport": "websocket-server", "port": 0 },
+    { "op": "connect", "as": "c1", "transport": "websocket-client", "host": "127.0.0.1", "port_from": "srv", "path": "/ws" },
+    { "op": "connect", "as": "c2", "transport": "websocket-client", "host": "127.0.0.1", "port_from": "srv", "path": "/ws" },
+
+    { "op": "send",    "via": "c1", "encoding": "utf8", "data": "{\"from\":\"c1\"}" },
+    { "op": "send",    "via": "c2", "encoding": "utf8", "data": "{\"from\":\"c2\"}" },
+
+    { "op": "expect",  "via": "srv", "match": { "type": "json", "path": "from", "value": "c1" } },
+    { "op": "expect",  "via": "srv", "match": { "type": "json", "path": "from", "value": "c2" } },
+
+    { "op": "send",    "via": "srv", "encoding": "utf8", "data": "BROADCAST" },
+    { "op": "expect",  "via": "c1", "match": { "type": "equals", "value": "BROADCAST" } },
+    { "op": "expect",  "via": "c2", "match": { "type": "equals", "value": "BROADCAST" } },
+
+    { "op": "close",   "via": "c1" },
+    { "op": "close",   "via": "c2" },
+    { "op": "close",   "via": "srv" }
+  ]
+}

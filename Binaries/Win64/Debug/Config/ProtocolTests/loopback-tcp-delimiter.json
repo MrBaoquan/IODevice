@@ -1,0 +1,22 @@
+{
+  "name": "TCP 分隔符组帧 (\\r\\n)",
+  "timeout_ms": 3000,
+  "steps": [
+    { "op": "listen",  "as": "srv", "transport": "tcp-server", "port": 0,
+      "frame": { "mode": "delimiter", "delimiter": "\r\n", "delimiter_encoding": "utf8" } },
+    { "op": "connect", "as": "cli", "transport": "tcp-client", "host": "127.0.0.1", "port_from": "srv",
+      "frame": { "mode": "delimiter", "delimiter": "\r\n", "delimiter_encoding": "utf8" } },
+
+    { "op": "send",    "via": "cli", "encoding": "utf8", "data": "LINE-1" },
+    { "op": "send",    "via": "cli", "encoding": "utf8", "data": "LINE-2" },
+
+    { "op": "expect",  "via": "srv", "match": { "type": "equals", "value": "LINE-1" } },
+    { "op": "expect",  "via": "srv", "match": { "type": "equals", "value": "LINE-2" } },
+
+    { "op": "send",    "via": "srv", "encoding": "utf8", "data": "OK-1" },
+    { "op": "expect",  "via": "cli", "match": { "type": "equals", "value": "OK-1" } },
+
+    { "op": "close",   "via": "cli" },
+    { "op": "close",   "via": "srv" }
+  ]
+}

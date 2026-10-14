@@ -11,7 +11,7 @@ namespace IOToolkit
 {
 
 /**
- * 按键输入结构
+ * 鎸夐敭杈撳叆缁撴瀯
  */
 struct FInputKeyBinding : public FInputBinding
 {

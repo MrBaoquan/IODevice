@@ -81,6 +81,28 @@ namespace IOToolkit {
         void  ClearChannelRanges();
         float ToEngineering(const char* deviceName, const char* channel, float normalized) const;
 
+        // ── 未送达通道统计 (播放期可观测性) ───────────
+        // 派发时查不到设备, 该通道输出就被**静默**丢弃 (既无日志也无 UI, 状态仍是 playing),
+        // 现场只表现为"动作在走、设备不动"。这里把丢弃按通道键累加, 由宿主在停播时读一次汇总。
+        //
+        // 判据是"设备实例已在注册表里", 因此它同时覆盖两种情形:
+        //   1) 设备名根本不在设备表 (宿主静态预检已报错);
+        //   2) 名字在表里、但设备没建出来 (预检会放过 —— 离线编排的正常态)。
+        // 与静态预检互补: 静态管"作者写错了", 这里管"这一刻真的没送出去"。
+        //
+        // 累加**不逐帧打日志** (会淹没日志且拖慢派发); 计数按场次统计, 在起播时清零 ——
+        // 不在卸载时清, 因为"停播 → 读一次"的次序里卸载先发生, 那时清零会把统计抹空。
+        /// 未送达通道汇总, JSON 对象: `{"YDL-0.oaxis.OAxis_6":4320, ...}`; 无则 `{}`。
+        std::string GetUnresolvedChannelsJson() const;
+        /// 手动清零 (一般在起播前调用; 起播本身也会清)。
+        void ResetUnresolvedCounters();
+
+        /// 被速率上限削过的通道汇总, 与上者同形: `{"YDL-0.oaxis.OAxis_6":1234, ...}`; 无则 `{}`。
+        ///
+        /// <para>存在的意义是"不静默": 内容要求的速率一旦超过通道上限就会被削, 但削过的
+        /// 输出看起来完全正常 (只是变慢了)。作者拿这个汇总才知道是内容太快, 而不是设备坏了。</para>
+        std::string GetRateLimitedChannelsJson() const;
+
         /// 与 EvaluateSlotAt 相同, 但输出**工程量** —— 换算在 native 侧完成(供编排端预览使用,
         /// 使"编辑器看到的"与"放映端下发的"共用同一段换算代码)。
         int  EvaluateSlotAtEngineering(const char* slotId, float timeMs,

@@ -129,6 +129,42 @@
                         </StackPanel>
                     </Border>
 
+                    <!-- ═══ 值显示（只影响面板呈现，不参与下发） ═══ -->
+                    <Border Classes="section">
+                        <StackPanel Spacing="10">
+                            <TextBlock Classes="section-title" Text="值显示"/>
+                            <TextBlock Classes="hint"
+                                       Text="只改变面板上怎么显示 0..1 这个值，不影响下发内容。"/>
+
+                            <StackPanel>
+                                <TextBlock Classes="label" Text="显示规则"/>
+                                <ComboBox SelectedIndex="{Binding ValueDisplayModeIndex}">
+                                    <ComboBoxItem Content="自动（按复位原点推导）"/>
+                                    <ComboBoxItem Content="百分比 · 原点在下限 (0..100%)"/>
+                                    <ComboBoxItem Content="百分比 · 复位原点居中 (±100%)"/>
+                                    <ComboBoxItem Content="工程量（带单位，需量程）"/>
+                                </ComboBox>
+                                <TextBlock Classes="hint"
+                                           Text="自动：复位原点为 0 时显示 0..100%；为 0.5 时显示 -100%..+100%。"/>
+                            </StackPanel>
+
+                            <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
+                                <StackPanel Grid.Column="0">
+                                    <TextBlock Classes="label" Text="复位原点"/>
+                                    <TextBox Text="{Binding NeutralValueText}"
+                                             Watermark="空=按类型默认 (float 0.5 / bool 0)"/>
+                                    <TextBlock Classes="hint" Text="0=原点在下限，0.5=复位原点居中"/>
+                                </StackPanel>
+                                <StackPanel Grid.Column="1">
+                                    <TextBlock Classes="label" Text="量程"/>
+                                    <TextBox Text="{Binding EngineeringRangeText}"
+                                             Watermark="空=用设备声明"/>
+                                    <TextBlock Classes="hint" Text="仅工程量显示与实际换算使用"/>
+                                </StackPanel>
+                            </Grid>
+                        </StackPanel>
+                    </Border>
+
                     <!-- ═══ 轨道属性 ═══ -->
                     <Border Classes="section">
                         <StackPanel Spacing="10">

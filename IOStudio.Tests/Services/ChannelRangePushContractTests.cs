@@ -20,6 +20,12 @@ namespace IOStudio.Tests.Services
     /// <para>本测试钉住两件事: (1) 解析后的仿射映射与原本的三级换算等价;
     /// (2) native 的换算结果与宿主侧完全一致 (跨语言)。</para>
     /// </summary>
+    /// <remarks>
+    /// 本类用的是<b>固定</b>设备名 <c>Simulator-1</c>, 且会调 <c>ClearChannelRanges()</c> 清空
+    /// <b>整张</b>宿主量程表 —— 必须与其它 native 全局态用例串行, 见
+    /// <see cref="NativeMotionStateCollection"/>。
+    /// </remarks>
+    [Collection("NativeMotionState")]
     public class ChannelRangePushContractTests
     {
         private const string Device = "Simulator-1";

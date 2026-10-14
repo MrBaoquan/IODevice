@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  影动力台设备表预设。
+
+  用法: IOStudio →「设备(D)」→「设备表」里选它即可切换
+        (切换只改"加载哪一份", 不会改写本文件)。
+  命名约定: Config\IODevice.<名字>.xml —— 放进该目录就会被自动发现。
+
+  注意: 本文件随发布包分发, 升版时可能被新包覆盖。若要在现场长期改动它,
+        建议另存为 IODevice.<你的名字>.xml 后再改。
+  (缺省表 IODevice.xml 不随包分发, 所以它是安全的现场配置位。)
+-->
+﻿<?xml version="1.0" encoding="utf-8"?>
+<IORoot>
+  <Device Name="ExtDev" Type="External" DllName="DEBUGGER" Index="1" />
+  <Device Name="Simulator-1" Type="External" DllName="Simulator" Index="1" />
+  <!-- 影动力 (MP-YDL) 游戏动感平台: UDP JSON, 本地 30120 / 远端 30121 -->
+  <Device Name="YDL-0" Type="External" DllName="MP-YDL" Index="0">
+    <ChannelRate Name="OAxis_6" MaxPerSecond="0.5" />
+    <!-- 平台机构 -->
+    <OAction Name="Heave" Label="电缸升降">
+      <Key Name="OAxis_6" />
+    </OAction>
+    <!-- 环境特效域 DO[16..31] -->
+    <OAction Name="Water" Label="喷水">
+      <Key Name="OAxis_16" />
+    </OAction>
+    <OAction Name="Wind" Label="风扇">
+      <Key Name="OAxis_18" />
+    </OAction>
+    <OAction Name="Hot" Label="热风">
+      <Key Name="OAxis_20" />
+    </OAction>
+    <OAction Name="Vibrate" Label="震动">
+      <Key Name="OAxis_22" />
+    </OAction>
+    <OAction Name="Scent" Label="香味">
+      <Key Name="OAxis_24" />
+    </OAction>
+    <!-- 硬件交互扩展域 DO[48..63] -->
+    <OAction Name="Shoot" Label="射击">
+      <Key Name="OAxis_48" />
+    </OAction>
+    <OAction Name="Action" Label="动作">
+      <Key Name="OAxis_49" />
+    </OAction>
+  </Device>
+</IORoot>

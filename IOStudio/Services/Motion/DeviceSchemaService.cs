@@ -25,6 +25,25 @@ namespace IOStudio.Services.Motion
         /// <inheritdoc/>
         public List<DeviceSchemaInfo> LoadDevices()
         {
+            var devices = LoadDeclaredDevices();
+
+            // 无设备时提供默认 Platform-0
+            if (devices.Count == 0)
+                devices.Add(CreateDefaultDevice());
+
+            return devices;
+        }
+
+        /// <summary>
+        /// 只返回 <c>Config/IODevice.xml</c> 里**真实声明**的设备 —— 没有兜底。
+        /// 文件缺失、为空、或解析不出设备时返回空列表。
+        ///
+        /// <para>需要区分"表里有没有"的调用方（如设备绑定预检）必须用这个：
+        /// <see cref="LoadDevices"/> 的合成 Platform-0 只是 UI 兜底，native 侧读同一份文件、
+        /// 读不到就一个设备都不建，所以那个合成设备在播放时同样会被静默丢弃。</para>
+        /// </summary>
+        public List<DeviceSchemaInfo> LoadDeclaredDevices()
+        {
             var devices = new List<DeviceSchemaInfo>();
 
             try
@@ -49,7 +68,14 @@ namespace IOStudio.Services.Motion
                             if (string.IsNullOrEmpty(name))
                                 continue;
 
-                            var device = new DeviceSchemaInfo { DeviceName = name };
+                            var device = new DeviceSchemaInfo
+                            {
+                                DeviceName = name,
+                                DllName = node.Attributes?["DllName"]?.Value ?? "",
+                                Index = int.TryParse(node.Attributes?["Index"]?.Value, out int idx)
+                                    ? idx
+                                    : 0,
+                            };
                             ParseOActions(node, device);
                             GenerateOAxisChannels(name, device);
                             devices.Add(device);
@@ -60,12 +86,6 @@ namespace IOStudio.Services.Motion
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine($"[DeviceSchemaService] 加载设备失败: {ex.Message}");
-            }
-
-            // 无设备时提供默认 Platform-0
-            if (devices.Count == 0)
-            {
-                devices.Add(CreateDefaultDevice());
             }
 
             return devices;

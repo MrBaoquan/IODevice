@@ -1,0 +1,52 @@
+{
+  "dllName": "MP-YDL",
+  "displayName": "动感平台-影动力",
+  "version": "1.0",
+  "_comment": "本插件只读 config.xml (见 YDLDevice.cpp InitDevice), 故 backend=xml。 字段值落在 ExternalLibraries/Config/MP-YDL/config.xml 里, 不走 config.ini。",
+  "backend": "xml",
+  "category": "动感平台",
+  "sections": [
+    {
+      "name": "connection",
+      "title": "UDP 连接",
+      "collapsed": false,
+      "fields": [
+        {
+          "key": "ip",
+          "label": "播控端 IP",
+          "type": "text",
+          "default": "127.0.0.1",
+          "placeholder": "127.0.0.1",
+          "xmlPath": "MPRoot/YDLDevice[{n}]/UDP/@ip",
+          "description": "厂家播控端服务软件所在地址。插件作为游戏端发往此 IP。",
+          "showInSummary": true,
+          "summaryColor": "#0891b2"
+        },
+        {
+          "key": "port",
+          "label": "播控端端口",
+          "type": "number",
+          "default": "30120",
+          "min": 1,
+          "max": 65535,
+          "xmlPath": "MPRoot/YDLDevice[{n}]/UDP/@port",
+          "description": "插件把心跳/游戏状态/电缸等报文发往此端口。协议 V1.0.09 §1.1: 播控端端口 = 30120。抓包监听的就是它。",
+          "showInSummary": true,
+          "summaryColor": "#059669"
+        },
+        {
+          "key": "localPort",
+          "label": "本机监听端口（游戏端）",
+          "type": "number",
+          "default": "30121",
+          "min": 1,
+          "max": 65535,
+          "xmlPath": "MPRoot/YDLDevice[{n}]/UDP/@localPort",
+          "description": "插件自身绑定并监听此端口，接收播控端下发的命令。协议 V1.0.09 §1.1: 游戏端端口 = 30121。注意 YDLDevice.h 中的代码默认值把两者写反了，以本配置为准。"
+        }
+      ]
+    }
+  ],
+  "disabled": false,
+  "starred": true
+}

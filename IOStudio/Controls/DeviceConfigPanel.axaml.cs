@@ -6,6 +6,7 @@ using Avalonia.Layout;
 using Avalonia.Markup.Xaml;
 using Avalonia.Media;
 using IOStudio.Services;
+using IOStudio.Services.Config;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -23,6 +24,11 @@ namespace IOStudio.Controls
         private string? _dllName;
         private int _currentDeviceIndex = 0;
         private DeviceSchema? _schema;
+
+        // 配置后端: 由 schema 的 backend 决定 (config.ini 或 config.xml)。
+        // 只读 XML 的插件若走 INI 后端, 面板会读不到真实值并把修改写进插件不读的文件。
+        private IDeviceConfigStore _store = IniDeviceConfigStore.Instance;
+
         private Dictionary<string, string> _currentValues = new();
         private Dictionary<string, string> _defaultValues = new();
         private Dictionary<string, Control> _fieldControls = new();
@@ -132,17 +138,22 @@ namespace IOStudio.Controls
             // 加载Schema
             _schema = DeviceSchemaService.Instance.LoadSchema(dllName);
 
+            // 按 schema 声明的后端选择配置读写实现
+            _store = string.Equals(_schema?.Backend, "xml", StringComparison.OrdinalIgnoreCase)
+                ? new XmlDeviceConfigStore(dllName, _schema!)
+                : IniDeviceConfigStore.Instance;
+
             // 读取默认配置
-            _defaultValues = IniConfigService.Instance.ReadSection(dllName, "default");
+            _defaultValues = _store.ReadSection(dllName, "default");
 
             // 读取当前配置（合并default和device_N）
-            _currentValues = IniConfigService.Instance.ReadConfig(dllName, deviceIndex);
+            _currentValues = _store.ReadConfig(dllName, deviceIndex);
 
             // 缓存设备section的键，用于后续判断是否使用默认值
             _deviceSectionKeys.Clear();
             if (deviceIndex > 0)
             {
-                var deviceSection = IniConfigService.Instance.ReadSection(
+                var deviceSection = _store.ReadSection(
                     dllName,
                     $"device_{deviceIndex}"
                 );
@@ -166,7 +177,7 @@ namespace IOStudio.Controls
                 {
                     if (!string.IsNullOrEmpty(section.IniSection))
                     {
-                        var sectionData = IniConfigService.Instance.ReadSection(
+                        var sectionData = _store.ReadSection(
                             dllName,
                             section.IniSection
                         );
@@ -379,7 +390,7 @@ namespace IOStudio.Controls
             }
 
             // 保存主配置（default/device_N）
-            IniConfigService.Instance.SaveConfig(
+            _store.SaveConfig(
                 _dllName,
                 _currentDeviceIndex,
                 mainValues,
@@ -391,7 +402,7 @@ namespace IOStudio.Controls
             foreach (var section in sectionData)
             {
                 var deleted = sectionDeletedKeys.TryGetValue(section.Key, out var d) ? d : null;
-                IniConfigService.Instance.SaveSection(
+                _store.SaveSection(
                     _dllName,
                     section.Key,
                     section.Value,
@@ -404,7 +415,7 @@ namespace IOStudio.Controls
             {
                 if (!sectionData.ContainsKey(section.Key))
                 {
-                    IniConfigService.Instance.SaveSection(
+                    _store.SaveSection(
                         _dllName,
                         section.Key,
                         new Dictionary<string, string>(),
@@ -433,7 +444,11 @@ namespace IOStudio.Controls
             if (string.IsNullOrEmpty(_dllName))
                 return;
 
-            _schema = DeviceSchemaService.Instance.SyncFromIni(_dllName);
+            // XML 后端下 SyncFromIni 无意义 —— 它按 config.ini 的键反推字段,
+            // 对只读 config.xml 的插件只会得出空集。改为按配置真相重新加载 schema。
+            _schema = string.Equals(_schema?.Backend, "xml", StringComparison.OrdinalIgnoreCase)
+                ? DeviceSchemaService.Instance.LoadSchema(_dllName, forceReload: true)
+                : DeviceSchemaService.Instance.SyncFromIni(_dllName);
             BuildConfigUI();
         }
 
@@ -588,7 +603,9 @@ namespace IOStudio.Controls
             if (string.IsNullOrEmpty(_dllName))
                 return;
 
-            var configPath = IniConfigService.Instance.GetConfigPath(_dllName);
+            // 走当前后端解析路径 —— 原实现写死 config.ini, 对只读 XML 的插件
+            // (MP-YDL 等) 是死键, 点了没反应。
+            var configPath = _store.GetPath(_dllName);
             if (System.IO.File.Exists(configPath))
             {
                 try

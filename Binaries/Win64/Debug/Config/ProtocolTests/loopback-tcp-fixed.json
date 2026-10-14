@@ -1,0 +1,22 @@
+{
+  "name": "TCP 定长组帧 (8 字节)",
+  "timeout_ms": 3000,
+  "steps": [
+    { "op": "listen",  "as": "srv", "transport": "tcp-server", "port": 0,
+      "frame": { "mode": "fixed", "size": 8 } },
+    { "op": "connect", "as": "cli", "transport": "tcp-client", "host": "127.0.0.1", "port_from": "srv",
+      "frame": { "mode": "fixed", "size": 8 } },
+
+    { "op": "send",    "via": "cli", "encoding": "utf8", "data": "ABCDEFGH" },
+    { "op": "send",    "via": "cli", "encoding": "utf8", "data": "12345678" },
+
+    { "op": "expect",  "via": "srv", "match": { "type": "equals", "value": "ABCDEFGH" } },
+    { "op": "expect",  "via": "srv", "match": { "type": "equals", "value": "12345678" } },
+
+    { "op": "send",    "via": "srv", "encoding": "utf8", "data": "RESP0001" },
+    { "op": "expect",  "via": "cli", "match": { "type": "startswith", "value": "RESP" } },
+
+    { "op": "close",   "via": "cli" },
+    { "op": "close",   "via": "srv" }
+  ]
+}

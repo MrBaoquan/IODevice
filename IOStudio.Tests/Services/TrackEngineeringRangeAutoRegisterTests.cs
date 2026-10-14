@@ -17,9 +17,11 @@ namespace IOStudio.Tests.Services
     /// 宿主之后显式推送的值覆盖同一 <c>(device, channel)</c>。本测试钉住这条兜底链路。</para>
     ///
     /// <para><b>并行说明</b>: native 的兜底量程表是由"已装载 Slot"派生的 (<c>RebuildTrackRanges</c>),
-    /// 宿主的 <c>ClearChannelRanges</c> 不会影响它; 本类用随机设备名, 因此与并行运行、会清空
-    /// 宿主量程表的其它用例天然隔离。</para>
+    /// 宿主的 <c>ClearChannelRanges</c> 不会影响它。但 <see cref="HostPush_OverridesAutoRegisteredRange"/>
+    /// 走的是<b>宿主显式推送</b>那条路 —— 它会被别的用例的全表清空抹掉, 所以本类必须挂到
+    /// <see cref="NativeMotionStateCollection"/> 上串行跑。只靠"随机设备名"挡不住全表清空。</para>
     /// </summary>
+    [Collection("NativeMotionState")]
     public class TrackEngineeringRangeAutoRegisterTests
     {
         private const string Channel = "OAxis_60";

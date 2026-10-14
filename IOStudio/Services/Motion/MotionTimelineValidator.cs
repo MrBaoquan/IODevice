@@ -37,11 +37,37 @@ namespace IOStudio.Services.Motion
     /// <summary>校验可用的外部上下文 (可选注入; 不提供则跳过相应检查)。</summary>
     public sealed class MotionValidationOptions
     {
-        /// <summary>判定设备当前是否已加载 (null = 跳过)。</summary>
+        /// <summary>
+        /// 判定设备名是否被<b>逻辑映射表</b> (Config/IODevice.xml) 认领 (null = 跳过)。
+        ///
+        /// <para>未被认领 = 播放时该轨道输出必然被静默丢弃 (native 侧查不到设备就直接 return)，
+        /// 这是要修的 bug。判据必须取映射表，不能取 <c>IODevice.IsValid()</c> —— 后者会把
+        /// "没声明"和"声明了但没装载"混为一谈，让离线编排满屏误报。</para>
+        /// </summary>
+        public Func<string, bool>? IsDeviceDeclared { get; init; }
+
+        /// <summary>
+        /// 判定已声明设备当前是否已加载 (null = 跳过)。
+        ///
+        /// <para>只在 <see cref="IsDeviceDeclared"/> 判定为"已声明"之后才询问 —— 否则会把
+        /// "设备表压根没这名字"误报成"设备没启动"。设备表整体未加载时调用方应直接跳过本项
+        /// (见 <c>IOToolkit.IODeviceController.IsLoaded</c>)。</para>
+        /// </summary>
         public Func<string, bool>? IsDeviceLoaded { get; init; }
 
         /// <summary>设备声明量程 (null = 跳过量程相关检查)。</summary>
         public Func<string, string, (float Min, float Max)?>? DeviceRange { get; init; }
+
+        /// <summary>
+        /// 判定 (设备名, 动作名) 是否被设备表声明 (null = 跳过)。
+        ///
+        /// <para>只在设备<b>已声明</b>时才问 —— 设备本身没声明是 <c>track.device_undeclared</c>,
+        /// 那时当务之急是改设备名, 再叠一条"动作也没声明"只是噪音。</para>
+        ///
+        /// <para>这条判定对应 native 侧 <c>ExternalIO::SetDO(const char*, float, bool)</c> 的
+        /// <c>OActionMappings.count()</c> 门: 不认领就 <c>return 0</c>, 无日志无计数。</para>
+        /// </summary>
+        public Func<string, string, bool>? IsOActionDeclared { get; init; }
 
         /// <summary>
         /// 安全联锁配置 (null = 跳过安全语义检查)。<b>默认关闭</b>：role 是自由字符串，
@@ -224,15 +250,58 @@ namespace IOStudio.Services.Motion
                     "OAction 轨道未指定输出名, 输出会被静默丢弃", track, label));
             }
 
-            if (string.IsNullOrEmpty(track.DeviceName))
+            // 设备判据: "没声明"是必然失败 (要修), "声明了但没装载"是离线编排的正常态。
+            // 两个判据各由调用方决定是否注入, 所以"设备是否已声明"要单独看 ——
+            // 只注入 IsDeviceLoaded (老调用方的用法) 时, 不能因为没注入 IsDeviceDeclared 就把它跳过。
+            bool trackHasDevice = !string.IsNullOrEmpty(track.DeviceName);
+            bool deviceDeclared = false;
+
+            if (!trackHasDevice)
             {
                 issues.Add(New(issues, MotionIssueSeverity.Error, "track.no_device",
                     "轨道未指定设备, 输出会被静默丢弃", track, label));
             }
-            else if (options.IsDeviceLoaded is { } isLoaded && !isLoaded(track.DeviceName))
+            else if (options.IsDeviceDeclared is { } isDeclared)
+            {
+                deviceDeclared = isDeclared(track.DeviceName);
+                if (!deviceDeclared)
+                {
+                    issues.Add(New(issues, MotionIssueSeverity.Error, "track.device_undeclared",
+                        $"设备 '{track.DeviceName}' 未在设备表中声明, 该轨道输出会被静默丢弃", track, label));
+                }
+            }
+            else
+            {
+                // 没注入声明判据 = 调用方不关心这事, 那就不能替它断言"没声明";
+                // 但对 IsDeviceLoaded 而言, 设备名存在即视为"可判定已装载"。
+                deviceDeclared = true;
+            }
+
+            if (
+                trackHasDevice
+                && deviceDeclared
+                && options.IsDeviceLoaded is { } isLoaded
+                && !isLoaded(track.DeviceName)
+            )
             {
                 issues.Add(New(issues, MotionIssueSeverity.Error, "track.device_not_loaded",
-                    $"设备 '{track.DeviceName}' 当前未加载, 该轨道不会输出", track, label));
+                    $"设备 '{track.DeviceName}' 已声明但当前未加载, 该轨道不会输出", track, label));
+            }
+
+            // 动作未在该设备上声明 → native 侧查 OActionMappings 查不到, 直接 return 0:
+            // 既无日志也无计数, 是最隐蔽的一道静默门 (比"设备查不到"还难发现)。
+            // 设备本身未声明时不再叠加 —— 那已由 track.device_undeclared 报出, 且当务之急是改设备名。
+            if (
+                !isOAxis
+                && !string.IsNullOrEmpty(track.OActionName)
+                && deviceDeclared
+                && options.IsOActionDeclared is { } isActionDeclared
+                && !isActionDeclared(track.DeviceName, track.OActionName)
+            )
+            {
+                issues.Add(New(issues, MotionIssueSeverity.Error, "track.oaction_undeclared",
+                    $"设备 '{track.DeviceName}' 未声明动作 '{track.OActionName}', 该轨道输出会被静默丢弃",
+                    track, label));
             }
 
             if (track.Muted)

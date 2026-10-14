@@ -210,7 +210,25 @@ int IOToolkit::UInputSettings::Initialize()
 				_oactions.insert(std::pair<std::string, std::vector<FOutputActionKey>>(axisName, _oactionKeys));
 			}
 			OActionMappings.push_back(_oactions);
-			
+
+			// 通道速率上限: <ChannelRate Name="OAxis_6" MaxPerSecond="0.5" />
+			for (xml_node<>* rate = device->first_node("ChannelRate"); rate; rate = rate->next_sibling("ChannelRate"))
+			{
+				std::string channelName = rate->first_attribute("Name") ? rate->first_attribute("Name")->value() : IOType::Invalid;
+				if (channelName == IOType::Invalid)
+				{
+					IOLog::Instance().Warning(std::string("Please make sure that all of your ChannelRate node in ") + DeviceName + " have a correct Name attribute. ");
+					continue;
+				}
+				float maxPerSecond = GetNodeValue(
+					rate->first_attribute("MaxPerSecond") ? rate->first_attribute("MaxPerSecond")->value() : "", 0.f);
+				// 非正值 = 不限速: 与"缺省不限速"一致, 不入表 (避免用 0 去"限死")
+				if (maxPerSecond > 0.f)
+				{
+					ChannelRateLimits[DeviceName + "|" + channelName] = maxPerSecond;
+				}
+			}
+
 
             deviceID++;
         }
@@ -286,6 +304,12 @@ const bool IOToolkit::UInputSettings::HasOAction(uint8 deviceID, std::string oAc
         if (_oactions.find(oActionName) != _oactions.end()) return true;
     }
     return false;
+}
+
+float IOToolkit::UInputSettings::GetChannelRateLimit(const std::string& deviceName, const std::string& channelName) const
+{
+    auto it = ChannelRateLimits.find(deviceName + "|" + channelName);
+    return it != ChannelRateLimits.end() ? it->second : 0.f;
 }
 
 int IOToolkit::UInputSettings::SetConfigPath(const char* InPath)

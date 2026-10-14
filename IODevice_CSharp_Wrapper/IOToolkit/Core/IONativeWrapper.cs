@@ -622,5 +622,21 @@ namespace IOToolkit.Core
         /// <summary>驱动 native Tick (单位: 秒)。</summary>
         [DllImport(DllName, CallingConvention = NativeCallingConvention)]
         public static extern void MotionTick(float InDeltaSeconds);
+
+        // ── 未送达通道统计 (播放期可观测性) ──────────────
+        // 派发时查不到设备的通道, 其输出被 native 静默丢弃 (无日志、无 UI, 状态仍是 playing)。
+        // 宿主在停播时读一次汇总, 把"静默丢失"变成可见。
+
+        /// <summary>未送达通道汇总 JSON: <c>{"YDL-0.oaxis.OAxis_6":4320}</c>; 无则 <c>{}</c>。</summary>
+        [DllImport(DllName, CallingConvention = NativeCallingConvention)]
+        [return: MarshalAs(NativeStringType)]
+        public static extern string MotionGetUnresolvedChannels();
+
+        [DllImport(DllName, CallingConvention = CallingConvention.StdCall, CharSet = CharSet.Unicode)]
+        public static extern string MotionGetRateLimitedChannels();
+
+        /// <summary>清零未送达计数 (起播本身也会清)。</summary>
+        [DllImport(DllName, CallingConvention = NativeCallingConvention)]
+        public static extern void MotionResetUnresolvedCounters();
     }
 }

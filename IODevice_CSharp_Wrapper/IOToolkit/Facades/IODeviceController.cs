@@ -19,6 +19,14 @@ namespace IOToolkit
         }
 
         /// <summary>
+        /// 设备表是否已加载。
+        ///
+        /// 未加载时任何设备名都查不到 —— 此时把"查不到"当成"设备缺失"会全是误报，
+        /// 所以调用方 (如编排预检) 必须先看这个开关再判设备存在性。
+        /// </summary>
+        public static bool IsLoaded { get; private set; }
+
+        /// <summary>
         /// 加载设备
         /// </summary>
         /// <returns></returns>
@@ -28,7 +36,9 @@ namespace IOToolkit
             // 缓存的 IODevice 与桥接槽位全都指向已不存在的设备。
             ResetManagedState();
 
-            return IONativeWrapper.Load();
+            int result = IONativeWrapper.Load();
+            IsLoaded = true;
+            return result;
         }
 
         /// <summary>
@@ -47,6 +57,7 @@ namespace IOToolkit
                 // 原生设备已销毁，托管侧缓存与绑定随之失效，必须一并清掉，
                 // 否则下一轮 Load 会复用指向已销毁设备的包装器。
                 ResetManagedState();
+                IsLoaded = false;
             }
         }
 

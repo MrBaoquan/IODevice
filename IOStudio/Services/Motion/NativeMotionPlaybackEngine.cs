@@ -459,6 +459,80 @@ namespace IOStudio.Services.Motion
         public string? LastError { get; private set; }
 
         /// <summary>
+        /// 本次播放未送达设备的通道 → 丢弃次数。
+        ///
+        /// <para>为什么不逐帧读: native 侧只累加、不逐帧打日志, 我们也在**停播时**才读一次 ——
+        /// 16.67ms 一次 JSON 解析纯属浪费, 且这段在 tick 预算 (<c>TickMaxEngineMs</c>) 之下。
+        /// 读到的就是本场次 (起播时 native 已清零) 的总量。</para>
+        ///
+        /// <para>JSON 在这里解 (而不是在 IOToolkit 门面里): 包装程序集是 net452 零依赖,
+        /// 没有可用的 JSON 库; 本工程是 net8, System.Text.Json 现成。</para>
+        ///
+        /// <para>读/解析失败 (例如旧版 native 没有该导出) 一律当"没有未送达" ——
+        /// 统计不是关键路径, 不能让它把停播流程弄崩。</para>
+        /// </summary>
+        public IReadOnlyDictionary<string, long> UnresolvedChannels =>
+            ReadChannelCounts(IOToolkit.MotionPlayer.GetUnresolvedChannelsJson);
+
+        /// <summary>
+        /// 本场次被速率上限削过的通道 → 削的次数。
+        ///
+        /// <para>被限速的输出看起来完全正常 (只是变慢了), 所以作者不看这个汇总就无从知道
+        /// "是我的内容太快"还是"设备有问题"。键与 .motion 里的通道写法同形, 便于对号入座。</para>
+        /// </summary>
+        public IReadOnlyDictionary<string, long> RateLimitedChannels =>
+            ReadChannelCounts(IOToolkit.MotionPlayer.GetRateLimitedChannelsJson);
+
+        /// <summary>
+        /// 解析一份 native 侧的"通道 → 次数"汇总 (未送达与限速两者结构相同, 共用本方法)。
+        /// 任何失败都返回空表 —— 统计不是关键路径, 不能让它把停播流程弄崩。
+        /// </summary>
+        private static IReadOnlyDictionary<string, long> ReadChannelCounts(Func<string> readJson)
+        {
+            {
+                string json;
+                try
+                {
+                    json = readJson();
+                }
+                catch
+                {
+                    return EmptyUnresolved;
+                }
+
+                if (string.IsNullOrWhiteSpace(json) || json == "{}")
+                    return EmptyUnresolved;
+
+                try
+                {
+                    using var doc = System.Text.Json.JsonDocument.Parse(json);
+                    if (doc.RootElement.ValueKind != System.Text.Json.JsonValueKind.Object)
+                        return EmptyUnresolved;
+
+                    var result = new Dictionary<string, long>();
+                    foreach (var prop in doc.RootElement.EnumerateObject())
+                    {
+                        if (prop.Value.ValueKind == System.Text.Json.JsonValueKind.Number
+                            && prop.Value.TryGetInt64(out var count))
+                        {
+                            result[prop.Name] = count;
+                        }
+                    }
+
+                    return result.Count == 0 ? EmptyUnresolved : result;
+                }
+                catch (System.Text.Json.JsonException)
+                {
+                    // 统计不是关键路径: 解析不了就当没有, 不抛
+                    return EmptyUnresolved;
+                }
+            }
+        }
+
+        private static readonly IReadOnlyDictionary<string, long> EmptyUnresolved =
+            new Dictionary<string, long>();
+
+        /// <summary>
         /// 记录一次 native 派发/启动失败。
         ///
         /// <para>此前这些失败只写 <c>Debug.WriteLine</c> —— Release 下等于没有, GUI 也从不展示,

@@ -1,0 +1,26 @@
+{
+  "sessions": [
+    {
+      "label": "UDP 监听 #1",
+      "transport": "udp",
+      "is_listener": true,
+      "host": "127.0.0.1",
+      "port": 30120,
+      "serial_device": "COM3",
+      "baud": 115200,
+      "frame_mode": "none",
+      "delimiter": "\\r\\n",
+      "prefix_bytes": 4,
+      "fixed_size": 8,
+      "send_text": "{\"Cmd\":\"Ping\"}",
+      "send_encoding": "UTF-8",
+      "send_new_line": "无",
+      "loop_send": false,
+      "loop_interval_ms": 1000,
+      "show_timestamp": true,
+      "auto_scroll": true,
+      "rules": [],
+      "quick_commands": []
+    }
+  ]
+}

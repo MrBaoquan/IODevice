@@ -186,6 +186,92 @@ namespace IOStudio.Tests.Services
         }
 
         [Fact]
+        public void DeviceUndeclared_IsError_OnlyWhenCheckerProvided()
+        {
+            // "名字不在设备表里" 是**必然失效** (native 查不到设备直接丢输出), 与
+            // "已声明但当前没装" 是两码事 —— 两者必须能分开报, 否则离线编排会满屏误报。
+            var tl = Timeline(1000, Track(device: "Device_1", clips: Clip(0, 1000, (0, 0.5f))));
+
+            // 未提供判定 → 跳过该检查
+            Assert.DoesNotContain("track.device_undeclared", Codes(MotionTimelineValidator.Validate(tl)));
+
+            // 提供判定且返回 false → 报错
+            var issue = Assert.Single(
+                MotionTimelineValidator.Validate(
+                    tl,
+                    new MotionValidationOptions { IsDeviceDeclared = _ => false }
+                ),
+                i => i.Code == "track.device_undeclared"
+            );
+            Assert.Equal(MotionIssueSeverity.Error, issue.Severity);
+            Assert.Contains("Device_1", issue.Message);
+        }
+
+        [Fact]
+        public void DeviceDeclared_DoesNotReportUndeclared()
+        {
+            var tl = Timeline(1000, Track(device: "YDL-0", clips: Clip(0, 1000, (0, 0.5f))));
+            var issues = MotionTimelineValidator.Validate(
+                tl,
+                new MotionValidationOptions { IsDeviceDeclared = n => n == "YDL-0" }
+            );
+            Assert.Empty(issues);
+        }
+
+        [Fact]
+        public void DeviceUndeclared_TakesPrecedenceOverNotLoaded()
+        {
+            // 两个判定同时说"不"时, 只报更根本的那个 —— 未声明才是要修的原因,
+            // 未加载只是它的连带表现。两条一起报会让用户不知道该信哪个。
+            var tl = Timeline(1000, Track(device: "Device_1", clips: Clip(0, 1000, (0, 0.5f))));
+            var issues = MotionTimelineValidator.Validate(
+                tl,
+                new MotionValidationOptions
+                {
+                    IsDeviceDeclared = _ => false,
+                    IsDeviceLoaded = _ => false,
+                }
+            );
+            Assert.Contains("track.device_undeclared", Codes(issues));
+            Assert.DoesNotContain("track.device_not_loaded", Codes(issues));
+        }
+
+        [Fact]
+        public void DeviceDeclaredButNotLoaded_StillReportsNotLoaded()
+        {
+            // 离线编排的正常态: 设备表里有, 但当前没装载 → 报"不会输出", 不报"名字错了"
+            var tl = Timeline(1000, Track(device: "YDL-0", clips: Clip(0, 1000, (0, 0.5f))));
+            var issues = MotionTimelineValidator.Validate(
+                tl,
+                new MotionValidationOptions
+                {
+                    IsDeviceDeclared = _ => true,
+                    IsDeviceLoaded = _ => false,
+                }
+            );
+            Assert.Contains("track.device_not_loaded", Codes(issues));
+            Assert.DoesNotContain("track.device_undeclared", Codes(issues));
+        }
+
+        [Fact]
+        public void EmptyDeviceName_ReportsOnlyNoDevice()
+        {
+            // 空名字不该再连带报"未声明", 否则一行错误会被放大成两条
+            var tl = Timeline(1000, Track(device: "", clips: Clip(0, 1000, (0, 0.5f))));
+            var issues = MotionTimelineValidator.Validate(
+                tl,
+                new MotionValidationOptions
+                {
+                    IsDeviceDeclared = _ => false,
+                    IsDeviceLoaded = _ => false,
+                }
+            );
+            Assert.Contains("track.no_device", Codes(issues));
+            Assert.DoesNotContain("track.device_undeclared", Codes(issues));
+            Assert.DoesNotContain("track.device_not_loaded", Codes(issues));
+        }
+
+        [Fact]
         public void MutedOrDisabledTrack_IsWarning()
         {
             var tl = Timeline(

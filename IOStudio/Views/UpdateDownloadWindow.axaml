@@ -1,0 +1,73 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:IOStudio.ViewModels"
+        x:Class="IOStudio.Views.UpdateDownloadWindow"
+        x:DataType="vm:UpdateDownloadViewModel"
+        Title="软件更新"
+        Width="520" Height="240"
+        MinWidth="460" MinHeight="220"
+        WindowStartupLocation="CenterOwner"
+        CanResize="False">
+
+    <Window.Styles>
+        <Style Selector="TextBlock.label">
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="Foreground" Value="#6b7280"/>
+        </Style>
+    </Window.Styles>
+
+    <DockPanel>
+        <!-- 底部按钮栏 -->
+        <Border DockPanel.Dock="Bottom" BorderBrush="#e5e7eb" BorderThickness="0,1,0,0"
+                Padding="16,12" Background="#f9fafb">
+            <Grid ColumnDefinitions="*,Auto">
+                <TextBlock Grid.Column="0" Classes="label" VerticalAlignment="Center"
+                           TextWrapping="Wrap"
+                           Text="{Binding FooterText}"/>
+                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="10">
+                    <Button Name="CancelButton" Content="取消" Click="OnCancelClick"
+                            Width="90" Padding="12,7"
+                            IsEnabled="{Binding CanCancel}"/>
+                    <Button Name="CloseButton" Content="关闭" Click="OnCloseClick"
+                            Width="90" Padding="12,7"
+                            IsVisible="False"
+                            Background="#3b82f6" Foreground="White"
+                            HorizontalContentAlignment="Center"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <StackPanel Margin="20,18" Spacing="12">
+            <!-- 标题 + 版本 -->
+            <StackPanel Spacing="4">
+                <TextBlock Text="{Binding HeaderText}" FontSize="15" FontWeight="SemiBold"
+                           Foreground="#111827"/>
+                <TextBlock Text="{Binding VersionText}" Classes="label" TextWrapping="Wrap"/>
+            </StackPanel>
+
+            <!-- 进度条 -->
+            <ProgressBar Name="Progress" Minimum="0" Maximum="100"
+                         Value="{Binding ProgressPercent}"
+                         IsIndeterminate="{Binding IsIndeterminate}"
+                         Height="8" Foreground="#3b82f6"/>
+
+            <!-- 已下载/总量 · 速度 · 剩余时间 -->
+            <Grid ColumnDefinitions="*,Auto">
+                <TextBlock Grid.Column="0" Text="{Binding ProgressText}"
+                           FontSize="12" Foreground="#374151"
+                           FontFamily="Consolas, monospace"/>
+                <TextBlock Grid.Column="1" Text="{Binding RateText}"
+                           FontSize="12" Foreground="#6b7280"
+                           FontFamily="Consolas, monospace"/>
+            </Grid>
+
+            <!-- 失败原因 -->
+            <Border IsVisible="{Binding HasError}"
+                    Background="#fef2f2" BorderBrush="#fecaca" BorderThickness="1"
+                    CornerRadius="4" Padding="10,8">
+                <TextBlock Text="{Binding ErrorText}" TextWrapping="Wrap"
+                           FontSize="12" Foreground="#b91c1c"/>
+            </Border>
+        </StackPanel>
+    </DockPanel>
+</Window>

@@ -847,7 +847,7 @@ namespace IOStudio.ViewModels.Timeline
                 return;
             _undoRedo.Execute(
                 new LambdaCommand(
-                    TrackFlagUndoLabel(kind, track.Label),
+                    TrackFlagUndoLabel(kind, track.Label, newValue),
                     () => SetTrackFlag(track, kind, newValue),
                     () => SetTrackFlag(track, kind, oldValue)
                 )
@@ -855,15 +855,22 @@ namespace IOStudio.ViewModels.Timeline
             MarkDirty();
         }
 
-        private static string TrackFlagUndoLabel(string kind, string label) =>
-            kind switch
+        /// <summary>
+        /// 撤销栈里的动作说明 —— 说清"这条轨道被怎么了", 而不是笼统的"切换"。
+        /// 调试时反复开关轨道, 撤销栈是唯一能回看"刚才改了什么"的地方。
+        /// </summary>
+        private static string TrackFlagUndoLabel(string kind, string label, bool newValue)
+        {
+            string who = string.IsNullOrWhiteSpace(label) ? "轨道" : label;
+            return kind switch
             {
-                "mute" => $"{(label is null ? "轨道" : label)} 静音切换",
-                "solo" => $"{label} 独奏切换",
-                "enable" => $"{label} 启用切换",
-                "lock" => $"{label} 锁定切换",
+                "mute" => $"{who} · {(newValue ? "静音" : "取消静音")}",
+                "solo" => $"{who} · {(newValue ? "独奏" : "取消独奏")}",
+                "enable" => $"{who} · {(newValue ? "启用" : "禁用")}",
+                "lock" => $"{who} · {(newValue ? "锁定" : "解锁")}",
                 _ => "轨道属性",
             };
+        }
 
         private static void SetTrackFlag(TrackViewModel track, string kind, bool value)
         {
@@ -1045,7 +1052,11 @@ namespace IOStudio.ViewModels.Timeline
                 OAxisChannel = trackVm.Track.OAxisChannel,
                 Label = trackVm.Label,
                 Color = trackVm.Color,
-                ValueType = trackVm.ValueType
+                ValueType = trackVm.ValueType,
+                // 撤销快照必须带上这三个 —— 漏了会让"撤销"反而把它们抹掉
+                ValueDisplay = trackVm.Track.ValueDisplay,
+                EngineeringRange = trackVm.Track.EngineeringRange,
+                NeutralValue = trackVm.Track.NeutralValue,
             };
 
             void Apply(AddTrackResult value)
@@ -1056,6 +1067,9 @@ namespace IOStudio.ViewModels.Timeline
                 trackVm.OActionName = value.OActionName;
                 trackVm.Track.OutputType = value.OutputType;
                 trackVm.Track.OAxisChannel = value.OAxisChannel;
+                trackVm.Track.ValueDisplay = value.ValueDisplay;
+                trackVm.Track.EngineeringRange = value.EngineeringRange;
+                trackVm.Track.NeutralValue = value.NeutralValue;
                 if (trackVm.ValueType != value.ValueType)
                 {
                     trackVm.ValueType = value.ValueType;

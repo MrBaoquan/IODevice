@@ -86,8 +86,12 @@ namespace IOStudio.Models.Motion
         public bool Solo { get; set; }
 
         /// <summary>是否启用 (禁用时完全不参与播放和编辑)</summary>
+        /// <remarks>
+        /// <b>必须始终写出</b> (不加 WhenWritingDefault): bool 的 default 是 false,
+        /// 一旦省略, 读到"键缺失"的一方就分不清"默认启用"与"显式禁用" —— 消费端会把
+        /// 被禁用的轨道当成启用。写入端显式落盘, 读取端才能用缺省值安全兜底老文件。
+        /// </remarks>
         [JsonPropertyName("enabled")]
-        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
         public bool Enabled { get; set; } = true;
 
         /// <summary>是否锁定 (不可编辑)</summary>
@@ -144,6 +148,17 @@ namespace IOStudio.Models.Motion
         [JsonPropertyName("engineering_range")]
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public float? EngineeringRange { get; set; }
+
+        /// <summary>
+        /// 值显示规则 —— 面板上把 0..1 呈现成什么。null = 自动
+        /// (由 <see cref="NeutralValue"/> 推导: 0 → 单向百分比, 0.5 → 双向百分比)。
+        ///
+        /// <para>取值: "percent" (0..100%) / "symmetric" (复位原点居中, ±100%) /
+        /// "engineering" (工程量带单位)。只影响显示, 不参与任何换算与下发。</para>
+        /// </summary>
+        [JsonPropertyName("value_display")]
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public string? ValueDisplay { get; set; }
 
         /// <summary>片段列表</summary>
         [JsonPropertyName("clips")]

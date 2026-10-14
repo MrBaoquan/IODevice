@@ -186,7 +186,7 @@ namespace IOStudio.ViewModels.Timeline
             && TrackVm is { IsLocked: false }
             && !_hasKeyframeAtPlayhead;
 
-        /// <summary>并列显示的工程值 (依三级量程解析, 含单位)。</summary>
+        /// <summary>并列显示的值 (按轨道值显示规则, 与轨道头同源)。</summary>
         public string EngineeringText
         {
             get
@@ -194,17 +194,16 @@ namespace IOStudio.ViewModels.Timeline
                 if (_mode != DisplayMode.TrackInspector || TrackVm is null)
                     return "";
                 var track = TrackVm.Track;
-                float eng = EngineeringValueConverter.ToEngineering(
+                // 与轨道头实时值走同一个函数 —— 检查器与轨道头显示不一致会让人不敢改
+                return EngineeringDisplay.FormatLive(
+                    track.ValueDisplay,
                     _value,
                     track.ValueType,
                     track.NeutralValue,
                     track.EngineeringRange,
-                    TrackVm.DeclaredRangeValue
+                    TrackVm.DeclaredRangeValue,
+                    TrackVm.DeclaredUnitValue
                 );
-                string unit = TrackVm.DeclaredUnitValue;
-                return string.IsNullOrWhiteSpace(unit)
-                    ? $"工程 {eng:0.###}"
-                    : $"工程 {eng:0.###} {unit}";
             }
         }
 
@@ -962,7 +961,10 @@ namespace IOStudio.ViewModels.Timeline
             ClipIndex = clipIdx;
             KeyframeIndex = kfIdx;
             _isSyncing = false;
-            PanelTitle = "检查器";
+            // 标题要说明"现在在哪一层": 选中轨道 vs 播放头落在某个关键帧上, 两者的
+            // 可编辑内容完全不同 (后者才出现 数值/插值)。此前两条路径都写"检查器",
+            // 面板结构又靠 IsVisible 切换, 用户看不出自己在编辑什么。
+            PanelTitle = hasKfAtPlayhead ? "关键帧" : "轨道";
             IndexLabel = hasKfAtPlayhead
                 ? $"KF {kfIdx + 1}/{totalKfCount}"
                 : (totalKfCount > 0 ? $"共 {totalKfCount} KF" : "无关键帧");

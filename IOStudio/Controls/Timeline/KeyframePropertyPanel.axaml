@@ -409,7 +409,7 @@
                                         </WrapPanel>
                                     </Grid>
                                     <Grid ColumnDefinitions="34,*" ColumnSpacing="4">
-                                        <TextBlock Grid.Column="0" Text="值" Classes="prop-label" MinWidth="0"/>
+                                        <TextBlock Grid.Column="0" Text="数值" Classes="prop-label" MinWidth="0"/>
                                         <WrapPanel Grid.Column="1" Orientation="Horizontal">
                                             <Button Classes="reset-btn" Content="−0.01" Margin="0,0,4,4" Click="OnBatchValueClick" Tag="offset:-0.01"/>
                                             <Button Classes="reset-btn" Content="+0.01" Margin="0,0,4,4" Click="OnBatchValueClick" Tag="offset:0.01"/>
@@ -478,7 +478,7 @@
                                          PointerReleased="OnValueScrubEnd"
                                          HorizontalContentAlignment="Center"/>
                             </Grid>
-                            <!-- 工程量: 与归一化值并列, 直接看到设备实际值 -->
+                            <!-- 实际输出值: 与归一化输入并列, 按轨道的值显示规则呈现 -->
                             <TextBlock Text="{Binding EngineeringText}"
                                        IsVisible="{Binding ShowEngineering}"
                                        FontSize="10" Foreground="{DynamicResource TlTextMuted}"
@@ -526,6 +526,74 @@
                                 <Button Grid.Column="1" Classes="reset-btn" Content="启用自动"
                                         IsVisible="{Binding CanEnableAuto}"
                                         Click="OnEnableAutoClick"/>
+                            </Grid>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- ═══ 插值 区段 (仅播放头在关键帧上时显示) ═══ -->
+                    <Border Classes="prop-section" IsVisible="{Binding ShowInterpolation}">
+                        <StackPanel Spacing="6">
+                            <Grid ColumnDefinitions="*,Auto">
+                                <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="6">
+                                    <Ellipse Classes="prop-dot"/>
+                                    <TextBlock Text="插值" Classes="prop-section-title"/>
+                                </StackPanel>
+                                <Button Grid.Column="1" Classes="reset-btn"
+                                        ToolTip.Tip="重置为 Linear"
+                                        Click="OnResetInterpolationClick">
+                                    <iconPacks:PackIconIonicons Kind="RefreshiOS" Width="13" Height="13"/>
+                                </Button>
+                            </Grid>
+                            <Grid ColumnDefinitions="60,*">
+                                <TextBlock Classes="prop-label" Text="类型" Grid.Column="0"/>
+                                <ComboBox Name="InterpolationCombo" Classes="prop-combo" Grid.Column="1"
+                                          Focusable="False"
+                                          SelectionChanged="OnInterpolationChanged">
+                                    <ComboBoxItem Content="Linear (线性)" Tag="linear"/>
+                                    <ComboBoxItem Content="Bezier (贝塞尔)" Tag="bezier"/>
+                                    <ComboBoxItem Content="Step (阶梯)" Tag="step"/>
+                                    <ComboBoxItem Content="Ease In/Out (缓入缓出)" Tag="ease_in_out"/>
+                                </ComboBox>
+                            </Grid>
+                            <!-- 关键帧时间 (绝对时间, 可直接输入微调) -->
+                            <Grid ColumnDefinitions="60,*">
+                                <TextBlock Classes="prop-label" Text="时间" Grid.Column="0"
+                                           ToolTip.Tip="关键帧绝对时间: 毫秒 (3250) 或 00:03.250"/>
+                                <TextBox Name="KeyframeTimeInput" Classes="prop-input" Grid.Column="1"
+                                         Watermark="毫秒 或 00:03.250"
+                                         Text="{Binding KeyframeTimeText, Mode=OneWay}"
+                                         LostFocus="OnKeyframeTimeCommit"
+                                         KeyDown="OnKeyframeTimeKeyDown"/>
+                            </Grid>
+                            <!-- 贝塞尔切线数值 (仅 bezier) -->
+                            <Grid ColumnDefinitions="60,*" IsVisible="{Binding ShowTangent}">
+                                <TextBlock Classes="prop-label" Text="切线入" Grid.Column="0"
+                                           ToolTip.Tip="入切线纵坐标 (控制点 Y)"/>
+                                <TextBox Name="TangentInInput" Classes="prop-input" Grid.Column="1"
+                                         Text="{Binding TangentIn, Mode=OneWay}"
+                                         LostFocus="OnTangentLostFocus" KeyDown="OnTangentKeyDown"/>
+                            </Grid>
+                            <Grid ColumnDefinitions="60,*" IsVisible="{Binding ShowTangent}">
+                                <TextBlock Classes="prop-label" Text="切线出" Grid.Column="0"
+                                           ToolTip.Tip="出切线纵坐标 (控制点 Y)"/>
+                                <TextBox Name="TangentOutInput" Classes="prop-input" Grid.Column="1"
+                                         Text="{Binding TangentOut, Mode=OneWay}"
+                                         LostFocus="OnTangentLostFocus" KeyDown="OnTangentKeyDown"/>
+                            </Grid>
+                            <!-- 贝塞尔控制点 X (决定切线的时间展布, 仅 bezier) -->
+                            <Grid ColumnDefinitions="60,*" IsVisible="{Binding ShowTangent}">
+                                <TextBlock Classes="prop-label" Text="入控制点X" Grid.Column="0"
+                                           ToolTip.Tip="入控制点横坐标 (0.2 ~ 3.0), 越大越晚发力"/>
+                                <TextBox Name="Cp1xInput" Classes="prop-input" Grid.Column="1"
+                                          Text="{Binding Cp1x, Mode=OneWay}"
+                                          LostFocus="OnTangentLostFocus" KeyDown="OnTangentKeyDown"/>
+                            </Grid>
+                            <Grid ColumnDefinitions="60,*" IsVisible="{Binding ShowTangent}">
+                                <TextBlock Classes="prop-label" Text="出控制点X" Grid.Column="0"
+                                           ToolTip.Tip="出控制点横坐标 (0.2 ~ 3.0), 越大越晚收尾"/>
+                                <TextBox Name="Cp2xInput" Classes="prop-input" Grid.Column="1"
+                                          Text="{Binding Cp2x, Mode=OneWay}"
+                                          LostFocus="OnTangentLostFocus" KeyDown="OnTangentKeyDown"/>
                             </Grid>
                         </StackPanel>
                     </Border>
@@ -595,74 +663,6 @@
                                             CommandParameter="micro"/>
                                 </StackPanel>
                             </StackPanel>
-                        </StackPanel>
-                    </Border>
-
-                    <!-- ═══ 插值 区段 (仅播放头在关键帧上时显示) ═══ -->
-                    <Border Classes="prop-section" IsVisible="{Binding ShowInterpolation}">
-                        <StackPanel Spacing="6">
-                            <Grid ColumnDefinitions="*,Auto">
-                                <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="6">
-                                    <Ellipse Classes="prop-dot"/>
-                                    <TextBlock Text="插值" Classes="prop-section-title"/>
-                                </StackPanel>
-                                <Button Grid.Column="1" Classes="reset-btn"
-                                        ToolTip.Tip="重置为 Linear"
-                                        Click="OnResetInterpolationClick">
-                                    <iconPacks:PackIconIonicons Kind="RefreshiOS" Width="13" Height="13"/>
-                                </Button>
-                            </Grid>
-                            <Grid ColumnDefinitions="60,*">
-                                <TextBlock Classes="prop-label" Text="类型" Grid.Column="0"/>
-                                <ComboBox Name="InterpolationCombo" Classes="prop-combo" Grid.Column="1"
-                                          Focusable="False"
-                                          SelectionChanged="OnInterpolationChanged">
-                                    <ComboBoxItem Content="Linear (线性)" Tag="linear"/>
-                                    <ComboBoxItem Content="Bezier (贝塞尔)" Tag="bezier"/>
-                                    <ComboBoxItem Content="Step (阶梯)" Tag="step"/>
-                                    <ComboBoxItem Content="Ease In/Out (缓入缓出)" Tag="ease_in_out"/>
-                                </ComboBox>
-                            </Grid>
-                            <!-- 关键帧时间 (绝对时间, 可直接输入微调) -->
-                            <Grid ColumnDefinitions="60,*">
-                                <TextBlock Classes="prop-label" Text="时间" Grid.Column="0"
-                                           ToolTip.Tip="关键帧绝对时间: 毫秒 (3250) 或 00:03.250"/>
-                                <TextBox Name="KeyframeTimeInput" Classes="prop-input" Grid.Column="1"
-                                         Watermark="毫秒 或 00:03.250"
-                                         Text="{Binding KeyframeTimeText, Mode=OneWay}"
-                                         LostFocus="OnKeyframeTimeCommit"
-                                         KeyDown="OnKeyframeTimeKeyDown"/>
-                            </Grid>
-                            <!-- 贝塞尔切线数值 (仅 bezier) -->
-                            <Grid ColumnDefinitions="60,*" IsVisible="{Binding ShowTangent}">
-                                <TextBlock Classes="prop-label" Text="切线入" Grid.Column="0"
-                                           ToolTip.Tip="入切线纵坐标 (控制点 Y)"/>
-                                <TextBox Name="TangentInInput" Classes="prop-input" Grid.Column="1"
-                                         Text="{Binding TangentIn, Mode=OneWay}"
-                                         LostFocus="OnTangentLostFocus" KeyDown="OnTangentKeyDown"/>
-                            </Grid>
-                            <Grid ColumnDefinitions="60,*" IsVisible="{Binding ShowTangent}">
-                                <TextBlock Classes="prop-label" Text="切线出" Grid.Column="0"
-                                           ToolTip.Tip="出切线纵坐标 (控制点 Y)"/>
-                                <TextBox Name="TangentOutInput" Classes="prop-input" Grid.Column="1"
-                                         Text="{Binding TangentOut, Mode=OneWay}"
-                                         LostFocus="OnTangentLostFocus" KeyDown="OnTangentKeyDown"/>
-                            </Grid>
-                            <!-- 贝塞尔控制点 X (决定切线的时间展布, 仅 bezier) -->
-                            <Grid ColumnDefinitions="60,*" IsVisible="{Binding ShowTangent}">
-                                <TextBlock Classes="prop-label" Text="入控制点X" Grid.Column="0"
-                                           ToolTip.Tip="入控制点横坐标 (0.2 ~ 3.0), 越大越晚发力"/>
-                                <TextBox Name="Cp1xInput" Classes="prop-input" Grid.Column="1"
-                                          Text="{Binding Cp1x, Mode=OneWay}"
-                                          LostFocus="OnTangentLostFocus" KeyDown="OnTangentKeyDown"/>
-                            </Grid>
-                            <Grid ColumnDefinitions="60,*" IsVisible="{Binding ShowTangent}">
-                                <TextBlock Classes="prop-label" Text="出控制点X" Grid.Column="0"
-                                           ToolTip.Tip="出控制点横坐标 (0.2 ~ 3.0), 越大越晚收尾"/>
-                                <TextBox Name="Cp2xInput" Classes="prop-input" Grid.Column="1"
-                                          Text="{Binding Cp2x, Mode=OneWay}"
-                                          LostFocus="OnTangentLostFocus" KeyDown="OnTangentKeyDown"/>
-                            </Grid>
                         </StackPanel>
                     </Border>
 

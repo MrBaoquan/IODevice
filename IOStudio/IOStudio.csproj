@@ -7,7 +7,17 @@
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <AvaloniaUseCompiledBindingsByDefault>True</AvaloniaUseCompiledBindingsByDefault>
     <PlatformTarget>AnyCPU</PlatformTarget>
+    <!-- 单文件发布：托管程序集（含 Avalonia / IOStudio.dll / deps.json）与原生库（skia 等）
+         统一打进 IOStudio.exe（原生库随 exe 自解压、按内容哈希缓存，非每次启动都解压）。
+         例外——必须与 exe 同目录的外置项：
+           · libvlc/、Config/、distribution.json、nlog.config、updater/ ：内容文件，应用按
+             AppContext.BaseDirectory 定位，内嵌自解压会落到临时目录而找不到，故保持外置；
+           · IODevice.dll、IODevice_C_Wrapper.dll、ExternalLibraries/ ：需现场单独替换，
+             由 IncludeNativeRuntimePayload 在发布后补拷，保持外置。 -->
+    <PublishSingleFile>true</PublishSingleFile>
     <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
+    <IncludeSymbolsInSingleFile>false</IncludeSymbolsInSingleFile>
+    <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
     <ApplicationIcon>Assets\avalonia-logo.ico</ApplicationIcon>
     <IODeviceRoot>$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildProjectDirectory), 'IODevice.sln'))</IODeviceRoot>
     <BaseOutputPath>$(IODeviceRoot)\Binaries\Win64\</BaseOutputPath>
@@ -38,7 +48,15 @@
     <None Remove="Controls\IONodeView.axaml~RF6ab7485.TMP" />
   </ItemGroup>
 
-  <Target Name="RunPostPublishScript" AfterTargets="Publish">
+  <!-- 测试工程需要触达 ViewModel 的 internal 入口 (如设备绑定收集/修复) ——
+       这些是"给对话框和测试用、不对外"的操作, 与其为了测试放宽成 public, 不如显式开放给测试程序集。 -->
+  <ItemGroup>
+    <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
+      <_Parameter1>IOStudio.Tests</_Parameter1>
+    </AssemblyAttribute>
+  </ItemGroup>
+
+  <Target Name="RunPostPublishScript" AfterTargets="Publish" Condition="'$(SkipPostPublish)' != 'true'">
     <Exec Command="call &quot;$(IODeviceRoot)\release_iodevice_test.bat&quot; Win64" />
   </Target>
 
@@ -102,8 +120,19 @@
     <Content Include="Config\Schemas\*.schema.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <!-- 动作编排默认演示文件 -->
+    <!-- 动作编排默认演示文件。示例与构建规格(.spec.json)一起随版本发布, 便于现场直接打开
+         测试、或用 motion-build 从规格重建示例。示例文件只此一份来源:
+         构建输出由 PreserveNewest 拷贝, 不要在 Binaries 下再手改副本。 -->
     <Content Include="Config\Motion\*.motion">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Config\Motion\*.spec.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <!-- 设备表预设 (Config\IODevice.<名字>.xml)。它们是**模板**而非现场配置, 所以随版本发布;
+         缺省表 IODevice.xml 由发布脚本单独剔除 (现场配置不可覆盖)。
+         本 glob 不匹配 IODevice.xml 本身 (pattern 要求中间有点), 所以两者互不干扰。 -->
+    <Content Include="Config\IODevice.*.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <!-- 协议测试场景 (loopback 自测 + 真实链路), 随输出复制供 CLI/AI 直接引用 -->
@@ -120,13 +149,141 @@
     </None>
   </ItemGroup>
 
-  <!-- HiMind 软件分发：构建后将独立 Updater 部署到输出目录 updater/ 子目录。
-       源路径来自 HiMind.Distribution.Updater 的 publish 产物，若不存在则跳过（由发布流程负责补齐）。 -->
+  <!-- ── HiMind 软件分发：独立 Updater 源路径（可复现依赖） ──
+       Updater 由 HiMind.Distribution.Updater 工程单独 publish 产出，未随 NuGet 客户端包分发。
+       解析优先级：显式 -p:HiMindUpdaterSource=… > 环境变量 HIMIND_UPDATER_SOURCE > 本机默认目录。
+       发布/CI 必须显式指定，避免依赖某台个人机器的绝对路径。 -->
+  <PropertyGroup>
+    <HiMindUpdaterSource Condition="'$(HiMindUpdaterSource)' == ''">$(HIMIND_UPDATER_SOURCE)</HiMindUpdaterSource>
+    <HiMindUpdaterSource Condition="'$(HiMindUpdaterSource)' == ''">F:\VSProjects\工作流\publish\distribution-sdk\windows-updater</HiMindUpdaterSource>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <HiMindUpdaterFile Include="$(HiMindUpdaterSource)\HiMind.Distribution.Updater.exe" Condition="Exists('$(HiMindUpdaterSource)\HiMind.Distribution.Updater.exe')" />
+  </ItemGroup>
+
+  <!-- 构建后将 Updater 部署到输出目录 updater/ 子目录（本地调试用）。 -->
   <Target Name="DeployHiMindUpdater" AfterTargets="Build">
+    <Copy SourceFiles="@(HiMindUpdaterFile)" DestinationFolder="$(OutDir)updater" SkipUnchangedFiles="true" Condition="'@(HiMindUpdaterFile)' != ''" />
+    <Warning Text="HiMind.Distribution.Updater.exe 未找到（源: $(HiMindUpdaterSource)），构建产物缺少 updater/，自更新不可用。" Condition="'@(HiMindUpdaterFile)' == ''" />
+  </Target>
+
+  <!-- 发布时将 Updater 部署到 PublishDir/updater（自更新运行时读取的位置）。 -->
+  <Target Name="DeployHiMindUpdaterToPublish" AfterTargets="Publish" Condition="'@(HiMindUpdaterFile)' != ''">
+    <Copy SourceFiles="@(HiMindUpdaterFile)" DestinationFolder="$(PublishDir)updater" SkipUnchangedFiles="true" />
+  </Target>
+
+  <!-- 发布前门禁：发布/CI 传 -p:HiMindRequireUpdater=true 时，Updater 缺失即失败，
+       避免产出“无自更新能力”的包却浑然不知。 -->
+  <Target Name="VerifyHiMindUpdater" AfterTargets="Publish" Condition="'$(HiMindRequireUpdater)' == 'true'">
+    <Error Text="发布需要 HiMind.Distribution.Updater.exe，但未找到可用的 Updater 源。请传 -p:HiMindUpdaterSource=&lt;目录&gt; 或设置环境变量 HIMIND_UPDATER_SOURCE。当前源: $(HiMindUpdaterSource)" Condition="'@(HiMindUpdaterFile)' == ''" />
+    <Error Text="发布输出缺少 updater/HiMind.Distribution.Updater.exe：$(PublishDir)updater" Condition="!Exists('$(PublishDir)updater\HiMind.Distribution.Updater.exe')" />
+  </Target>
+
+  <!-- ── LibVLC：整个目录内嵌进 exe（安装目录不出现 libvlc 文件夹） ─────
+       VideoLAN.LibVLC.Windows 把 libvlc.dll / libvlccore.dll / plugins 作为 Content 引入。
+       原生插件必须落盘才能被 LoadLibrary，无法从内存加载，故把 libvlc\win-x64 打成一个 zip
+       内嵌进程序集；运行时首次解压到 %LOCALAPPDATA%\IOStudio\libvlc\<hash>，
+       由 LibVlcInitializer 让 Core.Initialize 指向该目录。发行包/安装目录不再有 libvlc。
+       开发（F5）时仍优先使用输出目录旁的 libvlc\（VideoLAN 包负责复制）。 -->
+  <PropertyGroup>
+    <VlcSourceDir Condition="'$(VlcSourceDir)' == ''">$(NuGetPackageRoot)videolan.libvlc.windows\3.0.21\build\x64</VlcSourceDir>
+    <!-- 中间产物路径：此处用确定值 obj\（求值期 $(IntermediateOutputPath) 尚未定义，会在项目目录生成 zip）。 -->
+    <LibVlcEmbedZip Condition="'$(LibVlcEmbedZip)' == ''">$(MSBuildProjectDirectory)\obj\libvlc-win-x64.zip</LibVlcEmbedZip>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="$(LibVlcEmbedZip)" LogicalName="IOStudio.libvlc.win-x64.zip" />
+  </ItemGroup>
+
+  <Target Name="BuildLibVlcEmbedArchive" BeforeTargets="PrepareForBuild">
+    <ZipDirectory SourceDirectory="$(VlcSourceDir)" DestinationFile="$(LibVlcEmbedZip)" Overwrite="true" Condition="Exists('$(VlcSourceDir)')" />
+    <Warning Text="LibVLC 源目录不存在，无法内嵌 libvlc：$(VlcSourceDir)（视频/波形功能将不可用）。" Condition="!Exists('$(VlcSourceDir)')" />
     <ItemGroup>
-      <_UpdaterSource Include="F:\VSProjects\工作流\publish\distribution-sdk\windows-updater\HiMind.Distribution.Updater.exe" Condition="Exists('F:\VSProjects\工作流\publish\distribution-sdk\windows-updater\HiMind.Distribution.Updater.exe')" />
+      <FileWrites Include="$(LibVlcEmbedZip)" />
     </ItemGroup>
-    <Copy SourceFiles="@(_UpdaterSource)" DestinationFolder="$(OutDir)updater" SkipUnchangedFiles="true" />
+  </Target>
+
+  <!-- libvlc 子树既不进单文件包（避免只有 libvlc.dll 被抽到临时目录），也不留在发布目录。 -->
+  <Target Name="KeepLibVlcExternal" BeforeTargets="_ComputeFilesToBundle">
+    <ItemGroup>
+      <Content Update="@(Content)"
+               Condition="'%(Content.Link)' != '' and $([System.String]::Copy('%(Content.Link)').Contains('libvlc'))"
+               ExcludeFromSingleFile="true" />
+      <ResolvedFileToPublish Update="@(ResolvedFileToPublish)"
+               Condition="'%(ResolvedFileToPublish.RelativePath)' != '' and $([System.String]::Copy('%(ResolvedFileToPublish.RelativePath)').Contains('libvlc'))"
+               ExcludeFromSingleFile="true" />
+    </ItemGroup>
+  </Target>
+
+  <Target Name="RemoveLibVlcFromPublish" AfterTargets="Publish">
+    <RemoveDir Directories="$(PublishDir)libvlc" Condition="Exists('$(PublishDir)libvlc')" />
+  </Target>
+
+  <!-- ── 原生运行时载荷（外置、可现场替换） ───────────────────────────
+       干净 dotnet publish 只收“项目项”，不会带上 C++/IOUI 产物，必须显式补拷：
+         · IODevice.dll、IODevice_C_Wrapper.dll ：C++ 方案输出到共享 Binaries 目录；
+         · ExternalLibraries\IOUI-Win64-*.dll   ：取自 IOUI 最新构建输出（全集，含设备插件）；
+         · ExternalLibraries\Core\*.dll          ：取自 IOUI 最新构建的 Libraries\（含 opencv 等）；
+         · ExternalLibraries\Config\Simulator\   ：模拟器插件默认配置/前端；
+         · Config\Simulator\                     ：同上（根目录副本，保持既有布局）；
+         · ExternalLibraries\Config\MP-YDL\      ：影动力插件 UDP 配置（取自 IOUI\Config\MP-YDL 正源）。
+       均显式 ExcludeFromSingleFile，确保不被打进 exe。 -->
+  <PropertyGroup>
+    <NativeOutputDir Condition="'$(NativeOutputDir)' == ''">$(IODeviceRoot)\Binaries\Win64\$(Configuration)</NativeOutputDir>
+    <IouiOutputDir Condition="'$(IouiOutputDir)' == ''">$(IODeviceRoot)\..\IOUI\Binaries\Win64\$(Configuration)</IouiOutputDir>
+    <IouiRootDir Condition="'$(IouiRootDir)' == ''">$(IODeviceRoot)\..\IOUI</IouiRootDir>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <HiMindNativeCore Include="$(NativeOutputDir)\IODevice.dll;$(NativeOutputDir)\IODevice_C_Wrapper.dll">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+    </HiMindNativeCore>
+    <HiMindNativePlugins Include="$(IouiOutputDir)\IOUI-Win64-*.dll">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+    </HiMindNativePlugins>
+    <HiMindNativeCoreLibs Include="$(IouiOutputDir)\Libraries\*.dll">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+    </HiMindNativeCoreLibs>
+    <HiMindNativeSimConfigExt Include="$(NativeOutputDir)\ExternalLibraries\Config\Simulator\**\*.*">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+    </HiMindNativeSimConfigExt>
+    <HiMindNativeSimConfigRoot Include="$(NativeOutputDir)\Config\Simulator\**\*.*">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+    </HiMindNativeSimConfigRoot>
+    <!-- 插件级默认配置。各插件 release.cmd 用的是 %ProjectDir%, 而该变量从未被 IOUIENV.bat
+         设置 → post-build 拷贝对绝大多数插件从未生效 (这正是 ExternalLibraries\Config\ 里
+         只剩 Simulator 的原因)。这里直接从 IOUI 根的 Config\<DEVICE> 正源取, 使发布自足。
+         MP-YDL 缺了这份配置会直接不开 UDP socket (YDLDevice.cpp InitDevice 读不到即 return 0)。 -->
+    <HiMindNativePluginConfigs Include="$(IouiRootDir)\Config\MP-YDL\**\*.*">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+    </HiMindNativePluginConfigs>
+  </ItemGroup>
+
+  <Target Name="IncludeNativeRuntimePayload" AfterTargets="Publish">
+    <Copy SourceFiles="@(HiMindNativeCore)" DestinationFolder="$(PublishDir)" SkipUnchangedFiles="true" Condition="'@(HiMindNativeCore)' != ''" />
+    <Copy SourceFiles="@(HiMindNativePlugins)" DestinationFolder="$(PublishDir)ExternalLibraries" SkipUnchangedFiles="true" Condition="'@(HiMindNativePlugins)' != ''" />
+    <Copy SourceFiles="@(HiMindNativeCoreLibs)" DestinationFolder="$(PublishDir)ExternalLibraries\Core" SkipUnchangedFiles="true" Condition="'@(HiMindNativeCoreLibs)' != ''" />
+    <Copy SourceFiles="@(HiMindNativeSimConfigExt)"
+          DestinationFiles="@(HiMindNativeSimConfigExt->'$(PublishDir)ExternalLibraries\Config\Simulator\%(RecursiveDir)%(Filename)%(Extension)')"
+          SkipUnchangedFiles="true" Condition="'@(HiMindNativeSimConfigExt)' != ''" />
+    <Copy SourceFiles="@(HiMindNativeSimConfigRoot)"
+          DestinationFiles="@(HiMindNativeSimConfigRoot->'$(PublishDir)Config\Simulator\%(RecursiveDir)%(Filename)%(Extension)')"
+          SkipUnchangedFiles="true" Condition="'@(HiMindNativeSimConfigRoot)' != ''" />
+    <Copy SourceFiles="@(HiMindNativePluginConfigs)"
+          DestinationFiles="@(HiMindNativePluginConfigs->'$(PublishDir)ExternalLibraries\Config\MP-YDL\%(RecursiveDir)%(Filename)%(Extension)')"
+          SkipUnchangedFiles="true" Condition="'@(HiMindNativePluginConfigs)' != ''" />
+    <Warning Text="原生载荷源缺失或为空：$(NativeOutputDir) / $(IouiOutputDir)。发布产物可能缺少 IODevice.dll / IOUI 插件 / Core 库。" Condition="'@(HiMindNativeCore)' == '' or '@(HiMindNativePlugins)' == ''" />
+  </Target>
+
+  <!-- 发布前门禁：传 -p:HiMindRequireNativePayload=true 时，原生载荷缺失即失败，
+       避免再次产出“缺原生文件、现场不可用”的包。 -->
+  <Target Name="VerifyNativePayload" AfterTargets="Publish" Condition="'$(HiMindRequireNativePayload)' == 'true'">
+    <Error Text="发布输出缺少 IODevice.dll：$(PublishDir)。请先构建原生方案，或指定 -p:NativeOutputDir=&lt;目录&gt;。" Condition="!Exists('$(PublishDir)IODevice.dll')" />
+    <Error Text="发布输出缺少 IODevice_C_Wrapper.dll：$(PublishDir)" Condition="!Exists('$(PublishDir)IODevice_C_Wrapper.dll')" />
+    <Error Text="发布输出缺少 ExternalLibraries\IOUI-Win64-IOUI.dll。请先构建 IOUI，或指定 -p:IouiOutputDir=&lt;目录&gt;。" Condition="!Exists('$(PublishDir)ExternalLibraries\IOUI-Win64-IOUI.dll')" />
+    <Error Text="发布输出缺少 ExternalLibraries\Core：$(PublishDir)ExternalLibraries\Core" Condition="!Exists('$(PublishDir)ExternalLibraries\Core')" />
+    <Error Text="发布输出仍含 libvlc 目录（本应内嵌进 exe）：$(PublishDir)libvlc" Condition="Exists('$(PublishDir)libvlc')" />
   </Target>
 
 </Project>

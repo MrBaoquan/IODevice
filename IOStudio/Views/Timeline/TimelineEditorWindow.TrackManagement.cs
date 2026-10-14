@@ -96,23 +96,20 @@ namespace IOStudio.Views.Timeline
         }
 
         /// <summary>删除轨道</summary>
-        /// <summary>轨道启用/禁用切换</summary>
-        private void OnToggleTrackEnabled(object? sender, RoutedEventArgs e)
+        /// <summary>批量: 全部静音 / 全部取消静音 (按"现在还有没有未静音的"决定方向)。</summary>
+        private void OnToggleAllMute(object? sender, RoutedEventArgs e)
         {
-            if (
-                sender is Avalonia.Controls.Primitives.ToggleButton tb
-                && tb.DataContext is TrackViewModel trackVm
-            )
-            {
-                // 刷新所有轨道外观 (Solo 联动)
-                if (ViewModel != null)
-                    foreach (var t in ViewModel.Tracks)
-                        t.RaiseDimmingChanged();
-                SyncCurveEditorData();
-                RefreshAllTrackControls();
-                // 撤销: 绑定已先改值, 这里登记一步 (old = !new)
-                ViewModel?.PushTrackFlagUndo(trackVm, "enable", !trackVm.IsEnabled, trackVm.IsEnabled);
-            }
+            ViewModel?.ToggleAllMute();
+            RefreshAllTrackControls();
+            SyncCurveEditorData();
+        }
+
+        /// <summary>批量: 取消全部独奏 —— 单独调完一条轨道后的收尾动作。</summary>
+        private void OnClearAllSolo(object? sender, RoutedEventArgs e)
+        {
+            ViewModel?.ClearAllSolo();
+            RefreshAllTrackControls();
+            SyncCurveEditorData();
         }
 
         /// <summary>轨道独奏切换</summary>
@@ -123,10 +120,13 @@ namespace IOStudio.Views.Timeline
                 && tb.DataContext is TrackViewModel trackVm
             )
             {
-                // Solo 变化影响所有轨道的外观
+                // Solo 变化影响所有轨道的外观与"被排除"状态
                 if (ViewModel != null)
+                {
+                    ViewModel.RefreshSoloExclusion();
                     foreach (var t in ViewModel.Tracks)
                         t.RaiseDimmingChanged();
+                }
                 SyncCurveEditorData();
                 RefreshAllTrackControls();
                 ViewModel?.PushTrackFlagUndo(trackVm, "solo", !trackVm.IsSolo, trackVm.IsSolo);

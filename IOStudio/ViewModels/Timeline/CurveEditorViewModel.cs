@@ -107,7 +107,7 @@ namespace IOStudio.ViewModels.Timeline
                         OverrideKeyframes = tvm.OverrideKeyframes,
                         IsMuted = tvm.IsMuted,
                         IsSolo = tvm.IsSolo,
-                        IsEnabled = tvm.IsEnabled,
+                        IsEnabled = !tvm.IsExcludedBySolo,
                         IsLocked = tvm.IsLocked,
                         ShowInCurve = tvm.ShowInCurve,
                         Clips = clips

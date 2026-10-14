@@ -90,6 +90,87 @@ namespace IOStudio.Models
             }
         }
 
+        /// <summary>把预设名转成文件名: <c>YDL</c> → <c>IODevice.YDL.xml</c>。</summary>
+        public static string PresetFileNameFor(string name) =>
+            PresetPrefix + (name ?? "").Trim() + Extension;
+
+        /// <summary>
+        /// 校验预设名是否可用; 不可用时给出原因。
+        ///
+        /// <para>只接受单层文件名片段 —— 带路径分隔符的输入会把文件写到 Config 之外,
+        /// 那不是"预设"该有的行为。</para>
+        /// </summary>
+        public static bool IsValidPresetName(string? name, out string error)
+        {
+            error = "";
+            string trimmed = (name ?? "").Trim();
+
+            if (trimmed.Length == 0)
+            {
+                error = "名称不能为空";
+                return false;
+            }
+
+            if (trimmed.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0
+                || trimmed.Contains('/') || trimmed.Contains('\\'))
+            {
+                error = "名称不能包含路径分隔符或文件名字符";
+                return false;
+            }
+
+            // 叫 "IODevice" 会得到 IODevice.IODevice.xml, 不算错但很容易看混
+            if (trimmed.Equals("IODevice", StringComparison.OrdinalIgnoreCase))
+            {
+                error = "这个名称容易和缺省表看混，请换一个";
+                return false;
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// 把<b>当前内存里的设备表</b>另存为预设。
+        ///
+        /// <para>用应用自己的序列化路径写 (临时把 <c>IORoot</c> 的配置路径指向目标再 Save),
+        /// 于是预 preset 的格式与手工保存出来的完全一致; 写完<b>无论如何</b>都把路径还原 ——
+        /// 否则后续所有保存都会写到这份预设上, 那是比写失败更坏的后果。</para>
+        /// </summary>
+        public static bool SaveCurrentAsPreset(string name, out string fileName, out string error)
+        {
+            fileName = "";
+            if (!IsValidPresetName(name, out error))
+                return false;
+
+            var root = ViewModels.IORoot.Instance;
+            if (root is null)
+            {
+                error = "设备表未加载";
+                return false;
+            }
+
+            fileName = PresetFileNameFor(name);
+            string target = ResolvePath(fileName);
+            string previous = root.FilePath;
+
+            try
+            {
+                Directory.CreateDirectory(ConfigDir);
+                root.SetConfig(target).Save();
+                return true;
+            }
+            catch (Exception ex)
+            {
+                error = ex.Message;
+                return false;
+            }
+            finally
+            {
+                // 必须还原: 不还原的话, 之后设备管理里的每一次保存都会写到这份预设上
+                if (!string.IsNullOrEmpty(previous))
+                    root.SetConfig(previous);
+            }
+        }
+
         /// <summary>把预设文件名说成人话: <c>IODevice.YDL.xml</c> → <c>YDL</c>; 缺省表 → "默认"。</summary>
         public static string DescribeLabel(string fileName)
         {

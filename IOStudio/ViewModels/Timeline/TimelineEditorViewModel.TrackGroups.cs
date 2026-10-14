@@ -407,6 +407,70 @@ namespace IOStudio.ViewModels.Timeline
             MarkDirty();
         }
 
+        /// <summary>
+        /// 重算"哪些轨道因别人独奏而被排除输出", 并推到各轨道的可见状态上。
+        ///
+        /// <para>判据与 native 的 <c>IsTrackActive</c> 保持一致: 只要有<b>独奏</b>轨道,
+        /// 其余一律不参与 (静音的自己本来就淡, 这里只标"被排除"那一类)。
+        /// Solo 一变, 所有轨道的状态都会变 —— 所以必须整表重算, 不能只刷被点的那条。</para>
+        /// </summary>
+        public void RefreshSoloExclusion()
+        {
+            bool anySolo = Tracks.Any(t => t.IsSolo);
+            foreach (var t in Tracks)
+                t.SetExcludedBySolo(anySolo && !t.IsSolo);
+        }
+
+        /// <summary>
+        /// 批量: 全部静音 / 全部取消静音。
+        ///
+        /// <para>命名与主流一致 (Reaper 的 "Mute all tracks"): 按"当前是否还有未静音的"决定方向,
+        /// 于是同一个入口既能全静音也能全恢复 —— 不必让用户去分辨"现在该点哪个"。</para>
+        /// </summary>
+        public void ToggleAllMute()
+        {
+            bool anyUnmuted = Tracks.Any(t => !t.IsMuted);
+            int changed = 0;
+            foreach (var t in Tracks)
+            {
+                if (t.IsMuted != anyUnmuted)
+                    changed++;
+                t.IsMuted = anyUnmuted;
+            }
+
+            if (changed == 0)
+            {
+                PushStatus("没有轨道需要改动");
+                return;
+            }
+
+            MarkDirty();
+            PushStatus(anyUnmuted ? $"已静音全部 {changed} 条轨道" : $"已取消全部 {changed} 条轨道的静音");
+        }
+
+        /// <summary>
+        /// 批量: 取消全部独奏。
+        ///
+        /// <para>刻意<b>不提供</b>"全部独奏" —— 全部独奏等于全部照常输出, 是个没有意义的动作;
+        /// 而"取消全部独奏"正是"我调完这一条, 恢复到正常播放"的收尾动作。</para>
+        /// </summary>
+        public void ClearAllSolo()
+        {
+            var soloed = Tracks.Where(t => t.IsSolo).ToList();
+            if (soloed.Count == 0)
+            {
+                PushStatus("当前没有独奏中的轨道");
+                return;
+            }
+
+            foreach (var t in soloed)
+                t.IsSolo = false;
+
+            RefreshSoloExclusion();
+            MarkDirty();
+            PushStatus($"已取消 {soloed.Count} 条轨道的独奏");
+        }
+
         /// <summary>批量静音/取消静音分组</summary>
         public void ToggleGroupMute(string groupName)
         {
@@ -838,7 +902,7 @@ namespace IOStudio.ViewModels.Timeline
         }
 
         /// <summary>
-        /// 可撤销地设置轨道开关 (mute/solo/enable/lock)。
+        /// 可撤销地设置轨道开关 (mute/solo/lock)。
         /// View 的 ToggleButton 已双向绑定并先行改值, 这里只登记一步撤销 (do 幂等)。
         /// </summary>
         public void PushTrackFlagUndo(TrackViewModel track, string kind, bool oldValue, bool newValue)
@@ -848,8 +912,8 @@ namespace IOStudio.ViewModels.Timeline
             _undoRedo.Execute(
                 new LambdaCommand(
                     TrackFlagUndoLabel(kind, track.Label, newValue),
-                    () => SetTrackFlag(track, kind, newValue),
-                    () => SetTrackFlag(track, kind, oldValue)
+                    () => { SetTrackFlag(track, kind, newValue); RefreshSoloExclusion(); },
+                    () => { SetTrackFlag(track, kind, oldValue); RefreshSoloExclusion(); }
                 )
             );
             MarkDirty();
@@ -880,10 +944,8 @@ namespace IOStudio.ViewModels.Timeline
                     track.IsMuted = value;
                     break;
                 case "solo":
+                    // "被独奏排除"是整表关系, 由调用方在回放后统一重算 (本方法是静态的)
                     track.IsSolo = value;
-                    break;
-                case "enable":
-                    track.IsEnabled = value;
                     break;
                 case "lock":
                     track.IsLocked = value;

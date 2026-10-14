@@ -264,30 +264,40 @@ namespace IOStudio.ViewModels.Timeline
 
         public string SoloActionLabel => IsSolo ? "取消独奏" : "独奏";
 
-        private bool _isEnabled = true;
-        public bool IsEnabled
+        /// <summary>
+        /// 本轨是否因"别人独奏"而被排除输出。
+        ///
+        /// <para>必须显性暴露: 被 solo 排除的轨道<b>没有任何本地改动</b>, 只是不参与输出 ——
+        /// 而 native 侧它确实会被跳过 (设备不动)。此前界面对此毫无表示, 看起来与正常轨道一样。</para>
+        /// </summary>
+        public bool IsExcludedBySolo { get; private set; }
+
+        /// <summary>被独奏排除时的悬停说明。</summary>
+        public string ExcludedBySoloTip =>
+            IsExcludedBySolo
+                ? "有其他轨道处于独奏，本轨道不会输出。取消独奏即可恢复。"
+                : "";
+
+        /// <summary>由编辑器的 solo 状态变化统一刷新。</summary>
+        public void SetExcludedBySolo(bool excluded)
         {
-            get => Track.Enabled;
-            set
-            {
-                Track.Enabled = value;
-                this.RaiseAndSetIfChanged(ref _isEnabled, value);
-                this.RaisePropertyChanged(nameof(TrackOpacity));
-                this.RaisePropertyChanged(nameof(EnableActionLabel));
-            }
+            if (IsExcludedBySolo == excluded)
+                return;
+            IsExcludedBySolo = excluded;
+            this.RaisePropertyChanged(nameof(IsExcludedBySolo));
+            this.RaisePropertyChanged(nameof(ExcludedBySoloTip));
+            this.RaisePropertyChanged(nameof(TrackOpacity));
         }
 
-        /// <summary>启用按钮的动作语义 (与静音/独奏同构; 原先写死的"启用/禁用"没有随状态切换)。</summary>
-        public string EnableActionLabel => IsEnabled ? "禁用轨道" : "启用轨道";
-
-        /// <summary>轨道不透明度 — 禁用/静音/非Solo 时变淡</summary>
-        public double TrackOpacity => IsEnabled && !IsMuted ? 1.0 : 0.4;
+        /// <summary>轨道不透明度 — 静音 / 被独奏排除 时变淡。</summary>
+        public double TrackOpacity => IsMuted || IsExcludedBySolo ? 0.4 : 1.0;
 
         /// <summary>刷新外观 (Solo 状态变化时需全部轨道刷新)</summary>
         public void RaiseDimmingChanged()
         {
             this.RaisePropertyChanged(nameof(TrackOpacity));
         }
+
 
         private bool _isLocked;
         public bool IsLocked

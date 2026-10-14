@@ -105,6 +105,9 @@ namespace IOStudio.Views
             }
 
             menu.Items.Add(new Separator());
+            var saveAs = new MenuItem { Header = "将当前配置另存为预设…" };
+            saveAs.Click += OnSaveCurrentAsPreset;
+            menu.Items.Add(saveAs);
             menu.Items.Add(
                 new MenuItem { Header = $"当前: {activeName}", IsEnabled = false }
             );
@@ -114,6 +117,55 @@ namespace IOStudio.Views
             var openCur = new MenuItem { Header = "用编辑器打开当前设备表" };
             openCur.Click += OnOpenCurrentDeviceTable;
             menu.Items.Add(openCur);
+        }
+
+        /// <summary>
+        /// 把当前设备表另存为预设 —— 调好一套配置后存下来, 之后切回来即可复现现场。
+        ///
+        /// <para>只<b>另存</b>, 不切换: 当前表还是当前表, 预设是它的一个快照。
+        /// 想用它再走上面的切换项即可 (不会因为"另存"就把正在编辑的表换掉)。</para>
+        /// </summary>
+        private async void OnSaveCurrentAsPreset(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+        {
+            if (ViewModel is not { } vm)
+                return;
+
+            var dialog = Services.ServiceLocator.TryResolve<Services.IDialogService>();
+            if (dialog is null)
+                return;
+
+            string? name = await dialog.InputAsync(
+                "另存为预设",
+                "预设名称（将保存为 Config\\IODevice.<名称>.xml）",
+                ""
+            );
+            if (name is null)
+                return; // 取消
+
+            if (!Models.DeviceTableLocator.IsValidPresetName(name, out string invalid))
+            {
+                vm.PushStatus($"预设名不可用：{invalid}");
+                return;
+            }
+
+            string fileName = Models.DeviceTableLocator.PresetFileNameFor(name);
+            string path = Models.DeviceTableLocator.ResolvePath(fileName);
+
+            // 覆盖已有预设要先问过 —— 那可能正是用户要保留的那一份
+            if (System.IO.File.Exists(path))
+            {
+                bool overwrite = await dialog.ConfirmAsync(
+                    "覆盖预设",
+                    $"预设 {fileName} 已存在，确定覆盖吗？\n原内容将被当前配置替换。"
+                );
+                if (!overwrite)
+                    return;
+            }
+
+            if (Models.DeviceTableLocator.SaveCurrentAsPreset(name, out string saved, out string error))
+                vm.PushStatus($"已另存为预设 {saved}（当前仍使用原设备表）");
+            else
+                vm.PushStatus($"另存为预设失败：{error}");
         }
 
         private void OnSwitchDeviceTable(object? sender, Avalonia.Interactivity.RoutedEventArgs e)

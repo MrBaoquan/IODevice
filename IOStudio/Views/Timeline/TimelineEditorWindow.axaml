@@ -829,6 +829,11 @@
                                               Command="{Binding CollapseAllGroupsCommand}"/>
                                     <MenuItem Header="全部展开分组"
                                               Command="{Binding ExpandAllGroupsCommand}"/>
+                                    <Separator/>
+                                    <!-- 批量开关: 与主流一致 (Reaper 的 Mute/Clear solo all tracks)。
+                                         「全部取消独奏」正是"单独调完一条轨道"之后的收尾动作。 -->
+                                    <MenuItem Header="全部静音 / 全部取消静音" Click="OnToggleAllMute"/>
+                                    <MenuItem Header="取消全部独奏" Click="OnClearAllSolo"/>
                                 </ContextMenu>
                             </Border.ContextMenu>
                             <DockPanel>
@@ -1154,20 +1159,9 @@
                                                                     Spacing="1" VerticalAlignment="Center"
                                                                     Margin="0,0,4,0"
                                                                     IsVisible="{Binding !IsCompactDisplay}">
-                                                            <ToggleButton Classes="track-toggle" IsChecked="{Binding IsEnabled}"
-                                                                          Padding="2" Background="Transparent"
-                                                                          ToolTip.Tip="{Binding EnableActionLabel}"
-                                                                          AutomationProperties.Name="{Binding EnableActionLabel}"
-                                                                          MinWidth="0" MinHeight="0"
-                                                                          Width="22" Height="22"
-                                                                          Click="OnToggleTrackEnabled">
-                                                                <Canvas Width="14" Height="14">
-                                                                    <Ellipse Canvas.Left="1.5" Canvas.Top="1.5" Width="11" Height="11"
-                                                                             Stroke="{Binding $parent[ToggleButton].Foreground}" StrokeThickness="1.5"/>
-                                                                    <Line StartPoint="7,1.5" EndPoint="7,6"
-                                                                          Stroke="{Binding $parent[ToggleButton].Foreground}" StrokeThickness="1.5"/>
-                                                                </Canvas>
-                                                            </ToggleButton>
+                                                            <!-- 「启用/禁用」已移除: 它与「静音」对输出完全等价 (native 侧
+                                                                 二者都判为"不参与"), 并列两个按钮只会让人问"这俩啥区别"。
+                                                                 单独测试一条轨道请用下面的 S(独奏)。 -->
                                                             <!-- 单轨静音: 调试时只摘掉一条轨道听/看效果 (分组静音是另一粒度) -->
                                                             <ToggleButton Classes="track-toggle track-mute-toggle"
                                                                           IsChecked="{Binding IsMuted}"

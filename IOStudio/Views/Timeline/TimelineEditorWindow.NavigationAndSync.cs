@@ -175,7 +175,8 @@ namespace IOStudio.Views.Timeline
             bool anySolo = allTracks.Any(t => t.IsSolo);
 
             return allTracks
-                .Where(t => t.IsEnabled && !t.IsMuted && (!anySolo || t.IsSolo))
+                // 判据与 native 的 IsTrackActive 对齐: 静音 / 被独奏排除 的轨道不参与
+                .Where(t => !t.IsMuted && (!anySolo || t.IsSolo))
                 .ToArray();
         }
 

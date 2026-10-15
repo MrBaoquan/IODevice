@@ -4,6 +4,13 @@
 * text=auto
 
 ###############################################################################
+# Batch files must keep CRLF: cmd.exe misparses LF-only .cmd, and a mangled
+# shim fails with confusing "not recognized as an internal command" errors.
+###############################################################################
+*.cmd text eol=crlf
+*.bat text eol=crlf
+
+###############################################################################
 # Set default behavior for command prompt diff.
 #
 # This is need for earlier builds of msysgit that does not have it on by

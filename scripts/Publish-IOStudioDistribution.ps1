@@ -82,7 +82,11 @@ param(
     [bool]$SingleFile = $true,
 
     [switch]$SkipPublish,
-    [switch]$KeepStaging
+    [switch]$KeepStaging,
+
+    # 额外产出一个按用户安装的 Windows 安装包 (Inno Setup)。渠道制品仍是 directory-zip,
+    # 安装包只是给"想双击装一下"的现场用的额外交付物 —— 两者用的是同一批比特。
+    [switch]$MakeInstaller
 )
 
 Set-StrictMode -Version Latest
@@ -140,6 +144,28 @@ Write-Step "Native payload source (IOUI): $IouiDir"
 foreach ($required in @('IODevice.dll', 'IODevice_C_Wrapper.dll')) {
     if (-not (Test-Path (Join-Path $NativeDir $required))) {
         throw "Native payload missing: $(Join-Path $NativeDir $required). Build the native solution first (or pass -p:NativeOutputDir)."
+    }
+}
+
+# --- Stale-native guard -----------------------------------------------------
+# 这一份 native 是**直接从构建输出取的**, 脚本不会替你重编 —— 于是"改了 C++ 但没重编就打包"
+# 会静静地发布一个缺少该特性的 native。1.0.14 就是这么出的: 包在 14:51 打好, SlewRate 提交
+# 在 14:55 落地, 结果渠道上那份 native 从来就没有 SlewRate, 现场怎么配都不生效。
+# 只告警不阻断: 时间戳不是硬证据 (增量构建 / 时钟偏移都可能误报), 不该拦住一次本来正确的发布。
+$NativeSources = @(
+    (Join-Path $RepoRoot 'IODevice\Source'),
+    (Join-Path $RepoRoot 'IODevice_C_Wrapper')
+) | Where-Object { Test-Path $_ }
+if ($NativeSources.Count -gt 0) {
+    $newestSource = Get-ChildItem -Path $NativeSources -Recurse -File -Include *.cpp, *.h, *.hpp, *.inl |
+        Sort-Object LastWriteTime -Descending | Select-Object -First 1
+    $newestNative = Get-ChildItem -Path $NativeDir -File -Filter 'IODevice*.dll' |
+        Sort-Object LastWriteTime -Descending | Select-Object -First 1
+    if ($newestSource -and $newestNative -and $newestSource.LastWriteTime -gt $newestNative.LastWriteTime) {
+        Write-Warning ("Native payload may be STALE: newest C++ source " +
+            "'$($newestSource.Name)' ($($newestSource.LastWriteTime)) is newer than " +
+            "'$($newestNative.Name)' ($($newestNative.LastWriteTime)). " +
+            "Rebuild the native solution (Release|x64) before publishing, or the package will ship an old IODevice.dll.")
     }
 }
 if (-not (Test-Path (Join-Path $IouiDir 'IOUI-Win64-IOUI.dll'))) {
@@ -374,6 +400,32 @@ Write-Ok "archive verified ($($entryNames.Count) entries, standard separators, $
 $zip = Get-Item $ZipPath
 $hash = (Get-FileHash $ZipPath -Algorithm SHA256).Hash.ToLowerInvariant()
 
+# --- Optional: Windows installer (Inno Setup) --------------------------------
+# 必须在删掉 staging 之前编译 —— Inno 读的是目录, 不是 zip。
+$setupExe = $null
+$setupHash = $null
+if ($MakeInstaller) {
+    Write-Step "Building Windows installer (Inno Setup)"
+    $iscc = @(
+        (Join-Path $env:LOCALAPPDATA 'Programs\Inno Setup 6\ISCC.exe'),
+        (Join-Path ${env:ProgramFiles(x86)} 'Inno Setup 6\ISCC.exe'),
+        (Join-Path $env:ProgramFiles 'Inno Setup 6\ISCC.exe')
+    ) | Where-Object { $_ -and (Test-Path $_) } | Select-Object -First 1
+    if (-not $iscc) {
+        throw "ISCC.exe (Inno Setup 6) not found. Install it with 'winget install JRSoftware.InnoSetup', or drop -MakeInstaller."
+    }
+    $iss = Join-Path $RepoRoot 'installer\IOStudio.iss'
+    if (-not (Test-Path $iss)) { throw "Installer script not found: $iss" }
+
+    & $iscc "/DAppVersion=$Version" "/DStagingDir=$Staging" "/DOutputDir=$OutputRoot" $iss
+    if ($LASTEXITCODE -ne 0) { throw "Inno Setup compile failed with exit code $LASTEXITCODE" }
+
+    $setupExe = Get-Item (Join-Path $OutputRoot "IOStudio-Setup-$Version.exe")
+    $setupHash = (Get-FileHash $setupExe.FullName -Algorithm SHA256).Hash.ToLowerInvariant()
+    $setupSizeMb = [math]::Round($setupExe.Length / 1MB, 1)
+    Write-Ok "installer built: $($setupExe.Name) ($setupSizeMb MB)"
+}
+
 if (-not $KeepStaging) { Remove-Item $Staging -Recurse -Force }
 
 # --- Summary + inspect handoff ---------------------------------------------
@@ -391,6 +443,11 @@ Write-Host "  file         : $($zip.Name)"
 Write-Host "  path         : $($zip.FullName)"
 Write-Host "  size         : $($zip.Length) bytes"
 Write-Host "  sha256       : $hash"
+if ($setupExe) {
+    Write-Host "  installer    : $($setupExe.Name)"
+    Write-Host "  installer size   : $($setupExe.Length) bytes"
+    Write-Host "  installer sha256 : $setupHash"
+}
 Write-Host ''
 Write-Host '  Next: run the software-distribution skill step' -ForegroundColor Cyan
 Write-Host '        software.distribution.artifact.inspect with:' -ForegroundColor Cyan

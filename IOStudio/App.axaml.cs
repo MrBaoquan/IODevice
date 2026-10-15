@@ -52,25 +52,10 @@ namespace IOStudio
                 };
 
                 // ── CLI 支持：让「加载 .motion → 播放 → 观察 Simulator」可被脚本驱动 ──
+                // 纯文件动词 (--help/--version/--dump-tracks/--validate/--motion-build)
+                // 已在 Program.Main 里、Avalonia 启动前处理掉, 不会走到这里 ——
+                // 它们值得亚秒返回, 不该等设备与窗口初始化。
                 var cli = Cli.CliOptions.Parse(desktop.Args);
-                if (cli.ShowHelp)
-                {
-                    Cli.CliRunner.WriteStatus(cli, "help");
-                    Cli.CliRunner.RequestShutdown(desktop, 0);
-                    return;
-                }
-                if (cli.DumpTracks)
-                {
-                    Cli.CliRunner.WriteStatus(cli, "dumped");
-                    Cli.CliRunner.RequestShutdown(desktop, 0);
-                    return;
-                }
-                // 由演出规格生成 .motion：纯构建, 不需要窗口
-                if (!string.IsNullOrWhiteSpace(cli.MotionBuildSpec))
-                {
-                    Cli.CliRunner.RunBuild(cli, desktop);
-                    return;
-                }
                 // 协议测试：纯网络收发, 不需要窗口, 也不依赖 --motion
                 if (!string.IsNullOrWhiteSpace(cli.ProtocolTestPath))
                 {

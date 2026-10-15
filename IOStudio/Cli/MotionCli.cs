@@ -43,6 +43,16 @@ namespace IOStudio.Cli
         public int? ExitAfterMs { get; private set; }
         public bool Headless { get; private set; }
         public bool ShowHelp { get; private set; }
+        /// <summary>只打印版本号然后退出。</summary>
+        public bool ShowVersion { get; private set; }
+        /// <summary>
+        /// 显式关闭启动时的自动检查更新。
+        ///
+        /// <para>带任何 CLI 动词时本来就会自动跳过 (见 <see cref="IsNonInteractive"/>)：
+        /// 「发现新版本」是个模态框，会把自动化调用**挂死**在等点击上。这个开关是给
+        /// "只想安静起个 GUI" 的场景用的。</para>
+        /// </summary>
+        public bool NoUpdateCheck { get; private set; }
         public bool DumpTracks { get; private set; }
         /// <summary>仅做编排预检并输出问题清单, 然后退出。发现 Error 级问题时退出码为 2 (自动化门禁)。</summary>
         public bool Validate { get; private set; }
@@ -62,8 +72,20 @@ namespace IOStudio.Cli
             || DumpTracks
             || Validate
             || ShowHelp
+            || ShowVersion
             || !string.IsNullOrWhiteSpace(MotionBuildSpec)
             || !string.IsNullOrWhiteSpace(ProtocolTestPath);
+
+        /// <summary>
+        /// 该调用是否不该出现任何交互式提示（模态框）。
+        ///
+        /// <para>任何 CLI 动词都算：脚本/AI 驱动的调用必须能无人值守跑完，
+        /// 而「发现新版本」弹的是模态框，会一直等人点确定。</para>
+        /// </summary>
+        public bool IsNonInteractive => HasWork || NoUpdateCheck;
+
+        /// <summary>本进程解析出的 CLI 选项（供 ViewModel 判断是否该弹交互式提示）。</summary>
+        internal static CliOptions Current { get; set; } = new();
 
         /// <summary>协议测试场景 (JSON)。设置后仅执行协议测试并退出 (0 通过 / 2 失败)。</summary>
         public string? ProtocolTestPath { get; private set; }
@@ -81,6 +103,8 @@ namespace IOStudio.Cli
             "  --headless             窗口最小化且不占任务栏（便于自动化时不抢焦点）\n" +
             "  --dump-tracks          仅解析并输出轨道映射，然后退出（不打开窗口）\n" +
             "  --validate             仅做编排预检并输出问题清单，然后退出；有 Error 时退出码 2\n" +
+            "  --version              打印版本号后退出\n" +
+            "  --no-update-check      不检查更新（带任何命令时本就自动跳过，模态框会挂死自动化）\n" +
             "  --protocol-test <path> 执行协议测试场景 (JSON)，退出码 0 通过 / 2 失败\n" +
             "  --report <path>        协议测试报告输出 (JSON)\n" +
             "  --status-file <path>   指定 JSON 状态文件路径\n" +
@@ -104,6 +128,8 @@ namespace IOStudio.Cli
                     case "--live-output": o.LiveOutput = true; break;
                     case "--loop": o.Loop = true; break;
                     case "--headless": o.Headless = true; break;
+                    case "--version": o.ShowVersion = true; break;
+                    case "--no-update-check": o.NoUpdateCheck = true; break;
                     case "--dump-tracks": o.DumpTracks = true; break;
                     case "--validate": o.Validate = true; break;
                     case "--help":
@@ -283,69 +309,99 @@ namespace IOStudio.Cli
             catch { /* ignore */ }
         }
 
+        // ---- 无需 UI 的动词 (在 Avalonia 启动前执行, 亚秒返回) ----
+
         /// <summary>
-        /// 在 UI 线程就绪后执行 CLI 动作。必须在 OnFrameworkInitializationCompleted 里调用。
+        /// 处理不需要窗口的动词。返回 null 表示该调用需要完整应用（播放 / 协议测试）。
+        ///
+        /// <para><b>为什么必须前置</b>: 这些动词原本排在 <c>new MainWindowViewModel()</c>
+        /// （设备与插件初始化）之后，实测 <c>--validate</c> 要 4.9s；而同样是纯命令行的
+        /// <c>--dump-tracks</c> 因为提前返回只要 0.7s —— 差的正是这段初始化。
+        /// 把命令当命令用（尤其给脚本与 AI）就不能让人等十几秒。</para>
+        ///
+        /// <para>这些动词只依赖文件解析与静态查表（<c>MotionDeviceCatalog</c> /
+        /// <c>DeviceRangeCatalog</c>），不建设备、不开窗口，因此可以安全地跑在 Avalonia 之前。</para>
         /// </summary>
-        public static void Run(IClassicDesktopStyleApplicationLifetime desktop, MainWindowViewModel mainVm, CliOptions options)
+        public static int? TryRunWithoutUi(CliOptions options)
         {
-            // ── 由演出规格生成 .motion：纯构建, 不开窗口 ──
-            if (!string.IsNullOrWhiteSpace(options.MotionBuildSpec))
+            if (options.ShowHelp)
             {
-                RunBuild(options, desktop);
-                return;
+                SafePrint(CliOptions.Usage);
+                WriteStatus(options, "help");
+                return 0;
             }
 
-            // ── 仅解析轨道：不开窗口、立即退出（最快的自动化断言路径）──
+            if (options.ShowVersion)
+            {
+                SafePrint(Program.VersionText);
+                return 0;
+            }
+
             if (options.DumpTracks)
             {
                 WriteStatus(options, "dumped");
-                SafePrint(File.Exists(options.ResolveStatusFile() ?? string.Empty)
-                    ? $"status written: {options.ResolveStatusFile()}"
-                    : "status not written");
-                // 同 validate: 直接 Shutdown 会把退出码变成 CLR 异常码
-                RequestShutdown(desktop, 0);
-                return;
-            }
-
-            // ── 仅预检：不开窗口，按结果决定退出码（自动化门禁）──
-            if (options.Validate)
-            {
-                var report = ValidateMotion(options.MotionPath);
-                WriteStatus(options, "validated", validation: report);
-
-                if (!string.IsNullOrWhiteSpace(options.ValidateReport))
-                {
-                    try
-                    {
-                        File.WriteAllText(
-                            options.ValidateReport!,
-                            BuildValidationReportMarkdown(options.MotionPath, report),
-                            Encoding.UTF8
-                        );
-                        SafePrint($"validation report written: {options.ValidateReport}");
-                    }
-                    catch (Exception ex)
-                    {
-                        SafePrint("validation report failed: " + ex.Message);
-                    }
-                }
-
-                bool hasErrors =
-                    report is not null
-                    && report.TryGetValue("hasErrors", out var he)
-                    && he is bool b
-                    && b;
+                string? status = options.ResolveStatusFile();
                 SafePrint(
-                    hasErrors
-                        ? "validation: ERRORS found (exit 2)"
-                        : "validation: ok (exit 0)"
+                    status is not null && File.Exists(status)
+                        ? $"status written: {status}"
+                        : "status not written"
                 );
-                // 必须走 RequestShutdown: 在 OnFrameworkInitializationCompleted 里直接
-                // desktop.Shutdown() 会抛 CLR 异常, 退出码变成 0xE0434352, 脚本无法判断结果。
-                RequestShutdown(desktop, hasErrors ? 2 : 0);
-                return;
+                return 0;
             }
 
+            if (options.Validate)
+                return RunValidate(options);
+
+            if (!string.IsNullOrWhiteSpace(options.MotionBuildSpec))
+                return RunBuild(options);
+
+            return null;
+        }
+
+        /// <summary>仅预检：退出码 2 = 存在 Error 级问题（自动化门禁）。</summary>
+        private static int RunValidate(CliOptions options)
+        {
+            var report = ValidateMotion(options.MotionPath);
+            WriteStatus(options, "validated", validation: report);
+
+            if (!string.IsNullOrWhiteSpace(options.ValidateReport))
+            {
+                try
+                {
+                    File.WriteAllText(
+                        options.ValidateReport!,
+                        BuildValidationReportMarkdown(options.MotionPath, report),
+                        Encoding.UTF8
+                    );
+                    SafePrint($"validation report written: {options.ValidateReport}");
+                }
+                catch (Exception ex)
+                {
+                    SafePrint("validation report failed: " + ex.Message);
+                }
+            }
+
+            bool hasErrors =
+                report is not null
+                && report.TryGetValue("hasErrors", out var he)
+                && he is bool b
+                && b;
+
+            SafePrint(
+                hasErrors ? "validation: ERRORS found (exit 2)" : "validation: ok (exit 0)"
+            );
+            return hasErrors ? 2 : 0;
+        }
+
+        /// <summary>
+        /// 在 UI 线程就绪后执行 CLI 动作。必须在 OnFrameworkInitializationCompleted 里调用。
+        ///
+        /// <para>只处理**需要窗口**的动词（播放 / 协议测试）。纯文件动词
+        /// （--help/--version/--dump-tracks/--validate/--motion-build）已在
+        /// <see cref="TryRunWithoutUi"/> 里提前处理，不会走到这里。</para>
+        /// </summary>
+        public static void Run(IClassicDesktopStyleApplicationLifetime desktop, MainWindowViewModel mainVm, CliOptions options)
+        {
             // ── 等窗口与 UI 线程起来后再操作：直接构造窗口会被 Avalonia 生命周期拒绝 ──
             Dispatcher.UIThread.Post(() =>
             {
@@ -476,15 +532,17 @@ namespace IOStudio.Cli
         }
 
         /// <summary>由演出规格 (show spec) 生成 .motion, 不开窗口。</summary>
-        public static void RunBuild(CliOptions options, IClassicDesktopStyleApplicationLifetime desktop)
+        /// <summary>
+        /// 由演出规格生成 .motion（纯构建，不开窗口）。返回退出码：0 成功 / 2 失败。
+        /// </summary>
+        private static int RunBuild(CliOptions options)
         {
             string specPath = options.MotionBuildSpec!;
             if (!File.Exists(specPath))
             {
                 SafePrint($"motion-build: spec not found: {specPath}");
                 WriteStatus(options, "build-failed");
-                RequestShutdown(desktop, 2);
-                return;
+                return 2;
             }
 
             ShowSpec? spec;
@@ -499,8 +557,7 @@ namespace IOStudio.Cli
             {
                 SafePrint("motion-build: 解析 spec 失败: " + ex.Message);
                 WriteStatus(options, "build-failed");
-                RequestShutdown(desktop, 2);
-                return;
+                return 2;
             }
 
             var result = MotionShowBuilder.Build(spec!);
@@ -510,8 +567,7 @@ namespace IOStudio.Cli
                 foreach (var issue in result.Issues)
                     SafePrint("  " + issue);
                 WriteStatus(options, "build-failed", validation: BuildIssuesPayload(result.Issues));
-                RequestShutdown(desktop, 2);
-                return;
+                return 2;
             }
 
             string outPath =
@@ -523,8 +579,7 @@ namespace IOStudio.Cli
             {
                 SafePrint("motion-build: 写出失败: " + outPath);
                 WriteStatus(options, "build-failed");
-                RequestShutdown(desktop, 2);
-                return;
+                return 2;
             }
 
             var t = result.Timeline;
@@ -535,7 +590,7 @@ namespace IOStudio.Cli
                     + $"presets={t.EmbeddedPresets.Count} events={t.Events.Count} markers={(t.Markers?.Count ?? 0)}"
             );
             WriteStatus(options, "built");
-            RequestShutdown(desktop, 0);
+            return 0;
         }
 
         private static IReadOnlyDictionary<string, object?> BuildIssuesPayload(

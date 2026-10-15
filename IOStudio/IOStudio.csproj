@@ -26,7 +26,7 @@
     <!-- 必须与分发渠道上的最新版本一致。发布脚本会用 -Version 覆盖它; 这里的基础值只影响
          "不走发布脚本"的构建 (直接 dotnet build/publish) —— 它若长期停在旧值, 那些构建会
          自报旧版本并因此**永远提示更新**。 -->
-    <VersionPrefix>1.0.13</VersionPrefix>
+    <VersionPrefix>1.0.20</VersionPrefix>
     <Version>$(VersionPrefix)</Version>
     <AssemblyVersion>$(VersionPrefix).0</AssemblyVersion>
     <FileVersion>$(VersionPrefix).0</FileVersion>
@@ -252,10 +252,16 @@
     <HiMindNativeCoreLibs Include="$(IouiOutputDir)\Libraries\*.dll">
       <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
     </HiMindNativeCoreLibs>
-    <HiMindNativeSimConfigExt Include="$(NativeOutputDir)\ExternalLibraries\Config\Simulator\**\*.*">
+    <!-- Simulator 的配置与前端产物。
+         取源必须是 **IOUI 根的 Config\Simulator**（受 git 跟踪的正源），不能是
+         $(NativeOutputDir) 那份 —— 那是 IODevice 构建输出里的**快照**，没人会重建它，
+         于是长期停在旧版本。实测（2026-10-15）那份快照落后正源 4 个半月，
+         连三维视图的懒加载 chunk 都没有，发布出去后网页上「三维视图」是一片空白。
+         MP-YDL 早已改成读正源（见下方 ItemGroup），这里与它保持一致。 -->
+    <HiMindNativeSimConfigExt Include="$(IouiRootDir)\Config\Simulator\**\*.*">
       <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
     </HiMindNativeSimConfigExt>
-    <HiMindNativeSimConfigRoot Include="$(NativeOutputDir)\Config\Simulator\**\*.*">
+    <HiMindNativeSimConfigRoot Include="$(IouiRootDir)\Config\Simulator\**\*.*">
       <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
     </HiMindNativeSimConfigRoot>
     <!-- 插件级默认配置。各插件 release.cmd 用的是 %ProjectDir%, 而该变量从未被 IOUIENV.bat

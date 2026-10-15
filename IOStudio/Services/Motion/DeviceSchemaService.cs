@@ -2,12 +2,14 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Xml;
+using IOStudio.Models;
 using IOStudio.Models.Motion;
 
 namespace IOStudio.Services.Motion
 {
     /// <summary>
-    /// 设备架构服务 — 从 Config/IODevice.xml 解析设备、OAction、OAxis 通道信息。
+    /// 设备架构服务 — 从**生效的**设备表（<see cref="DeviceTableLocator.ResolveEffectivePath"/>，
+    /// 默认 Config/IODevice.xml，可被设置里的预设覆盖）解析设备、OAction、OAxis 通道信息。
     /// 若 XML 文件缺失或解析失败, 提供默认 Platform-0 设备 (Pitch/Roll/Heave/Yaw/Surge/Sway)。
     /// </summary>
     public class DeviceSchemaService : IDeviceSchemaService
@@ -48,11 +50,14 @@ namespace IOStudio.Services.Motion
 
             try
             {
-                var configPath = Path.Combine(
-                    AppDomain.CurrentDomain.BaseDirectory,
-                    "Config",
-                    "IODevice.xml"
-                );
+                // 必须用**生效的**设备表，而不是写死 IODevice.xml。
+                //
+                // 设备表支持切预设（设置里的 DeviceTableFile，如 IODevice.YDL.xml），
+                // 写死默认表会让"设备是否声明"这个判据对着**另一份表**作答 ——
+                // 用户切了预设之后，预检会把表里明明声明过的设备报成"未在设备表中声明"，
+                // 一整片假错误把真问题淹掉。缺省表只在配置的文件不存在时才兜底，
+                // 这个回落已由 DeviceTableLocator.ResolveEffectivePath 处理。
+                var configPath = DeviceTableLocator.ResolveEffectivePath();
 
                 if (File.Exists(configPath))
                 {

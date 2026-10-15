@@ -376,6 +376,12 @@ namespace IOStudio.ViewModels
                     UpdateRecordButtonVisibility(device);
                 });
 
+            // native 侧默认写死读 Config/IODevice.xml，**不认**设置里选的设备表预设。
+            // 于是会出现两套表并存：C# 按生效表校验（设备/动作/量程），native 却按另一份表
+            // 建设备与加载通道限速 —— 表现为"编辑器里一切正常，设备端却没有限速"这类静默不一致。
+            // 这里在 native 初始化之前把生效表指过去，让两侧看同一份表。
+            IOToolkit.IOSettings.SetIOConfigPath(Models.DeviceTableLocator.ResolveEffectivePath());
+
             IODeviceController.Load();
 
             // 设备表刚被重新读入，编排侧的设备名判据缓存一并作废。
@@ -811,8 +817,11 @@ namespace IOStudio.ViewModels
                 {
                     Load();
 
-                    // 启动后静默检查更新（不打扰用户，仅在存在更新时提示）
-                    _ = CheckForUpdateAsync(showNoUpdate: false);
+                    // 启动后静默检查更新（不打扰用户，仅在存在更新时提示）。
+                    // 命令行/脚本化调用一律跳过：提示是个模态框，会一直等人点确定，
+                    // 把无人值守的调用挂死在这里。
+                    if (!Cli.CliOptions.Current.IsNonInteractive)
+                        _ = CheckForUpdateAsync(showNoUpdate: false);
 
                     Devices
                         .ToList()

@@ -6,6 +6,9 @@
 #include "InputSettings.h"
 #include <string>
 #include <cfloat>
+#include <cctype>
+#include <cstdio>
+#include <cstdlib>
 #include "IOStatics.h"
 #include "Paths.hpp"
 #include "rapidxml.hpp"
@@ -45,6 +48,12 @@ int IOToolkit::UInputSettings::Initialize()
         xml_node<>* root = doc.first_node();
         uint8 deviceID = 0;
         IODIAG("UInputSettings::Initialize parsing configFilePath=%s", configFilePath.c_str());
+
+        // 设备层在**哪一份表**上加载必须可见。
+        // 曾经的问题是: 设置里切了预设, 编辑器按新表校验, 而 native 仍按写死的
+        // IODevice.xml 建设备与加载通道限速 —— 表现是"界面一切正常, 设备端却没有限速"。
+        // 这类"两份表并存"的失败是静默的, 所以把生效表打到常规日志里。
+        IOLog::Instance().Log(std::string("UInputSettings: loading device table = ") + configFilePath);
 
         for (xml_node<>* device = root->first_node("Device");device;device = device->next_sibling())
         {
@@ -146,7 +155,7 @@ int IOToolkit::UInputSettings::Initialize()
                     if (slewRate > 0.f)
                     {
                         keyProperty.SlewRate = slewRate;
-                        ChannelRateLimits[DeviceName + "|" + keyName] = slewRate;
+                        ChannelRateLimits[MakeChannelRateKey(DeviceName, keyName)] = slewRate;
                     }
 
                     KeyProperties[deviceID].insert(std::pair<FKey, FInputKeyProperties>(FKey(keyName.data()), keyProperty));
@@ -221,6 +230,24 @@ int IOToolkit::UInputSettings::Initialize()
 					float scale = GetNodeValue(key->first_attribute("Scale") ? key->first_attribute("Scale")->value() : "", 1.f);
 					bool _invertEvent = std::string(key->first_attribute("InvertEvent") ? key->first_attribute("InvertEvent")->value() : std::string("")) == "True" ? true : false;
 					_oactionKeys.push_back(FOutputActionKey(FKey(keyName.data()), scale,_invertEvent));
+
+					// 速率上限挂在 OAction 名下, 使两种下发写法一致生效。
+					//
+					// SlewRate 配在**物理 Key** 上 (Properties/Key), 而动作文件里的轨道既可以按 OAxis
+					// 通道下发, 也可以按 OAction 名下发 (output_type="oaction", 也是默认值; 按 role
+					// 自动绑定时命中 OAction 名/标签就走这条)。后者的派发 channelKey 是**OAction 名**,
+					// MotionPlayer 直接拿它查 Key 表必然查不到 → 限速被静默跳过 (实测: oaction 轨道配了
+					// SlewRate=0.5 仍一步跳满)。这里把 Key 的速率补挂到 OAction 名下。
+					//
+					// 一个 OAction 挂多个 Key 时取**最小**速率: 限速是保护性配置, 从严。
+					auto rateIt = ChannelRateLimits.find(MakeChannelRateKey(DeviceName, keyName));
+					if (rateIt != ChannelRateLimits.end())
+					{
+						std::string aliasKey = MakeChannelRateKey(DeviceName, axisName);
+						auto aliasIt = ChannelRateLimits.find(aliasKey);
+						if (aliasIt == ChannelRateLimits.end() || rateIt->second < aliasIt->second)
+							ChannelRateLimits[aliasKey] = rateIt->second;
+					}
 				}
 				_oactions.insert(std::pair<std::string, std::vector<FOutputActionKey>>(axisName, _oactionKeys));
 			}
@@ -274,6 +301,9 @@ int IOToolkit::UInputSettings::Uninitialize()
 	ActionMappings.clear();
 	KeyProperties.clear();
 	OActionMappings.clear();
+	// 必须一并清: 切换设备表走的是 UnInitialize → Initialize, 若留下旧表的值,
+	// 新表**删掉**了某个 SlewRate 时旧速率会继续生效 (静默沿用上一条表的保护参数)。
+	ChannelRateLimits.clear();
 
 	return 0;
 }
@@ -305,8 +335,50 @@ const bool IOToolkit::UInputSettings::HasOAction(uint8 deviceID, std::string oAc
 
 float IOToolkit::UInputSettings::GetChannelRateLimit(const std::string& deviceName, const std::string& channelName) const
 {
-    auto it = ChannelRateLimits.find(deviceName + "|" + channelName);
+    auto it = ChannelRateLimits.find(MakeChannelRateKey(deviceName, channelName));
     return it != ChannelRateLimits.end() ? it->second : 0.f;
+}
+
+std::string IOToolkit::UInputSettings::MakeChannelRateKey(const std::string& deviceName, const std::string& channelName)
+{
+    // OAxis_<数字> → "OAxis_%02d"。零填充两位与设备表、编辑器侧
+    // (DeviceRangeCatalog.MakeKey) 的写法统一, 于是三种写法都能互认。
+    // 非该形态的通道名 (OAction 名、OAxis_<非数字>) 原样返回。
+    const std::string prefix = "OAxis_";
+    std::string normalized = channelName;
+
+    if (normalized.size() > prefix.size())
+    {
+        bool prefixMatches = true;
+        for (size_t i = 0; i < prefix.size(); ++i)
+        {
+            if (std::tolower(static_cast<unsigned char>(normalized[i])) !=
+                std::tolower(static_cast<unsigned char>(prefix[i])))
+            {
+                prefixMatches = false;
+                break;
+            }
+        }
+
+        if (prefixMatches)
+        {
+            const std::string suffix = normalized.substr(prefix.size());
+            bool allDigits = !suffix.empty();
+            for (char c : suffix)
+            {
+                if (c < '0' || c > '9') { allDigits = false; break; }
+            }
+            if (allDigits)
+            {
+                // 用 atoi 而不是 stoi: 后缀已确认全是数字, 且 atoi 不会抛。
+                char buffer[32];
+                std::snprintf(buffer, sizeof(buffer), "OAxis_%02d", std::atoi(suffix.c_str()));
+                normalized = buffer;
+            }
+        }
+    }
+
+    return deviceName + "|" + normalized;
 }
 
 int IOToolkit::UInputSettings::SetConfigPath(const char* InPath)

@@ -57,6 +57,34 @@ namespace IOStudio.Services.Motion
         private static readonly object Gate = new();
         private static bool _iniLoaded;
 
+        /// <summary>
+        /// 缓存键。通道名先规范化 —— 否则 <c>OAxis_6</c> 与 <c>OAxis_06</c> 会被当成两个通道。
+        ///
+        /// <para><b>为什么必须规范化</b>: 通道语义本身是按<b>编号</b>解析的
+        /// (native 侧 <c>ConvertFKeyToChannel</c> 取数字后缀, <c>OAxis_6</c> 与 <c>OAxis_06</c>
+        /// 都是通道 6), 但这里的缓存是按<b>字符串</b>查的。两边口径不一致时, 设备声明了
+        /// <c>OAxis_06</c> 的量程、轨道写 <c>OAxis_6</c>, 就会查不到 → 静默直通 → 工程值错。
+        /// 设备表是人工维护的, 两种写法都会出现, 所以在这一层统一。</para>
+        /// </summary>
+        private static string MakeKey(string deviceName, string channel)
+        {
+            if (string.IsNullOrEmpty(channel))
+                return deviceName + "|";
+
+            // OAxis_<数字> → 零填充两位 (与 DeviceSchemaService 生成的写法一致); 其余原名
+            if (
+                channel.Length > 6
+                && channel.StartsWith("OAxis_", StringComparison.OrdinalIgnoreCase)
+                && int.TryParse(channel.AsSpan(6), out int n)
+                && n >= 0
+            )
+            {
+                return $"{deviceName}|OAxis_{n:D2}";
+            }
+
+            return deviceName + "|" + channel;
+        }
+
         /// <summary>Install as NativeMotionPlaybackEngine.DeviceRangeProvider. 只查缓存, 不碰 native。</summary>
         public static (float Min, float Max)? Resolve(string deviceName, string channelKey)
         {
@@ -66,7 +94,7 @@ namespace IOStudio.Services.Motion
             lock (Gate)
             {
                 EnsureIniLoaded();
-                return Cache.TryGetValue(deviceName + "|" + channelKey, out var range)
+                return Cache.TryGetValue(MakeKey(deviceName, channelKey), out var range)
                     ? range
                     : null;
             }
@@ -83,7 +111,7 @@ namespace IOStudio.Services.Motion
             lock (Gate)
             {
                 EnsureIniLoaded();
-                return Units.TryGetValue(deviceName + "|" + channelKey, out var unit)
+                return Units.TryGetValue(MakeKey(deviceName, channelKey), out var unit)
                     ? unit
                     : "";
             }
@@ -150,9 +178,9 @@ namespace IOStudio.Services.Motion
             {
                 Queried.Add(deviceName);
                 foreach (var kv in map)
-                    Cache[deviceName + "|" + kv.Key] = kv.Value;
+                    Cache[MakeKey(deviceName, kv.Key)] = kv.Value;
                 foreach (var kv in units)
-                    Units[deviceName + "|" + kv.Key] = kv.Value;
+                    Units[MakeKey(deviceName, kv.Key)] = kv.Value;
             }
         }
 
@@ -290,7 +318,7 @@ namespace IOStudio.Services.Motion
                     continue;
 
                 // 不覆盖已由 capabilities 提供的值
-                string cacheKey = deviceName + "|" + key;
+                string cacheKey = MakeKey(deviceName, key);
                 if (!Cache.ContainsKey(cacheKey))
                 {
                     Cache[cacheKey] = (min, max);

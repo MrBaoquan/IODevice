@@ -6,7 +6,7 @@
   "tracks": [
     {
       "role": "heave",
-      "channel": "OAxis_6",
+      "channel": "OAxis_06",
       "label": "电缸升降",
       "color": "#4FC3F7",
       "group": "平台机构",

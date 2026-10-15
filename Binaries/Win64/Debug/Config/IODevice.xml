@@ -3,10 +3,10 @@
   <Device Name="YDL-0" Type="External" DllName="MP-YDL" Index="0">
     <!-- 速率上限是全局 Key 属性: 配一次, 所有引用该通道的 OAction/轨道都继承 -->
     <Properties>
-      <Key Name="OAxis_6" SlewRate="0.5" />
+      <Key Name="OAxis_06" SlewRate="0.5" />
     </Properties>
     <OAction Name="Heave" Label="电缸升降">
-      <Key Name="OAxis_6" />
+      <Key Name="OAxis_06" />
     </OAction>
     <OAction Name="Water" Label="喷水">
       <Key Name="OAxis_16" />

@@ -86,7 +86,10 @@ param(
 
     # 额外产出一个按用户安装的 Windows 安装包 (Inno Setup)。渠道制品仍是 directory-zip,
     # 安装包只是给"想双击装一下"的现场用的额外交付物 —— 两者用的是同一批比特。
-    [switch]$MakeInstaller
+    [switch]$MakeInstaller,
+
+    # 跳过构建对齐检查。默认会跑（只告警不阻断）；确实需要时用它显式跳过。
+    [switch]$SkipAlignmentCheck
 )
 
 Set-StrictMode -Version Latest
@@ -113,12 +116,25 @@ $NumericVersion = ($numericParts[0..2] -join '.')
 $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $RepoRoot = Split-Path -Parent $ScriptDir
 $Csproj = Join-Path $RepoRoot 'IOStudio\IOStudio.csproj'
+# 父仓库根（= IODevice 子模块的父目录）。所有产品的分发产出都集中到它的 publish\，
+# 不再散在子模块的 publish\ 里 —— 那样会有两个 publish，谁也说不清哪个是当前。
+$OuterRoot = Split-Path -Parent $RepoRoot
 if (-not (Test-Path $Csproj)) { throw "IOStudio.csproj not found: $Csproj" }
 
-if (-not $OutputRoot) { $OutputRoot = Join-Path $RepoRoot 'publish' }
+if (-not $OutputRoot) { $OutputRoot = Join-Path $OuterRoot 'publish' }
 $ArtifactName = "IOStudio-$Version-win-x64"
-$Staging = Join-Path $OutputRoot $ArtifactName
-$ZipPath = Join-Path $OutputRoot "$ArtifactName.zip"
+
+. (Join-Path $ScriptDir 'OutputLayout.ps1')
+# 废弃插件清单与剔除实现（PayloadLib）—— 与 IOToolkit 打包共用同一份权威清单。
+. (Join-Path $ScriptDir 'PayloadLib.ps1')
+
+# 分发制品按 <根>\<产品>\<版本>\<平台>\ 落位；staging 放到 _staging\ 下 ——
+# 此前 staging 与成品同层（都是 <根>\IOStudio-<ver>-win-x64），
+# 于是"一个解开的目录"和"一个可交付制品"在目录里长得一样，靠名字区分。
+$Product = 'iostudio'
+$PlatformDir = Get-PlatformDir -OutputRoot $OutputRoot -Product $Product -Version $Version -Platform 'windows'
+$Staging = Join-Path $OutputRoot "_staging\$ArtifactName"
+$ZipPath = Join-Path $PlatformDir "$ArtifactName.zip"
 
 # --- Resolve updater source -------------------------------------------------
 if (-not $UpdaterSource) { $UpdaterSource = $env:HIMIND_UPDATER_SOURCE }
@@ -139,6 +155,7 @@ Write-Step "Updater source: $UpdaterExe"
 # by the csproj target IncludeNativeRuntimePayload. Fail loudly if a source is missing.
 $NativeDir = Join-Path $RepoRoot "Binaries\Win64\$Configuration"
 $IouiDir = Join-Path (Split-Path -Parent $RepoRoot) "IOUI\Binaries\Win64\$Configuration"
+$IouiRootDir = Join-Path (Split-Path -Parent $RepoRoot) 'IOUI'
 Write-Step "Native payload source (C++):  $NativeDir"
 Write-Step "Native payload source (IOUI): $IouiDir"
 foreach ($required in @('IODevice.dll', 'IODevice_C_Wrapper.dll')) {
@@ -147,26 +164,21 @@ foreach ($required in @('IODevice.dll', 'IODevice_C_Wrapper.dll')) {
     }
 }
 
-# --- Stale-native guard -----------------------------------------------------
-# 这一份 native 是**直接从构建输出取的**, 脚本不会替你重编 —— 于是"改了 C++ 但没重编就打包"
-# 会静静地发布一个缺少该特性的 native。1.0.14 就是这么出的: 包在 14:51 打好, SlewRate 提交
-# 在 14:55 落地, 结果渠道上那份 native 从来就没有 SlewRate, 现场怎么配都不生效。
-# 只告警不阻断: 时间戳不是硬证据 (增量构建 / 时钟偏移都可能误报), 不该拦住一次本来正确的发布。
-$NativeSources = @(
-    (Join-Path $RepoRoot 'IODevice\Source'),
-    (Join-Path $RepoRoot 'IODevice_C_Wrapper')
-) | Where-Object { Test-Path $_ }
-if ($NativeSources.Count -gt 0) {
-    $newestSource = Get-ChildItem -Path $NativeSources -Recurse -File -Include *.cpp, *.h, *.hpp, *.inl |
-        Sort-Object LastWriteTime -Descending | Select-Object -First 1
-    $newestNative = Get-ChildItem -Path $NativeDir -File -Filter 'IODevice*.dll' |
-        Sort-Object LastWriteTime -Descending | Select-Object -First 1
-    if ($newestSource -and $newestNative -and $newestSource.LastWriteTime -gt $newestNative.LastWriteTime) {
-        Write-Warning ("Native payload may be STALE: newest C++ source " +
-            "'$($newestSource.Name)' ($($newestSource.LastWriteTime)) is newer than " +
-            "'$($newestNative.Name)' ($($newestNative.LastWriteTime)). " +
-            "Rebuild the native solution (Release|x64) before publishing, or the package will ship an old IODevice.dll.")
-    }
+# --- 构建对齐检查 -----------------------------------------------------------
+# 各类外置资源（插件 DLL、插件配置、Simulator web、native）是否都对得上最新的源？
+# 这些失配全是**静默**的：包照样"成功"，只是内容陈旧或多余。实测三类同时漂移过 ——
+# 6 个源码已不存在的遗留 DLL 一直在发、30 个正源配置只有 2 个进包、
+# Simulator web 发的是 5 月的快照（三维视图都不在里面）。
+#
+# 检查逻辑只有**一处**：scripts\Verify-BuildAlignment.ps1。这里只负责调用，
+# 不再自带任何同类检查 —— 否则两条判据迟早分叉。
+# 默认只告警不阻断（-Strict 才失败）：时间戳不是硬证据，不该拦住一次本来正确的发布。
+$AlignmentScript = Join-Path $ScriptDir 'Verify-BuildAlignment.ps1'
+if ((Test-Path $AlignmentScript) -and -not $SkipAlignmentCheck) {
+    & $AlignmentScript -Configuration $Configuration -IouiRootDir $IouiRootDir -IouiDir $IouiDir -NativeDir $NativeDir
+}
+elseif ($SkipAlignmentCheck) {
+    Write-Warning '已跳过构建对齐检查（-SkipAlignmentCheck）。产物可能包含陈旧或多余的资源。'
 }
 if (-not (Test-Path (Join-Path $IouiDir 'IOUI-Win64-IOUI.dll'))) {
     throw "IOUI plugins missing: $(Join-Path $IouiDir 'IOUI-Win64-IOUI.dll'). Build IOUI ($Configuration|x64) first (or pass -p:IouiOutputDir)."
@@ -212,6 +224,35 @@ if (-not $SkipPublish) {
     if (-not (Test-Path $Staging)) { throw "SkipPublish set but staging does not exist: $Staging" }
 }
 
+# --- 装配插件载荷（共用装配层）---------------------------------------------
+# 装配逻辑**只有一处**：scripts\Assemble-Payload.ps1。IOStudio 应用包与
+# IOToolkit SDK 包（Build-IOToolkitPackage.ps1）都调它 —— 两条链路消费的是同一份载荷，
+# 各自复制一份装配就是两处会独立腐烂（实测它们此前就各自漏配置，而且漏得不一样：
+# 这边只剩 2/30，SDK 那边 22/30）。
+#
+# 它做两件事：把 IOUI\Config\<插件>\ 的配置**镜像**进 staging（先清后拷），
+# 并按需同步插件 DLL 与 Core 库。镜像而不是累加，是为了让"载荷 == 正源"可断言 ——
+# xcopy 累加会留下正源已删的文件（实测 Simulator web 残留 3 个上一版的 assets chunk）。
+$payload = & (Join-Path $ScriptDir 'Assemble-Payload.ps1') `
+    -IouiRootDir $IouiRootDir `
+    -Target @(
+        (Join-Path $Staging 'ExternalLibraries\Config'),
+        (Join-Path $Staging 'Config')
+    ) `
+    -IouiOutputDir $IouiDir `
+    -LibraryDir (Join-Path $Staging 'ExternalLibraries')
+Write-Ok "payload assembled: 配置 $($payload.SyncedConfigs) 个插件 / 插件 DLL $($payload.SyncedPlugins) / Core 库 $($payload.SyncedCoreLibs)"
+
+# 废弃插件从载荷里彻底剔除（装配层只负责"加"，这里负责"删"）——
+# 载荷目录是积累式的，废弃插件的旧 DLL 会跟着每个版本一路发出去。
+$pruned = Remove-DeprecatedFromPayload -Roots @(
+    (Join-Path $Staging 'ExternalLibraries')
+)
+if ($pruned.Dlls.Count -gt 0 -or $pruned.Configs.Count -gt 0) {
+    Write-Step "剔除废弃插件：DLL $($pruned.Dlls.Count) 个 / 配置 $($pruned.Configs.Count) 个"
+    if ($pruned.Dlls.Count -gt 0) { Write-Host "      $($pruned.Dlls -join ', ')" -ForegroundColor DarkGray }
+    if ($pruned.Configs.Count -gt 0) { Write-Host "      配置: $($pruned.Configs -join ', ')" -ForegroundColor DarkGray }
+}
 # --- Prune non-shippable content -------------------------------------------
 Write-Step 'Pruning non-shippable content'
 
@@ -327,32 +368,13 @@ foreach ($f in $userConfig) {
 
 # --- Zip --------------------------------------------------------------------
 Write-Step "Creating archive: $ZipPath"
-Add-Type -AssemblyName System.IO.Compression
-Add-Type -AssemblyName System.IO.Compression.FileSystem
-if (Test-Path $ZipPath) { Remove-Item $ZipPath -Force }
-
-# Write entries explicitly with '/' separators. ZipFile.CreateFromDirectory on
-# Windows PowerShell emits '\' separators, which is non-standard and can break
-# the distribution service / extractors.
-$stageFull = (Resolve-Path $Staging).Path.TrimEnd('\')
-$prefixLen = $stageFull.Length + 1
-$archive = [System.IO.Compression.ZipFile]::Open(
-    $ZipPath,
-    [System.IO.Compression.ZipArchiveMode]::Create
+# 打包实现来自 OutputLayout.ps1（与 IOToolkit 打包共用一份）。
+# 原先这里自己写了一段 zip —— 两处各写一份迟早分叉，而 zip 条目名分隔符
+# （必须 '/'，写目录会得到 '\'）正是最容易分叉的那种细节。
+$entryCount = New-ArtifactZip -ZipPath $ZipPath -Items @(
+    @{ Path = $Staging; Entry = '' }
 )
-try {
-    foreach ($file in Get-ChildItem -Path $Staging -Recurse -File) {
-        $entryName = $file.FullName.Substring($prefixLen).Replace('\', '/')
-        [void][System.IO.Compression.ZipFileExtensions]::CreateEntryFromFile(
-            $archive,
-            $file.FullName,
-            $entryName,
-            [System.IO.Compression.CompressionLevel]::Optimal
-        )
-    }
-} finally {
-    $archive.Dispose()
-}
+Write-Ok "archive written ($entryCount entries)"
 
 # Verify the archive itself (separators + required entries) before reporting.
 $check = [System.IO.Compression.ZipFile]::OpenRead($ZipPath)
@@ -417,16 +439,39 @@ if ($MakeInstaller) {
     $iss = Join-Path $RepoRoot 'installer\IOStudio.iss'
     if (-not (Test-Path $iss)) { throw "Installer script not found: $iss" }
 
-    & $iscc "/DAppVersion=$Version" "/DStagingDir=$Staging" "/DOutputDir=$OutputRoot" $iss
+    & $iscc "/DAppVersion=$Version" "/DStagingDir=$Staging" "/DOutputDir=$PlatformDir" $iss
     if ($LASTEXITCODE -ne 0) { throw "Inno Setup compile failed with exit code $LASTEXITCODE" }
 
-    $setupExe = Get-Item (Join-Path $OutputRoot "IOStudio-Setup-$Version.exe")
+    $setupExe = Get-Item (Join-Path $PlatformDir "IOStudio-Setup-$Version.exe")
     $setupHash = (Get-FileHash $setupExe.FullName -Algorithm SHA256).Hash.ToLowerInvariant()
     $setupSizeMb = [math]::Round($setupExe.Length / 1MB, 1)
     Write-Ok "installer built: $($setupExe.Name) ($setupSizeMb MB)"
 }
 
-if (-not $KeepStaging) { Remove-Item $Staging -Recurse -Force }
+if (-not $KeepStaging) {
+    Remove-Item $Staging -Recurse -Force
+    # _staging 空掉就一并收走。否则 publish\ 下会留一个空壳目录（实测留着），
+    # 而它的名字看起来像"有中间产物没清"。
+    $stagingRoot = Split-Path -Parent $Staging
+    if ((Test-Path $stagingRoot) -and -not @(Get-ChildItem -Path $stagingRoot -Force)) {
+        Remove-Item -Path $stagingRoot -Force
+    }
+}
+
+# --- Manifest ---------------------------------------------------------------
+# 记录每个制品的文件名/大小/sha256 与渠道参数。此前这些只出现在下面的控制台输出里，
+# 跑完就没了 —— 而分发服务的 inspect/release 恰恰需要这几个字段逐字一致。
+# 安装包与 zip 是**同一批比特的两种形态**（同一 staging 产出），都登记，但 package_type 不同：
+# 渠道制品是 directory-zip，安装包是额外交付物（不进渠道、不上传）。
+$artifacts = New-Object System.Collections.Generic.List[object]
+$artifacts.Add((New-ArtifactEntry -Path $ZipPath -OutputRoot $OutputRoot -ProductId $ProductId `
+            -Platform 'windows' -Architecture 'x64' -PackageType 'directory-zip'))
+if ($setupExe) {
+    $artifacts.Add((New-ArtifactEntry -Path $setupExe.FullName -OutputRoot $OutputRoot -ProductId $ProductId `
+                -Platform 'windows' -Architecture 'x64' -PackageType 'installer'))
+}
+$manifestPath = Write-ArtifactManifest -Dir (Get-ProductVersionDir -OutputRoot $OutputRoot -Product $Product -Version $Version) `
+    -Product $Product -Version $Version -Channel $Channel -Artifacts $artifacts -OutputRoot $OutputRoot
 
 # --- Summary + inspect handoff ---------------------------------------------
 Write-Host ''
@@ -448,6 +493,7 @@ if ($setupExe) {
     Write-Host "  installer size   : $($setupExe.Length) bytes"
     Write-Host "  installer sha256 : $setupHash"
 }
+Write-Host "  manifest     : $manifestPath"
 Write-Host ''
 Write-Host '  Next: run the software-distribution skill step' -ForegroundColor Cyan
 Write-Host '        software.distribution.artifact.inspect with:' -ForegroundColor Cyan

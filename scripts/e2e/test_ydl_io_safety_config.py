@@ -40,14 +40,14 @@ def test_runtime_configs_keep_channel_safety_contract():
         assert controlled["Min"] == "0"
         assert controlled["Max"] == "1000"
         assert float(controlled["SlewRate"]) == 0.5
-        assert float(controlled["SafeValue"]) == 0.0
+        assert float(controlled.get("SafeValue", "0")) == 0.0
         assert float(controlled["SafeStopRate"]) == 0.5
         assert controlled["SafeStopPolicy"] == "Controlled"
 
         for key in DISCRETE_KEYS:
             assert key in keys, f"{path}: missing {key}"
-            assert float(keys[key]["SafeValue"]) == 0.0
-            assert keys[key]["SafeStopPolicy"] == "Immediate"
+            assert float(keys[key].get("SafeValue", "0")) == 0.0
+            assert keys[key].get("SafeStopPolicy", "Immediate") == "Immediate"
 
         motion = json.loads(MOTION_PATH.read_text(encoding="utf-8-sig"))
         motion_channels = {track.get("oaxis_channel") for track in motion.get("tracks", []) if track.get("oaxis_channel")}

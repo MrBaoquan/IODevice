@@ -269,6 +269,39 @@ IOCAPI int __stdcall RequestChannel(BSTR InDeviceName, const char* name, const B
 	return CopyBytesToBuffer(response.Message.Payload, responseJson, capacity);
 }
 
+IOCAPI int __stdcall RequestChannelEx(BSTR InDeviceName, const char* name, const BYTE* requestJson, unsigned int requestSize, int waitResponse, const BYTE* metadataJson, unsigned int metadataSize, BYTE* responseJson, unsigned int capacity, int* outOk, int* outCompletion, int* outErrorCode, BYTE* errorMessage, unsigned int errorCapacity, unsigned int timeoutMs)
+{
+	if (outOk) *outOk = 0;
+	if (outCompletion) *outCompletion = 2; // Failed
+	if (outErrorCode) *outErrorCode = 0;
+	if (errorMessage && errorCapacity > 0) errorMessage[0] = 0;
+
+	if (!name) return 0;
+	dh::IODevice& _device = getIODevice(InDeviceName);
+	dh::PluginMessage request;
+	request.Topic = name;
+	request.ContentType = "application/json";
+	if (requestJson && requestSize > 0)
+		request.Payload.assign(reinterpret_cast<const char*>(requestJson), requestSize);
+
+	dh::ChannelRequestOptions options;
+	options.WaitResponse = waitResponse != 0;
+	options.TimeoutMs = static_cast<int>(timeoutMs);
+	if (metadataJson && metadataSize > 0)
+		options.MetadataJson.assign(reinterpret_cast<const char*>(metadataJson), metadataSize);
+
+	dh::ChannelResponse response;
+	int result = _device.RequestChannel(name, request, options, response);
+
+	if (outOk) *outOk = response.Ok ? 1 : 0;
+	if (outCompletion) *outCompletion = static_cast<int>(response.Completion);
+	if (outErrorCode) *outErrorCode = response.Message.ErrorCode;
+	CopyBytesToBuffer(response.Message.ErrorMessage, errorMessage, errorCapacity);
+
+	if (result <= 0) return 0;
+	return CopyBytesToBuffer(response.Message.Payload, responseJson, capacity);
+}
+
 IOCAPI int __stdcall SubscribeChannelRequest(BSTR InDeviceName, const char* name, ChannelRequestCallbackManaged InCallback)
 {
 	if (!name || !InCallback) return -1;
@@ -334,10 +367,33 @@ IOCAPI int __stdcall QueryChannelCapabilities(BSTR InDeviceName, BYTE* outJson, 
 	return CopyBytesToBuffer(caps.Json, outJson, capacity);
 }
 
+namespace
+{
+IOToolkit::EOutputWriteMode ToOutputWriteMode(int mode)
+{
+    if (mode == static_cast<int>(IOToolkit::EOutputWriteMode::Immediate))
+        return IOToolkit::EOutputWriteMode::Immediate;
+    if (mode == static_cast<int>(IOToolkit::EOutputWriteMode::SafeStop))
+        return IOToolkit::EOutputWriteMode::SafeStop;
+    return IOToolkit::EOutputWriteMode::Configured;
+}
+}
+
 IOCAPI int __stdcall SetDOSingle(BSTR InDeviceName, BSTR InKeyName, float InVal)
 {
 	dh::IODevice& _device = getIODevice(InDeviceName);
 	return _device.SetDO(IOToolkit::FKey(BSTR2String(InKeyName).data()),InVal);
+}
+
+IOCAPI int __stdcall SetDOSingleEx(BSTR InDeviceName, BSTR InKeyName, float InVal, int InMode)
+{
+    dh::IODevice& _device = getIODevice(InDeviceName);
+    return _device.SetDO(IOToolkit::FKey(BSTR2String(InKeyName).data()), InVal, ToOutputWriteMode(InMode));
+}
+
+IOCAPI int __stdcall SetDOSingleImmediate(BSTR InDeviceName, BSTR InKeyName, float InVal)
+{
+    return SetDOSingleEx(InDeviceName, InKeyName, InVal, static_cast<int>(IOToolkit::EOutputWriteMode::Immediate));
 }
 
 IOCAPI int __stdcall SetDOAll(BSTR InDeviceName, float* InStatus)
@@ -346,11 +402,28 @@ IOCAPI int __stdcall SetDOAll(BSTR InDeviceName, float* InStatus)
 	return _device.SetDO(InStatus);
 }
 
+IOCAPI int __stdcall SetDOAllEx(BSTR InDeviceName, float* InStatus, int InMode)
+{
+    dh::IODevice& _device = getIODevice(InDeviceName);
+    return _device.SetDO(InStatus, ToOutputWriteMode(InMode));
+}
 
 IOCAPI int __stdcall SetDOAction(BSTR InDeviceName, BSTR InOAction, float InVal, bool bIngoreMassage/*=false*/)
 {
 	dh::IODevice& _device = getIODevice(InDeviceName);
 	return _device.SetDO(BSTR2String(InOAction).data(), InVal, bIngoreMassage);
+}
+
+IOCAPI int __stdcall SetDOActionEx(BSTR InDeviceName, BSTR InOAction, float InVal, int InMode, bool bIngoreMassage/*=false*/)
+{
+    dh::IODevice& _device = getIODevice(InDeviceName);
+    return _device.SetDO(BSTR2String(InOAction).data(), InVal, ToOutputWriteMode(InMode), bIngoreMassage);
+}
+
+IOCAPI int __stdcall SetDOActionImmediate(BSTR InDeviceName, BSTR InOAction, float InVal, bool bIngoreMassage/*=false*/)
+{
+    return SetDOActionEx(InDeviceName, InOAction, InVal,
+        static_cast<int>(IOToolkit::EOutputWriteMode::Immediate), bIngoreMassage);
 }
 
 IOCAPI int _stdcall SetDOOn(BSTR InDeviceName, BSTR InOAction)

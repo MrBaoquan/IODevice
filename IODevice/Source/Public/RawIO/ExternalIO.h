@@ -6,6 +6,7 @@
 #pragma once
 #include <vector>
 #include <mutex>
+#include <set>
 #include "CustomIOBase.h"
 #include "PlayerInput.h"
 #include "PDLL.h"
@@ -104,6 +105,9 @@ public:
     virtual int SetDO(float* InDOStatus) override;
     virtual int SetDO(const FKey& InKey, float val) override;
 	virtual int SetDO(const char* InOAction, float val, bool bIgnoreMassage=false);
+    virtual int SetDO(float* InDOStatus, EOutputWriteMode mode) override;
+    virtual int SetDO(const FKey& InKey, float val, EOutputWriteMode mode) override;
+    virtual int SetDO(const char* InOAction, float val, EOutputWriteMode mode, bool bIgnoreMassage=false) override;
 	virtual int SetDOOn(const char* InOAction) override;
 	virtual int SetDOOff(const char* InOAction) override;
 	virtual int DOImmediate() override;
@@ -128,8 +132,32 @@ public:
     virtual ~ExternalIO() override;
 
 private:
+    struct FOutputSlewState
+    {
+        float appliedValue = 0.0f;
+        float targetValue = 0.0f;
+        float minValue = 0.0f;
+        float maxValue = 1.0f;
+        float rate = 0.0f;
+        double lastUpdateMs = 0.0;
+        bool initialized = false;
+    };
+
 	void Constructor();
     bool IsValidChannel(int InChannel, int InMaxNumber);
+
+    int WriteDOChannelLocked(int channel, const FKey& key, float value, EOutputWriteMode mode);
+    void AdvanceDOChannelLocked(int channel, FOutputSlewState& state, double nowMs);
+    void AdvanceAllSlewLimitedOutputsLocked(double nowMs);
+    bool ResolveSlewConfig(const FKey& key, float& minValue, float& maxValue, float& rate);
+    void ResolveSafeStopConfig(
+        const FKey& key,
+        float& safeValue,
+        float& minValue,
+        float& maxValue,
+        float& rate,
+        ESafeStopPolicy& policy);
+    int WriteBufferToDevice();
 
     int SetDO(std::vector<float>& InDOStatus);
     int GetDO(std::vector<float>& OutDOStatus);
@@ -144,6 +172,9 @@ private:
     bool bValid;
     bool bDOChanged = false;
     mutable std::mutex tickMutex;  // Protects concurrent access between Tick() and Destroy()
+    mutable std::mutex slewMutex;
+    std::map<int, FOutputSlewState> slewStates;
+    std::set<std::string> slewWarnings;
     IOUIDLL externalDll;
     std::vector<float> DOStatus;
 	/**

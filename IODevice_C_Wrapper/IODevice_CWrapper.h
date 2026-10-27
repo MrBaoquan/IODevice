@@ -65,6 +65,7 @@ extern "C"
 	 * 若 waitResponse=0, 则单向投递不等响应 (responseJson 不会被填充, 返回 1=投递成功 / 0=失败).
 	 */
 	IOCAPI int  __stdcall RequestChannel(BSTR InDeviceName, const char* name, const BYTE* requestJson, unsigned int requestSize, int waitResponse, const BYTE* metadataJson, unsigned int metadataSize, BYTE* responseJson, unsigned int capacity, unsigned int timeoutMs);
+	IOCAPI int  __stdcall RequestChannelEx(BSTR InDeviceName, const char* name, const BYTE* requestJson, unsigned int requestSize, int waitResponse, const BYTE* metadataJson, unsigned int metadataSize, BYTE* responseJson, unsigned int capacity, int* outOk, int* outCompletion, int* outErrorCode, BYTE* errorMessage, unsigned int errorCapacity, unsigned int timeoutMs);
 	IOCAPI int  __stdcall SubscribeChannel(BSTR InDeviceName, const char* name, PluginChannelCallbackManaged InCallback);
 	IOCAPI int  __stdcall UnsubscribeChannel(BSTR InDeviceName, int handlerId);
 	/**
@@ -80,9 +81,14 @@ extern "C"
 	IOCAPI int  __stdcall QueryChannelCapabilities(BSTR InDeviceName, BYTE* outJson, unsigned int capacity, unsigned int timeoutMs);
 
 	IOCAPI int __stdcall SetDOSingle(BSTR InDeviceName, BSTR InKeyName, float InVal);
+	IOCAPI int __stdcall SetDOSingleEx(BSTR InDeviceName, BSTR InKeyName, float InVal, int InMode);
+	IOCAPI int __stdcall SetDOSingleImmediate(BSTR InDeviceName, BSTR InKeyName, float InVal);
 	IOCAPI int __stdcall SetDOAll(BSTR InDeviceName, float* InStatus);
+	IOCAPI int __stdcall SetDOAllEx(BSTR InDeviceName, float* InStatus, int InMode);
 	
 	IOCAPI int __stdcall SetDOAction(BSTR InDeviceName, BSTR InOAction, float InVal, bool bIngoreMassage=false);
+	IOCAPI int __stdcall SetDOActionEx(BSTR InDeviceName, BSTR InOAction, float InVal, int InMode, bool bIngoreMassage=false);
+	IOCAPI int __stdcall SetDOActionImmediate(BSTR InDeviceName, BSTR InOAction, float InVal, bool bIngoreMassage=false);
 	IOCAPI int __stdcall SetDOOn(BSTR InDeviceName, BSTR InOAction);
 	IOCAPI int __stdcall SetDOOff(BSTR InDeviceName, BSTR InOAction);
 	IOCAPI int __stdcall DOImmediate(BSTR InDeviceName);

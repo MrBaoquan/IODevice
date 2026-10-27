@@ -1,0 +1,48 @@
+{
+  "version": 1,
+  "profileId": "mp-ydl.estimated-safe-stop.v1",
+  "device": "YDL-0",
+  "safeStop": {
+    "stopTopic": "plugin.safety.stop",
+    "clearTopic": "plugin.safety.clear",
+    "completionTopic": "plugin.safety.stateChanged",
+    "completionMode": "estimated",
+    "estimatedSettleMs": 3000,
+    "timeoutMs": 5000
+  },
+  "neutralOutputs": {
+    "OAxis_06": 0.0,
+    "OAxis_16": 0.0,
+    "OAxis_18": 0.0,
+    "OAxis_20": 0.0,
+    "OAxis_22": 0.0,
+    "OAxis_24": 0.0,
+    "OAxis_48": 0.0,
+    "OAxis_49": 0.0
+  },
+  "transitions": {
+    "returnToIdle": "safe_stop",
+    "switchFilm": "safe_stop_before_start",
+    "loadOnly": "safe_stop_before_load",
+    "naturalEnd": "ramp_then_safe_stop",
+    "applicationPause": "safe_stop",
+    "emergencyStop": "hard_safe_stop",
+    "linkLoss": "hard_safe_stop"
+  },
+  "rules": {
+    "lockoutOnFailure": true,
+    "rejectStaleGeneration": true,
+    "requireSettledBeforeNextPlay": true,
+    "treatEstimatedAsConfirmed": false
+  },
+  "requiredOutputs": [
+    "OAxis_06",
+    "OAxis_16",
+    "OAxis_18",
+    "OAxis_20",
+    "OAxis_22",
+    "OAxis_24",
+    "OAxis_48",
+    "OAxis_49"
+  ]
+}

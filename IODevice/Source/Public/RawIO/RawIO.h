@@ -10,6 +10,7 @@
 #include "InputCoreTypes.h"
 #include "CoreTypes/IOTypes.h"
 #include "CoreTypes/InputKeyProperties.h"
+#include "CoreTypes/OutputWriteMode.h"
 #include "LessKey.h"
 
 namespace  IOToolkit
@@ -33,6 +34,11 @@ public:
 
 	virtual int SetDO(const char* InOAction, float val, bool bIgnoreMassage=false);
 	virtual int SetDO(const FKey& InKey, float val);
+	virtual int SetDO(float* InDOStatus, EOutputWriteMode mode);
+	virtual int SetDO(const char* InOAction, float val, EOutputWriteMode mode, bool bIgnoreMassage=false);
+	virtual int SetDO(const FKey& InKey, float val, EOutputWriteMode mode);
+	virtual int SetDOImmediate(const FKey& InKey, float val) { return SetDO(InKey, val, EOutputWriteMode::Immediate); }
+	virtual int SetDOImmediate(const char* InOAction, float val, bool bIgnoreMassage=false) { return SetDO(InOAction, val, EOutputWriteMode::Immediate, bIgnoreMassage); }
 	virtual int SetDOOn(const char* InOAction);
 	virtual int SetDOOff(const char* InOAction);
 	virtual int DOImmediate();

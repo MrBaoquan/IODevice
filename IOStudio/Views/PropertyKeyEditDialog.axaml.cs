@@ -1,6 +1,7 @@
 using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Avalonia.Threading;
+using IconPacks.Avalonia.Ionicons;
 using IOToolkit;
 using IOStudio.Services;
 using System;
@@ -33,6 +34,9 @@ namespace IOStudio.Views
         private float _originalDeadZone;
         private float _originalSensitivity;
         private float _originalSlewRate;
+        private float _originalSafeValue;
+        private float _originalSafeStopRate;
+        private string _originalSafeStopPolicy = "Immediate";
         private float _originalExponent;
         private bool _originalInvert;
         private bool _originalInvertEvent;
@@ -48,6 +52,9 @@ namespace IOStudio.Views
         private NumericUpDown? _deadZoneNumeric;
         private NumericUpDown? _sensitivityNumeric;
         private NumericUpDown? _slewRateNumeric;
+        private NumericUpDown? _safeValueNumeric;
+        private NumericUpDown? _safeStopRateNumeric;
+        private ComboBox? _safeStopPolicyCombo;
         private NumericUpDown? _exponentNumeric;
         private CheckBox? _invertCheckBox;
         private CheckBox? _invertEventCheckBox;
@@ -72,7 +79,7 @@ namespace IOStudio.Views
 
         // 校准相关控件引用
         private StackPanel? _calibrationContent;
-        private TextBlock? _calibrationToggleIcon;
+        private PackIconIonicons? _calibrationToggleIcon;
         private TextBlock? _calibrationRawValueText;
         private TextBlock? _capturedMinValueText;
         private TextBlock? _capturedMaxValueText;
@@ -140,6 +147,9 @@ namespace IOStudio.Views
             _originalDeadZone = Key.DeadZone;
             _originalSensitivity = Key.Sensitivity;
             _originalSlewRate = Key.SlewRate;
+            _originalSafeValue = Key.SafeValue;
+            _originalSafeStopRate = Key.SafeStopRate;
+            _originalSafeStopPolicy = Key.SafeStopPolicy;
             _originalExponent = Key.Exponent;
             _originalInvert = Key.InvertBool;
             _originalInvertEvent = Key.InvertEventBool;
@@ -263,6 +273,9 @@ namespace IOStudio.Views
             _deadZoneNumeric = this.FindControl<NumericUpDown>("DeadZoneNumeric");
             _sensitivityNumeric = this.FindControl<NumericUpDown>("SensitivityNumeric");
             _slewRateNumeric = this.FindControl<NumericUpDown>("SlewRateNumeric");
+            _safeValueNumeric = this.FindControl<NumericUpDown>("SafeValueNumeric");
+            _safeStopRateNumeric = this.FindControl<NumericUpDown>("SafeStopRateNumeric");
+            _safeStopPolicyCombo = this.FindControl<ComboBox>("SafeStopPolicyCombo");
             _minUnlimitedCheckBox = this.FindControl<CheckBox>("MinUnlimitedCheckBox");
             _maxUnlimitedCheckBox = this.FindControl<CheckBox>("MaxUnlimitedCheckBox");
 
@@ -283,7 +296,7 @@ namespace IOStudio.Views
 
             // 校准相关控件
             _calibrationContent = this.FindControl<StackPanel>("CalibrationContent");
-            _calibrationToggleIcon = this.FindControl<TextBlock>("CalibrationToggleIcon");
+            _calibrationToggleIcon = this.FindControl<PackIconIonicons>("CalibrationToggleIcon");
             _calibrationRawValueText = this.FindControl<TextBlock>("CalibrationRawValueText");
             _capturedMinValueText = this.FindControl<TextBlock>("CapturedMinValueText");
             _capturedMaxValueText = this.FindControl<TextBlock>("CapturedMaxValueText");
@@ -379,6 +392,24 @@ namespace IOStudio.Views
                 _slewRateNumeric.ValueChanged += OnConfigChanged;
             }
 
+            if (_safeValueNumeric != null)
+            {
+                _safeValueNumeric.Value = SafeFloatToDecimal(_originalSafeValue);
+                _safeValueNumeric.ValueChanged += OnConfigChanged;
+            }
+
+            if (_safeStopRateNumeric != null)
+            {
+                _safeStopRateNumeric.Value = SafeFloatToDecimal(_originalSafeStopRate);
+                _safeStopRateNumeric.ValueChanged += OnConfigChanged;
+            }
+
+            if (_safeStopPolicyCombo != null)
+            {
+                _safeStopPolicyCombo.SelectedIndex = string.Equals(_originalSafeStopPolicy, "Controlled", StringComparison.OrdinalIgnoreCase) ? 1 : 0;
+                _safeStopPolicyCombo.SelectionChanged += OnComboChanged;
+            }
+
             if (_exponentNumeric != null)
             {
                 _exponentNumeric.Value = SafeFloatToDecimal(_originalExponent);
@@ -411,6 +442,11 @@ namespace IOStudio.Views
         }
 
         private void OnCheckBoxClicked(object? sender, RoutedEventArgs e)
+        {
+            ApplyCurrentConfig();
+        }
+
+        private void OnComboChanged(object? sender, SelectionChangedEventArgs e)
         {
             ApplyCurrentConfig();
         }
@@ -456,6 +492,14 @@ namespace IOStudio.Views
                 _deadZoneNumeric.Value = 0m;
             if (_sensitivityNumeric != null)
                 _sensitivityNumeric.Value = 1m;
+            if (_slewRateNumeric != null)
+                _slewRateNumeric.Value = 0m;
+            if (_safeValueNumeric != null)
+                _safeValueNumeric.Value = 0m;
+            if (_safeStopRateNumeric != null)
+                _safeStopRateNumeric.Value = 0m;
+            if (_safeStopPolicyCombo != null)
+                _safeStopPolicyCombo.SelectedIndex = 0;
             if (_exponentNumeric != null)
                 _exponentNumeric.Value = 1m;
             if (_invertCheckBox != null)
@@ -529,6 +573,12 @@ namespace IOStudio.Views
                 key.Sensitivity = (float)(_sensitivityNumeric.Value ?? 1);
             if (_slewRateNumeric != null)
                 key.SlewRate = (float)(_slewRateNumeric.Value ?? 0);
+            if (_safeValueNumeric != null)
+                key.SafeValue = (float)(_safeValueNumeric.Value ?? 0);
+            if (_safeStopRateNumeric != null)
+                key.SafeStopRate = (float)(_safeStopRateNumeric.Value ?? 0);
+            if (_safeStopPolicyCombo != null)
+                key.SafeStopPolicy = _safeStopPolicyCombo.SelectedIndex == 1 ? "Controlled" : "Immediate";
             if (_exponentNumeric != null)
                 key.Exponent = (float)(_exponentNumeric.Value ?? 1);
             if (_invertCheckBox != null)
@@ -756,7 +806,9 @@ namespace IOStudio.Views
 
             if (_calibrationToggleIcon != null)
             {
-                _calibrationToggleIcon.Text = _isCalibrationExpanded ? "▼" : "▶";
+                _calibrationToggleIcon.Kind = _isCalibrationExpanded
+                    ? PackIconIoniconsKind.ArrowDowniOS
+                    : PackIconIoniconsKind.ArrowForwardiOS;
             }
         }
 
@@ -935,7 +987,7 @@ namespace IOStudio.Views
             }
             if (_calibrationToggleIcon != null)
             {
-                _calibrationToggleIcon.Text = "▶";
+                _calibrationToggleIcon.Kind = PackIconIoniconsKind.ArrowForwardiOS;
             }
         }
 

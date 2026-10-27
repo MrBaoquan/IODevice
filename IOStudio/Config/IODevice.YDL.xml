@@ -17,7 +17,17 @@
   <Device Name="YDL-0" Type="External" DllName="MP-YDL" Index="0">
     <!-- 速率上限是全局 Key 属性: 配一次, 所有引用该通道的 OAction/轨道都继承 -->
     <Properties>
-      <Key Name="OAxis_06" SlewRate="0.5" />
+      <Key Name="OAxis_06" Min="0" Max="1000" SlewRate="0.5"
+           SafeValue="0" SafeStopRate="0.5" SafeStopPolicy="Controlled" />
+      <Key Name="OAxis_16" SafeValue="0" SafeStopPolicy="Immediate" />
+      <Key Name="OAxis_18" SafeValue="0" SafeStopPolicy="Immediate" />
+      <Key Name="OAxis_20" SafeValue="0" SafeStopPolicy="Immediate" />
+      <Key Name="OAxis_22" SafeValue="0" SafeStopPolicy="Immediate" />
+      <Key Name="OAxis_24" SafeValue="0" SafeStopPolicy="Immediate" />
+      <Key Name="OAxis_48" SafeValue="0" SafeStopPolicy="Immediate" />
+      <Key Name="OAxis_49" SafeValue="0" SafeStopPolicy="Immediate" />
+      <Key Name="OAxis_64" SafeValue="0" SafeStopPolicy="Immediate" />
+      <Key Name="OAxis_65" SafeValue="0" SafeStopPolicy="Immediate" />
     </Properties>
     <!-- 平台机构 -->
     <OAction Name="Heave" Label="电缸升降">

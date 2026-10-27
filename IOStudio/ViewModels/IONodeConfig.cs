@@ -142,6 +142,8 @@ public class Device : ViewModelBase
         }
     }
 
+    public override string ToString() => Title;
+
     private string _configSummaryText = string.Empty;
 
     /// <summary>
@@ -1045,11 +1047,17 @@ public class Device : ViewModelBase
         // 初始化 DO 输出测试命令
         OpenDOTestCommand = ReactiveCommand.CreateFromTask(async () =>
         {
-            var keys = DOKeys.ToList();
-            if (keys.Count == 0)
-                return;
+            var keys = Enumerable
+                .Range(0, 256)
+                .Select(index => new Key { Name = $"OAxis_{index:D2}" })
+                .ToList();
 
-            var vm = new OutputTestViewModel(this, keys, "DO 输出测试");
+            var vm = new OutputTestViewModel(
+                this,
+                keys,
+                "OAxis 输出调试",
+                initialVisibleChannelCount: channels[SelectedDOCountIndex],
+                initialChannelOffset: OffsetDOIndex);
             var window = new Views.OutputTestWindow();
             window.SetViewModel(vm);
 
@@ -1071,7 +1079,7 @@ public class Device : ViewModelBase
             if (keys.Count == 0)
                 return;
 
-            var vm = new OutputTestViewModel(this, keys, "OAction 输出测试");
+            var vm = new OutputTestViewModel(this, keys, "OAction 输出调试");
             var window = new Views.OutputTestWindow();
             window.SetViewModel(vm);
 
@@ -1559,6 +1567,7 @@ public class Key : ReactiveObject
         new[]
         {
             $"速率 {SlewRateDisplay}",
+            $"安全 {SafeValue:0.###}/{SafeStopPolicy}",
             $"死区 {DeadZone:0.##}",
             $"缩放 {Scale:0.##}",
         };
@@ -1583,6 +1592,48 @@ public class Key : ReactiveObject
         this.RaisePropertyChanged(nameof(SummaryItems));
         this.RaisePropertyChanged(nameof(SlewRateDisplay));
         this.RaisePropertyChanged(nameof(InvertDisplay));
+    }
+
+    private float _safeValue = 0f;
+
+    /// <summary>Safe target in engineering units for SafeStop.</summary>
+    [XmlAttribute("SafeValue"), DefaultValueAttribute(0f)]
+    public float SafeValue
+    {
+        get => _safeValue;
+        set
+        {
+            this.RaiseAndSetIfChanged(ref _safeValue, value);
+            RaiseSummaryChanged();
+        }
+    }
+
+    private float _safeStopRate = 0f;
+
+    /// <summary>Controlled SafeStop ramp rate in normalized range units per second. 0 = fall back to SlewRate.</summary>
+    [XmlAttribute("SafeStopRate"), DefaultValueAttribute(0f)]
+    public float SafeStopRate
+    {
+        get => _safeStopRate;
+        set
+        {
+            this.RaiseAndSetIfChanged(ref _safeStopRate, value);
+            RaiseSummaryChanged();
+        }
+    }
+
+    private string _safeStopPolicy = "Immediate";
+
+    /// <summary>Immediate or Controlled.</summary>
+    [XmlAttribute("SafeStopPolicy"), DefaultValueAttribute("Immediate")]
+    public string SafeStopPolicy
+    {
+        get => _safeStopPolicy;
+        set
+        {
+            this.RaiseAndSetIfChanged(ref _safeStopPolicy, value);
+            RaiseSummaryChanged();
+        }
     }
 
     private float _value = 0f;
@@ -1804,7 +1855,10 @@ public class Key : ReactiveObject
             InvertEvent = this.InvertEvent,
             // 逐字段克隆的代价: 新增属性必须同步加进来, 否则会在"克隆"这一步被静默丢掉
             // (设备属性对话框就是靠 Clone 把源设备复制成可编辑副本的)。
-            SlewRate = this.SlewRate
+            SlewRate = this.SlewRate,
+            SafeValue = this.SafeValue,
+            SafeStopRate = this.SafeStopRate,
+            SafeStopPolicy = this.SafeStopPolicy
         };
     }
 }

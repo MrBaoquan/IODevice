@@ -11,6 +11,9 @@
 #include "IODeviceDetails.h"
 #include "Paths.hpp"
 #include "IODiag.h"
+#include "IOClock.h"
+#include <cmath>
+#include <algorithm>
 
 IOToolkit::ExternalIO::ExternalIO(uint8 InID, uint8 InDeviceIndex, std::string InFullDllName):
                                  CustomIOBase(InID,InDeviceIndex,IOType::External)
@@ -273,25 +276,34 @@ int IOToolkit::ExternalIO::GetDO(std::vector<float>& OutDOStatus)
 int IOToolkit::ExternalIO::GetDO(float* OutDOStatus)
 {
     if (!bValid) { return 0; }
+    std::lock_guard<std::mutex> lock(slewMutex);
 	memcpy(OutDOStatus, DOStatus.data(), sizeof(float)*outputCount);
     return 1;
 }
 
-// Set All by raw data
+// Set All by raw data. Default mode respects configured SlewRate.
 int IOToolkit::ExternalIO::SetDO(float* InDOStatus)
 {
-    if (!bValid) { return 0; }
-	memcpy(DOStatus.data(), InDOStatus, sizeof(float)*outputCount);
-	bDOChanged = true;
-	return 1;
+    return SetDO(InDOStatus, EOutputWriteMode::Configured);
 }
 
+int IOToolkit::ExternalIO::SetDO(float* InDOStatus, EOutputWriteMode mode)
+{
+    if (!bValid) { return 0; }
+    std::lock_guard<std::mutex> lock(slewMutex);
+    const int count = (std::min)(static_cast<int>(outputCount), static_cast<int>(MaxIOCount));
+    for (int channel = 0; channel < count; ++channel)
+    {
+        WriteDOChannelLocked(channel, GetOAxisKey(static_cast<uint8>(channel)), InDOStatus[channel], mode);
+    }
+    bDOChanged = true;
+    return 1;
+}
 
 int IOToolkit::ExternalIO::SetDOOn(const char* InOAction)
 {
-	return  this->SetDO(InOAction, 1.0f);
+	return this->SetDO(InOAction, 1.0f);
 }
-
 
 int IOToolkit::ExternalIO::SetDOOff(const char* InOAction)
 {
@@ -300,41 +312,53 @@ int IOToolkit::ExternalIO::SetDOOff(const char* InOAction)
 
 int IOToolkit::ExternalIO::DOImmediate()
 {
-	if (bDOChanged) {
-		int _retCode = this->SetDO(DOStatus);
-		bDOChanged = false;
-		return _retCode;
-	}
-	return -1;
+    if (!bValid) { return 0; }
+
+    std::vector<float> snapshot;
+    {
+        std::lock_guard<std::mutex> lock(slewMutex);
+        AdvanceAllSlewLimitedOutputsLocked(static_cast<double>(IOClock::GetMilliseconds()));
+        if (!bDOChanged)
+            return -1;
+
+        snapshot = DOStatus;
+        bDOChanged = false;
+    }
+
+    return SetDO(snapshot);
 }
 
 int IOToolkit::ExternalIO::FlushDO()
 {
-	if (!bValid) { return 0; }
-	// 强制下发当前输出缓冲, 不依赖 bDOChanged。逐帧派发 (MotionPlayer::Tick @60fps) 用它,
-	// 这样即使设备轮询 Tick(~10Hz) 恰好在派发与 flush 之间清掉脏标记, 也不会漏发。
-	return this->SetDO(DOStatus);
+    if (!bValid) { return 0; }
+
+    std::vector<float> snapshot;
+    {
+        std::lock_guard<std::mutex> lock(slewMutex);
+        AdvanceAllSlewLimitedOutputsLocked(static_cast<double>(IOClock::GetMilliseconds()));
+        snapshot = DOStatus;
+    }
+
+    // 强制下发当前输出缓冲, 不依赖 bDOChanged。逐帧派发时即使设备轮询 Tick
+    // 恰好在派发与 flush 之间清掉脏标记, 也不会漏发。
+    return SetDO(snapshot);
 }
 
 // Set do by o action
 int IOToolkit::ExternalIO::SetDO(const char* InOAction, float val, bool bIgnoreMassage/*=false*/)
 {
+    return SetDO(InOAction, val, EOutputWriteMode::Configured, bIgnoreMassage);
+}
+
+int IOToolkit::ExternalIO::SetDO(const char* InOAction, float val, EOutputWriteMode mode, bool bIgnoreMassage/*=false*/)
+{
 	if (!bValid) { return 0; }
 	if (!OActionMappings.count(InOAction)) { return 0; }
-	/**
-	 * Set the raw output value for GetDO(OAction) retrieval
-	 */
-	const std::vector<FOutputActionKey>& _keys = OActionMappings.at(InOAction);
-	if (!rawDOStatus.count(InOAction)) {
-		rawDOStatus.insert(std::pair<std::string, float>(InOAction, val));
-	}
-	else {
-		rawDOStatus[InOAction] = val;
-	}
 
-	/**
-	 * Calculate actual output value based on raw input
-	 */
+    std::lock_guard<std::mutex> lock(slewMutex);
+	const std::vector<FOutputActionKey>& _keys = OActionMappings.at(InOAction);
+	rawDOStatus[InOAction] = val;
+
 	for (auto& _actionKey : _keys)
 	{
 		int _channel = ConvertFKeyToChannel(_actionKey.Key);
@@ -351,7 +375,7 @@ int IOToolkit::ExternalIO::SetDO(const char* InOAction, float val, bool bIgnoreM
 			}
 			_rawValue = MassageKeyInput(_actionKey.Key, _rawValue) * _actionKey.Scale;
 		}
-		DOStatus[_channel] = _rawValue;
+        WriteDOChannelLocked(_channel, _actionKey.Key, _rawValue, mode);
 	}
 	bDOChanged = true;
 	return 1;
@@ -360,15 +384,196 @@ int IOToolkit::ExternalIO::SetDO(const char* InOAction, float val, bool bIgnoreM
 // Set do by single channel
 int IOToolkit::ExternalIO::SetDO(const FKey& InKey, float val)
 {
+    return SetDO(InKey, val, EOutputWriteMode::Configured);
+}
+
+int IOToolkit::ExternalIO::SetDO(const FKey& InKey, float val, EOutputWriteMode mode)
+{
 	if (!bValid) return 0;
 	int numChannel = ConvertFKeyToChannel(InKey);
 	if (!IsValidChannel(numChannel, outputCount))
 	{
 		return 0;
 	}
-	DOStatus[numChannel] = val;
+
+    std::lock_guard<std::mutex> lock(slewMutex);
+    WriteDOChannelLocked(numChannel, InKey, val, mode);
 	bDOChanged = true;
 	return 1;
+}
+
+int IOToolkit::ExternalIO::WriteDOChannelLocked(
+    int channel,
+    const FKey& key,
+    float value,
+    EOutputWriteMode mode)
+{
+    if (!IsValidChannel(channel, outputCount))
+        return 0;
+
+    FOutputSlewState& state = slewStates[channel];
+    const double nowMs = static_cast<double>(IOClock::GetMilliseconds());
+    if (!state.initialized)
+    {
+        state.appliedValue = DOStatus[channel];
+        state.targetValue = state.appliedValue;
+        state.lastUpdateMs = nowMs;
+        state.initialized = true;
+    }
+
+    AdvanceDOChannelLocked(channel, state, nowMs);
+
+    float minValue = 0.0f;
+    float maxValue = 1.0f;
+    float rate = 0.0f;
+    float targetValue = value;
+    bool limited = false;
+
+    if (mode == EOutputWriteMode::Configured)
+    {
+        limited = ResolveSlewConfig(key, minValue, maxValue, rate);
+    }
+    else if (mode == EOutputWriteMode::SafeStop)
+    {
+        ESafeStopPolicy policy = ESafeStopPolicy::Immediate;
+        ResolveSafeStopConfig(key, targetValue, minValue, maxValue, rate, policy);
+        limited = policy == ESafeStopPolicy::Controlled && rate > 0.0f
+            && std::isfinite(minValue) && std::isfinite(maxValue) && maxValue > minValue;
+    }
+
+    if (!limited)
+    {
+        state.appliedValue = targetValue;
+        state.targetValue = targetValue;
+        state.rate = 0.0f;
+        state.lastUpdateMs = nowMs;
+        DOStatus[channel] = targetValue;
+        return 1;
+    }
+
+    state.minValue = minValue;
+    state.maxValue = maxValue;
+    state.rate = rate;
+    state.targetValue = (std::max)(minValue, (std::min)(targetValue, maxValue));
+    state.lastUpdateMs = nowMs;
+    DOStatus[channel] = state.appliedValue;
+    return 1;
+}
+
+void IOToolkit::ExternalIO::AdvanceDOChannelLocked(
+    int channel,
+    FOutputSlewState& state,
+    double nowMs)
+{
+    if (!state.initialized || state.rate <= 0.0f || !(state.maxValue > state.minValue))
+        return;
+
+    const double deltaSec = (nowMs - state.lastUpdateMs) / 1000.0;
+    if (deltaSec <= 0.0)
+        return;
+
+    const float span = state.maxValue - state.minValue;
+    const float maxDelta = state.rate * static_cast<float>(deltaSec) * span;
+    if (!(maxDelta > 0.0f))
+        return;
+
+    const float diff = state.targetValue - state.appliedValue;
+    const float previous = state.appliedValue;
+    if (std::abs(diff) <= maxDelta)
+        state.appliedValue = state.targetValue;
+    else
+        state.appliedValue += (diff > 0.0f ? maxDelta : -maxDelta);
+
+    state.lastUpdateMs = nowMs;
+    if (state.appliedValue != previous)
+    {
+        DOStatus[channel] = state.appliedValue;
+        bDOChanged = true;
+    }
+}
+
+void IOToolkit::ExternalIO::AdvanceAllSlewLimitedOutputsLocked(double nowMs)
+{
+    for (auto& entry : slewStates)
+    {
+        AdvanceDOChannelLocked(entry.first, entry.second, nowMs);
+    }
+}
+
+bool IOToolkit::ExternalIO::ResolveSlewConfig(
+    const FKey& key,
+    float& minValue,
+    float& maxValue,
+    float& rate)
+{
+    auto it = KeyProperties.find(key);
+    if (it == KeyProperties.end() || !(it->second.SlewRate > 0.0f))
+        return false;
+
+    const FInputKeyProperties& props = it->second;
+    const bool validRange = std::isfinite(props.Min) && std::isfinite(props.Max)
+        && props.Min > -1.0e37f && props.Max < 1.0e37f
+        && props.Max > props.Min;
+    if (!validRange)
+    {
+        const std::string keyName = key.GetName();
+        if (slewWarnings.insert(keyName).second)
+        {
+            IOLog::Instance().Warning(
+                std::string("SlewRate ignored because Key Min/Max is invalid: ") + keyName);
+        }
+        return false;
+    }
+
+    minValue = props.Min;
+    maxValue = props.Max;
+    rate = props.SlewRate;
+    return true;
+}
+
+void IOToolkit::ExternalIO::ResolveSafeStopConfig(
+    const FKey& key,
+    float& safeValue,
+    float& minValue,
+    float& maxValue,
+    float& rate,
+    ESafeStopPolicy& policy)
+{
+    safeValue = 0.0f;
+    minValue = 0.0f;
+    maxValue = 1.0f;
+    rate = 0.0f;
+    policy = ESafeStopPolicy::Immediate;
+
+    auto it = KeyProperties.find(key);
+    if (it == KeyProperties.end())
+        return;
+
+    const FInputKeyProperties& props = it->second;
+    safeValue = props.SafeValue;
+    minValue = props.Min;
+    maxValue = props.Max;
+    policy = props.SafeStopPolicy;
+
+    if (policy != ESafeStopPolicy::Controlled)
+        return;
+
+    rate = props.SafeStopRate > 0.0f ? props.SafeStopRate : props.SlewRate;
+    if (!(rate > 0.0f))
+    {
+        policy = ESafeStopPolicy::Immediate;
+        const std::string keyName = key.GetName();
+        if (slewWarnings.insert(std::string("safe:") + keyName).second)
+        {
+            IOLog::Instance().Warning(
+                std::string("Controlled SafeStop has no usable rate; falling back to Immediate: ") + keyName);
+        }
+    }
+}
+
+int IOToolkit::ExternalIO::WriteBufferToDevice()
+{
+    return SetDO(DOStatus);
 }
 
 int IOToolkit::ExternalIO::SetDO(std::vector<float>& InDOStatus)

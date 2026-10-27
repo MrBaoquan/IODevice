@@ -8,6 +8,7 @@
 #include "IOStatics.h"
 #include "IOLog.h"
 #include "InputSettings.h"
+#include "CoreTypes/OutputWriteMode.h"
 
 #include "IOClock.h"
 #include <cstdint>
@@ -943,7 +944,8 @@ public:
     //
     // NOTE: 编排端(编辑器)目前不驱动本路径 (它由 C# 侧驱动时间并派发); 本路径服务放映端
     // (UNIPlayer)。两端的换算必须一致 —— 这正是把换算放进 native 并让编排端也复用它的原因。
-    void DispatchChannel(const std::string& channelKey, float value) {
+    void DispatchChannel(const std::string& channelKey, float value,
+                         EOutputWriteMode mode = EOutputWriteMode::Configured) {
         auto dotIndex = channelKey.find('.');
         if (dotIndex == std::string::npos) return;
 
@@ -963,11 +965,11 @@ public:
             // OAxis 模式
             std::string oaxisChannel = remainder.substr(6);
             device.SetDO(FKey(oaxisChannel.c_str()),
-                         ConvertToEngineering(deviceName, oaxisChannel, value));
+                         ConvertToEngineering(deviceName, oaxisChannel, value), mode);
         } else {
             // OAction 模式
             device.SetDO(remainder.c_str(),
-                         ConvertToEngineering(deviceName, remainder, value));
+                         ConvertToEngineering(deviceName, remainder, value), mode);
         }
     }
 
@@ -977,7 +979,9 @@ public:
             // 按通道取速率上限 (设备表全局 Key 属性的 SlewRate)。缺省 0 = 不限速。
             // 间隔由 SafetyGuard 自己用内部时钟测 (不再由调用方传 delta)
             float safeValue = safetyGuard.Check(channelKey, rawValue, RateLimitFor(channelKey));
-            DispatchChannel(channelKey, safeValue);
+            // MotionPlayer retains the diagnostic limiter; the physical write bypasses the
+            // IODevice-layer limiter so one channel is never rate-limited twice.
+            DispatchChannel(channelKey, safeValue, EOutputWriteMode::Immediate);
         }
     }
 
@@ -1294,33 +1298,37 @@ void MotionPlayer::StopAll() {
 }
 
 void MotionPlayer::EnterSafeState() {
-    std::lock_guard<std::recursive_mutex> lock(_impl->mutex);
     std::map<std::string, float> safeChannels;
-    for (auto& [id, slot] : _impl->slots) {
-        if (slot.state == MotionState::Playing || slot.state == MotionState::Paused) {
-            for (const auto& [key, value] : slot.EvaluateChannels()) {
-                safeChannels[key] = 0.5f;
+    {
+        std::lock_guard<std::recursive_mutex> lock(_impl->mutex);
+        for (auto& [id, slot] : _impl->slots) {
+            if (slot.state == MotionState::Playing || slot.state == MotionState::Paused) {
+                for (const auto& [key, value] : slot.EvaluateChannels()) {
+                    safeChannels.emplace(key, 0.0f);
+                }
             }
-        }
-        else if (slot.state == MotionState::Stopping) {
-            for (const auto& [key, value] : slot.EvaluateReturnChannels()) {
-                safeChannels[key] = 0.5f;
+            else if (slot.state == MotionState::Stopping) {
+                for (const auto& [key, value] : slot.EvaluateReturnChannels()) {
+                    safeChannels.emplace(key, 0.0f);
+                }
             }
-        }
 
-        if (slot.state != MotionState::Idle) {
-            slot.StopTimer();
-            slot.returnStartValues.clear();
-            slot.returnElapsedMs = 0;
-            slot.state = MotionState::Idle;
-            slot.FireEvent(MotionEvent::StateChanged);
+            if (slot.state != MotionState::Idle) {
+                slot.StopTimer();
+                slot.returnStartValues.clear();
+                slot.returnElapsedMs = 0;
+                slot.state = MotionState::Idle;
+                slot.FireEvent(MotionEvent::StateChanged);
+            }
         }
     }
 
+    // Dispatch outside the MotionPlayer lock. ExternalIO resolves each physical Key's
+    // SafeValue/policy/rate, so OAction multi-key mappings keep per-channel safety.
     for (const auto& [key, value] : safeChannels) {
-        _impl->DispatchChannel(key, value);
+        _impl->DispatchChannel(key, value, EOutputWriteMode::SafeStop);
     }
-    IOLog::Instance().Log("MotionPlayer entered lifecycle safe state.\n");
+    IOLog::Instance().Log("MotionPlayer entered lifecycle safe state through channel safety policy.\n");
 }
 
 // ── 状态查询 ─────────────────────────────────────────

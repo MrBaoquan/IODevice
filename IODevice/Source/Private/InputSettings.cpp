@@ -6,6 +6,7 @@
 #include "InputSettings.h"
 #include <string>
 #include <cfloat>
+#include <algorithm>
 #include <cctype>
 #include <cstdio>
 #include <cstdlib>
@@ -157,6 +158,31 @@ int IOToolkit::UInputSettings::Initialize()
                         keyProperty.SlewRate = slewRate;
                         ChannelRateLimits[MakeChannelRateKey(DeviceName, keyName)] = slewRate;
                     }
+
+                    keyProperty.SafeValue = GetNodeValue(
+                        Key->first_attribute("SafeValue") ? Key->first_attribute("SafeValue")->value() : "",
+                        0.f
+                    );
+                    keyProperty.SafeStopRate = GetNodeValue(
+                        Key->first_attribute("SafeStopRate") ? Key->first_attribute("SafeStopRate")->value() : "",
+                        0.f
+                    );
+
+                    std::string safePolicy = Key->first_attribute("SafeStopPolicy")
+                        ? Key->first_attribute("SafeStopPolicy")->value()
+                        : "Immediate";
+                    std::transform(safePolicy.begin(), safePolicy.end(), safePolicy.begin(),
+                        [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+                    keyProperty.SafeStopPolicy = safePolicy == "controlled"
+                        ? ESafeStopPolicy::Controlled
+                        : ESafeStopPolicy::Immediate;
+
+                    if (keyProperty.SafeStopPolicy == ESafeStopPolicy::Controlled && keyProperty.SafeStopRate <= 0.f)
+                        keyProperty.SafeStopRate = keyProperty.SlewRate;
+
+                    // Controlled without any usable rate is unsafe to pretend it can ramp.
+                    if (keyProperty.SafeStopPolicy == ESafeStopPolicy::Controlled && keyProperty.SafeStopRate <= 0.f)
+                        keyProperty.SafeStopPolicy = ESafeStopPolicy::Immediate;
 
                     KeyProperties[deviceID].insert(std::pair<FKey, FInputKeyProperties>(FKey(keyName.data()), keyProperty));
                 }
@@ -424,4 +450,3 @@ float IOToolkit::UInputSettings::GetNodeValue(const char* val, float defaultValu
     }
     return newVal;
 }
-

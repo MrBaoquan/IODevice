@@ -11,6 +11,12 @@ namespace IOToolkit
 {
 
 
+enum class ESafeStopPolicy : uint8
+{
+    Immediate = 0,
+    Controlled = 1
+};
+
 struct FInputKeyProperties
 {
 	/**
@@ -48,6 +54,15 @@ struct FInputKeyProperties
 	 */
 	float SlewRate;
 
+    /** Safe target in engineering units used by SafeStop. */
+    float SafeValue;
+
+    /** Ramp rate in normalized range units per second for Controlled SafeStop. 0 = use SlewRate. */
+    float SafeStopRate;
+
+    /** Immediate for discrete outputs / hard stop; Controlled for analog actuators. */
+    ESafeStopPolicy SafeStopPolicy;
+
     FInputKeyProperties()
         : Offset(0.f)
 		, Scale(1.f)
@@ -59,6 +74,9 @@ struct FInputKeyProperties
 		, Min(-FLT_MAX)
 		, Max(FLT_MAX)
 		, SlewRate(0.f)
+        , SafeValue(0.f)
+        , SafeStopRate(0.f)
+        , SafeStopPolicy(ESafeStopPolicy::Immediate)
     {}
 
 };

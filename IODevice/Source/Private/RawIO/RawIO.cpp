@@ -48,6 +48,21 @@ int IOToolkit::RawIO::SetDO(const FKey& InKey, float val)
     return -1;
 }
 
+int IOToolkit::RawIO::SetDO(float* InDOStatus, EOutputWriteMode)
+{
+    return SetDO(InDOStatus);
+}
+
+int IOToolkit::RawIO::SetDO(const char* InOAction, float val, EOutputWriteMode, bool bIgnoreMassage)
+{
+    return SetDO(InOAction, val, bIgnoreMassage);
+}
+
+int IOToolkit::RawIO::SetDO(const FKey& InKey, float val, EOutputWriteMode)
+{
+    return SetDO(InKey, val);
+}
+
 int IOToolkit::RawIO::GetDO(float* OutDOStatus)
 {
     return -1;

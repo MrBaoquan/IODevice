@@ -1,0 +1,157 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://andcrane.local/schemas/motion-safety/v1",
+  "title": "Motion SafeStop Contract v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "version",
+    "profileId",
+    "device",
+    "safeStop",
+    "requiredOutputs",
+    "neutralOutputs",
+    "transitions",
+    "rules"
+  ],
+  "properties": {
+    "version": {
+      "const": 1
+    },
+    "profileId": {
+      "type": "string",
+      "pattern": "^[a-zA-Z0-9_.-]+$"
+    },
+    "device": {
+      "type": "string",
+      "minLength": 1
+    },
+    "safeStop": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "stopTopic",
+        "clearTopic",
+        "completionTopic",
+        "completionMode",
+        "estimatedSettleMs",
+        "timeoutMs"
+      ],
+      "properties": {
+        "stopTopic": {
+          "const": "plugin.safety.stop"
+        },
+        "clearTopic": {
+          "const": "plugin.safety.clear"
+        },
+        "completionTopic": {
+          "const": "plugin.safety.stateChanged"
+        },
+        "completionMode": {
+          "enum": [
+            "estimated",
+            "confirmed"
+          ]
+        },
+        "estimatedSettleMs": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "timeoutMs": {
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    },
+    "neutralOutputs": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": {
+        "type": "number"
+      }
+    },
+    "transitions": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "returnToIdle",
+        "switchFilm",
+        "loadOnly",
+        "naturalEnd",
+        "applicationPause",
+        "emergencyStop",
+        "linkLoss"
+      ],
+      "properties": {
+        "returnToIdle": {
+          "enum": [
+            "safe_stop"
+          ]
+        },
+        "switchFilm": {
+          "enum": [
+            "safe_stop_before_start"
+          ]
+        },
+        "loadOnly": {
+          "enum": [
+            "safe_stop_before_load"
+          ]
+        },
+        "naturalEnd": {
+          "enum": [
+            "ramp_then_safe_stop"
+          ]
+        },
+        "applicationPause": {
+          "enum": [
+            "safe_stop"
+          ]
+        },
+        "emergencyStop": {
+          "enum": [
+            "hard_safe_stop"
+          ]
+        },
+        "linkLoss": {
+          "enum": [
+            "hard_safe_stop"
+          ]
+        }
+      }
+    },
+    "rules": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "lockoutOnFailure",
+        "rejectStaleGeneration",
+        "requireSettledBeforeNextPlay",
+        "treatEstimatedAsConfirmed"
+      ],
+      "properties": {
+        "lockoutOnFailure": {
+          "const": true
+        },
+        "rejectStaleGeneration": {
+          "const": true
+        },
+        "requireSettledBeforeNextPlay": {
+          "const": true
+        },
+        "treatEstimatedAsConfirmed": {
+          "const": false
+        }
+      }
+    },
+    "requiredOutputs": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    }
+  }
+}

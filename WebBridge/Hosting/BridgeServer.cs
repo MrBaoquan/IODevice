@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using System.Net.WebSockets;
+using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using Microsoft.AspNetCore.Builder;
@@ -79,7 +80,7 @@ public sealed class BridgeServer : IAsyncDisposable
             {
                 context.Response.Headers.AccessControlAllowOrigin = allowed;
                 context.Response.Headers.AccessControlAllowMethods = "GET,POST,OPTIONS";
-                context.Response.Headers.AccessControlAllowHeaders = "Content-Type";
+                context.Response.Headers.AccessControlAllowHeaders = "Content-Type, X-MyriadBox-Token";
             }
 
             if (HttpMethods.IsOptions(context.Request.Method))
@@ -103,6 +104,20 @@ public sealed class BridgeServer : IAsyncDisposable
                     origin,
                     hint = "Pass --allow-origin <origin> or set IOTOOLKIT_BRIDGE_ALLOWED_ORIGINS."
                 });
+                return;
+            }
+
+            // A loopback origin is not enough on its own: any page served from 127.0.0.1 would pass.
+            // The shell hands its page a per-launch token, so require it when one is configured.
+            //
+            // The SDK script is the exception: a <script src> tag cannot attach a header, and the SDK
+            // is what reads the token from the runtime bootstrap. Serving it is not a device action,
+            // and only loopback origins got this far, so the capability stays local.
+            if (_options.Token.Length > 0 && !IsSdkScript(context.Request.Path) && !HasValidToken(context))
+            {
+                _log?.Invoke($"Rejected bridge request with a missing or wrong token ({context.Request.Path}).", null);
+                context.Response.StatusCode = StatusCodes.Status403Forbidden;
+                await context.Response.WriteAsJsonAsync(new { error = "bridge_token_invalid" });
                 return;
             }
 
@@ -175,6 +190,26 @@ public sealed class BridgeServer : IAsyncDisposable
         }),
         actions = _config.Actions.Select(x => new { x.Id, x.Channel, x.Value, x.PulseMs })
     };
+
+    private static bool IsSdkScript(PathString path) =>
+        path.StartsWithSegments("/sdk", StringComparison.OrdinalIgnoreCase);
+
+    private bool HasValidToken(HttpContext context)
+    {
+        var provided = context.Request.Headers["X-MyriadBox-Token"].ToString();
+        if (provided.Length == 0)
+        {
+            // Browsers cannot set headers on a WebSocket handshake, so the token also travels in the
+            // query string for that one route.
+            provided = context.Request.Query["token"].ToString();
+        }
+        if (provided.Length == 0)
+            return false;
+
+        var expected = Encoding.UTF8.GetBytes(_options.Token);
+        var actual = Encoding.UTF8.GetBytes(provided);
+        return actual.Length == expected.Length && CryptographicOperations.FixedTimeEquals(actual, expected);
+    }
 
     private async Task HandleWebSocketAsync(HttpContext context)
     {

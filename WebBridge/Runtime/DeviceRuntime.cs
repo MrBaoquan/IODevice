@@ -236,7 +236,7 @@ public sealed class DeviceRuntime : IAsyncDisposable
         if (_options.Mock)
         {
             foreach (var channel in _config.Channels.Where(x => x.Write && x.Read))
-                _values[channel.Id] = channel.SafeValue;
+                _values[channel.Id] = channel.ClampSafeValue();
             PublishSnapshot(connected: true, force: true);
             return;
         }
@@ -246,7 +246,12 @@ public sealed class DeviceRuntime : IAsyncDisposable
         {
             try
             {
-                WriteChannel(channel, channel.SafeValue);
+                var safeValue = channel.ClampSafeValue();
+                if (Math.Abs(safeValue - channel.SafeValue) > 0.000001)
+                    _log?.Invoke(
+                        $"Safe value {channel.SafeValue} for '{channel.Id}' is outside [{channel.Min}, {channel.Max}]; using {safeValue}.",
+                        null);
+                WriteChannel(channel, safeValue);
             }
             catch (Exception ex)
             {

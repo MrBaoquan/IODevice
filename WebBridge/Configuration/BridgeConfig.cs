@@ -16,6 +16,12 @@ public sealed class BridgeOptions
     /// </summary>
     public IReadOnlyList<string> AllowedOrigins { get; init; } = Array.Empty<string>();
 
+    /// <summary>
+    /// Shared secret the caller must present. Empty means no token check, which is only reasonable
+    /// when the bridge is started by hand for local debugging; the exhibit shell always sets one.
+    /// </summary>
+    public string Token { get; init; } = string.Empty;
+
     public static BridgeOptions Parse(string[] args, string baseDirectory)
     {
         var projectRoot = Directory.GetCurrentDirectory();
@@ -24,6 +30,7 @@ public sealed class BridgeOptions
         var port = 19101;
         var mock = false;
         var allowedOrigins = new List<string>();
+        var token = Environment.GetEnvironmentVariable("MYRIADBOX_BRIDGE_TOKEN")?.Trim() ?? string.Empty;
 
         var configuredOrigins = Environment.GetEnvironmentVariable("IOTOOLKIT_BRIDGE_ALLOWED_ORIGINS");
         if (!string.IsNullOrWhiteSpace(configuredOrigins))
@@ -48,6 +55,9 @@ public sealed class BridgeOptions
                 case "--allow-origin" when i + 1 < args.Length:
                     allowedOrigins.AddRange(SplitOrigins(args[++i]));
                     break;
+                case "--token" when i + 1 < args.Length:
+                    token = args[++i].Trim();
+                    break;
                 case "--mock":
                     mock = true;
                     break;
@@ -64,6 +74,7 @@ public sealed class BridgeOptions
             BindingsPath = bindingsPath,
             Port = port,
             Mock = mock,
+            Token = token,
             AllowedOrigins = allowedOrigins
                 .Where(x => !string.IsNullOrWhiteSpace(x))
                 .Select(x => x.Trim())
@@ -139,6 +150,14 @@ public sealed class BridgeChannel
     public string Unit { get; set; } = string.Empty;
     public List<string> Events { get; set; } = new();
 
+    /// <summary>
+    /// Safe value clamped into the channel's travel range. <see cref="Validate"/> already rejects an
+    /// out-of-range safe value, so this only matters as a runtime backstop; going past the limit is
+    /// never better than stopping short of it.
+    /// </summary>
+    public double ClampSafeValue() =>
+        Math.Clamp(SafeValue, Min ?? double.MinValue, Max ?? double.MaxValue);
+
     public void Validate()
     {
         if (string.IsNullOrWhiteSpace(Id))
@@ -156,6 +175,15 @@ public sealed class BridgeChannel
 
         if (!Write && Type is "DO" or "OAXIS" or "OACTION")
             throw new InvalidDataException($"Output channel '{Id}' must be writable.");
+
+        // A safe value outside the channel's travel range would drive the mechanism past its limit at
+        // exactly the moment it is supposed to be made safe, so refuse the configuration instead.
+        if (Write && Min is not null && SafeValue < Min)
+            throw new InvalidDataException(
+                $"Channel '{Id}' safeValue {SafeValue} is below min {Min}.");
+        if (Write && Max is not null && SafeValue > Max)
+            throw new InvalidDataException(
+                $"Channel '{Id}' safeValue {SafeValue} is above max {Max}.");
     }
 }
 
